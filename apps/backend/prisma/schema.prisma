@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  RCC
+  EMS
+  DATA_COLLECTOR
+  CATH_LAB_USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  LOCKED
+  SUSPENDED
+}
+
+enum TicketStatus {
+  PENDING
+  ASSIGNED
+  IN_TRANSPORT
+  COMPLETED
+  CANCELLED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  EMERGENCY
+}
+
+enum PatientGender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum ActivityType {
+  USER_LOGIN
+  USER_LOGOUT
+  TICKET_CREATED
+  TICKET_UPDATED
+  TICKET_ASSIGNED
+  PATIENT_CREATED
+  PATIENT_UPDATED
+  HOSPITAL_UPDATED
+  SYSTEM_ACCESS
+}
+
+enum HospitalType {
+  PRIMARY
+  SECONDARY
+  TERTIARY
+  SPECIALTY
+  EMERGENCY_ONLY
+}
+
+enum ServiceType {
+  STEMI
+  STROKE
+  TRAUMA
+  GENERAL_EMERGENCY
+  CRITICAL_CARE
+  PEDIATRIC
+  CARDIAC
+  NEUROLOGY
+}
+
+// Core Models
+model User {
+  id                String      @id @default(uuid())
+  email             String      @unique
+  firstName         String      @map("first_name")
+  lastName          String      @map("last_name")
+  phoneNumber       String?     @map("phone_number")
+  role              UserRole
+  status            UserStatus  @default(ACTIVE)
+  isEmailVerified   Boolean     @default(false) @map("is_email_verified")
+  passwordHash      String      @map("password_hash")
+  lastLogin         DateTime?   @map("last_login")
+  loginAttempts     Int         @default(0) @map("login_attempts")
+  lockedUntil       DateTime?   @map("locked_until")
+  passwordResetToken String?    @map("password_reset_token")
+  passwordResetExpiry DateTime? @map("password_reset_expiry")
+  refreshToken      String?     @map("refresh_token")
+  sessionExpiry     DateTime?   @map("session_expiry")
+  hospitalId        String?     @map("hospital_id")
+  
+  // Audit fields
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
+  
+  // Relations
+  hospital          Hospital?   @relation(fields: [hospitalId], references: [id])
+  createdTickets    Ticket[]    @relation("TicketCreator")
+  assignedTickets   Ticket[]    @relation("TicketAssignee")
+  activities        Activity[]
+  createdPatients   Patient[]   @relation("PatientCreator")
+  
+  @@map("users")
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([hospitalId])
+}
+
+model Hospital {
+  id                String        @id @default(uuid())
+  name              String
+  code              String        @unique
+  address           String
+  city              String
+  state             String
+  zipCode           String        @map("zip_code")
+  phoneNumber       String        @map("phone_number")
+  type              HospitalType
+  capacity          Int           @default(0)
+  availableBeds     Int           @default(0) @map("available_beds")
+  isActive          Boolean       @default(true) @map("is_active")
+  latitude          Float?
+  longitude         Float?
+  
+  // Medical capabilities
+  hasEmergencyDept  Boolean       @default(true) @map("has_emergency_dept")
+  hasCathLab        Boolean       @default(false) @map("has_cath_lab")
+  hasStrokeCenter   Boolean       @default(false) @map("has_stroke_center")
+  hasTraumaCenter   Boolean       @default(false) @map("has_trauma_center")
+  traumaLevel       Int?          @map("trauma_level")
+  
+  // Audit fields
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  deletedAt         DateTime?     @map("deleted_at")
+  
+  // Relations
+  users             User[]
+  services          HospitalService[]
+  equipment         HospitalEquipment[]
+  originTickets     Ticket[]      @relation("OriginHospital")
+  destinationTickets Ticket[]     @relation("DestinationHospital")
+  
+  @@map("hospitals")
+  @@index([code])
+  @@index([type])
+  @@index([isActive])
+  @@index([city, state])
+}
+
+model HospitalService {
+  id          String      @id @default(uuid())
+  hospitalId  String      @map("hospital_id")
+  service     ServiceType
+  isAvailable Boolean     @default(true) @map("is_available")
+  capacity    Int         @default(0)
+  notes       String?
+  
+  // Audit fields
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  hospital    Hospital    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  
+  @@unique([hospitalId, service])
+  @@map("hospital_services")
+}
+
+model HospitalEquipment {
+  id           String    @id @default(uuid())
+  hospitalId   String    @map("hospital_id")
+  name         String
+  type         String
+  isOperational Boolean  @default(true) @map("is_operational")
+  lastMaintenance DateTime? @map("last_maintenance")
+  notes        String?
+  
+  // Audit fields
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  hospital     Hospital  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  
+  @@map("hospital_equipment")
+}
+
+model Patient {
+  id              String         @id @default(uuid())
+  mrn             String?        @unique @map("medical_record_number")
+  firstName       String         @map("first_name")
+  lastName        String         @map("last_name")
+  dateOfBirth     DateTime       @map("date_of_birth")
+  gender          PatientGender
+  phoneNumber     String?        @map("phone_number")
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?        @map("zip_code")
+  emergencyContact String?       @map("emergency_contact")
+  emergencyPhone  String?        @map("emergency_phone")
+  
+  // Medical Information
+  bloodType       String?        @map("blood_type")
+  allergies       String?        // JSON string of allergies
+  medications     String?        // JSON string of current medications
+  medicalHistory  String?        @map("medical_history")
+  weight          Float?
+  height          Float?
+  
+  // Audit fields
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+  createdById     String         @map("created_by_id")
+  
+  // Relations
+  createdBy       User           @relation("PatientCreator", fields: [createdById], references: [id])
+  tickets         Ticket[]
+  
+  @@map("patients")
+  @@index([mrn])
+  @@index([lastName, firstName])
+  @@index([dateOfBirth])
+}
+
+model Ticket {
+  id                  String          @id @default(uuid())
+  ticketNumber        String          @unique @map("ticket_number")
+  patientId           String          @map("patient_id")
+  originHospitalId    String          @map("origin_hospital_id")
+  destinationHospitalId String?       @map("destination_hospital_id")
+  priority            TicketPriority
+  status              TicketStatus    @default(PENDING)
+  pathway             ServiceType     // STEMI, STROKE, TRAUMA
+  
+  // Medical Details
+  chiefComplaint      String          @map("chief_complaint")
+  symptoms            String?         // JSON string of symptoms
+  vitals              String?         // JSON string of vital signs
+  diagnostics         String?         // JSON string of diagnostic results
+  treatmentPlan       String?         @map("treatment_plan")
+  
+  // Transport Details
+  estimatedArrival    DateTime?       @map("estimated_arrival")
+  actualArrival       DateTime?       @map("actual_arrival")
+  transportMode       String?         @map("transport_mode")
+  emsUnit             String?         @map("ems_unit")
+  
+  // Additional Information
+  notes               String?
+  isEmergency         Boolean         @default(false) @map("is_emergency")
+  requiresBlood       Boolean         @default(false) @map("requires_blood")
+  requiresSpecialist  Boolean         @default(false) @map("requires_specialist")
+  
+  // Audit fields
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+  deletedAt           DateTime?       @map("deleted_at")
+  createdById         String          @map("created_by_id")
+  assignedToId        String?         @map("assigned_to_id")
+  
+  // Relations
+  patient             Patient         @relation(fields: [patientId], references: [id])
+  originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id])
+  createdBy           User            @relation("TicketCreator", fields: [createdById], references: [id])
+  assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  activities          Activity[]
+  
+  @@map("tickets")
+  @@index([ticketNumber])
+  @@index([status])
+  @@index([priority])
+  @@index([pathway])
+  @@index([patientId])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([createdAt])
+}
+
+model Activity {
+  id          String      @id @default(uuid())
+  type        ActivityType
+  description String
+  userId      String      @map("user_id")
+  ticketId    String?     @map("ticket_id")
+  metadata    String?     // JSON string for additional data
+  ipAddress   String?     @map("ip_address")
+  userAgent   String?     @map("user_agent")
+  
+  // Audit fields
+  createdAt   DateTime    @default(now()) @map("created_at")
+  
+  // Relations
+  user        User        @relation(fields: [userId], references: [id])
+  ticket      Ticket?     @relation(fields: [ticketId], references: [id])
+  
+  @@map("activities")
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([ticketId])
+}
+
+// System Configuration
+model SystemConfig {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  value       String
+  description String?
+  isEncrypted Boolean   @default(false) @map("is_encrypted")
+  
+  // Audit fields
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@map("system_config")
+}

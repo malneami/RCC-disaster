@@ -1,75 +1,237 @@
-# Getting Started with Create React App
+# RCC Healthcare Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
- 
-## Available Scripts
+A comprehensive healthcare coordination platform for managing patient transfers between hospitals with role-based access control and real-time communication capabilities.
 
-In the project directory, you can run:
-    
-### `npm start`
+## 🏥 Overview
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+The RCC Healthcare Platform is designed to streamline patient transfers across healthcare networks, focusing on three critical pathways:
+- **STEMI** (ST-Elevation Myocardial Infarction)
+- **Stroke** (Cerebrovascular Accidents)
+- **Trauma** (Critical Injury Management)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🏗 Architecture
 
-### `npm test`
+This is a monorepo containing:
+- **Backend**: NestJS + TypeScript + PostgreSQL + Prisma ORM
+- **Frontend**: React 18 + TypeScript + Material UI + Vite
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🚀 Quick Start
 
-### `npm run build`
+### Prerequisites
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- Node.js 18+ and npm 9+
+- Docker and Docker Compose
+- Git
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 1. Clone and Setup
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+git clone <repository-url>
+cd rcc-healthcare-platform
+npm install
+```
 
-### `npm run eject`
+### 2. Environment Configuration
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+cp .env.example .env
+# Edit .env with your specific configuration
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 3. Database Setup
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+# Start PostgreSQL and Redis containers
+npm run db:up
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+# Generate Prisma client and run migrations
+cd apps/backend
+npm run db:generate
+npm run db:migrate
 
-## Learn More
+# Seed development data
+npm run db:seed
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 4. Start Development Servers
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+# Start both backend and frontend simultaneously
+npm run dev
 
-### Code Splitting
+# Or start individually:
+npm run dev:backend  # Backend at http://localhost:3001
+npm run dev:frontend # Frontend at http://localhost:5173
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 👥 User Roles & Access
 
-### Analyzing the Bundle Size
+| Role | Access Level | Description |
+|------|-------------|-------------|
+| **Admin** | Full System | Complete platform access and user management |
+| **RCC** | All Portals | Regional coordination center staff |
+| **EMS** | Transport Management | Ambulance and transport coordination |
+| **Data Collector** | Clinical Data | STEMI/Stroke/Trauma data entry |
+| **Cath Lab User** | STEMI Portal Only | Catheterization lab staff |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## 🔐 Default Development Credentials
 
-### Making a Progressive Web App
+| Email | Password | Role |
+|-------|----------|------|
+| admin@rcc-healthcare.com | Healthcare@2024 | Admin |
+| coordinator@rcc-healthcare.com | Healthcare@2024 | RCC |
+| ems@rcc-healthcare.com | Healthcare@2024 | EMS |
+| datacollector@rcc-healthcare.com | Healthcare@2024 | Data Collector |
+| cathlab@rcc-healthcare.com | Healthcare@2024 | Cath Lab User |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 📋 Available Scripts
 
-### Advanced Configuration
+### Root Level
+- `npm run dev` - Start both backend and frontend
+- `npm run build` - Build both applications
+- `npm run lint` - Lint all workspaces
+- `npm run format` - Format code with Prettier
+- `npm run db:up` - Start database containers
+- `npm run db:down` - Stop database containers
+- `npm run db:reset` - Reset database with fresh data
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Backend (apps/backend)
+- `npm run dev` - Start NestJS development server
+- `npm run build` - Build for production
+- `npm run test` - Run unit tests
+- `npm run test:e2e` - Run end-to-end tests
+- `npm run db:migrate` - Run Prisma migrations
+- `npm run db:studio` - Open Prisma Studio
+- `npm run db:seed` - Seed development data
 
-### Deployment
+### Frontend (apps/frontend)
+- `npm run dev` - Start Vite development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 🏥 Key Features
 
-### `npm run build` fails to minify
+### Authentication & Security
+- JWT-based authentication with refresh tokens
+- Role-based access control (RBAC)
+- Password policy enforcement
+- Account lockout protection
+- Session management with timeout
+- HIPAA-compliant audit logging
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Healthcare Management
+- **Patient Management**: Secure patient data with medical history
+- **Hospital Network**: Real-time bed capacity and service availability
+- **Transfer Coordination**: Streamlined patient transfer workflows
+- **Clinical Portals**: Specialized interfaces for STEMI, Stroke, and Trauma
 
+### Technical Features
+- **Database**: PostgreSQL with Prisma ORM
+- **API Documentation**: Swagger/OpenAPI integration
+- **Real-time Updates**: WebSocket support for live data
+- **Responsive Design**: Mobile-optimized for field use
+- **Audit Trail**: Comprehensive activity logging
 
+## 🔧 Development Guidelines
 
+### Database Changes
+1. Create new migration file in `apps/backend/prisma/migrations/`
+2. Never modify existing migrations
+3. Always include proper RLS policies
+4. Test migrations thoroughly
 
+### Code Organization
+- Follow the established module structure
+- Use TypeScript strict mode
+- Implement proper error handling
+- Include comprehensive tests
 
+### Security Considerations
+- Never commit sensitive data
+- Use environment variables for configuration
+- Follow HIPAA compliance guidelines
+- Implement proper data encryption
+
+## 🏗 Database Schema
+
+### Core Entities
+- **Users**: Authentication and role management
+- **Hospitals**: Healthcare facility information
+- **Patients**: Secure patient data management
+- **Tickets**: Transfer request coordination
+- **Activities**: Comprehensive audit trail
+
+### Relationships
+- Users belong to hospitals (optional)
+- Tickets link patients to origin/destination hospitals
+- Activities track all system interactions
+- Role-based data access patterns
+
+## 🔒 Security Features
+
+### HIPAA Compliance
+- Data encryption at rest and in transit
+- Audit logging with 7-year retention
+- Access controls and user authentication
+- Secure password policies
+- Data anonymization capabilities
+
+### Technical Security
+- Helmet.js security headers
+- CORS configuration
+- Request throttling
+- SQL injection prevention
+- XSS protection
+
+## 📚 API Documentation
+
+Once the backend is running, visit:
+- **Swagger UI**: http://localhost:3001/api/docs
+- **Health Check**: http://localhost:3001/api/v1/health
+
+## 🐳 Docker Services
+
+The platform uses Docker for local development:
+- **PostgreSQL 15**: Primary database
+- **Redis 7**: Session storage and caching
+
+## 🚨 Emergency Protocols
+
+The platform supports three critical care pathways:
+
+### STEMI Protocol
+- Rapid cath lab activation
+- Door-to-balloon time tracking
+- EKG transmission capabilities
+
+### Stroke Protocol
+- NIHSS assessment tools
+- Time-critical treatment windows
+- Neurological intervention coordination
+
+### Trauma Protocol
+- Trauma center level verification
+- Surgical team availability
+- Multi-disciplinary care coordination
+
+## 🤝 Contributing
+
+1. Follow TypeScript strict mode
+2. Use conventional commit messages
+3. Include comprehensive tests
+4. Update documentation
+5. Ensure HIPAA compliance
+
+## 📄 License
+
+This project is proprietary software designed for healthcare organizations. 
+Unauthorized distribution is prohibited.
+
+## 🆘 Support
+
+For technical support or emergency issues, contact the development team or your system administrator.
+
+---
+
+**⚠️ Healthcare Compliance Notice**: This platform handles protected health information (PHI). 
+Ensure proper HIPAA training and compliance protocols are followed at all times.
