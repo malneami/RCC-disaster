@@ -85,10 +85,12 @@ async function bootstrap() {
   }
 
   const port = configService.get('PORT') || 3001;
-  await app.listen(port);
+  const host = configService.get('HOST') || '0.0.0.0';
+  
+  await app.listen(port, host);
 
-  logger.log(`🚀 RCC Healthcare Platform Backend running on http://localhost:${port}`);
-  logger.log(`🏥 Health check available at http://localhost:${port}/api/v1/health`);
+  logger.log(`🚀 RCC Healthcare Platform Backend running on ${host}:${port}`);
+  logger.log(`🏥 Health check available at ${host}:${port}/api/v1/health`);
 }
 
 bootstrap();
