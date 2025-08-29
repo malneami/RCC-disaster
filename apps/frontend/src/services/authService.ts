@@ -28,10 +28,7 @@ interface RefreshResponse {
 }
 
 class AuthService {
-  private token: string | null = null;
-
   setToken(token: string | null) {
-    this.token = token;
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
