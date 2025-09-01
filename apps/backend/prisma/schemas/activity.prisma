@@ -1,0 +1,24 @@
+// Activity model
+model Activity {
+  id          String      @id @default(uuid())
+  type        ActivityType
+  description String
+  userId      String      @map("user_id")
+  ticketId    String?     @map("ticket_id")
+  metadata    String?     // JSON string for additional data
+  ipAddress   String?     @map("ip_address")
+  userAgent   String?     @map("user_agent")
+  
+  // Audit fields
+  createdAt   DateTime    @default(now()) @map("created_at")
+  
+  // Relations
+  user        User        @relation(fields: [userId], references: [id])
+  ticket      Ticket?     @relation(fields: [ticketId], references: [id])
+  
+  @@map("activities")
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([ticketId])
+}

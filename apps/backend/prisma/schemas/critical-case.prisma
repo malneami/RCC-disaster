@@ -1,0 +1,28 @@
+// Critical Case model for tracking emergency cases
+model CriticalCase {
+  id              String              @id @default(uuid())
+  patientName     String              @map("patient_name")
+  caseType        CriticalCaseType    @map("case_type")
+  severity        CriticalCaseSeverity
+  status          CriticalCaseStatus  @default(ACTIVE)
+  startTime       DateTime            @map("start_time")
+  lastUpdate      DateTime            @updatedAt @map("last_update")
+  description     String
+  hospitalId      String              @map("hospital_id")
+  createdById     String              @map("created_by_id")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  deletedAt       DateTime?           @map("deleted_at")
+  
+  // Relations
+  hospital        Hospital            @relation(fields: [hospitalId], references: [id])
+  createdBy       User                @relation("CriticalCaseCreator", fields: [createdById], references: [id])
+  
+  @@map("critical_cases")
+  @@index([hospitalId])
+  @@index([caseType])
+  @@index([severity])
+  @@index([status])
+  @@index([startTime])
+}
+

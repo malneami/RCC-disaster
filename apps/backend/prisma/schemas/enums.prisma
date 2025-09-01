@@ -1,0 +1,99 @@
+// Enums for the application
+enum UserRole {
+  ADMIN
+  RCC
+  EMS
+  DATA_COLLECTOR
+  CATH_LAB_USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  LOCKED
+  SUSPENDED
+}
+
+enum TicketStatus {
+  PENDING
+  ASSIGNED
+  IN_TRANSPORT
+  COMPLETED
+  CANCELLED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  EMERGENCY
+}
+
+enum PatientGender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum ActivityType {
+  USER_LOGIN
+  USER_LOGOUT
+  TICKET_CREATED
+  TICKET_UPDATED
+  TICKET_ASSIGNED
+  PATIENT_CREATED
+  PATIENT_UPDATED
+  HOSPITAL_UPDATED
+  SYSTEM_ACCESS
+}
+
+enum HospitalStatus {
+  AVAILABLE
+  LIMITED
+  CRITICAL
+  OFFLINE
+  ACTIVE
+}
+
+enum TraumaLevel {
+  NONE
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+  LEVEL_5
+}
+
+enum CriticalCaseType {
+  STEMI
+  STROKE
+  TRAUMA
+}
+
+enum CriticalCaseSeverity {
+  CRITICAL
+  URGENT
+  STABLE
+}
+
+enum CriticalCaseStatus {
+  ACTIVE
+  RESOLVED
+  TRANSFERRED
+}
+
+enum HospitalTicketType {
+  TRANSFER
+  CONSULTATION
+  RESOURCE
+  SYSTEM
+}
+
+enum HospitalTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}

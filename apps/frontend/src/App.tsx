@@ -8,6 +8,7 @@ import DashboardPage from './pages/Dashboard/DashboardPage';
 import TicketsPage from './pages/Tickets/TicketsPage';
 import PatientsPage from './pages/Patients/PatientsPage';
 import HospitalsPage from './pages/Hospitals/HospitalsPage';
+import HospitalDashboardPage from './pages/Hospitals/HospitalDashboardPage';
 import STEMIPortal from './pages/Portals/STEMIPortal';
 import StrokePortal from './pages/Portals/StrokePortal';
 import TraumaPortal from './pages/Portals/TraumaPortal';
@@ -36,6 +37,7 @@ function App() {
           <Route path="/tickets" element={<TicketsPage />} />
           <Route path="/patients" element={<PatientsPage />} />
           <Route path="/hospitals" element={<HospitalsPage />} />
+          <Route path="/hospitals/:hospitalId" element={<HospitalDashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           
           {/* Portal Routes */}

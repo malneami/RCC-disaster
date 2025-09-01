@@ -1,0 +1,80 @@
+// Hospital model based on CSV data structure
+model Hospital {
+  id                String        @id @default(uuid())
+  name              String
+  address           String?
+  latitude          Float?
+  longitude         Float?
+  
+  // Bed Capacity - ICU
+  icuBeds           Int           @default(0) @map("icu_beds")
+  icuBedsAvailable  Int           @default(0) @map("icu_beds_available")
+  
+  // Bed Capacity - PICU
+  picuBeds          Int           @default(0) @map("picu_beds")
+  picuBedsAvailable Int           @default(0) @map("picu_beds_available")
+  
+  // Bed Capacity - Male/Female
+  maleBeds          Int           @default(0) @map("male_beds")
+  maleBedsAvailable Int           @default(0) @map("male_beds_available")
+  femaleBeds        Int           @default(0) @map("female_beds")
+  femaleBedsAvailable Int        @default(0) @map("female_beds_available")
+  
+  // Bed Capacity - Pediatric
+  pediatricBeds     Int           @default(0) @map("pediatric_beds")
+  pediatricBedsAvailable Int      @default(0) @map("pediatric_beds_available")
+  
+  // Bed Capacity - Standard
+  standardBeds     Int           @default(0) @map("standard_beds")
+  standardBedsAvailable Int      @default(0) @map("standard_beds_available")
+  
+  // Equipment
+  ventilators       Int           @default(0)
+  ventilatorsAvailable Int       @default(0) @map("ventilators_available")
+  
+  // Services
+  hasStemiService   Boolean       @default(false) @map("has_stemi_service")
+  hasStrokeService  Boolean       @default(false) @map("has_stroke_service")
+  hasTraumaService  Boolean       @default(false) @map("has_trauma_service")
+  
+  // Hospital Info
+  cluster           String        @default("Jazan")
+  status            HospitalStatus @default(AVAILABLE)
+  contactPhone      String?       @map("contact_phone")
+  contactEmail      String?       @map("contact_email")
+  
+  // Update tokens
+  updateToken       String?       @map("update_token")
+  updateTokenExpiry DateTime?     @map("update_token_expiry")
+  
+  // Emergency Department
+  emergencyDeptStatus String      @default("available") @map("emergency_dept_status")
+  
+  // NICU
+  nicuBeds          Int           @default(0) @map("nicu_beds")
+  nicuBedsAvailable Int           @default(0) @map("nicu_beds_available")
+  
+  // Specialized Services
+  hasStrokeUnit     Boolean       @default(false) @map("has_stroke_unit")
+  traumaLevel       TraumaLevel   @default(NONE) @map("trauma_level")
+  hasCardiologyCenter Boolean     @default(false) @map("has_cardiology_center")
+  
+  // Audit fields
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  deletedAt         DateTime?     @map("deleted_at")
+  
+  // Relations
+  users             User[]
+  originTickets     Ticket[]      @relation("OriginHospital")
+  destinationTickets Ticket[]     @relation("DestinationHospital")
+  criticalCases     CriticalCase[]
+  hospitalTickets   HospitalTicket[]
+  
+  @@map("hospitals")
+  @@index([status])
+  @@index([cluster])
+  @@index([hasStemiService])
+  @@index([hasStrokeService])
+  @@index([hasTraumaService])
+}

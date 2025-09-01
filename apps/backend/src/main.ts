@@ -19,7 +19,7 @@ async function bootstrap() {
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "ws:", "wss:"],
       },
     },
     hsts: {
@@ -91,6 +91,7 @@ async function bootstrap() {
 
   logger.log(`🚀 RCC Healthcare Platform Backend running on ${host}:${port}`);
   logger.log(`🏥 Health check available at ${host}:${port}/api/v1/health`);
+  logger.log(`🔌 WebSocket server available at ${host}:${port}/hospitals`);
 }
 
 bootstrap();

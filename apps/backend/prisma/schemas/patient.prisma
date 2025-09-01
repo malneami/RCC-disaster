@@ -1,0 +1,39 @@
+// Patient model
+model Patient {
+  id              String         @id @default(uuid())
+  mrn             String?        @unique @map("medical_record_number")
+  firstName       String         @map("first_name")
+  lastName        String         @map("last_name")
+  dateOfBirth     DateTime       @map("date_of_birth")
+  gender          PatientGender
+  phoneNumber     String?        @map("phone_number")
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?        @map("zip_code")
+  emergencyContact String?       @map("emergency_contact")
+  emergencyPhone  String?        @map("emergency_phone")
+  
+  // Medical Information
+  bloodType       String?        @map("blood_type")
+  allergies       String?        // JSON string of allergies
+  medications     String?        // JSON string of current medications
+  medicalHistory  String?        @map("medical_history")
+  weight          Float?
+  height          Float?
+  
+  // Audit fields
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+  createdById     String         @map("created_by_id")
+  
+  // Relations
+  createdBy       User           @relation("PatientCreator", fields: [createdById], references: [id])
+  tickets         Ticket[]
+  
+  @@map("patients")
+  @@index([mrn])
+  @@index([lastName, firstName])
+  @@index([dateOfBirth])
+}

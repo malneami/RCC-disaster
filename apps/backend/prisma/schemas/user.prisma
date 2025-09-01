@@ -1,0 +1,41 @@
+// User model
+model User {
+  id                String      @id @default(uuid())
+  email             String      @unique
+  firstName         String      @map("first_name")
+  lastName          String      @map("last_name")
+  phoneNumber       String?     @map("phone_number")
+  role              UserRole
+  status            UserStatus  @default(ACTIVE)
+  isEmailVerified   Boolean     @default(false) @map("is_email_verified")
+  passwordHash      String      @map("password_hash")
+  lastLogin         DateTime?   @map("last_login")
+  loginAttempts     Int         @default(0) @map("login_attempts")
+  lockedUntil       DateTime?   @map("locked_until")
+  passwordResetToken String?    @map("password_reset_token")
+  passwordResetExpiry DateTime? @map("password_reset_expiry")
+  refreshToken      String?     @map("refresh_token")
+  sessionExpiry     DateTime?   @map("session_expiry")
+  hospitalId        String?     @map("hospital_id")
+  
+  // Audit fields
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
+  
+  // Relations
+  hospital          Hospital?   @relation(fields: [hospitalId], references: [id])
+  createdTickets    Ticket[]    @relation("TicketCreator")
+  assignedTickets   Ticket[]    @relation("TicketAssignee")
+  activities        Activity[]
+  createdPatients   Patient[]   @relation("PatientCreator")
+  createdCriticalCases CriticalCase[] @relation("CriticalCaseCreator")
+  createdHospitalTickets HospitalTicket[] @relation("HospitalTicketCreator")
+  assignedHospitalTickets HospitalTicket[] @relation("HospitalTicketAssignee")
+  
+  @@map("users")
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([hospitalId])
+}

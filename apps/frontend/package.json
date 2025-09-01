@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start:dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
@@ -26,7 +27,7 @@
     "@mui/x-date-pickers": "^6.18.7",
     "@tailwindcss/postcss": "^4.1.12",
     "autoprefixer": "^10.4.21",
-    "axios": "^1.6.5",
+    "axios": "^1.11.0",
     "dayjs": "^1.11.10",
     "notistack": "^3.0.1",
     "postcss": "^8.5.6",
@@ -36,6 +37,7 @@
     "react-hook-form": "^7.48.2",
     "react-query": "^3.39.3",
     "react-router-dom": "^6.20.1",
+    "recharts": "^3.1.2",
     "tailwindcss": "^4.1.12",
     "yup": "^1.4.0"
   },

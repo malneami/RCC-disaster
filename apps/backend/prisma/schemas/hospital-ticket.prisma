@@ -1,0 +1,28 @@
+// Hospital Ticket model for managing hospital-related requests
+model HospitalTicket {
+  id              String                @id @default(uuid())
+  title           String
+  description     String
+  type            HospitalTicketType
+  priority        TicketPriority
+  status          HospitalTicketStatus  @default(OPEN)
+  hospitalId      String                @map("hospital_id")
+  createdById     String                @map("created_by_id")
+  assignedToId    String?               @map("assigned_to_id")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  deletedAt       DateTime?             @map("deleted_at")
+  
+  // Relations
+  hospital        Hospital              @relation(fields: [hospitalId], references: [id])
+  createdBy       User                  @relation("HospitalTicketCreator", fields: [createdById], references: [id])
+  assignedTo      User?                 @relation("HospitalTicketAssignee", fields: [assignedToId], references: [id])
+  
+  @@map("hospital_tickets")
+  @@index([hospitalId])
+  @@index([type])
+  @@index([priority])
+  @@index([status])
+  @@index([createdAt])
+}
+

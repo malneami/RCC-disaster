@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { TicketStatus, ServiceType, UserRole } from '@prisma/client';
+import { TicketStatus, UserRole } from '@prisma/client';
 
 @Injectable()
 export class TicketsService {
@@ -13,7 +13,7 @@ export class TicketsService {
 
     // Role-based filtering
     if (userRole === UserRole.CATH_LAB_USER) {
-      where.pathway = ServiceType.STEMI;
+      where.pathway = 'STEMI';
     }
 
     if (hospitalId && userRole !== UserRole.ADMIN && userRole !== UserRole.RCC) {
@@ -41,13 +41,11 @@ export class TicketsService {
           originHospital: {
             select: {
               name: true,
-              code: true,
             },
           },
           destinationHospital: {
             select: {
               name: true,
-              code: true,
             },
           },
           createdBy: {
@@ -87,18 +85,8 @@ export class TicketsService {
       where: { id },
       include: {
         patient: true,
-        originHospital: {
-          include: {
-            services: true,
-            equipment: true,
-          },
-        },
-        destinationHospital: {
-          include: {
-            services: true,
-            equipment: true,
-          },
-        },
+        originHospital: true,
+        destinationHospital: true,
         createdBy: {
           select: {
             firstName: true,

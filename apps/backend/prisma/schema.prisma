@@ -7,7 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
+
+// enums.prisma
+// Enums for the application
 enum UserRole {
   ADMIN
   RCC
@@ -58,26 +60,58 @@ enum ActivityType {
   SYSTEM_ACCESS
 }
 
-enum HospitalType {
-  PRIMARY
-  SECONDARY
-  TERTIARY
-  SPECIALTY
-  EMERGENCY_ONLY
+enum HospitalStatus {
+  AVAILABLE
+  LIMITED
+  CRITICAL
+  OFFLINE
+  ACTIVE
 }
 
-enum ServiceType {
+enum TraumaLevel {
+  NONE
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+  LEVEL_5
+}
+
+enum CriticalCaseType {
   STEMI
   STROKE
   TRAUMA
-  GENERAL_EMERGENCY
-  CRITICAL_CARE
-  PEDIATRIC
-  CARDIAC
-  NEUROLOGY
 }
 
-// Core Models
+enum CriticalCaseSeverity {
+  CRITICAL
+  URGENT
+  STABLE
+}
+
+enum CriticalCaseStatus {
+  ACTIVE
+  RESOLVED
+  TRANSFERRED
+}
+
+enum HospitalTicketType {
+  TRANSFER
+  CONSULTATION
+  RESOURCE
+  SYSTEM
+}
+
+enum HospitalTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+
+// user.prisma
+// User model
 model User {
   id                String      @id @default(uuid())
   email             String      @unique
@@ -108,6 +142,9 @@ model User {
   assignedTickets   Ticket[]    @relation("TicketAssignee")
   activities        Activity[]
   createdPatients   Patient[]   @relation("PatientCreator")
+  createdCriticalCases CriticalCase[] @relation("CriticalCaseCreator")
+  createdHospitalTickets HospitalTicket[] @relation("HospitalTicketCreator")
+  assignedHospitalTickets HospitalTicket[] @relation("HospitalTicketAssignee")
   
   @@map("users")
   @@index([email])
@@ -116,28 +153,68 @@ model User {
   @@index([hospitalId])
 }
 
+
+// hospital.prisma
+// Hospital model based on CSV data structure
 model Hospital {
   id                String        @id @default(uuid())
   name              String
-  code              String        @unique
-  address           String
-  city              String
-  state             String
-  zipCode           String        @map("zip_code")
-  phoneNumber       String        @map("phone_number")
-  type              HospitalType
-  capacity          Int           @default(0)
-  availableBeds     Int           @default(0) @map("available_beds")
-  isActive          Boolean       @default(true) @map("is_active")
+  address           String?
   latitude          Float?
   longitude         Float?
   
-  // Medical capabilities
-  hasEmergencyDept  Boolean       @default(true) @map("has_emergency_dept")
-  hasCathLab        Boolean       @default(false) @map("has_cath_lab")
-  hasStrokeCenter   Boolean       @default(false) @map("has_stroke_center")
-  hasTraumaCenter   Boolean       @default(false) @map("has_trauma_center")
-  traumaLevel       Int?          @map("trauma_level")
+  // Bed Capacity - ICU
+  icuBeds           Int           @default(0) @map("icu_beds")
+  icuBedsAvailable  Int           @default(0) @map("icu_beds_available")
+  
+  // Bed Capacity - PICU
+  picuBeds          Int           @default(0) @map("picu_beds")
+  picuBedsAvailable Int           @default(0) @map("picu_beds_available")
+  
+  // Bed Capacity - Male/Female
+  maleBeds          Int           @default(0) @map("male_beds")
+  maleBedsAvailable Int           @default(0) @map("male_beds_available")
+  femaleBeds        Int           @default(0) @map("female_beds")
+  femaleBedsAvailable Int        @default(0) @map("female_beds_available")
+  
+  // Bed Capacity - Pediatric
+  pediatricBeds     Int           @default(0) @map("pediatric_beds")
+  pediatricBedsAvailable Int      @default(0) @map("pediatric_beds_available")
+  
+  // Bed Capacity - Standard
+  standardBeds     Int           @default(0) @map("standard_beds")
+  standardBedsAvailable Int      @default(0) @map("standard_beds_available")
+  
+  // Equipment
+  ventilators       Int           @default(0)
+  ventilatorsAvailable Int       @default(0) @map("ventilators_available")
+  
+  // Services
+  hasStemiService   Boolean       @default(false) @map("has_stemi_service")
+  hasStrokeService  Boolean       @default(false) @map("has_stroke_service")
+  hasTraumaService  Boolean       @default(false) @map("has_trauma_service")
+  
+  // Hospital Info
+  cluster           String        @default("Jazan")
+  status            HospitalStatus @default(AVAILABLE)
+  contactPhone      String?       @map("contact_phone")
+  contactEmail      String?       @map("contact_email")
+  
+  // Update tokens
+  updateToken       String?       @map("update_token")
+  updateTokenExpiry DateTime?     @map("update_token_expiry")
+  
+  // Emergency Department
+  emergencyDeptStatus String      @default("available") @map("emergency_dept_status")
+  
+  // NICU
+  nicuBeds          Int           @default(0) @map("nicu_beds")
+  nicuBedsAvailable Int           @default(0) @map("nicu_beds_available")
+  
+  // Specialized Services
+  hasStrokeUnit     Boolean       @default(false) @map("has_stroke_unit")
+  traumaLevel       TraumaLevel   @default(NONE) @map("trauma_level")
+  hasCardiologyCenter Boolean     @default(false) @map("has_cardiology_center")
   
   // Audit fields
   createdAt         DateTime      @default(now()) @map("created_at")
@@ -146,56 +223,22 @@ model Hospital {
   
   // Relations
   users             User[]
-  services          HospitalService[]
-  equipment         HospitalEquipment[]
   originTickets     Ticket[]      @relation("OriginHospital")
   destinationTickets Ticket[]     @relation("DestinationHospital")
+  criticalCases     CriticalCase[]
+  hospitalTickets   HospitalTicket[]
   
   @@map("hospitals")
-  @@index([code])
-  @@index([type])
-  @@index([isActive])
-  @@index([city, state])
+  @@index([status])
+  @@index([cluster])
+  @@index([hasStemiService])
+  @@index([hasStrokeService])
+  @@index([hasTraumaService])
 }
 
-model HospitalService {
-  id          String      @id @default(uuid())
-  hospitalId  String      @map("hospital_id")
-  service     ServiceType
-  isAvailable Boolean     @default(true) @map("is_available")
-  capacity    Int         @default(0)
-  notes       String?
-  
-  // Audit fields
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-  
-  // Relations
-  hospital    Hospital    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  
-  @@unique([hospitalId, service])
-  @@map("hospital_services")
-}
 
-model HospitalEquipment {
-  id           String    @id @default(uuid())
-  hospitalId   String    @map("hospital_id")
-  name         String
-  type         String
-  isOperational Boolean  @default(true) @map("is_operational")
-  lastMaintenance DateTime? @map("last_maintenance")
-  notes        String?
-  
-  // Audit fields
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  
-  // Relations
-  hospital     Hospital  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  
-  @@map("hospital_equipment")
-}
-
+// patient.prisma
+// Patient model
 model Patient {
   id              String         @id @default(uuid())
   mrn             String?        @unique @map("medical_record_number")
@@ -235,6 +278,9 @@ model Patient {
   @@index([dateOfBirth])
 }
 
+
+// ticket.prisma
+// Ticket model
 model Ticket {
   id                  String          @id @default(uuid())
   ticketNumber        String          @unique @map("ticket_number")
@@ -243,7 +289,7 @@ model Ticket {
   destinationHospitalId String?       @map("destination_hospital_id")
   priority            TicketPriority
   status              TicketStatus    @default(PENDING)
-  pathway             ServiceType     // STEMI, STROKE, TRAUMA
+  pathway             String          // STEMI, STROKE, TRAUMA
   
   // Medical Details
   chiefComplaint      String          @map("chief_complaint")
@@ -290,6 +336,69 @@ model Ticket {
   @@index([createdAt])
 }
 
+
+// critical-case.prisma
+// Critical Case model for tracking emergency cases
+model CriticalCase {
+  id              String              @id @default(uuid())
+  patientName     String              @map("patient_name")
+  caseType        CriticalCaseType    @map("case_type")
+  severity        CriticalCaseSeverity
+  status          CriticalCaseStatus  @default(ACTIVE)
+  startTime       DateTime            @map("start_time")
+  lastUpdate      DateTime            @updatedAt @map("last_update")
+  description     String
+  hospitalId      String              @map("hospital_id")
+  createdById     String              @map("created_by_id")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  deletedAt       DateTime?           @map("deleted_at")
+  
+  // Relations
+  hospital        Hospital            @relation(fields: [hospitalId], references: [id])
+  createdBy       User                @relation("CriticalCaseCreator", fields: [createdById], references: [id])
+  
+  @@map("critical_cases")
+  @@index([hospitalId])
+  @@index([caseType])
+  @@index([severity])
+  @@index([status])
+  @@index([startTime])
+}
+
+
+// hospital-ticket.prisma
+// Hospital Ticket model for managing hospital-related requests
+model HospitalTicket {
+  id              String                @id @default(uuid())
+  title           String
+  description     String
+  type            HospitalTicketType
+  priority        TicketPriority
+  status          HospitalTicketStatus  @default(OPEN)
+  hospitalId      String                @map("hospital_id")
+  createdById     String                @map("created_by_id")
+  assignedToId    String?               @map("assigned_to_id")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  deletedAt       DateTime?             @map("deleted_at")
+  
+  // Relations
+  hospital        Hospital              @relation(fields: [hospitalId], references: [id])
+  createdBy       User                  @relation("HospitalTicketCreator", fields: [createdById], references: [id])
+  assignedTo      User?                 @relation("HospitalTicketAssignee", fields: [assignedToId], references: [id])
+  
+  @@map("hospital_tickets")
+  @@index([hospitalId])
+  @@index([type])
+  @@index([priority])
+  @@index([status])
+  @@index([createdAt])
+}
+
+
+// activity.prisma
+// Activity model
 model Activity {
   id          String      @id @default(uuid())
   type        ActivityType
@@ -314,7 +423,9 @@ model Activity {
   @@index([ticketId])
 }
 
-// System Configuration
+
+// system.prisma
+// System Configuration model
 model SystemConfig {
   id          String    @id @default(uuid())
   key         String    @unique
@@ -328,3 +439,4 @@ model SystemConfig {
   
   @@map("system_config")
 }
+

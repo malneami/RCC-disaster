@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "nest start --watch",
+    "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -25,8 +26,13 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:restore-users": "ts-node prisma/restore-users.ts",
+    "db:add-hospitals": "ts-node prisma/add-missing-hospitals.ts",
     "db:reset": "prisma migrate reset --force",
-    "db:status": "prisma migrate status"
+    "db:status": "prisma migrate status",
+    "schema:merge": "node prisma/merge-schema.js",
+    "schema:generate": "npm run schema:merge && prisma generate",
+    "schema:migrate": "npm run schema:merge && prisma migrate dev"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.1",
@@ -35,8 +41,10 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.3.1",
+    "@nestjs/platform-socket.io": "^11.1.6",
     "@nestjs/swagger": "^7.2.0",
     "@nestjs/throttler": "^5.1.2",
+    "@nestjs/websockets": "^11.1.6",
     "@prisma/client": "^5.8.1",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
@@ -53,13 +61,13 @@
     "redis": "^4.6.12",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1",
     "winston": "^3.11.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",
     "@nestjs/schematics": "^10.1.0",
     "@nestjs/testing": "^10.3.1",
-
     "@types/compression": "^1.8.1",
     "@types/express": "^4.17.23",
     "@types/jest": "^29.5.11",

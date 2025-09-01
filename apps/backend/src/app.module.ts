@@ -7,6 +7,8 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { HospitalsModule } from './modules/hospitals/hospitals.module';
+import { CriticalCasesModule } from './modules/critical-cases/critical-cases.module';
+import { HospitalTicketsModule } from './modules/hospital-tickets/hospital-tickets.module';
 import { PatientsModule } from './modules/patients/patients.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
@@ -43,6 +45,8 @@ import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
     AuthModule,
     UsersModule,
     HospitalsModule,
+    CriticalCasesModule,
+    HospitalTicketsModule,
     PatientsModule,
     TicketsModule,
     ActivitiesModule,

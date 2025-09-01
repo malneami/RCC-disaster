@@ -1,0 +1,55 @@
+// Ticket model
+model Ticket {
+  id                  String          @id @default(uuid())
+  ticketNumber        String          @unique @map("ticket_number")
+  patientId           String          @map("patient_id")
+  originHospitalId    String          @map("origin_hospital_id")
+  destinationHospitalId String?       @map("destination_hospital_id")
+  priority            TicketPriority
+  status              TicketStatus    @default(PENDING)
+  pathway             String          // STEMI, STROKE, TRAUMA
+  
+  // Medical Details
+  chiefComplaint      String          @map("chief_complaint")
+  symptoms            String?         // JSON string of symptoms
+  vitals              String?         // JSON string of vital signs
+  diagnostics         String?         // JSON string of diagnostic results
+  treatmentPlan       String?         @map("treatment_plan")
+  
+  // Transport Details
+  estimatedArrival    DateTime?       @map("estimated_arrival")
+  actualArrival       DateTime?       @map("actual_arrival")
+  transportMode       String?         @map("transport_mode")
+  emsUnit             String?         @map("ems_unit")
+  
+  // Additional Information
+  notes               String?
+  isEmergency         Boolean         @default(false) @map("is_emergency")
+  requiresBlood       Boolean         @default(false) @map("requires_blood")
+  requiresSpecialist  Boolean         @default(false) @map("requires_specialist")
+  
+  // Audit fields
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+  deletedAt           DateTime?       @map("deleted_at")
+  createdById         String          @map("created_by_id")
+  assignedToId        String?         @map("assigned_to_id")
+  
+  // Relations
+  patient             Patient         @relation(fields: [patientId], references: [id])
+  originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id])
+  createdBy           User            @relation("TicketCreator", fields: [createdById], references: [id])
+  assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  activities          Activity[]
+  
+  @@map("tickets")
+  @@index([ticketNumber])
+  @@index([status])
+  @@index([priority])
+  @@index([pathway])
+  @@index([patientId])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([createdAt])
+}

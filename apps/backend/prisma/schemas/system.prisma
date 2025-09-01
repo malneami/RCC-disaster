@@ -1,0 +1,14 @@
+// System Configuration model
+model SystemConfig {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  value       String
+  description String?
+  isEncrypted Boolean   @default(false) @map("is_encrypted")
+  
+  // Audit fields
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@map("system_config")
+}

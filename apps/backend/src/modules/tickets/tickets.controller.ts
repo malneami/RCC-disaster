@@ -1,6 +1,5 @@
 import { Controller, Get, Param, Query, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { ServiceType } from '@prisma/client';
 import { TicketsService } from './tickets.service';
 
 @ApiTags('Tickets')
