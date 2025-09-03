@@ -1,4 +1,4 @@
-// Enums for the application
+// Core enums for the application
 enum UserRole {
   ADMIN
   RCC
@@ -12,6 +12,30 @@ enum UserStatus {
   INACTIVE
   LOCKED
   SUSPENDED
+}
+
+enum PatientGender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+  UNKNOWN
+}
+
+enum PrivacyLevel {
+  PUBLIC
+  INTERNAL
+  PRIVATE
+  RESTRICTED
+  CONFIDENTIAL
 }
 
 enum TicketStatus {
@@ -30,23 +54,11 @@ enum TicketPriority {
   EMERGENCY
 }
 
-enum PatientGender {
-  MALE
-  FEMALE
-  OTHER
-  UNKNOWN
-}
-
-enum ActivityType {
-  USER_LOGIN
-  USER_LOGOUT
-  TICKET_CREATED
-  TICKET_UPDATED
-  TICKET_ASSIGNED
-  PATIENT_CREATED
-  PATIENT_UPDATED
-  HOSPITAL_UPDATED
-  SYSTEM_ACCESS
+enum TicketPathway {
+  GENERAL
+  STEMI
+  STROKE
+  TRAUMA
 }
 
 enum HospitalStatus {
@@ -87,8 +99,10 @@ enum CriticalCaseStatus {
 enum HospitalTicketType {
   TRANSFER
   CONSULTATION
-  RESOURCE
-  SYSTEM
+  EMERGENCY
+  MAINTENANCE
+  SUPPLY
+  OTHER
 }
 
 enum HospitalTicketStatus {
@@ -96,4 +110,48 @@ enum HospitalTicketStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+  CANCELLED
+}
+
+enum MedicalRecordType {
+  CONSULTATION
+  LABORATORY
+  RADIOLOGY
+  SURGERY
+  MEDICATION
+  VACCINATION
+  ALLERGY
+  CHRONIC_CONDITION
+  EMERGENCY_VISIT
+  FOLLOW_UP
+  REFERRAL
+  DISCHARGE
+  OTHER
+}
+
+enum AccessType {
+  VIEW
+  CREATE
+  UPDATE
+  DELETE
+  EXPORT
+  SEARCH
+}
+
+enum ActivityType {
+  USER_LOGIN
+  USER_LOGOUT
+  TICKET_CREATED
+  TICKET_UPDATED
+  TICKET_ASSIGNED
+  PATIENT_CREATED
+  PATIENT_UPDATED
+  PATIENT_ACCESSED
+  PATIENT_EXPORTED
+  HOSPITAL_UPDATED
+  SYSTEM_ACCESS
+  MEDICAL_RECORD_CREATED
+  MEDICAL_RECORD_UPDATED
+  DUPLICATE_DETECTED
+  PRIVACY_BREACH
 }

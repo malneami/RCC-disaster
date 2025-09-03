@@ -7,6 +7,7 @@ import LoginPage from './pages/Auth/LoginPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import TicketsPage from './pages/Tickets/TicketsPage';
 import PatientsPage from './pages/Patients/PatientsPage';
+import PatientDetailsPage from './pages/Patients/PatientDetailsPage';
 import HospitalsPage from './pages/Hospitals/HospitalsPage';
 import HospitalDashboardPage from './pages/Hospitals/HospitalDashboardPage';
 import STEMIPortal from './pages/Portals/STEMIPortal';
@@ -36,6 +37,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/tickets" element={<TicketsPage />} />
           <Route path="/patients" element={<PatientsPage />} />
+          <Route path="/patients/:id" element={<PatientDetailsPage />} />
           <Route path="/hospitals" element={<HospitalsPage />} />
           <Route path="/hospitals/:hospitalId" element={<HospitalDashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />

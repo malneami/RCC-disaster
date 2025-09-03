@@ -1,0 +1,129 @@
+import React from 'react';
+import {
+  Box,
+  Grid,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  FormHelperText,
+} from '@mui/material';
+import { CreateTicketData } from '../../../../services/ticketService';
+
+interface TransportInfoStepProps {
+  formData: Partial<CreateTicketData>;
+  onDataChange: (data: Partial<CreateTicketData>) => void;
+}
+
+const TransportInfoStep: React.FC<TransportInfoStepProps> = ({
+  formData,
+  onDataChange,
+}) => {
+  // Helper function to convert ISO-8601 string to datetime-local format
+  const isoToDatetimeLocal = (isoString: string): string => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
+    
+    // Format as YYYY-MM-DDTHH:MM for datetime-local input
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    // Convert datetime-local input to ISO-8601 format for estimatedArrival
+    if (field === 'estimatedArrival' && value) {
+      // Convert "YYYY-MM-DDTHH:MM" to "YYYY-MM-DDTHH:MM:SS.sssZ"
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        value = date.toISOString();
+      }
+    }
+    onDataChange({ [field]: value });
+  };
+
+  return (
+    <Box sx={{ py: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Transport Information
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Provide transport details and additional notes
+      </Typography>
+
+      <Grid container spacing={3}>
+        {/* Transport Mode */}
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>Transport Mode</InputLabel>
+            <Select
+              value={formData.transportMode || ''}
+              label="Transport Mode"
+              onChange={(e) => handleInputChange('transportMode', e.target.value)}
+            >
+              <MenuItem value="">
+                <em>Select transport mode (optional)</em>
+              </MenuItem>
+              <MenuItem value="AMBULANCE">Ambulance</MenuItem>
+              <MenuItem value="HELICOPTER">Helicopter</MenuItem>
+              <MenuItem value="FIXED_WING">Fixed Wing Aircraft</MenuItem>
+              <MenuItem value="GROUND">Ground Transport</MenuItem>
+              <MenuItem value="WALK_IN">Walk-in</MenuItem>
+            </Select>
+            <FormHelperText>
+              Mode of transportation for the transfer
+            </FormHelperText>
+          </FormControl>
+        </Grid>
+
+        {/* EMS Unit */}
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            label="EMS Unit"
+            value={formData.emsUnit || ''}
+            onChange={(e) => handleInputChange('emsUnit', e.target.value)}
+            placeholder="Enter EMS unit identifier..."
+            helperText="EMS unit or team identifier (optional)"
+          />
+        </Grid>
+
+        {/* Estimated Arrival */}
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            label="Estimated Arrival"
+            type="datetime-local"
+            value={isoToDatetimeLocal(formData.estimatedArrival || '')}
+            onChange={(e) => handleInputChange('estimatedArrival', e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            helperText="Estimated arrival time at destination"
+          />
+        </Grid>
+
+        {/* Notes */}
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Additional Notes"
+            multiline
+            rows={4}
+            value={formData.notes || ''}
+            onChange={(e) => handleInputChange('notes', e.target.value)}
+            placeholder="Enter any additional notes or special instructions..."
+            helperText="Additional information, special instructions, or notes about the transfer"
+          />
+        </Grid>
+      </Grid>
+    </Box>
+  );
+};
+
+export default TransportInfoStep;

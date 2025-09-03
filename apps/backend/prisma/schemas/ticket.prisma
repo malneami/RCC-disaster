@@ -1,13 +1,19 @@
-// Ticket model
+// Enhanced Ticket model for comprehensive patient transfer management
 model Ticket {
   id                  String          @id @default(uuid())
   ticketNumber        String          @unique @map("ticket_number")
+  
+  // Patient Information
   patientId           String          @map("patient_id")
+  
+  // Hospital Information
   originHospitalId    String          @map("origin_hospital_id")
   destinationHospitalId String?       @map("destination_hospital_id")
+  
+  // Ticket Classification
   priority            TicketPriority
   status              TicketStatus    @default(PENDING)
-  pathway             String          // STEMI, STROKE, TRAUMA
+  pathway             TicketPathway  @default(GENERAL)
   
   // Medical Details
   chiefComplaint      String          @map("chief_complaint")
@@ -21,19 +27,33 @@ model Ticket {
   actualArrival       DateTime?       @map("actual_arrival")
   transportMode       String?         @map("transport_mode")
   emsUnit             String?         @map("ems_unit")
+  transportNotes      String?         @map("transport_notes")
+  
+  // Resource Requirements
+  requiresBlood       Boolean         @default(false) @map("requires_blood")
+  requiresSpecialist  Boolean         @default(false) @map("requires_specialist")
+  requiresICU         Boolean         @default(false) @map("requires_icu")
+  requiresVentilator  Boolean         @default(false) @map("requires_ventilator")
+  requiredResources   String?         @map("required_resources") // JSON string
+  
+  // Emergency Information
+  isEmergency         Boolean         @default(false) @map("is_emergency")
+  emergencyType       String?         @map("emergency_type") // STEMI, STROKE, TRAUMA
+  emergencySeverity   String?         @map("emergency_severity") // CRITICAL, URGENT, STABLE
   
   // Additional Information
   notes               String?
-  isEmergency         Boolean         @default(false) @map("is_emergency")
-  requiresBlood       Boolean         @default(false) @map("requires_blood")
-  requiresSpecialist  Boolean         @default(false) @map("requires_specialist")
+  internalNotes       String?         @map("internal_notes")
+  externalNotes       String?         @map("external_notes")
   
-  // Audit fields
+  // Audit Fields
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
   deletedAt           DateTime?       @map("deleted_at")
   createdById         String          @map("created_by_id")
   assignedToId        String?         @map("assigned_to_id")
+  completedById       String?         @map("completed_by_id")
+  completedAt         DateTime?       @map("completed_at")
   
   // Relations
   patient             Patient         @relation(fields: [patientId], references: [id])
@@ -41,6 +61,7 @@ model Ticket {
   destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id])
   createdBy           User            @relation("TicketCreator", fields: [createdById], references: [id])
   assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
   activities          Activity[]
   
   @@map("tickets")
@@ -52,4 +73,6 @@ model Ticket {
   @@index([originHospitalId])
   @@index([destinationHospitalId])
   @@index([createdAt])
+  @@index([assignedToId])
+  @@index([isEmergency])
 }

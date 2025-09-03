@@ -1,0 +1,253 @@
+import { apiClient } from './apiClient';
+
+export interface Vitals {
+  bloodPressure?: number;
+  heartRate?: number;
+  temperature?: number;
+  oxygenSaturation?: number;
+  respiratoryRate?: number;
+}
+
+export interface Symptoms {
+  symptoms: string[];
+}
+
+export interface Diagnostics {
+  ecg?: string;
+  labResults?: string;
+  imaging?: string;
+  otherTests?: string;
+}
+
+export interface RequiredResources {
+  icu?: boolean;
+  ventilator?: boolean;
+  cardiology?: boolean;
+  neurology?: boolean;
+  trauma?: boolean;
+  nicu?: boolean;
+  picu?: boolean;
+}
+
+export interface CreateTicketData {
+  patientId: string;
+  originHospitalId: string;
+  destinationHospitalId?: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  pathway: string;
+  chiefComplaint: string;
+  symptoms?: Symptoms;
+  vitals?: Vitals;
+  diagnostics?: Diagnostics;
+  treatmentPlan?: string;
+  estimatedArrival?: string;
+  transportMode?: string;
+  emsUnit?: string;
+  notes?: string;
+  isEmergency?: boolean;
+  requiresBlood?: boolean;
+  requiresSpecialist?: boolean;
+  requiredResources?: RequiredResources;
+  assignedToId?: string;
+}
+
+export interface UpdateTicketData {
+  destinationHospitalId?: string;
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  pathway?: string;
+  chiefComplaint?: string;
+  symptoms?: Symptoms;
+  vitals?: Vitals;
+  diagnostics?: Diagnostics;
+  treatmentPlan?: string;
+  estimatedArrival?: string;
+  actualArrival?: string;
+  transportMode?: string;
+  emsUnit?: string;
+  notes?: string;
+  isEmergency?: boolean;
+  requiresBlood?: boolean;
+  requiresSpecialist?: boolean;
+  requiredResources?: RequiredResources;
+  assignedToId?: string;
+}
+
+export interface TicketFilter {
+  status?: 'PENDING' | 'ASSIGNED' | 'IN_TRANSPORT' | 'COMPLETED' | 'CANCELLED';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  pathway?: string;
+  originHospitalId?: string;
+  destinationHospitalId?: string;
+  patientId?: string;
+  assignedToId?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+}
+
+export interface Ticket {
+  id: string;
+  ticketNumber: string;
+  patientId: string;
+  originHospitalId: string;
+  destinationHospitalId?: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  status: 'PENDING' | 'ASSIGNED' | 'IN_TRANSPORT' | 'COMPLETED' | 'CANCELLED';
+  pathway: string;
+  chiefComplaint: string;
+  symptoms?: string;
+  vitals?: string;
+  diagnostics?: string;
+  treatmentPlan?: string;
+  estimatedArrival?: string;
+  actualArrival?: string;
+  transportMode?: string;
+  emsUnit?: string;
+  notes?: string;
+  isEmergency: boolean;
+  requiresBlood: boolean;
+  requiresSpecialist: boolean;
+  requiredResources?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdById: string;
+  assignedToId?: string;
+  patient: {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    gender: string;
+    mrn?: string;
+  };
+  originHospital: {
+    name: string;
+    status: string;
+  };
+  destinationHospital?: {
+    name: string;
+    status: string;
+  };
+  createdBy: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
+  assignedTo?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
+  activities?: Array<{
+    id: string;
+    type: string;
+    description: string;
+    createdAt: string;
+    user: {
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  }>;
+}
+
+export interface TicketStatistics {
+  total: number;
+  pending: number;
+  assigned: number;
+  inTransport: number;
+  completed: number;
+  cancelled: number;
+}
+
+export interface TicketPriorityStats {
+  priority: string;
+  _count: {
+    priority: number;
+  };
+}
+
+export interface TicketPathwayStats {
+  pathway: string;
+  _count: {
+    pathway: number;
+  };
+}
+
+export interface TicketsResponse {
+  data: Ticket[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+class TicketService {
+  async createTicket(data: CreateTicketData): Promise<Ticket> {
+    const response = await apiClient.post('/tickets', data);
+    return response.data;
+  }
+
+  async getTickets(
+    page = 1,
+    limit = 10,
+    filters?: TicketFilter
+  ): Promise<TicketsResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...filters,
+    });
+    
+    const response = await apiClient.get(`/tickets?${params}`);
+    return response.data;
+  }
+
+  async getTicket(id: string): Promise<Ticket> {
+    const response = await apiClient.get(`/tickets/${id}`);
+    return response.data;
+  }
+
+  async updateTicket(id: string, data: UpdateTicketData): Promise<Ticket> {
+    const response = await apiClient.put(`/tickets/${id}`, data);
+    return response.data;
+  }
+
+  async updateTicketStatus(
+    id: string,
+    status: 'PENDING' | 'ASSIGNED' | 'IN_TRANSPORT' | 'COMPLETED' | 'CANCELLED',
+    notes?: string
+  ): Promise<Ticket> {
+    const response = await apiClient.put(`/tickets/${id}/status`, {
+      status,
+      notes,
+    });
+    return response.data;
+  }
+
+  async assignTicket(id: string, assignedToId: string, notes?: string): Promise<Ticket> {
+    const response = await apiClient.put(`/tickets/${id}/assign`, {
+      assignedToId,
+      notes,
+    });
+    return response.data;
+  }
+
+  async getStatistics(): Promise<TicketStatistics> {
+    const response = await apiClient.get('/tickets/statistics');
+    return response.data;
+  }
+
+  async getTicketsByPriority(): Promise<TicketPriorityStats[]> {
+    const response = await apiClient.get('/tickets/statistics/priority');
+    return response.data;
+  }
+
+  async getTicketsByPathway(): Promise<TicketPathwayStats[]> {
+    const response = await apiClient.get('/tickets/statistics/pathway');
+    return response.data;
+  }
+}
+
+export const ticketService = new TicketService();

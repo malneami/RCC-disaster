@@ -1,4 +1,4 @@
-// User model
+// User model with comprehensive role management
 model User {
   id                String      @id @default(uuid())
   email             String      @unique
@@ -18,20 +18,32 @@ model User {
   sessionExpiry     DateTime?   @map("session_expiry")
   hospitalId        String?     @map("hospital_id")
   
-  // Audit fields
+  // Audit Fields
   createdAt         DateTime    @default(now()) @map("created_at")
   updatedAt         DateTime    @updatedAt @map("updated_at")
   deletedAt         DateTime?   @map("deleted_at")
   
   // Relations
   hospital          Hospital?   @relation(fields: [hospitalId], references: [id])
+  
+  // Ticket Relations
   createdTickets    Ticket[]    @relation("TicketCreator")
   assignedTickets   Ticket[]    @relation("TicketAssignee")
-  activities        Activity[]
+  completedTickets  Ticket[]    @relation("TicketCompleter")
+  
+  // Patient Relations
   createdPatients   Patient[]   @relation("PatientCreator")
+  accessedPatients  Patient[]   @relation("PatientAccessor")
+  createdMedicalRecords MedicalRecord[] @relation("MedicalRecordCreator")
+  patientAccessLogs PatientAccessLog[]
+  
+  // Hospital Relations
   createdCriticalCases CriticalCase[] @relation("CriticalCaseCreator")
   createdHospitalTickets HospitalTicket[] @relation("HospitalTicketCreator")
   assignedHospitalTickets HospitalTicket[] @relation("HospitalTicketAssignee")
+  
+  // Activity Relations
+  activities        Activity[]
   
   @@map("users")
   @@index([email])

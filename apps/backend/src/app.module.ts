@@ -12,6 +12,7 @@ import { HospitalTicketsModule } from './modules/hospital-tickets/hospital-ticke
 import { PatientsModule } from './modules/patients/patients.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
+import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -50,6 +51,7 @@ import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
     PatientsModule,
     TicketsModule,
     ActivitiesModule,
+    MedicalRecordsModule,
     HealthModule,
   ],
   providers: [

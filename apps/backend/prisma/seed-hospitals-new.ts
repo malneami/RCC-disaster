@@ -4,10 +4,6 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting hospital data seeding...');
-
-  // Clear existing hospitals
-  await prisma.hospital.deleteMany();
-
   // Seed hospitals based on CSV data
   const hospitals = [
     {

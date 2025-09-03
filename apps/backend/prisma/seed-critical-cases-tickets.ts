@@ -62,7 +62,7 @@ async function main() {
     {
       title: 'ICU Bed Request - STEMI Patient',
       description: 'Urgent request for ICU bed for STEMI patient requiring immediate care',
-      type: HospitalTicketType.RESOURCE,
+              type: HospitalTicketType.EMERGENCY,
       priority: TicketPriority.CRITICAL,
       status: HospitalTicketStatus.IN_PROGRESS,
       hospitalId: hospital.id,
@@ -80,7 +80,7 @@ async function main() {
     {
       title: 'Ventilator Maintenance',
       description: 'Scheduled maintenance for ventilator unit #3',
-      type: HospitalTicketType.SYSTEM,
+              type: HospitalTicketType.MAINTENANCE,
       priority: TicketPriority.MEDIUM,
       status: HospitalTicketStatus.RESOLVED,
       hospitalId: hospital.id,

@@ -9,7 +9,7 @@ datasource db {
 
 
 // enums.prisma
-// Enums for the application
+// Core enums for the application
 enum UserRole {
   ADMIN
   RCC
@@ -23,6 +23,30 @@ enum UserStatus {
   INACTIVE
   LOCKED
   SUSPENDED
+}
+
+enum PatientGender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+  UNKNOWN
+}
+
+enum PrivacyLevel {
+  PUBLIC
+  INTERNAL
+  PRIVATE
+  RESTRICTED
+  CONFIDENTIAL
 }
 
 enum TicketStatus {
@@ -41,23 +65,11 @@ enum TicketPriority {
   EMERGENCY
 }
 
-enum PatientGender {
-  MALE
-  FEMALE
-  OTHER
-  UNKNOWN
-}
-
-enum ActivityType {
-  USER_LOGIN
-  USER_LOGOUT
-  TICKET_CREATED
-  TICKET_UPDATED
-  TICKET_ASSIGNED
-  PATIENT_CREATED
-  PATIENT_UPDATED
-  HOSPITAL_UPDATED
-  SYSTEM_ACCESS
+enum TicketPathway {
+  GENERAL
+  STEMI
+  STROKE
+  TRAUMA
 }
 
 enum HospitalStatus {
@@ -98,8 +110,10 @@ enum CriticalCaseStatus {
 enum HospitalTicketType {
   TRANSFER
   CONSULTATION
-  RESOURCE
-  SYSTEM
+  EMERGENCY
+  MAINTENANCE
+  SUPPLY
+  OTHER
 }
 
 enum HospitalTicketStatus {
@@ -107,11 +121,55 @@ enum HospitalTicketStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+  CANCELLED
+}
+
+enum MedicalRecordType {
+  CONSULTATION
+  LABORATORY
+  RADIOLOGY
+  SURGERY
+  MEDICATION
+  VACCINATION
+  ALLERGY
+  CHRONIC_CONDITION
+  EMERGENCY_VISIT
+  FOLLOW_UP
+  REFERRAL
+  DISCHARGE
+  OTHER
+}
+
+enum AccessType {
+  VIEW
+  CREATE
+  UPDATE
+  DELETE
+  EXPORT
+  SEARCH
+}
+
+enum ActivityType {
+  USER_LOGIN
+  USER_LOGOUT
+  TICKET_CREATED
+  TICKET_UPDATED
+  TICKET_ASSIGNED
+  PATIENT_CREATED
+  PATIENT_UPDATED
+  PATIENT_ACCESSED
+  PATIENT_EXPORTED
+  HOSPITAL_UPDATED
+  SYSTEM_ACCESS
+  MEDICAL_RECORD_CREATED
+  MEDICAL_RECORD_UPDATED
+  DUPLICATE_DETECTED
+  PRIVACY_BREACH
 }
 
 
 // user.prisma
-// User model
+// User model with comprehensive role management
 model User {
   id                String      @id @default(uuid())
   email             String      @unique
@@ -131,20 +189,32 @@ model User {
   sessionExpiry     DateTime?   @map("session_expiry")
   hospitalId        String?     @map("hospital_id")
   
-  // Audit fields
+  // Audit Fields
   createdAt         DateTime    @default(now()) @map("created_at")
   updatedAt         DateTime    @updatedAt @map("updated_at")
   deletedAt         DateTime?   @map("deleted_at")
   
   // Relations
   hospital          Hospital?   @relation(fields: [hospitalId], references: [id])
+  
+  // Ticket Relations
   createdTickets    Ticket[]    @relation("TicketCreator")
   assignedTickets   Ticket[]    @relation("TicketAssignee")
-  activities        Activity[]
+  completedTickets  Ticket[]    @relation("TicketCompleter")
+  
+  // Patient Relations
   createdPatients   Patient[]   @relation("PatientCreator")
+  accessedPatients  Patient[]   @relation("PatientAccessor")
+  createdMedicalRecords MedicalRecord[] @relation("MedicalRecordCreator")
+  patientAccessLogs PatientAccessLog[]
+  
+  // Hospital Relations
   createdCriticalCases CriticalCase[] @relation("CriticalCaseCreator")
   createdHospitalTickets HospitalTicket[] @relation("HospitalTicketCreator")
   assignedHospitalTickets HospitalTicket[] @relation("HospitalTicketAssignee")
+  
+  // Activity Relations
+  activities        Activity[]
   
   @@map("users")
   @@index([email])
@@ -238,58 +308,163 @@ model Hospital {
 
 
 // patient.prisma
-// Patient model
+// Enhanced Patient model with comprehensive healthcare data management
 model Patient {
   id              String         @id @default(uuid())
+  
+  // Basic Demographics
   mrn             String?        @unique @map("medical_record_number")
+  nationalId      String?        @unique @map("national_id")
   firstName       String         @map("first_name")
   lastName        String         @map("last_name")
+  middleName      String?        @map("middle_name")
   dateOfBirth     DateTime       @map("date_of_birth")
   gender          PatientGender
+  maritalStatus   MaritalStatus? @map("marital_status")
+  
+  // Contact Information
   phoneNumber     String?        @map("phone_number")
+  email           String?
   address         String?
   city            String?
   state           String?
   zipCode         String?        @map("zip_code")
+  country         String?        @default("Saudi Arabia")
+  
+  // Emergency Contacts
   emergencyContact String?       @map("emergency_contact")
   emergencyPhone  String?        @map("emergency_phone")
+  emergencyEmail  String?        @map("emergency_email")
+  emergencyRelationship String?  @map("emergency_relationship")
+  
+  // Insurance Information
+  insuranceProvider String?      @map("insurance_provider")
+  insuranceNumber   String?      @map("insurance_number")
+  insuranceGroup    String?      @map("insurance_group")
+  insuranceExpiry   DateTime?    @map("insurance_expiry")
   
   // Medical Information
   bloodType       String?        @map("blood_type")
+  rhFactor        String?        @map("rh_factor")
   allergies       String?        // JSON string of allergies
   medications     String?        // JSON string of current medications
   medicalHistory  String?        @map("medical_history")
-  weight          Float?
-  height          Float?
+  riskFactors     String?        @map("risk_factors") // JSON string
+  chronicConditions String?      @map("chronic_conditions") // JSON string
   
-  // Audit fields
+  // Physical Measurements
+  weight          Float?         // in kg
+  height          Float?         // in cm
+  bmi             Float?         // Calculated BMI
+  
+  // HIPAA Compliance
+  dataEncryptionKey String?      @map("data_encryption_key")
+  privacyLevel    PrivacyLevel  @default(PRIVATE) @map("privacy_level")
+  consentGiven    Boolean        @default(false) @map("consent_given")
+  consentDate     DateTime?      @map("consent_date")
+  dataRetentionPolicy String?    @map("data_retention_policy")
+  
+  // Duplicate Detection
+  duplicateGroupId String?       @map("duplicate_group_id")
+  isPrimaryRecord Boolean        @default(true) @map("is_primary_record")
+  
+  // Audit Fields
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
   deletedAt       DateTime?      @map("deleted_at")
   createdById     String         @map("created_by_id")
+  lastAccessedAt  DateTime?      @map("last_accessed_at")
+  lastAccessedBy  String?        @map("last_accessed_by")
   
   // Relations
   createdBy       User           @relation("PatientCreator", fields: [createdById], references: [id])
+  lastAccessedByUser User?       @relation("PatientAccessor", fields: [lastAccessedBy], references: [id])
   tickets         Ticket[]
+  medicalRecords  MedicalRecord[]
+  accessLogs      PatientAccessLog[]
   
   @@map("patients")
   @@index([mrn])
+  @@index([nationalId])
   @@index([lastName, firstName])
   @@index([dateOfBirth])
+  @@index([duplicateGroupId])
+  @@index([createdAt])
+  @@index([lastAccessedAt])
+}
+
+// Medical Record model for detailed medical history
+model MedicalRecord {
+  id              String            @id @default(uuid())
+  patientId       String            @map("patient_id")
+  recordType      MedicalRecordType @map("record_type")
+  title           String
+  description     String?
+  diagnosis       String?
+  treatment       String?
+  medications     String?           // JSON string
+  testResults     String?           // JSON string
+  attachments     String?           // JSON string of file paths
+  
+  // Dates
+  recordDate      DateTime          @map("record_date")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  deletedAt        DateTime?         @map("deleted_at")
+  createdById     String            @map("created_by_id")
+  
+  // Relations
+  patient         Patient           @relation(fields: [patientId], references: [id])
+  createdBy       User              @relation("MedicalRecordCreator", fields: [createdById], references: [id])
+  
+  @@map("medical_records")
+  @@index([patientId])
+  @@index([recordType])
+  @@index([recordDate])
+  @@index([createdAt])
+}
+
+// Patient Access Log for HIPAA compliance
+model PatientAccessLog {
+  id              String      @id @default(uuid())
+  patientId       String      @map("patient_id")
+  userId          String      @map("user_id")
+  accessType       AccessType
+  accessMethod     String      @map("access_method") // API, WEB, MOBILE
+  ipAddress       String?     @map("ip_address")
+  userAgent       String?     @map("user_agent")
+  reason          String?     // Reason for access
+  timestamp       DateTime    @default(now())
+  
+  // Relations
+  patient         Patient     @relation(fields: [patientId], references: [id])
+  user            User        @relation(fields: [userId], references: [id])
+  
+  @@map("patient_access_logs")
+  @@index([patientId])
+  @@index([userId])
+  @@index([accessType])
+  @@index([timestamp])
 }
 
 
 // ticket.prisma
-// Ticket model
+// Enhanced Ticket model for comprehensive patient transfer management
 model Ticket {
   id                  String          @id @default(uuid())
   ticketNumber        String          @unique @map("ticket_number")
+  
+  // Patient Information
   patientId           String          @map("patient_id")
+  
+  // Hospital Information
   originHospitalId    String          @map("origin_hospital_id")
   destinationHospitalId String?       @map("destination_hospital_id")
+  
+  // Ticket Classification
   priority            TicketPriority
   status              TicketStatus    @default(PENDING)
-  pathway             String          // STEMI, STROKE, TRAUMA
+  pathway             TicketPathway  @default(GENERAL)
   
   // Medical Details
   chiefComplaint      String          @map("chief_complaint")
@@ -303,19 +478,33 @@ model Ticket {
   actualArrival       DateTime?       @map("actual_arrival")
   transportMode       String?         @map("transport_mode")
   emsUnit             String?         @map("ems_unit")
+  transportNotes      String?         @map("transport_notes")
+  
+  // Resource Requirements
+  requiresBlood       Boolean         @default(false) @map("requires_blood")
+  requiresSpecialist  Boolean         @default(false) @map("requires_specialist")
+  requiresICU         Boolean         @default(false) @map("requires_icu")
+  requiresVentilator  Boolean         @default(false) @map("requires_ventilator")
+  requiredResources   String?         @map("required_resources") // JSON string
+  
+  // Emergency Information
+  isEmergency         Boolean         @default(false) @map("is_emergency")
+  emergencyType       String?         @map("emergency_type") // STEMI, STROKE, TRAUMA
+  emergencySeverity   String?         @map("emergency_severity") // CRITICAL, URGENT, STABLE
   
   // Additional Information
   notes               String?
-  isEmergency         Boolean         @default(false) @map("is_emergency")
-  requiresBlood       Boolean         @default(false) @map("requires_blood")
-  requiresSpecialist  Boolean         @default(false) @map("requires_specialist")
+  internalNotes       String?         @map("internal_notes")
+  externalNotes       String?         @map("external_notes")
   
-  // Audit fields
+  // Audit Fields
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
   deletedAt           DateTime?       @map("deleted_at")
   createdById         String          @map("created_by_id")
   assignedToId        String?         @map("assigned_to_id")
+  completedById       String?         @map("completed_by_id")
+  completedAt         DateTime?       @map("completed_at")
   
   // Relations
   patient             Patient         @relation(fields: [patientId], references: [id])
@@ -323,6 +512,7 @@ model Ticket {
   destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id])
   createdBy           User            @relation("TicketCreator", fields: [createdById], references: [id])
   assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
   activities          Activity[]
   
   @@map("tickets")
@@ -334,6 +524,8 @@ model Ticket {
   @@index([originHospitalId])
   @@index([destinationHospitalId])
   @@index([createdAt])
+  @@index([assignedToId])
+  @@index([isEmergency])
 }
 
 
@@ -367,6 +559,7 @@ model CriticalCase {
 }
 
 
+
 // hospital-ticket.prisma
 // Hospital Ticket model for managing hospital-related requests
 model HospitalTicket {
@@ -395,6 +588,7 @@ model HospitalTicket {
   @@index([status])
   @@index([createdAt])
 }
+
 
 
 // activity.prisma

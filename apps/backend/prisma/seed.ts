@@ -1072,7 +1072,7 @@ async function seedHospitalTickets() {
     {
       title: 'ICU Bed Request - STEMI Patient',
       description: 'Urgent request for ICU bed for STEMI patient requiring immediate care and monitoring',
-      type: HospitalTicketType.RESOURCE,
+              type: HospitalTicketType.EMERGENCY,
       priority: TicketPriority.CRITICAL,
       status: HospitalTicketStatus.IN_PROGRESS,
       hospitalId: '2', // KFCH
@@ -1082,7 +1082,7 @@ async function seedHospitalTickets() {
     {
       title: 'Ventilator Maintenance Request',
       description: 'Scheduled maintenance for ventilator unit #3 - Requires immediate attention',
-      type: HospitalTicketType.SYSTEM,
+      type: HospitalTicketType.MAINTENANCE,
       priority: TicketPriority.HIGH,
       status: HospitalTicketStatus.OPEN,
       hospitalId: '1', // JGH
@@ -1130,7 +1130,7 @@ async function seedHospitalTickets() {
     {
       title: 'Hospital Information System Update',
       description: 'Scheduled update for hospital information system - Requires downtime planning',
-      type: HospitalTicketType.SYSTEM,
+      type: HospitalTicketType.MAINTENANCE,
       priority: TicketPriority.MEDIUM,
       status: HospitalTicketStatus.RESOLVED,
       hospitalId: '2', // KFCH
@@ -1140,7 +1140,7 @@ async function seedHospitalTickets() {
     {
       title: 'Network Connectivity Issue',
       description: 'Intermittent network connectivity issues affecting patient monitoring systems',
-      type: HospitalTicketType.SYSTEM,
+      type: HospitalTicketType.MAINTENANCE,
       priority: TicketPriority.HIGH,
       status: HospitalTicketStatus.OPEN,
       hospitalId: '5', // Abu Arish
@@ -1150,7 +1150,7 @@ async function seedHospitalTickets() {
     {
       title: 'Equipment Calibration Complete',
       description: 'Annual calibration of medical equipment completed successfully',
-      type: HospitalTicketType.SYSTEM,
+      type: HospitalTicketType.MAINTENANCE,
       priority: TicketPriority.LOW,
       status: HospitalTicketStatus.RESOLVED,
       hospitalId: '6', // Sabya

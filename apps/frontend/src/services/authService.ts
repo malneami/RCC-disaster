@@ -36,6 +36,10 @@ class AuthService {
     }
   }
 
+  getToken(): string | null {
+    return localStorage.getItem('accessToken');
+  }
+
   async login(email: string, password: string): Promise<LoginResponse> {
     const response: AxiosResponse<LoginResponse> = await axios.post(
       `${API_BASE_URL}/auth/login`,
