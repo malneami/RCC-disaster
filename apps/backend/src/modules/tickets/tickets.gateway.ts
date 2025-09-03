@@ -56,6 +56,12 @@ export class TicketsGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   // Emit ticket updates to relevant clients
   emitTicketUpdate(ticket: any, action: string) {
+    // Check if server is initialized
+    if (!this.server) {
+      console.warn('WebSocket server not initialized, skipping ticket update emission');
+      return;
+    }
+
     // Emit to ticket-specific room
     this.server.to(`ticket-${ticket.id}`).emit('ticketUpdated', {
       ticket,
@@ -109,6 +115,12 @@ export class TicketsGateway implements OnGatewayConnection, OnGatewayDisconnect 
   emitTicketStatusChanged(ticket: any, previousStatus: TicketStatus) {
     this.emitTicketUpdate(ticket, 'statusChanged');
     
+    // Check if server is initialized
+    if (!this.server) {
+      console.warn('WebSocket server not initialized, skipping status change emission');
+      return;
+    }
+    
     // Send notification for critical status changes
     if (ticket.status === TicketStatus.IN_TRANSPORT) {
       this.server.to(`hospital-${ticket.destinationHospitalId}`).emit('transportStarted', {
@@ -129,6 +141,12 @@ export class TicketsGateway implements OnGatewayConnection, OnGatewayDisconnect 
   emitTicketAssigned(ticket: any, assignedTo: any) {
     this.emitTicketUpdate(ticket, 'assigned');
     
+    // Check if server is initialized
+    if (!this.server) {
+      console.warn('WebSocket server not initialized, skipping assignment emission');
+      return;
+    }
+    
     // Send notification to assigned user
     this.server.to(`assigned-${ticket.assignedToId}`).emit('ticketAssigned', {
       ticket,
@@ -139,6 +157,12 @@ export class TicketsGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   // Emit emergency ticket alert
   emitEmergencyTicket(ticket: any) {
+    // Check if server is initialized
+    if (!this.server) {
+      console.warn('WebSocket server not initialized, skipping emergency ticket emission');
+      return;
+    }
+    
     // Emit to all connected clients for emergency tickets
     this.server.emit('emergencyTicket', {
       ticket,

@@ -84,7 +84,7 @@ const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
                 onClick={() => handlePatientModeSelect('existing')}
               >
                 <CardContent sx={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <PersonIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                  <PersonIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, margin: 'auto' }} />
                   <Typography variant="h6" gutterBottom>
                     Existing Patient
                   </Typography>
@@ -113,7 +113,7 @@ const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
                 onClick={() => handlePatientModeSelect('new')}
               >
                 <CardContent sx={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <AddIcon sx={{ fontSize: 48, color: 'secondary.main', mb: 2 }} />
+                  <AddIcon sx={{ fontSize: 48, color: 'secondary.main', mb: 2, margin: 'auto' }} />
                   <Typography variant="h6" gutterBottom>
                     New Patient
                   </Typography>

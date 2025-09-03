@@ -265,13 +265,23 @@ class HospitalService {
   async getHospitalTickets(hospitalId?: string): Promise<HospitalTicket[]> {
     const params = hospitalId ? `?hospitalId=${hospitalId}` : '';
     const response = await apiClient.get(`/hospital-tickets${params}`);
-    return response.data;
+    // Handle paginated response
+    return response.data?.data || response.data || [];
+  }
+
+  // Get transfer tickets for a hospital (as destination)
+  async getTransferTicketsForHospital(hospitalId?: string): Promise<any[]> {
+    if (!hospitalId) return [];
+    const response = await apiClient.get(`/tickets?destinationHospitalId=${hospitalId}`);
+    // Handle paginated response
+    return response.data?.data || response.data || [];
   }
 
   async getOpenHospitalTickets(hospitalId?: string): Promise<HospitalTicket[]> {
     const params = hospitalId ? `?hospitalId=${hospitalId}` : '';
     const response = await apiClient.get(`/hospital-tickets/open${params}`);
-    return response.data;
+    // Handle paginated response
+    return response.data?.data || response.data || [];
   }
 
   async getHospitalTicketStats(hospitalId?: string): Promise<any> {

@@ -44,6 +44,7 @@ const HospitalDashboardPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [criticalCases, setCriticalCases] = useState<CriticalCase[]>([]);
   const [relatedTickets, setRelatedTickets] = useState<HospitalTicket[]>([]);
+  const [transferTickets, setTransferTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,13 +64,15 @@ const HospitalDashboardPage: React.FC = () => {
       setHospital(hospitalData);
 
       // Load critical cases and tickets
-      const [criticalCasesData, hospitalTicketsData] = await Promise.all([
+      const [criticalCasesData, hospitalTicketsData, transferTicketsData] = await Promise.all([
         hospitalService.getActiveCriticalCases(hospitalId!),
         hospitalService.getHospitalTickets(hospitalId!),
+        hospitalService.getTransferTicketsForHospital(hospitalId!),
       ]);
 
       setCriticalCases(criticalCasesData);
       setRelatedTickets(hospitalTicketsData);
+      setTransferTickets(Array.isArray(transferTicketsData) ? transferTicketsData : []);
     } catch (err) {
       setError('Failed to load hospital data');
       console.error('Error loading hospital data:', err);
@@ -195,10 +198,10 @@ const HospitalDashboardPage: React.FC = () => {
       <Box sx={{ p: 3 }}>
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
-          <Link 
-            color="inherit" 
-            href="/hospitals" 
-            onClick={(e) => {
+          <Link
+            color="inherit"
+            href="/hospitals"
+            onClick={e => {
               e.preventDefault();
               navigate('/hospitals');
             }}
@@ -220,10 +223,17 @@ const HospitalDashboardPage: React.FC = () => {
             </Typography>
             <Box display="flex" gap={1} mt={1}>
               <Chip label={hospital.status} color="primary" size="small" />
-              <Chip label={`${getAvailabilityPercentage(hospital)}% Available`} 
-                    color={getAvailabilityPercentage(hospital) <= 10 ? 'error' : 
-                           getAvailabilityPercentage(hospital) <= 25 ? 'warning' : 'success'} 
-                    size="small" />
+              <Chip
+                label={`${getAvailabilityPercentage(hospital)}% Available`}
+                color={
+                  getAvailabilityPercentage(hospital) <= 10
+                    ? 'error'
+                    : getAvailabilityPercentage(hospital) <= 25
+                      ? 'warning'
+                      : 'success'
+                }
+                size="small"
+              />
               <Chip label={hospital.cluster} variant="outlined" size="small" />
             </Box>
           </Box>
@@ -250,7 +260,7 @@ const HospitalDashboardPage: React.FC = () => {
                   Critical Cases
                 </Typography>
                 <Typography variant="h4" color="error.main">
-                  {criticalCases.filter(c => c.severity === 'CRITICAL').length}
+                  {criticalCases?.filter(c => c.severity === 'CRITICAL').length}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Active critical cases
@@ -265,7 +275,13 @@ const HospitalDashboardPage: React.FC = () => {
                   Open Tickets
                 </Typography>
                 <Typography variant="h4" color="warning.main">
-                  {relatedTickets.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length}
+                  {relatedTickets?.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS')
+                    .length +
+                    (Array.isArray(transferTickets)
+                      ? transferTickets.filter(
+                          t => t.status === 'OPEN' || t.status === 'IN_PROGRESS'
+                        ).length
+                      : 0)}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Pending resolution
@@ -295,8 +311,13 @@ const HospitalDashboardPage: React.FC = () => {
                   Services
                 </Typography>
                 <Typography variant="h4" color="success.main">
-                  {[hospital.hasStemiService, hospital.hasStrokeService, hospital.hasTraumaService]
-                    .filter(Boolean).length}
+                  {
+                    [
+                      hospital.hasStemiService,
+                      hospital.hasStrokeService,
+                      hospital.hasTraumaService,
+                    ].filter(Boolean).length
+                  }
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Specialized services
@@ -320,19 +341,15 @@ const HospitalDashboardPage: React.FC = () => {
               <Typography variant="h6" gutterBottom>
                 Real-Time Critical Cases ({criticalCases.length})
               </Typography>
-              
+
               {criticalCases.length === 0 ? (
-                <Alert severity="success">
-                  No active critical cases at this time.
-                </Alert>
+                <Alert severity="success">No active critical cases at this time.</Alert>
               ) : (
                 <List>
                   {criticalCases.map((criticalCase, index) => (
                     <React.Fragment key={criticalCase.id}>
                       <ListItem>
-                        <ListItemIcon>
-                          {getCaseTypeIcon(criticalCase.caseType)}
-                        </ListItemIcon>
+                        <ListItemIcon>{getCaseTypeIcon(criticalCase.caseType)}</ListItemIcon>
                         <ListItemText
                           primary={
                             <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -340,19 +357,15 @@ const HospitalDashboardPage: React.FC = () => {
                                 {criticalCase.patientName}
                               </Typography>
                               <Box display="flex" gap={1}>
-                                <Chip 
-                                  label={criticalCase.caseType} 
-                                  size="small" 
-                                  color="primary" 
-                                />
-                                <Chip 
-                                  label={criticalCase.severity} 
-                                  size="small" 
+                                <Chip label={criticalCase.caseType} size="small" color="primary" />
+                                <Chip
+                                  label={criticalCase.severity}
+                                  size="small"
                                   color={getSeverityColor(criticalCase.severity) as any}
                                 />
-                                <Chip 
-                                  label={criticalCase.status} 
-                                  size="small" 
+                                <Chip
+                                  label={criticalCase.status}
+                                  size="small"
                                   color={getStatusColor(criticalCase.status) as any}
                                 />
                               </Box>
@@ -364,8 +377,8 @@ const HospitalDashboardPage: React.FC = () => {
                                 {criticalCase.description}
                               </Typography>
                               <Typography variant="body2" color="text.secondary" mt={1}>
-                                Started: {new Date(criticalCase.startTime).toLocaleString()} | 
-                                Last Update: {new Date(criticalCase.lastUpdate).toLocaleString()}
+                                Started: {new Date(criticalCase.startTime).toLocaleString()} | Last
+                                Update: {new Date(criticalCase.lastUpdate).toLocaleString()}
                               </Typography>
                             </Box>
                           }
@@ -383,64 +396,131 @@ const HospitalDashboardPage: React.FC = () => {
           {tabValue === 1 && (
             <Box sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
-                Related Tickets ({relatedTickets.length})
+                Related Tickets (
+                {relatedTickets.length +
+                  (Array.isArray(transferTickets) ? transferTickets.length : 0)}
+                )
               </Typography>
-              
-              {relatedTickets.length === 0 ? (
-                <Alert severity="info">
-                  No related tickets found.
-                </Alert>
-              ) : (
-                <List>
-                  {relatedTickets.map((ticket, index) => (
-                    <React.Fragment key={ticket.id}>
-                      <ListItem>
-                        <ListItemIcon>
-                          {getTicketTypeIcon(ticket.type)}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                              <Typography variant="subtitle1">
-                                {ticket.title}
-                              </Typography>
-                              <Box display="flex" gap={1}>
-                                <Chip 
-                                  label={ticket.type} 
-                                  size="small" 
-                                  variant="outlined"
-                                />
-                                <Chip 
-                                  label={ticket.priority} 
-                                  size="small" 
-                                  color={getPriorityColor(ticket.priority) as any}
-                                />
-                                <Chip 
-                                  label={ticket.status} 
-                                  size="small" 
-                                  color={getStatusColor(ticket.status) as any}
-                                />
+
+              {/* Hospital Tickets */}
+              {relatedTickets.length > 0 && (
+                <>
+                  <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 1 }}>
+                    Internal Hospital Tickets ({relatedTickets.length})
+                  </Typography>
+                  <List>
+                    {relatedTickets?.map((ticket, index) => (
+                      <React.Fragment key={ticket.id}>
+                        <ListItem>
+                          <ListItemIcon>{getTicketTypeIcon(ticket.type)}</ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="center"
+                              >
+                                <Typography variant="subtitle1">{ticket.title}</Typography>
+                                <Box display="flex" gap={1}>
+                                  <Chip label={ticket.type} size="small" variant="outlined" />
+                                  <Chip
+                                    label={ticket.priority}
+                                    size="small"
+                                    color={getPriorityColor(ticket.priority) as any}
+                                  />
+                                  <Chip
+                                    label={ticket.status}
+                                    size="small"
+                                    color={getStatusColor(ticket.status) as any}
+                                  />
+                                </Box>
                               </Box>
-                            </Box>
-                          }
-                          secondary={
-                            <Box mt={1}>
-                              <Typography variant="body2" color="text.secondary">
-                                {ticket.description}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" mt={1}>
-                                Created: {new Date(ticket.createdAt).toLocaleString()} | 
-                                Updated: {new Date(ticket.updatedAt).toLocaleString()}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      {index < relatedTickets.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                </List>
+                            }
+                            secondary={
+                              <Box mt={1}>
+                                <Typography variant="body2" color="text.secondary">
+                                  {ticket.description}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" mt={1}>
+                                  Created: {new Date(ticket.createdAt).toLocaleString()} | Updated:{' '}
+                                  {new Date(ticket.updatedAt).toLocaleString()}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        {index < relatedTickets.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                </>
               )}
+
+              {/* Transfer Tickets */}
+              {Array.isArray(transferTickets) && transferTickets.length > 0 && (
+                <>
+                  <Typography variant="subtitle1" gutterBottom sx={{ mt: 3, mb: 1 }}>
+                    Incoming Transfer Tickets ({transferTickets.length})
+                  </Typography>
+                  <List>
+                    {transferTickets.map((ticket, index) => (
+                      <React.Fragment key={ticket.id}>
+                        <ListItem>
+                          <ListItemIcon>
+                            <TicketIcon color="primary" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="center"
+                              >
+                                <Typography variant="subtitle1">
+                                  Transfer: {ticket.patient?.firstName} {ticket.patient?.lastName}
+                                </Typography>
+                                <Box display="flex" gap={1}>
+                                  <Chip label={ticket.pathway} size="small" variant="outlined" />
+                                  <Chip
+                                    label={ticket.priority}
+                                    size="small"
+                                    color={getPriorityColor(ticket.priority) as any}
+                                  />
+                                  <Chip
+                                    label={ticket.status}
+                                    size="small"
+                                    color={getStatusColor(ticket.status) as any}
+                                  />
+                                </Box>
+                              </Box>
+                            }
+                            secondary={
+                              <Box mt={1}>
+                                <Typography variant="body2" color="text.secondary">
+                                  From: {ticket.originHospital?.name} | Chief Complaint:{' '}
+                                  {ticket.chiefComplaint}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" mt={1}>
+                                  Created: {new Date(ticket.createdAt).toLocaleString()} | ETA:{' '}
+                                  {ticket.estimatedArrival
+                                    ? new Date(ticket.estimatedArrival).toLocaleString()
+                                    : 'Not set'}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        {index < transferTickets.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                </>
+              )}
+
+              {relatedTickets.length === 0 &&
+                (Array.isArray(transferTickets) ? transferTickets.length : 0) === 0 && (
+                  <Alert severity="info">No related tickets found.</Alert>
+                )}
             </Box>
           )}
 
@@ -450,7 +530,7 @@ const HospitalDashboardPage: React.FC = () => {
               <Typography variant="h6" gutterBottom>
                 Hospital Details
               </Typography>
-              
+
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle1" gutterBottom>
@@ -466,60 +546,76 @@ const HospitalDashboardPage: React.FC = () => {
                     Emergency Dept: {hospital.emergencyDeptStatus || 'Unknown'}
                   </Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle1" gutterBottom>
                     Services Available
                   </Typography>
                   <Box display="flex" flexDirection="column" gap={1}>
-                    <Chip 
-                      label="STEMI Service" 
-                      color={hospital.hasStemiService ? 'success' : 'default'} 
-                      size="small" 
+                    <Chip
+                      label="STEMI Service"
+                      color={hospital.hasStemiService ? 'success' : 'default'}
+                      size="small"
                     />
-                    <Chip 
-                      label="Stroke Service" 
-                      color={hospital.hasStrokeService ? 'success' : 'default'} 
-                      size="small" 
+                    <Chip
+                      label="Stroke Service"
+                      color={hospital.hasStrokeService ? 'success' : 'default'}
+                      size="small"
                     />
-                    <Chip 
-                      label="Trauma Service" 
-                      color={hospital.hasTraumaService ? 'success' : 'default'} 
-                      size="small" 
+                    <Chip
+                      label="Trauma Service"
+                      color={hospital.hasTraumaService ? 'success' : 'default'}
+                      size="small"
                     />
-                    <Chip 
-                      label="Stroke Unit" 
-                      color={hospital.hasStrokeUnit ? 'success' : 'default'} 
-                      size="small" 
+                    <Chip
+                      label="Stroke Unit"
+                      color={hospital.hasStrokeUnit ? 'success' : 'default'}
+                      size="small"
                     />
-                    <Chip 
-                      label="Cardiology Center" 
-                      color={hospital.hasCardiologyCenter ? 'success' : 'default'} 
-                      size="small" 
+                    <Chip
+                      label="Cardiology Center"
+                      color={hospital.hasCardiologyCenter ? 'success' : 'default'}
+                      size="small"
                     />
                   </Box>
                 </Grid>
-                
+
                 <Grid item xs={12}>
                   <Typography variant="subtitle1" gutterBottom>
                     Bed Capacity
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">ICU Beds</Typography>
-                      <Typography variant="h6">{hospital.icuBedsAvailable}/{hospital.icuBeds}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        ICU Beds
+                      </Typography>
+                      <Typography variant="h6">
+                        {hospital.icuBedsAvailable}/{hospital.icuBeds}
+                      </Typography>
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">PICU Beds</Typography>
-                      <Typography variant="h6">{hospital.picuBedsAvailable}/{hospital.picuBeds}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        PICU Beds
+                      </Typography>
+                      <Typography variant="h6">
+                        {hospital.picuBedsAvailable}/{hospital.picuBeds}
+                      </Typography>
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">NICU Beds</Typography>
-                      <Typography variant="h6">{hospital.nicuBedsAvailable}/{hospital.nicuBeds}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        NICU Beds
+                      </Typography>
+                      <Typography variant="h6">
+                        {hospital.nicuBedsAvailable}/{hospital.nicuBeds}
+                      </Typography>
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">Ventilators</Typography>
-                      <Typography variant="h6">{hospital.ventilatorsAvailable}/{hospital.ventilators}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Ventilators
+                      </Typography>
+                      <Typography variant="h6">
+                        {hospital.ventilatorsAvailable}/{hospital.ventilators}
+                      </Typography>
                     </Grid>
                   </Grid>
                 </Grid>
