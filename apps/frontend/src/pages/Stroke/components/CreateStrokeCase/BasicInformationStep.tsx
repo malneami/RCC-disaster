@@ -10,17 +10,10 @@ import {
   Alert,
   Box,
   Typography,
-  Button,
-  Card,
-  CardContent,
-  Chip,
 } from '@mui/material';
-import { PersonSearch as PersonSearchIcon, Person as PersonIcon } from '@mui/icons-material';
 
 import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
-import PatientSearchDialog from '../../../../components/Common/PatientSearchDialog';
-import { Patient } from '../../../../services/patientService';
 
 interface BasicInformationStepProps {
   formData: CreateStrokeCaseData;
@@ -34,8 +27,6 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [hospitalError, setHospitalError] = useState<string | null>(null);
-  const [patientSearchOpen, setPatientSearchOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -58,24 +49,6 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
     fetchHospitals();
   }, []);
 
-  const handlePatientSelect = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setPatientSearchOpen(false);
-    
-    // Update form data with selected patient
-    updateFormData('patientId', patient.id);
-    updateFormData('patientInfo', {
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      nationalId: patient.nationalId || '',
-      mrn: patient.mrn || '',
-      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
-      gender: patient.gender,
-      phoneNumber: patient.phoneNumber || '',
-      email: patient.email || '',
-    });
-  };
-
   if (hospitalError) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
@@ -86,55 +59,14 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
 
   return (
     <Grid container spacing={2}>
-      {/* Patient Selection */}
+      {/* Patient Information */}
       <Grid item xs={12}>
         <Typography variant="h6" gutterBottom>
           Patient Information
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <Button 
-            variant="outlined" 
-            startIcon={<PersonSearchIcon />} 
-            onClick={() => setPatientSearchOpen(true)}
-            size="large"
-          >
-            Search Existing Patient
-          </Button>
-          <Typography variant="body2" color="text.secondary">
-            Search for an existing patient or manually enter patient information below
-          </Typography>
-        </Box>
-      </Grid>
-
-      {/* Selected Patient Display */}
-      {selectedPatient && (
-        <Grid item xs={12}>
-          <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <PersonIcon />
-                <Typography variant="h6">
-                  Selected Patient: {selectedPatient.firstName} {selectedPatient.lastName}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {selectedPatient.nationalId && (
-                  <Chip label={`National ID: ${selectedPatient.nationalId}`} size="small" />
-                )}
-                {selectedPatient.mrn && (
-                  <Chip label={`MRN: ${selectedPatient.mrn}`} size="small" />
-                )}
-                <Chip label={`Gender: ${selectedPatient.gender}`} size="small" />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      )}
-
-      {/* Manual Patient Entry Fields */}
-      <Grid item xs={12}>
-        <Typography variant="subtitle1" gutterBottom>
-          Patient Details {selectedPatient ? '(Pre-filled from selected patient)' : '(Enter manually)'}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Enter patient details below. The system will automatically check for existing patients using the National ID 
+          and prevent duplicate patient creation across all hospitals.
         </Typography>
       </Grid>
       
@@ -350,13 +282,6 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
         />
       </Grid>
 
-      {/* Patient Search Dialog */}
-      <PatientSearchDialog
-        open={patientSearchOpen}
-        onClose={() => setPatientSearchOpen(false)}
-        onPatientSelect={handlePatientSelect}
-        title="Search for Existing Patient"
-      />
     </Grid>
   );
 };
