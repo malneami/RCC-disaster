@@ -7,6 +7,7 @@ import { Helmet } from 'react-helmet-async';
 import StrokeCasesList from './components/StrokeCasesList';
 import StrokeKPIDashboard from './components/StrokeKPIDashboardMain';
 import StrokeTimelineView from './components/StrokeTimelineView';
+import PatientSearchTimeline from './components/StrokeTimelineView/PatientSearchTimeline';
 import CreateStrokeCaseDialog from './components/CreateStrokeCaseDialog';
 import { StrokeService, StrokeCase, StrokeKPISummary } from '../../services/strokeService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -247,7 +248,7 @@ const StrokePortalPage: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={activeTab} index={2}>
-            <StrokeTimelineView cases={strokeCases} />
+            <PatientSearchTimeline />
           </TabPanel>
         </Card>
 

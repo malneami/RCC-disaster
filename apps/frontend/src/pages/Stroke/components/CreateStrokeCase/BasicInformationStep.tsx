@@ -10,10 +10,15 @@ import {
   Alert,
   Box,
   Typography,
+  Card,
+  CardContent,
+  Chip,
 } from '@mui/material';
+import { Person as PersonIcon } from '@mui/icons-material';
 
 import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
+import NationalIdInput from '../../../../components/Common/NationalIdInput';
 
 interface BasicInformationStepProps {
   formData: CreateStrokeCaseData;
@@ -27,6 +32,7 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [hospitalError, setHospitalError] = useState<string | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -49,6 +55,23 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
     fetchHospitals();
   }, []);
 
+  const handlePatientSelect = (patient: any) => {
+    setSelectedPatient(patient);
+    
+    // Auto-fill form with selected patient data
+    updateFormData('patientId', patient.id);
+    updateFormData('patientInfo', {
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      nationalId: patient.nationalId,
+      mrn: patient.mrn,
+      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+      gender: patient.gender,
+      phoneNumber: patient.phoneNumber || '',
+      email: patient.email || '',
+    });
+  };
+
   if (hospitalError) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
@@ -69,6 +92,33 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
           and prevent duplicate patient creation across all hospitals.
         </Typography>
       </Grid>
+
+      {/* Selected Patient Display */}
+      {selectedPatient && (
+        <Grid item xs={12}>
+          <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                <PersonIcon />
+                <Typography variant="h6">
+                  Selected Existing Patient: {selectedPatient.firstName} {selectedPatient.lastName}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Chip label={`National ID: ${selectedPatient.nationalId}`} size="small" />
+                {selectedPatient.mrn && (
+                  <Chip label={`MRN: ${selectedPatient.mrn}`} size="small" />
+                )}
+                <Chip label={`Gender: ${selectedPatient.gender}`} size="small" />
+                <Chip label={`${selectedPatient.strokeCasesCount} previous stroke case${selectedPatient.strokeCasesCount > 1 ? 's' : ''}`} size="small" />
+              </Box>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Patient information has been auto-filled. You can modify the details below if needed.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
       
       <Grid item xs={12} sm={6}>
         <TextField
@@ -95,14 +145,14 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
         />
       </Grid>
       <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="National ID"
+        <NationalIdInput
           value={formData.patientInfo?.nationalId || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
+          onChange={(value) => updateFormData('patientInfo', { 
             ...formData.patientInfo, 
-            nationalId: e.target.value 
+            nationalId: value 
           })}
+          onPatientSelect={handlePatientSelect}
+          label="National ID"
           required
         />
       </Grid>
