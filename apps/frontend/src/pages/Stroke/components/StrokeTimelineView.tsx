@@ -28,9 +28,10 @@ const StrokeTimelineView: React.FC<StrokeTimelineViewProps> = ({ cases }) => {
       setLoading(true);
       setError(null);
       const timelineData = await StrokeService.getStrokeTimelineForCase(caseId);
-      setTimeline(timelineData);
-    } catch (err) {
-      setError('Failed to load timeline data');
+      setTimeline(timelineData || []);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to load timeline data';
+      setError(errorMessage);
       console.error('Error loading timeline:', err);
     } finally {
       setLoading(false);

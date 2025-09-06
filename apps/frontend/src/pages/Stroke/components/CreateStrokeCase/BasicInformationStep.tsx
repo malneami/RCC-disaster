@@ -98,6 +98,17 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
+          label="Medical Record Number (MRN)"
+          value={formData.patientInfo?.mrn || ''}
+          onChange={(e) => updateFormData('patientInfo', { 
+            ...formData.patientInfo, 
+            mrn: e.target.value 
+          })}
+        />
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
           label="Birth Date"
           type="date"
           InputLabelProps={{ shrink: true }}

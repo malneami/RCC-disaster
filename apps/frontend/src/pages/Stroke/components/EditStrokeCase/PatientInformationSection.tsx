@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Grid,
   Typography,
@@ -7,13 +7,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Button,
-  Box,
 } from '@mui/material';
-import { PersonSearch as PersonSearchIcon } from '@mui/icons-material';
-
-import { Patient } from '../../../../services/patientService';
-import PatientSearchDialog from '../../../../components/Common/PatientSearchDialog';
 
 interface PatientInformationSectionProps {
   formData: any;
@@ -26,37 +20,13 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
   handleInputChange,
   isAdmin = false,
 }) => {
-  const [patientSearchOpen, setPatientSearchOpen] = useState(false);
-
-  const handlePatientSelect = (patient: Patient) => {
-    handleInputChange('patientInfo', {
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      nationalId: patient.nationalId || '',
-      mrn: patient.mrn || '',
-      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
-      gender: patient.gender || 'UNKNOWN',
-      phoneNumber: patient.phoneNumber || '',
-      email: patient.email || '',
-    });
-  };
 
   return (
     <>
       <Grid item xs={12}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <Typography variant="h6">
-            Patient Information
-          </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<PersonSearchIcon />}
-            onClick={() => setPatientSearchOpen(true)}
-            size="small"
-          >
-            Search Existing Patient
-          </Button>
-        </Box>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Patient Information
+        </Typography>
       </Grid>
       
       <Grid item xs={12} sm={6}>
@@ -153,13 +123,6 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
           })}
         />
       </Grid>
-      
-      <PatientSearchDialog
-        open={patientSearchOpen}
-        onClose={() => setPatientSearchOpen(false)}
-        onPatientSelect={handlePatientSelect}
-        title="Search for Existing Patient"
-      />
     </>
   );
 };

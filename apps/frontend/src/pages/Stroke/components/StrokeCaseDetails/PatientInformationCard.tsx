@@ -42,6 +42,14 @@ const PatientInformationCard: React.FC<PatientInformationCardProps> = ({
           </Box>
         </Box>
         <Typography variant="body2" color="text.secondary">
+          National ID: {strokeCase.patient?.nationalId || 'Not set'}
+        </Typography>
+        {strokeCase.patient?.mrn && (
+          <Typography variant="body2" color="text.secondary">
+            MRN: {strokeCase.patient.mrn}
+          </Typography>
+        )}
+        <Typography variant="body2" color="text.secondary">
           Patient ID: {strokeCase.patientId}
         </Typography>
       </CardContent>

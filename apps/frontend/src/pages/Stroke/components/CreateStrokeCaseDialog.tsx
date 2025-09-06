@@ -47,6 +47,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       firstName: '',
       lastName: '',
       nationalId: '',
+      mrn: '',
       dateOfBirth: '',
     },
   });
@@ -61,6 +62,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
         firstName: '',
         lastName: '',
         nationalId: '',
+        mrn: '',
         dateOfBirth: '',
       },
     });

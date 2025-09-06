@@ -48,6 +48,10 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           <Typography variant="body1">{formData.patientInfo?.nationalId || 'Not provided'}</Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
+          <Typography variant="body2" color="text.secondary">Medical Record Number (MRN):</Typography>
+          <Typography variant="body1">{formData.patientInfo?.mrn || 'Not provided'}</Typography>
+        </Grid>
+        <Grid item xs={12} sm={6}>
           <Typography variant="body2" color="text.secondary">Birth Date:</Typography>
           <Typography variant="body1">{formData.patientInfo?.dateOfBirth || 'Not provided'}</Typography>
         </Grid>
