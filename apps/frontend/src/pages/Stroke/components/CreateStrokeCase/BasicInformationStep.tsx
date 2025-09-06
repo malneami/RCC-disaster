@@ -10,10 +10,14 @@ import {
   Alert,
   Box,
   Typography,
+  Card,
+  CardContent,
 } from '@mui/material';
 
 import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
+import PatientSelector from '../../../../components/Common/PatientSelector';
+import { Patient } from '../../../../services/patientService';
 
 interface BasicInformationStepProps {
   formData: CreateStrokeCaseData;
@@ -27,6 +31,7 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [hospitalError, setHospitalError] = useState<string | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -49,6 +54,37 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
     fetchHospitals();
   }, []);
 
+  const handlePatientChange = (patient: Patient | null) => {
+    setSelectedPatient(patient);
+    if (patient) {
+      // Update form data with selected patient
+      updateFormData('patientId', patient.id);
+      updateFormData('patientInfo', {
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        nationalId: patient.nationalId || '',
+        mrn: patient.mrn || '',
+        dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+        gender: patient.gender,
+        phoneNumber: patient.phoneNumber || '',
+        email: patient.email || '',
+      });
+    } else {
+      // Clear patient data
+      updateFormData('patientId', '');
+      updateFormData('patientInfo', {
+        firstName: '',
+        lastName: '',
+        nationalId: '',
+        mrn: '',
+        dateOfBirth: '',
+        gender: 'UNKNOWN',
+        phoneNumber: '',
+        email: '',
+      });
+    }
+  };
+
   if (hospitalError) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
@@ -59,67 +95,54 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
 
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Patient Name"
-          value={formData.patientInfo?.firstName || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            firstName: e.target.value 
-          })}
+      {/* Patient Selection */}
+      <Grid item xs={12}>
+        <Typography variant="h6" gutterBottom>
+          Patient Information
+        </Typography>
+        <PatientSelector
+          value={selectedPatient}
+          onChange={handlePatientChange}
+          label="Select Patient"
+          helperText="Search for an existing patient or create a new one"
           required
         />
       </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Patient Last Name"
-          value={formData.patientInfo?.lastName || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            lastName: e.target.value 
-          })}
-          required
-        />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="National ID"
-          value={formData.patientInfo?.nationalId || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            nationalId: e.target.value 
-          })}
-          required
-        />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Medical Record Number (MRN)"
-          value={formData.patientInfo?.mrn || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            mrn: e.target.value 
-          })}
-        />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Birth Date"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={formData.patientInfo?.dateOfBirth || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            dateOfBirth: e.target.value 
-          })}
-          required
-        />
-      </Grid>
+
+      {/* Selected Patient Information Display */}
+      {selectedPatient && (
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="subtitle1" gutterBottom>
+                Selected Patient Information
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2">
+                    <strong>Name:</strong> {selectedPatient.firstName} {selectedPatient.lastName}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2">
+                    <strong>National ID:</strong> {selectedPatient.nationalId || 'Not provided'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2">
+                    <strong>MRN:</strong> {selectedPatient.mrn || 'Not provided'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2">
+                    <strong>Gender:</strong> {selectedPatient.gender}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
       <Grid item xs={12}>
         <FormControl fullWidth required>
           <InputLabel>Origin Hospital</InputLabel>
@@ -149,14 +172,9 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
                           Stroke Unit
                         </Typography>
                       )}
-                      {hospital.hasThrombolysis && (
+                      {hospital.hasStrokeService && (
                         <Typography variant="caption" color="info.main">
-                          Thrombolysis
-                        </Typography>
-                      )}
-                      {hospital.hasThrombectomy && (
-                        <Typography variant="caption" color="warning.main">
-                          Thrombectomy
+                          Stroke Service
                         </Typography>
                       )}
                     </Box>
@@ -199,14 +217,9 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
                           Stroke Unit
                         </Typography>
                       )}
-                      {hospital.hasThrombolysis && (
+                      {hospital.hasStrokeService && (
                         <Typography variant="caption" color="info.main">
-                          Thrombolysis
-                        </Typography>
-                      )}
-                      {hospital.hasThrombectomy && (
-                        <Typography variant="caption" color="warning.main">
-                          Thrombectomy
+                          Stroke Service
                         </Typography>
                       )}
                     </Box>
