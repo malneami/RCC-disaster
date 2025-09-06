@@ -18,8 +18,9 @@ import {
   Search as SearchIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } from '@mui/material';
 
-import { StrokeCase } from '../../../services/strokeService';
+import { StrokeCase, StrokeService } from '../../../services/strokeService';
 import StrokeCaseDetailsDialog from './StrokeCaseDetailsDialog';
 import EditStrokeCaseDialog from './EditStrokeCaseDialog';
 import StrokeCasesFilters from './StrokeCasesList/StrokeCasesFilters';
@@ -30,17 +31,24 @@ interface StrokeCasesListProps {
   cases: StrokeCase[];
   onUpdateCase: (id: string, data: any) => Promise<void>;
   onCreateCase: () => void;
+  onDeleteCase?: (id: string) => Promise<void>;
+  isAdmin?: boolean;
 }
 
 const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   cases,
   onUpdateCase,
   onCreateCase,
+  onDeleteCase,
+  isAdmin = false,
 }) => {
   const [selectedCase, setSelectedCase] = useState<StrokeCase | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [caseToDelete, setCaseToDelete] = useState<StrokeCase | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [filteredCases, setFilteredCases] = useState<StrokeCase[]>(cases);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -95,6 +103,31 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   const handleEditCase = (case_: StrokeCase) => {
     setSelectedCase(case_);
     setEditDialogOpen(true);
+  };
+
+  const handleDeleteCase = (case_: StrokeCase) => {
+    setCaseToDelete(case_);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!caseToDelete || !onDeleteCase) return;
+
+    try {
+      setDeleting(true);
+      await onDeleteCase(caseToDelete.id);
+      setDeleteDialogOpen(false);
+      setCaseToDelete(null);
+    } catch (error) {
+      console.error('Error deleting case:', error);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setCaseToDelete(null);
   };
 
   const handleApplyFilters = () => {
@@ -227,6 +260,8 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
                 strokeCase={strokeCase}
                 onViewDetails={handleViewDetails}
                 onEditCase={handleEditCase}
+                onDeleteCase={handleDeleteCase}
+                isAdmin={isAdmin}
               />
             ))}
           </TableBody>
@@ -256,6 +291,37 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
         strokeCase={selectedCase}
         onUpdate={onUpdateCase}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={cancelDelete}>
+        <DialogTitle>Delete Stroke Case</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this stroke case? This action cannot be undone.
+            <br /><br />
+            <strong>Patient:</strong> {caseToDelete?.patient?.firstName} {caseToDelete?.patient?.lastName}
+            <br />
+            <strong>Case ID:</strong> {caseToDelete?.id}
+            <br />
+            <strong>Stroke Type:</strong> {caseToDelete?.strokeType}
+            <br />
+            <strong>Status:</strong> {caseToDelete?.currentStatus}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmDelete} 
+            color="error" 
+            variant="contained"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

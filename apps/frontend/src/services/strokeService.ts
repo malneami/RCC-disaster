@@ -608,6 +608,18 @@ export class StrokeService {
     return 'bg-red-100 text-red-800';
   }
 
+  // Delete stroke case
+  static async deleteStrokeCase(id: string): Promise<void> {
+    try {
+      console.log('Deleting stroke case:', id);
+      await apiClient.delete(`/stroke-cases/${id}`);
+      console.log('Stroke case deleted successfully');
+    } catch (error) {
+      console.error('Error deleting stroke case:', error);
+      throw error;
+    }
+  }
+
 }
 
 export default StrokeService;
