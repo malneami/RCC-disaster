@@ -160,4 +160,20 @@ export class PatientsController {
   async getPatientTimelineByNationalId(@Param('nationalId') nationalId: string) {
     return this.patientSearchService.getPatientTimelineByNationalId(nationalId);
   }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete a patient record (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Patient ID' })
+  async deletePatient(@Param('id') patientId: string, @Request() req: any) {
+    return this.patientsService.deletePatient(patientId, req.user.id);
+  }
+
+  @Delete(':id/force')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Force delete a patient record permanently (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Patient ID' })
+  async forceDeletePatient(@Param('id') patientId: string, @Request() req: any) {
+    return this.patientsService.forceDeletePatient(patientId, req.user.id);
+  }
 }

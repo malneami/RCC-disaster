@@ -63,7 +63,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
       setLoading(true);
       setSearchError(null);
 
-      const response = await fetch(`/api/patients/search/national-id?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/v1/patients/search/national-id?q=${encodeURIComponent(query)}`);
       if (!response.ok) {
         throw new Error('Failed to search patients');
       }
