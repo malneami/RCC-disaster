@@ -2,38 +2,24 @@ import React from 'react';
 import {
   Grid,
   Typography,
-  Box,
-  Card,
-  CardContent,
-  Chip,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import { Person as PersonIcon } from '@mui/icons-material';
-import { format } from 'date-fns';
-
-import PatientSelector from '../../../../components/Common/PatientSelector';
-import { Patient } from '../../../../services/patientService';
 
 interface PatientInformationSectionProps {
   formData: any;
   handleInputChange: (field: string, value: any) => void;
   isAdmin?: boolean;
-  strokeCase?: any; // The current stroke case being edited
 }
 
 const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
   formData,
   handleInputChange,
   isAdmin = false,
-  strokeCase,
 }) => {
-  const currentPatient = strokeCase?.patient;
-
-  const handlePatientChange = (patient: Patient | null) => {
-    // Update the stroke case to reference the new patient
-    // This would require updating the stroke case's patientId
-    // For now, we'll just show the patient information
-    console.log('Patient changed:', patient);
-  };
 
   return (
     <>
@@ -42,79 +28,100 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
           Patient Information
         </Typography>
       </Grid>
-
-      {/* Patient Selection */}
-      <Grid item xs={12}>
-        <PatientSelector
-          value={currentPatient}
-          onChange={handlePatientChange}
-          label="Select Patient"
-          helperText="Search for an existing patient or create a new one"
-          compact={true}
+      
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="First Name"
+          value={formData.patientInfo?.firstName || ''}
+          onChange={(e) => handleInputChange('patientInfo', {
+            ...formData.patientInfo,
+            firstName: e.target.value
+          })}
         />
       </Grid>
 
-      {/* Current Patient Information Display */}
-      {currentPatient && (
-        <Grid item xs={12}>
-          <Card variant="outlined">
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <PersonIcon color="primary" />
-                <Typography variant="h6">
-                  {currentPatient.firstName} {currentPatient.lastName}
-                </Typography>
-              </Box>
-              
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>National ID:</strong> {currentPatient.nationalId || 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>MRN:</strong> {currentPatient.mrn || 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Date of Birth:</strong> {currentPatient.dateOfBirth ? format(new Date(currentPatient.dateOfBirth), 'MMM dd, yyyy') : 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Gender:</strong> 
-                    <Chip 
-                      label={currentPatient.gender} 
-                      size="small" 
-                      sx={{ ml: 1 }}
-                      color={currentPatient.gender === 'UNKNOWN' ? 'default' : 'primary'}
-                    />
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Phone:</strong> {currentPatient.phoneNumber || 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Email:</strong> {currentPatient.email || 'Not provided'}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-      )}
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Last Name"
+          value={formData.patientInfo?.lastName || ''}
+          onChange={(e) => handleInputChange('patientInfo', {
+            ...formData.patientInfo,
+            lastName: e.target.value
+          })}
+        />
+      </Grid>
 
-      {/* Note about patient editing */}
-      <Grid item xs={12}>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          <strong>Note:</strong> Patient information should be updated through the Patient Management system. 
-          Changes to patient details will not be saved through this stroke case edit form.
-        </Typography>
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="National ID"
+          value={formData.patientInfo?.nationalId || ''}
+          onChange={(e) => handleInputChange('patientInfo', {
+            ...formData.patientInfo,
+            nationalId: e.target.value
+          })}
+          disabled={!isAdmin}
+          helperText={!isAdmin ? "Only admins can edit National ID" : ""}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Medical Record Number (MRN)"
+          value={formData.patientInfo?.mrn || ''}
+          onChange={(e) => handleInputChange('patientInfo', {
+            ...formData.patientInfo,
+            mrn: e.target.value
+          })}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Date of Birth"
+          type="date"
+          InputLabelProps={{ shrink: true }}
+          value={formData.patientInfo?.dateOfBirth ? formData.patientInfo.dateOfBirth.split('T')[0] : ''}
+          onChange={(e) => handleInputChange('patientInfo', {
+            ...formData.patientInfo,
+            dateOfBirth: e.target.value
+          })}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <FormControl fullWidth>
+          <InputLabel>Gender</InputLabel>
+          <Select
+            value={formData.patientInfo?.gender || ''}
+            label="Gender"
+            onChange={(e) => handleInputChange('patientInfo', {
+              ...formData.patientInfo,
+              gender: e.target.value
+            })}
+          >
+            <MenuItem value="MALE">Male</MenuItem>
+            <MenuItem value="FEMALE">Female</MenuItem>
+            <MenuItem value="OTHER">Other</MenuItem>
+            <MenuItem value="UNKNOWN">Unknown</MenuItem>
+          </Select>
+        </FormControl>
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Phone Number"
+          value={formData.patientInfo?.phoneNumber || ''}
+          onChange={(e) => handleInputChange('patientInfo', {
+            ...formData.patientInfo,
+            phoneNumber: e.target.value
+          })}
+        />
       </Grid>
     </>
   );

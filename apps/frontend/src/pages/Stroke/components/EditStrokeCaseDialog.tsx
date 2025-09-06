@@ -126,9 +126,6 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         return acc;
       }, {} as any);
       
-      // Note: Patient information (including gender) is not updated through stroke case updates
-      // Patient information should be updated through the patient management system
-      
       console.log('Sending update data:', cleanedData);
       await onUpdate(strokeCase.id, cleanedData);
       onClose();
@@ -165,7 +162,6 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
               formData={formData}
               handleInputChange={handleInputChange}
               isAdmin={user?.role === 'ADMIN'}
-              strokeCase={strokeCase}
             />
             
             <BasicInformationSection

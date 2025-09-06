@@ -10,13 +10,16 @@ import {
   Alert,
   Box,
   Typography,
+  Button,
   Card,
   CardContent,
+  Chip,
 } from '@mui/material';
+import { PersonSearch as PersonSearchIcon, Person as PersonIcon } from '@mui/icons-material';
 
 import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
-import PatientSelector from '../../../../components/Common/PatientSelector';
+import PatientSearchDialog from '../../../../components/Common/PatientSearchDialog';
 import { Patient } from '../../../../services/patientService';
 
 interface BasicInformationStepProps {
@@ -31,6 +34,7 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [hospitalError, setHospitalError] = useState<string | null>(null);
+  const [patientSearchOpen, setPatientSearchOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   useEffect(() => {
@@ -54,35 +58,22 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
     fetchHospitals();
   }, []);
 
-  const handlePatientChange = (patient: Patient | null) => {
+  const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
-    if (patient) {
-      // Update form data with selected patient
-      updateFormData('patientId', patient.id);
-      updateFormData('patientInfo', {
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        nationalId: patient.nationalId || '',
-        mrn: patient.mrn || '',
-        dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
-        gender: patient.gender,
-        phoneNumber: patient.phoneNumber || '',
-        email: patient.email || '',
-      });
-    } else {
-      // Clear patient data
-      updateFormData('patientId', '');
-      updateFormData('patientInfo', {
-        firstName: '',
-        lastName: '',
-        nationalId: '',
-        mrn: '',
-        dateOfBirth: '',
-        gender: 'UNKNOWN',
-        phoneNumber: '',
-        email: '',
-      });
-    }
+    setPatientSearchOpen(false);
+    
+    // Update form data with selected patient
+    updateFormData('patientId', patient.id);
+    updateFormData('patientInfo', {
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      nationalId: patient.nationalId || '',
+      mrn: patient.mrn || '',
+      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+      gender: patient.gender,
+      phoneNumber: patient.phoneNumber || '',
+      email: patient.email || '',
+    });
   };
 
   if (hospitalError) {
@@ -100,49 +91,114 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
         <Typography variant="h6" gutterBottom>
           Patient Information
         </Typography>
-        <PatientSelector
-          value={selectedPatient}
-          onChange={handlePatientChange}
-          label="Select Patient"
-          helperText="Search for an existing patient or create a new one"
-          required
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Button 
+            variant="outlined" 
+            startIcon={<PersonSearchIcon />} 
+            onClick={() => setPatientSearchOpen(true)}
+            size="large"
+          >
+            Search Existing Patient
+          </Button>
+          <Typography variant="body2" color="text.secondary">
+            Search for an existing patient or manually enter patient information below
+          </Typography>
+        </Box>
       </Grid>
 
-      {/* Selected Patient Information Display */}
+      {/* Selected Patient Display */}
       {selectedPatient && (
         <Grid item xs={12}>
-          <Card variant="outlined">
+          <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
             <CardContent>
-              <Typography variant="subtitle1" gutterBottom>
-                Selected Patient Information
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>Name:</strong> {selectedPatient.firstName} {selectedPatient.lastName}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>National ID:</strong> {selectedPatient.nationalId || 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>MRN:</strong> {selectedPatient.mrn || 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>Gender:</strong> {selectedPatient.gender}
-                  </Typography>
-                </Grid>
-              </Grid>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                <PersonIcon />
+                <Typography variant="h6">
+                  Selected Patient: {selectedPatient.firstName} {selectedPatient.lastName}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {selectedPatient.nationalId && (
+                  <Chip label={`National ID: ${selectedPatient.nationalId}`} size="small" />
+                )}
+                {selectedPatient.mrn && (
+                  <Chip label={`MRN: ${selectedPatient.mrn}`} size="small" />
+                )}
+                <Chip label={`Gender: ${selectedPatient.gender}`} size="small" />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
       )}
+
+      {/* Manual Patient Entry Fields */}
+      <Grid item xs={12}>
+        <Typography variant="subtitle1" gutterBottom>
+          Patient Details {selectedPatient ? '(Pre-filled from selected patient)' : '(Enter manually)'}
+        </Typography>
+      </Grid>
+      
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Patient Name"
+          value={formData.patientInfo?.firstName || ''}
+          onChange={(e) => updateFormData('patientInfo', { 
+            ...formData.patientInfo, 
+            firstName: e.target.value 
+          })}
+          required
+        />
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Patient Last Name"
+          value={formData.patientInfo?.lastName || ''}
+          onChange={(e) => updateFormData('patientInfo', { 
+            ...formData.patientInfo, 
+            lastName: e.target.value 
+          })}
+          required
+        />
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="National ID"
+          value={formData.patientInfo?.nationalId || ''}
+          onChange={(e) => updateFormData('patientInfo', { 
+            ...formData.patientInfo, 
+            nationalId: e.target.value 
+          })}
+          required
+        />
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Medical Record Number (MRN)"
+          value={formData.patientInfo?.mrn || ''}
+          onChange={(e) => updateFormData('patientInfo', { 
+            ...formData.patientInfo, 
+            mrn: e.target.value 
+          })}
+        />
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Birth Date"
+          type="date"
+          InputLabelProps={{ shrink: true }}
+          value={formData.patientInfo?.dateOfBirth || ''}
+          onChange={(e) => updateFormData('patientInfo', { 
+            ...formData.patientInfo, 
+            dateOfBirth: e.target.value 
+          })}
+          required
+        />
+      </Grid>
       <Grid item xs={12}>
         <FormControl fullWidth required>
           <InputLabel>Origin Hospital</InputLabel>
@@ -172,9 +228,14 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
                           Stroke Unit
                         </Typography>
                       )}
-                      {hospital.hasStrokeService && (
+                      {hospital.hasThrombolysis && (
                         <Typography variant="caption" color="info.main">
-                          Stroke Service
+                          Thrombolysis
+                        </Typography>
+                      )}
+                      {hospital.hasThrombectomy && (
+                        <Typography variant="caption" color="warning.main">
+                          Thrombectomy
                         </Typography>
                       )}
                     </Box>
@@ -217,9 +278,14 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
                           Stroke Unit
                         </Typography>
                       )}
-                      {hospital.hasStrokeService && (
+                      {hospital.hasThrombolysis && (
                         <Typography variant="caption" color="info.main">
-                          Stroke Service
+                          Thrombolysis
+                        </Typography>
+                      )}
+                      {hospital.hasThrombectomy && (
+                        <Typography variant="caption" color="warning.main">
+                          Thrombectomy
                         </Typography>
                       )}
                     </Box>
@@ -283,6 +349,14 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
           onChange={(e) => updateFormData('lastKnownWell', e.target.value)}
         />
       </Grid>
+
+      {/* Patient Search Dialog */}
+      <PatientSearchDialog
+        open={patientSearchOpen}
+        onClose={() => setPatientSearchOpen(false)}
+        onPatientSelect={handlePatientSelect}
+        title="Search for Existing Patient"
+      />
     </Grid>
   );
 };
