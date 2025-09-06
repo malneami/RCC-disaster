@@ -8,19 +8,13 @@ import {
   TableContainer,
   Paper,
   Alert,
-  TextField,
-  InputAdornment,
-  IconButton,
 } from '@mui/material';
 import {
   Add as AddIcon,
   FilterList as FilterIcon,
-  Search as SearchIcon,
-  Clear as ClearIcon,
 } from '@mui/icons-material';
-import { Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } from '@mui/material';
 
-import { StrokeCase, StrokeService } from '../../../services/strokeService';
+import { StrokeCase } from '../../../services/strokeService';
 import StrokeCaseDetailsDialog from './StrokeCaseDetailsDialog';
 import EditStrokeCaseDialog from './EditStrokeCaseDialog';
 import StrokeCasesFilters from './StrokeCasesList/StrokeCasesFilters';
@@ -31,26 +25,18 @@ interface StrokeCasesListProps {
   cases: StrokeCase[];
   onUpdateCase: (id: string, data: any) => Promise<void>;
   onCreateCase: () => void;
-  onDeleteCase?: (id: string) => Promise<void>;
-  isAdmin?: boolean;
 }
 
 const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   cases,
   onUpdateCase,
   onCreateCase,
-  onDeleteCase,
-  isAdmin = false,
 }) => {
   const [selectedCase, setSelectedCase] = useState<StrokeCase | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [caseToDelete, setCaseToDelete] = useState<StrokeCase | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [filteredCases, setFilteredCases] = useState<StrokeCase[]>(cases);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     strokeType: '',
     status: '',
@@ -58,30 +44,22 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   });
 
   useEffect(() => {
-    applyFiltersAndSearch();
-  }, [cases, searchQuery, filters]);
+    setFilteredCases(cases);
+  }, [cases]);
 
-  const applyFiltersAndSearch = () => {
+  const handleViewDetails = (case_: StrokeCase) => {
+    setSelectedCase(case_);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleEditCase = (case_: StrokeCase) => {
+    setSelectedCase(case_);
+    setEditDialogOpen(true);
+  };
+
+  const handleApplyFilters = () => {
     let filtered = cases;
 
-    // Apply search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(case_ => {
-        const patient = case_.patient;
-        if (!patient) return false;
-        
-        const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
-        const nationalId = patient.nationalId?.toLowerCase() || '';
-        const mrn = patient.mrn?.toLowerCase() || '';
-        
-        return fullName.includes(query) || 
-               nationalId.includes(query) || 
-               mrn.includes(query);
-      });
-    }
-
-    // Apply filters
     if (filters.strokeType) {
       filtered = filtered.filter(case_ => case_.strokeType === filters.strokeType);
     }
@@ -95,53 +73,9 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
     setFilteredCases(filtered);
   };
 
-  const handleViewDetails = (case_: StrokeCase) => {
-    setSelectedCase(case_);
-    setDetailsDialogOpen(true);
-  };
-
-  const handleEditCase = (case_: StrokeCase) => {
-    setSelectedCase(case_);
-    setEditDialogOpen(true);
-  };
-
-  const handleDeleteCase = (case_: StrokeCase) => {
-    setCaseToDelete(case_);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!caseToDelete || !onDeleteCase) return;
-
-    try {
-      setDeleting(true);
-      await onDeleteCase(caseToDelete.id);
-      setDeleteDialogOpen(false);
-      setCaseToDelete(null);
-    } catch (error) {
-      console.error('Error deleting case:', error);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const cancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setCaseToDelete(null);
-  };
-
-  const handleApplyFilters = () => {
-    applyFiltersAndSearch();
-  };
-
   const handleClearFilters = () => {
     setFilters({ strokeType: '', status: '', severity: '' });
-    setSearchQuery('');
-    applyFiltersAndSearch();
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
+    setFilteredCases(cases);
   };
 
   const handleCloseDetailsDialog = () => {
@@ -205,44 +139,14 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
         </Box>
       </Box>
 
-      {/* Search Bar */}
-      <Box sx={{ mb: 3 }}>
-        <TextField
-          fullWidth
-          placeholder="Search by patient name, MRN, or National ID..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: searchQuery && (
-              <InputAdornment position="end">
-                <IconButton onClick={handleClearSearch} size="small">
-                  <ClearIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
-
       {/* Active Filters Alert */}
-      {(filters.strokeType || filters.status || filters.severity || searchQuery) && (
+      {(filters.strokeType || filters.status || filters.severity) && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          {searchQuery && `Search: "${searchQuery}"`}
-          {(filters.strokeType || filters.status || filters.severity) && (
-            <>
-              {searchQuery && ' • '}
-              Filters: {[
-                filters.strokeType && `Type: ${filters.strokeType}`,
-                filters.status && `Status: ${filters.status}`,
-                filters.severity && `Severity: ${filters.severity}`,
-              ].filter(Boolean).join(', ')}
-            </>
-          )}
+          Filters applied: {[
+            filters.strokeType && `Type: ${filters.strokeType}`,
+            filters.status && `Status: ${filters.status}`,
+            filters.severity && `Severity: ${filters.severity}`,
+          ].filter(Boolean).join(', ')}
           <Button size="small" onClick={handleClearFilters} sx={{ ml: 1 }}>
             Clear All
           </Button>
@@ -260,8 +164,6 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
                 strokeCase={strokeCase}
                 onViewDetails={handleViewDetails}
                 onEditCase={handleEditCase}
-                onDeleteCase={handleDeleteCase}
-                isAdmin={isAdmin}
               />
             ))}
           </TableBody>
@@ -291,37 +193,6 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
         strokeCase={selectedCase}
         onUpdate={onUpdateCase}
       />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={cancelDelete}>
-        <DialogTitle>Delete Stroke Case</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this stroke case? This action cannot be undone.
-            <br /><br />
-            <strong>Patient:</strong> {caseToDelete?.patient?.firstName} {caseToDelete?.patient?.lastName}
-            <br />
-            <strong>Case ID:</strong> {caseToDelete?.id}
-            <br />
-            <strong>Stroke Type:</strong> {caseToDelete?.strokeType}
-            <br />
-            <strong>Status:</strong> {caseToDelete?.currentStatus}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelDelete} disabled={deleting}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={confirmDelete} 
-            color="error" 
-            variant="contained"
-            disabled={deleting}
-          >
-            {deleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

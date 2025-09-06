@@ -14,8 +14,6 @@ import {
 
 import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
-import NationalIdInput from '../../../../components/Common/NationalIdInput';
-import { Patient } from '../../../../services/patientService';
 
 interface BasicInformationStepProps {
   formData: CreateStrokeCaseData;
@@ -29,7 +27,6 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [hospitalError, setHospitalError] = useState<string | null>(null);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -52,23 +49,6 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
     fetchHospitals();
   }, []);
 
-  const handlePatientSelect = (patient: Patient) => {
-    setSelectedPatient(patient);
-    
-    // Auto-fill form with selected patient data
-    updateFormData('patientId', patient.id);
-    updateFormData('patientInfo', {
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      nationalId: patient.nationalId,
-      mrn: patient.mrn,
-      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
-      gender: patient.gender,
-      phoneNumber: patient.phoneNumber || '',
-      email: patient.email || '',
-    });
-  };
-
   if (hospitalError) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
@@ -79,38 +59,6 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
 
   return (
     <Grid container spacing={2}>
-      {/* Patient Information */}
-      <Grid item xs={12}>
-        <Typography variant="h6" gutterBottom>
-          Patient Information
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Enter patient details below. The system will automatically check for existing patients using the National ID 
-          and prevent duplicate patient creation across all hospitals.
-        </Typography>
-      </Grid>
-
-      {/* Selected Patient Display */}
-      {selectedPatient && (
-        <Grid item xs={12}>
-          <Box sx={{ 
-            p: 2, 
-            border: '2px solid', 
-            borderColor: 'success.main', 
-            borderRadius: 2, 
-            bgcolor: 'success.light', 
-            color: 'success.contrastText' 
-          }}>
-            <Typography variant="h6" gutterBottom>
-              ✅ Existing Patient Selected: {selectedPatient.firstName} {selectedPatient.lastName}
-            </Typography>
-            <Typography variant="body2">
-              Patient information has been auto-filled. You can modify the details below if needed.
-            </Typography>
-          </Box>
-        </Grid>
-      )}
-      
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -135,27 +83,16 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
           required
         />
       </Grid>
-        <Grid item xs={12} sm={6}>
-          <NationalIdInput
-            value={formData.patientInfo?.nationalId || ''}
-            onChange={(value) => updateFormData('patientInfo', { 
-              ...formData.patientInfo, 
-              nationalId: value 
-            })}
-            onPatientSelect={handlePatientSelect}
-            label="National ID"
-            required
-          />
-        </Grid>
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
-          label="Medical Record Number (MRN)"
-          value={formData.patientInfo?.mrn || ''}
+          label="National ID"
+          value={formData.patientInfo?.nationalId || ''}
           onChange={(e) => updateFormData('patientInfo', { 
             ...formData.patientInfo, 
-            mrn: e.target.value 
+            nationalId: e.target.value 
           })}
+          required
         />
       </Grid>
       <Grid item xs={12} sm={6}>
@@ -322,7 +259,6 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
           onChange={(e) => updateFormData('lastKnownWell', e.target.value)}
         />
       </Grid>
-
     </Grid>
   );
 };

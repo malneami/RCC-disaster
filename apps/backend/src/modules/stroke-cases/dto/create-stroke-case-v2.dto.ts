@@ -11,14 +11,6 @@ export class PatientInfoV2Dto {
 
   @IsOptional()
   @IsString()
-  nationalId?: string;
-
-  @IsOptional()
-  @IsString()
-  mrn?: string;
-
-  @IsOptional()
-  @IsString()
   dateOfBirth?: string;
 
   @IsOptional()
@@ -28,10 +20,6 @@ export class PatientInfoV2Dto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
-
-  @IsOptional()
-  @IsString()
-  email?: string;
 }
 
 export class CreateStrokeCaseV2Dto {
@@ -51,10 +39,6 @@ export class CreateStrokeCaseV2Dto {
   @IsOptional()
   @IsString()
   chiefComplaint?: string;
-
-  @IsOptional()
-  @IsString()
-  presentingSymptoms?: string;
 
   @IsString()
   originHospitalId!: string;

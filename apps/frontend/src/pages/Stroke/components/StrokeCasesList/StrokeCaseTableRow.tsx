@@ -10,7 +10,6 @@ import {
 import {
   Edit as EditIcon,
   Visibility as ViewIcon,
-  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faUser, faHospital } from '@fortawesome/free-solid-svg-icons';
@@ -21,16 +20,12 @@ interface StrokeCaseTableRowProps {
   strokeCase: StrokeCase;
   onViewDetails: (case_: StrokeCase) => void;
   onEditCase: (case_: StrokeCase) => void;
-  onDeleteCase?: (case_: StrokeCase) => void;
-  isAdmin?: boolean;
 }
 
 const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
   strokeCase,
   onViewDetails,
   onEditCase,
-  onDeleteCase,
-  isAdmin = false,
 }) => {
   const getStatusColor = (status: StrokeStatus): string => {
     const colors: Record<StrokeStatus, string> = {
@@ -81,12 +76,7 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
               {strokeCase.patient?.firstName} {strokeCase.patient?.lastName}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#666' }}>
-              National ID: {strokeCase.patient?.nationalId || 'Not set'}
-              {strokeCase.patient?.mrn && (
-                <span style={{ marginLeft: '12px' }}>
-                  MRN: {strokeCase.patient.mrn}
-                </span>
-              )}
+              ID: {strokeCase.id.slice(-8).toUpperCase()}
             </div>
           </Box>
         </Box>
@@ -164,17 +154,6 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          {isAdmin && onDeleteCase && (
-            <Tooltip title="Delete Case (Admin Only)">
-              <IconButton
-                size="small"
-                onClick={() => onDeleteCase(strokeCase)}
-                color="error"
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
         </Box>
       </TableCell>
     </TableRow>

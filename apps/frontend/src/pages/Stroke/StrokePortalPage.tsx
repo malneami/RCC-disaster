@@ -97,22 +97,6 @@ const StrokePortalPage: React.FC = () => {
     }
   };
 
-  const handleDeleteCase = async (id: string) => {
-    try {
-      await StrokeService.deleteStrokeCase(id);
-      setStrokeCases(prev => prev.filter(case_ => case_.id !== id));
-      // Refresh KPI data
-      const updatedKpi = await StrokeService.getKPISummary();
-      setKpiSummary(updatedKpi);
-    } catch (err) {
-      console.error('Error deleting stroke case:', err);
-      throw err;
-    }
-  };
-
-  // Check if user is admin
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'RCC';
-
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -255,8 +239,6 @@ const StrokePortalPage: React.FC = () => {
               cases={strokeCases}
               onUpdateCase={handleUpdateCase}
               onCreateCase={() => setCreateDialogOpen(true)}
-              onDeleteCase={handleDeleteCase}
-              isAdmin={isAdmin}
             />
           </TabPanel>
 

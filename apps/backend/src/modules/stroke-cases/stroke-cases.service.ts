@@ -1,19 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { CreateStrokeCaseDto } from './dto/create-stroke-case.dto';
-import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
-import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
+import { CreateStrokeCaseDto, UpdateStrokeCaseDto } from './dto/create-stroke-case.dto';
 import { StrokeCase, StrokeStatus, StrokeType, TicketPriority, TicketPathway } from '@prisma/client';
-import { PatientMergeService } from '../patients/patient-merge.service';
 
 @Injectable()
 export class StrokeCasesService {
-  constructor(
-    private prisma: PrismaService,
-    private patientMergeService: PatientMergeService
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(createStrokeCaseDto: CreateStrokeCaseV2Dto, userId: string): Promise<StrokeCase> {
+  async create(createStrokeCaseDto: CreateStrokeCaseDto, userId: string): Promise<StrokeCase> {
     try {
       console.log('=== STROKE CASE SERVICE CREATE ===');
       console.log('DTO:', JSON.stringify(createStrokeCaseDto, null, 2));
@@ -24,97 +18,34 @@ export class StrokeCasesService {
 
     // Auto-create patient if not provided but patientInfo is provided
     if (!patientId && createStrokeCaseDto.patientInfo) {
-      console.log('=== PATIENT PROCESSING ===');
-      console.log('Patient Info:', createStrokeCaseDto.patientInfo);
+      const patientData: any = {
+        firstName: createStrokeCaseDto.patientInfo.firstName,
+        lastName: createStrokeCaseDto.patientInfo.lastName,
+        middleName: createStrokeCaseDto.patientInfo.middleName,
+        phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber,
+        email: createStrokeCaseDto.patientInfo.email,
+        createdById: userId,
+      };
       
-      // Check for existing patient by National ID first (primary identifier)
-      if (createStrokeCaseDto.patientInfo.nationalId && createStrokeCaseDto.patientInfo.nationalId.trim()) {
-        console.log('Checking for existing patient by National ID:', createStrokeCaseDto.patientInfo.nationalId);
-        
-        try {
-          // Use patient merge service to find and merge duplicates
-          const existingPatientId = await this.patientMergeService.findAndMergeDuplicatesByNationalId(
-            createStrokeCaseDto.patientInfo.nationalId.trim()
-          );
-          
-          if (existingPatientId) {
-            console.log('Found existing patient (or merged duplicates):', existingPatientId);
-            patientId = existingPatientId;
-          } else {
-            console.log('No existing patient found with National ID, will create new patient');
-          }
-        } catch (error) {
-          console.error('Error checking for duplicate patients:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          throw new BadRequestException(`Error checking for duplicate patients: ${errorMessage}`);
-        }
+      // Handle required fields with defaults if not provided
+      if (createStrokeCaseDto.patientInfo.dateOfBirth) {
+        patientData.dateOfBirth = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
+      } else {
+        patientData.dateOfBirth = new Date('1900-01-01'); // Default date
       }
       
-      // If no existing patient found, create new one
-      if (!patientId) {
-        console.log('Creating new patient...');
-        
-        // Validate required fields
-        if (!createStrokeCaseDto.patientInfo.firstName || !createStrokeCaseDto.patientInfo.lastName) {
-          throw new BadRequestException('Patient first name and last name are required');
-        }
-        
-        const patientData: any = {
-          firstName: createStrokeCaseDto.patientInfo.firstName.trim(),
-          lastName: createStrokeCaseDto.patientInfo.lastName.trim(),
-          nationalId: createStrokeCaseDto.patientInfo.nationalId?.trim() || null,
-          mrn: createStrokeCaseDto.patientInfo.mrn?.trim() || null,
-          phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber?.trim() || null,
-          email: createStrokeCaseDto.patientInfo.email?.trim() || null,
-          createdById: userId,
-        };
-        
-        // Handle required fields with defaults if not provided
-        if (createStrokeCaseDto.patientInfo.dateOfBirth) {
-          patientData.dateOfBirth = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
-        } else {
-          patientData.dateOfBirth = new Date('1900-01-01'); // Default date
-        }
-        
-        if (createStrokeCaseDto.patientInfo.gender) {
-          patientData.gender = createStrokeCaseDto.patientInfo.gender;
-        } else {
-          patientData.gender = 'UNKNOWN'; // Default gender
-        }
-        
-        console.log('Creating new patient with data:', patientData);
-        
-        try {
-          const patient = await this.prisma.patient.create({
-            data: patientData,
-          });
-          console.log('New patient created:', patient.id);
-          patientId = patient.id;
-        } catch (error: any) {
-          console.error('Error creating patient:', error);
-          
-          // If it's a unique constraint violation, try to find the existing patient
-          if (error.code === 'P2002') {
-            console.log('Unique constraint violation, attempting to find existing patient...');
-            
-            if (createStrokeCaseDto.patientInfo.nationalId) {
-              const existingPatient = await this.prisma.patient.findUnique({
-                where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
-              });
-              if (existingPatient) {
-                console.log('Found existing patient after constraint violation:', existingPatient.id);
-                patientId = existingPatient.id;
-              }
-            }
-            
-            if (!patientId) {
-              throw new BadRequestException('Patient with this National ID already exists');
-            }
-          } else {
-            throw error;
-          }
-        }
+      if (createStrokeCaseDto.patientInfo.gender) {
+        patientData.gender = createStrokeCaseDto.patientInfo.gender;
+      } else {
+        patientData.gender = 'UNKNOWN'; // Default gender
       }
+      
+      console.log('Creating patient with data:', patientData);
+      const patient = await this.prisma.patient.create({
+        data: patientData,
+      });
+      console.log('Patient created:', patient.id);
+      patientId = patient.id;
     }
 
     // Auto-create ticket if not provided
@@ -127,6 +58,7 @@ export class StrokeCasesService {
         ticketNumber,
         patientId: patientId,
         originHospitalId: createStrokeCaseDto.originHospitalId,
+        destinationHospitalId: createStrokeCaseDto.destinationHospitalId,
         priority: TicketPriority.HIGH,
         pathway: TicketPathway.STROKE,
         chiefComplaint: createStrokeCaseDto.chiefComplaint || 'Stroke symptoms',
@@ -167,23 +99,74 @@ export class StrokeCasesService {
     const kpiData = this.calculateKPIs(createStrokeCaseDto);
     console.log('KPIs calculated:', kpiData);
 
-    // Extract only the fields that exist in the CreateStrokeCaseV2Dto
+    // Extract only the fields that exist in the StrokeCase model
     const strokeCaseData = {
         ticketId,
         patientId,
         originHospitalId: createStrokeCaseDto.originHospitalId,
-        chiefComplaint: createStrokeCaseDto.chiefComplaint,
-        presentingSymptoms: createStrokeCaseDto.presentingSymptoms,
+        destinationHospitalId: createStrokeCaseDto.destinationHospitalId,
         strokeType: createStrokeCaseDto.strokeType,
-        currentStatus: createStrokeCaseDto.currentStatus,
+        strokeSubtype: createStrokeCaseDto.strokeSubtype,
         strokeSeverity: createStrokeCaseDto.strokeSeverity,
+        nihssBaseline: createStrokeCaseDto.nihssBaseline,
+        nihss24hr: createStrokeCaseDto.nihss24hr,
+        nihssDischarge: createStrokeCaseDto.nihssDischarge,
+        mrsBaseline: createStrokeCaseDto.mrsBaseline,
+        mrs90day: createStrokeCaseDto.mrs90day,
+        barthelBaseline: createStrokeCaseDto.barthelBaseline,
+        barthelDischarge: createStrokeCaseDto.barthelDischarge,
+        aspectsScore: createStrokeCaseDto.aspectsScore,
+        gcsBaseline: createStrokeCaseDto.gcsBaseline,
+        presentingSymptoms: createStrokeCaseDto.presentingSymptoms,
+        symptomOnset: createStrokeCaseDto.symptomOnset ? new Date(createStrokeCaseDto.symptomOnset) : null,
+        symptomToHospitalMinutes: createStrokeCaseDto.symptomToHospitalMinutes,
+        lastKnownWell: createStrokeCaseDto.lastKnownWell ? new Date(createStrokeCaseDto.lastKnownWell) : null,
+        wakeUpStroke: createStrokeCaseDto.wakeUpStroke,
+        currentStatus: createStrokeCaseDto.currentStatus,
         selectedTreatment: createStrokeCaseDto.selectedTreatment,
+        eligibleForThrombolysis: createStrokeCaseDto.eligibleForThrombolysis,
+        thrombolysisContraindications: createStrokeCaseDto.thrombolysisContraindications,
+        eligibleForThrombectomy: createStrokeCaseDto.eligibleForThrombectomy,
+        thrombectomyContraindications: createStrokeCaseDto.thrombectomyContraindications,
+        pathwayStarted: createStrokeCaseDto.pathwayStarted ? new Date(createStrokeCaseDto.pathwayStarted) : null,
+        pathwayCompleted: createStrokeCaseDto.pathwayCompleted ? new Date(createStrokeCaseDto.pathwayCompleted) : null,
+        strokeUnitAdmissionTime: createStrokeCaseDto.strokeUnitAdmissionTime ? new Date(createStrokeCaseDto.strokeUnitAdmissionTime) : null,
+        doorToImagingMinutes: createStrokeCaseDto.doorToImagingMinutes,
+        doorToNeedleMinutes: createStrokeCaseDto.doorToNeedleMinutes,
+        doorToGroinMinutes: createStrokeCaseDto.doorToGroinMinutes,
+        symptomNeedleMinutes: createStrokeCaseDto.symptomNeedleMinutes,
+        symptomGroinMinutes: createStrokeCaseDto.symptomGroinMinutes,
+        imagingToNeedleMinutes: createStrokeCaseDto.imagingToNeedleMinutes,
+        imagingToGroinMinutes: createStrokeCaseDto.imagingToGroinMinutes,
+        dysphagiaScreeningMinutes: createStrokeCaseDto.dysphagiaScreeningMinutes,
+        earlyMobilizationHours: createStrokeCaseDto.earlyMobilizationHours,
+        speechTherapyHours: createStrokeCaseDto.speechTherapyHours,
+        physiotherapyHours: createStrokeCaseDto.physiotherapyHours,
+        occupationalTherapyHours: createStrokeCaseDto.occupationalTherapyHours,
+        ctResults: createStrokeCaseDto.ctResults,
+        ctaResults: createStrokeCaseDto.ctaResults,
+        ctpResults: createStrokeCaseDto.ctpResults,
+        mriResults: createStrokeCaseDto.mriResults,
+        mraResults: createStrokeCaseDto.mraResults,
+        echocardiogram: createStrokeCaseDto.echocardiogram,
+        carotidUcsDoppler: createStrokeCaseDto.carotidUcsDoppler,
+        successful: createStrokeCaseDto.successful,
+        recanalizationGrade: createStrokeCaseDto.recanalizationGrade,
+        complications: createStrokeCaseDto.complications,
+        secondaryPrevention: createStrokeCaseDto.secondaryPrevention,
+        dischargeDestination: createStrokeCaseDto.dischargeDestination,
+        dischargeDate: createStrokeCaseDto.dischargeDate ? new Date(createStrokeCaseDto.dischargeDate) : null,
+        lengthOfStayDays: createStrokeCaseDto.lengthOfStayDays,
+        thirtyDayReadmission: createStrokeCaseDto.thirtyDayReadmission,
+        ninetyDayMortality: createStrokeCaseDto.ninetyDayMortality,
+        followUpCallCompleted: createStrokeCaseDto.followUpCallCompleted,
+        followUpCallDate: createStrokeCaseDto.followUpCallDate ? new Date(createStrokeCaseDto.followUpCallDate) : null,
         createdById: userId,
         ...kpiData,
       };
 
     console.log('Creating stroke case with data:', strokeCaseData);
-    const strokeCase = await this.prisma.strokeCase.create({
+    return this.prisma.strokeCase.create({
       data: strokeCaseData,
       include: {
         ticket: {
@@ -199,8 +182,6 @@ export class StrokeCasesService {
             id: true,
             firstName: true,
             lastName: true,
-            nationalId: true,
-            mrn: true,
             dateOfBirth: true,
             gender: true,
           },
@@ -237,26 +218,6 @@ export class StrokeCasesService {
         },
       },
     });
-
-    // Create initial timeline event for case creation
-    console.log('Creating initial timeline event...');
-    await this.prisma.strokeTimeline.create({
-      data: {
-        strokeCaseId: strokeCase.id,
-        ticketId: ticketId,
-        fromStatus: null,
-        toStatus: createStrokeCaseDto.currentStatus,
-        eventTimestamp: new Date(),
-        eventDescription: `Stroke case created - ${createStrokeCaseDto.strokeType} stroke`,
-        eventLocation: 'ED',
-        eventType: 'ARRIVAL',
-        triggeredBy: userId,
-        createdById: userId,
-      },
-    });
-
-    console.log('Stroke case and initial timeline event created successfully');
-    return strokeCase;
     } catch (error) {
       console.error('=== STROKE CASE CREATION ERROR ===');
       console.error('Error:', error);
@@ -313,8 +274,6 @@ export class StrokeCasesService {
             id: true,
             firstName: true,
             lastName: true,
-            nationalId: true,
-            mrn: true,
             dateOfBirth: true,
             gender: true,
           },
@@ -346,8 +305,6 @@ export class StrokeCasesService {
   }
 
   async findOne(id: string): Promise<StrokeCase> {
-    console.log('=== FINDONE DEBUG ===');
-    console.log('Looking for stroke case ID:', id);
     const strokeCase = await this.prisma.strokeCase.findUnique({
       where: { id, deletedAt: null },
       include: {
@@ -366,8 +323,6 @@ export class StrokeCasesService {
             id: true,
             firstName: true,
             lastName: true,
-            nationalId: true,
-            mrn: true,
             dateOfBirth: true,
             gender: true,
             phoneNumber: true,
@@ -447,8 +402,6 @@ export class StrokeCasesService {
       throw new NotFoundException('Stroke case not found');
     }
 
-    console.log('=== FINDONE RESULT ===');
-    console.log('Patient data:', JSON.stringify(strokeCase.patient, null, 2));
     return strokeCase;
   }
 
@@ -666,65 +619,5 @@ export class StrokeCasesService {
   private calculateAverage(values: (number | null | undefined)[]): number {
     const validValues = values.filter(v => v !== null && v !== undefined) as number[];
     return validValues.length > 0 ? validValues.reduce((sum, val) => sum + val, 0) / validValues.length : 0;
-  }
-
-  async remove(id: string): Promise<void> {
-    console.log('=== STROKE CASE DELETE ===');
-    console.log('Deleting stroke case:', id);
-
-    try {
-      // Check if stroke case exists
-      const existingCase = await this.prisma.strokeCase.findUnique({
-        where: { id },
-        include: {
-          patient: {
-            select: {
-              firstName: true,
-              lastName: true,
-              nationalId: true,
-            }
-          }
-        }
-      });
-
-      if (!existingCase) {
-        throw new NotFoundException(`Stroke case with ID ${id} not found`);
-      }
-
-      console.log('Found stroke case:', existingCase.patient?.firstName, existingCase.patient?.lastName);
-
-      // Use transaction to ensure data integrity
-      await this.prisma.$transaction(async (tx) => {
-        // Delete related timeline events
-        await tx.strokeTimeline.deleteMany({
-          where: { strokeCaseId: id }
-        });
-
-        // Delete related assessments
-        await tx.strokeAssessmentScore.deleteMany({
-          where: { strokeCaseId: id }
-        });
-
-        // Delete related rehabilitation records
-        await tx.strokeRehabilitation.deleteMany({
-          where: { strokeCaseId: id }
-        });
-
-        // Delete related KPI summaries
-        await tx.strokeKpiSummary.deleteMany({
-          where: { strokeCaseId: id }
-        });
-
-        // Finally delete the stroke case
-        await tx.strokeCase.delete({
-          where: { id }
-        });
-      });
-
-      console.log('Stroke case deleted successfully');
-    } catch (error) {
-      console.error('Error deleting stroke case:', error);
-      throw error;
-    }
   }
 }
