@@ -4,10 +4,14 @@ import { CreateStrokeCaseDto } from './dto/create-stroke-case.dto';
 import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
 import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
 import { StrokeCase, StrokeStatus, StrokeType, TicketPriority, TicketPathway } from '@prisma/client';
+import { PatientMergeService } from '../patients/patient-merge.service';
 
 @Injectable()
 export class StrokeCasesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private patientMergeService: PatientMergeService
+  ) {}
 
   async create(createStrokeCaseDto: CreateStrokeCaseV2Dto, userId: string): Promise<StrokeCase> {
     try {
@@ -20,33 +24,48 @@ export class StrokeCasesService {
 
     // Auto-create patient if not provided but patientInfo is provided
     if (!patientId && createStrokeCaseDto.patientInfo) {
-      // First, check if a patient with the same MRN or National ID already exists
-      let existingPatient = null;
+      console.log('=== PATIENT PROCESSING ===');
+      console.log('Patient Info:', createStrokeCaseDto.patientInfo);
       
-      if (createStrokeCaseDto.patientInfo.mrn) {
-        existingPatient = await this.prisma.patient.findUnique({
-          where: { mrn: createStrokeCaseDto.patientInfo.mrn }
-        });
+      // Check for existing patient by National ID first (primary identifier)
+      if (createStrokeCaseDto.patientInfo.nationalId && createStrokeCaseDto.patientInfo.nationalId.trim()) {
+        console.log('Checking for existing patient by National ID:', createStrokeCaseDto.patientInfo.nationalId);
+        
+        try {
+          // Use patient merge service to find and merge duplicates
+          const existingPatientId = await this.patientMergeService.findAndMergeDuplicatesByNationalId(
+            createStrokeCaseDto.patientInfo.nationalId.trim()
+          );
+          
+          if (existingPatientId) {
+            console.log('Found existing patient (or merged duplicates):', existingPatientId);
+            patientId = existingPatientId;
+          } else {
+            console.log('No existing patient found with National ID, will create new patient');
+          }
+        } catch (error) {
+          console.error('Error checking for duplicate patients:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          throw new BadRequestException(`Error checking for duplicate patients: ${errorMessage}`);
+        }
       }
       
-      if (!existingPatient && createStrokeCaseDto.patientInfo.nationalId) {
-        existingPatient = await this.prisma.patient.findUnique({
-          where: { nationalId: createStrokeCaseDto.patientInfo.nationalId }
-        });
-      }
-      
-      if (existingPatient) {
-        console.log('Using existing patient:', existingPatient.id);
-        patientId = existingPatient.id;
-      } else {
-        // Create new patient only if no existing patient found
+      // If no existing patient found, create new one
+      if (!patientId) {
+        console.log('Creating new patient...');
+        
+        // Validate required fields
+        if (!createStrokeCaseDto.patientInfo.firstName || !createStrokeCaseDto.patientInfo.lastName) {
+          throw new BadRequestException('Patient first name and last name are required');
+        }
+        
         const patientData: any = {
-          firstName: createStrokeCaseDto.patientInfo.firstName,
-          lastName: createStrokeCaseDto.patientInfo.lastName,
-          nationalId: createStrokeCaseDto.patientInfo.nationalId,
-          mrn: createStrokeCaseDto.patientInfo.mrn,
-          phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber,
-          email: createStrokeCaseDto.patientInfo.email,
+          firstName: createStrokeCaseDto.patientInfo.firstName.trim(),
+          lastName: createStrokeCaseDto.patientInfo.lastName.trim(),
+          nationalId: createStrokeCaseDto.patientInfo.nationalId?.trim() || null,
+          mrn: createStrokeCaseDto.patientInfo.mrn?.trim() || null,
+          phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber?.trim() || null,
+          email: createStrokeCaseDto.patientInfo.email?.trim() || null,
           createdById: userId,
         };
         
@@ -64,11 +83,37 @@ export class StrokeCasesService {
         }
         
         console.log('Creating new patient with data:', patientData);
-        const patient = await this.prisma.patient.create({
-          data: patientData,
-        });
-        console.log('New patient created:', patient.id);
-        patientId = patient.id;
+        
+        try {
+          const patient = await this.prisma.patient.create({
+            data: patientData,
+          });
+          console.log('New patient created:', patient.id);
+          patientId = patient.id;
+        } catch (error: any) {
+          console.error('Error creating patient:', error);
+          
+          // If it's a unique constraint violation, try to find the existing patient
+          if (error.code === 'P2002') {
+            console.log('Unique constraint violation, attempting to find existing patient...');
+            
+            if (createStrokeCaseDto.patientInfo.nationalId) {
+              const existingPatient = await this.prisma.patient.findUnique({
+                where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
+              });
+              if (existingPatient) {
+                console.log('Found existing patient after constraint violation:', existingPatient.id);
+                patientId = existingPatient.id;
+              }
+            }
+            
+            if (!patientId) {
+              throw new BadRequestException('Patient with this National ID already exists');
+            }
+          } else {
+            throw error;
+          }
+        }
       }
     }
 
