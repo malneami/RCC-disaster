@@ -123,8 +123,12 @@ export interface StrokeCase {
     id: string;
     firstName: string;
     lastName: string;
+    nationalId?: string;
+    mrn?: string;
     dateOfBirth: string;
     gender: string;
+    phoneNumber?: string;
+    email?: string;
   };
   originHospital?: {
     id: string;
@@ -375,7 +379,30 @@ export interface StrokeKPISummary {
 export class StrokeService {
   // Stroke Cases
   static async createStrokeCase(data: CreateStrokeCaseData): Promise<StrokeCase> {
-    const response = await apiClient.post('/stroke-cases', data);
+    // Filter data to only include fields that exist in the backend DTO
+    const filteredData = {
+      ticketId: data.ticketId,
+      patientId: data.patientId,
+      patientInfo: data.patientInfo ? {
+        firstName: data.patientInfo.firstName,
+        lastName: data.patientInfo.lastName,
+        nationalId: data.patientInfo.nationalId,
+        mrn: data.patientInfo.mrn,
+        dateOfBirth: data.patientInfo.dateOfBirth,
+        gender: data.patientInfo.gender,
+        phoneNumber: data.patientInfo.phoneNumber,
+        email: data.patientInfo.email
+      } : undefined,
+      chiefComplaint: data.chiefComplaint,
+      originHospitalId: data.originHospitalId,
+      strokeType: data.strokeType,
+      currentStatus: data.currentStatus,
+      strokeSeverity: data.strokeSeverity,
+      selectedTreatment: data.selectedTreatment
+    };
+    
+    console.log('Sending filtered data:', filteredData);
+    const response = await apiClient.post('/stroke-cases', filteredData);
     return response.data;
   }
 
@@ -581,47 +608,6 @@ export class StrokeService {
     return 'bg-red-100 text-red-800';
   }
 
-  // API Methods
-  static async createStrokeCase(data: CreateStrokeCaseData): Promise<StrokeCase> {
-    // Filter data to only include fields that exist in the backend DTO
-    const filteredData = {
-      ticketId: data.ticketId,
-      patientId: data.patientId,
-      patientInfo: data.patientInfo ? {
-        firstName: data.patientInfo.firstName,
-        lastName: data.patientInfo.lastName,
-        dateOfBirth: data.patientInfo.dateOfBirth,
-        gender: data.patientInfo.gender,
-        phoneNumber: data.patientInfo.phoneNumber,
-        email: data.patientInfo.email
-      } : undefined,
-      chiefComplaint: data.chiefComplaint,
-      originHospitalId: data.originHospitalId,
-      strokeType: data.strokeType,
-      currentStatus: data.currentStatus,
-      strokeSeverity: data.strokeSeverity,
-      selectedTreatment: data.selectedTreatment
-    };
-    
-    console.log('Sending filtered data:', filteredData);
-    const response = await apiClient.post('/stroke-cases', filteredData);
-    return response.data;
-  }
-
-  static async updateStrokeCase(id: string, data: any): Promise<StrokeCase> {
-    const response = await apiClient.patch(`/stroke-cases/${id}`, data);
-    return response.data;
-  }
-
-  static async getStrokeCases(): Promise<StrokeCase[]> {
-    const response = await apiClient.get('/stroke-cases');
-    return response.data;
-  }
-
-  static async getKPISummary(): Promise<StrokeKPISummary> {
-    const response = await apiClient.get('/stroke-cases/kpi-summary');
-    return response.data;
-  }
 }
 
 export default StrokeService;

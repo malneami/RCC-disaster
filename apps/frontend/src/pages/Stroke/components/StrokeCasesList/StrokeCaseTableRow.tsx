@@ -76,7 +76,12 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
               {strokeCase.patient?.firstName} {strokeCase.patient?.lastName}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#666' }}>
-              ID: {strokeCase.id.slice(-8).toUpperCase()}
+              National ID: {strokeCase.patient?.nationalId || 'Not set'}
+              {strokeCase.patient?.mrn && (
+                <span style={{ marginLeft: '12px' }}>
+                  MRN: {strokeCase.patient.mrn}
+                </span>
+              )}
             </div>
           </Box>
         </Box>

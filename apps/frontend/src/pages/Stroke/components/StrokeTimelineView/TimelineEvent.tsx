@@ -6,8 +6,12 @@ import {
   Typography,
   Chip,
 } from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faUser, faHospital, faStethoscope } from '@fortawesome/free-solid-svg-icons';
+import {
+  AccessTime as ClockIcon,
+  Person as UserIcon,
+  LocalHospital as HospitalIcon,
+  MedicalServices as StethoscopeIcon,
+} from '@mui/icons-material';
 
 import { StrokeTimeline, StrokeService } from '../../../../services/strokeService';
 
@@ -37,25 +41,33 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({ event }) => {
     switch (eventType) {
       case 'ARRIVAL':
       case 'TRANSFER':
-        return faHospital;
+        return HospitalIcon;
       case 'TRIAGE':
       case 'ASSESSMENT':
-        return faStethoscope;
+        return StethoscopeIcon;
       case 'IMAGING':
       case 'LABORATORY':
       case 'TREATMENT_START':
       case 'TREATMENT_COMPLETE':
-        return faStethoscope;
+        return StethoscopeIcon;
       case 'DISCHARGE':
       case 'FOLLOWUP':
-        return faUser;
+        return UserIcon;
       default:
-        return faClock;
+        return ClockIcon;
     }
   };
 
   const formatDateTime = (dateString: string): string => {
-    return new Date(dateString).toLocaleString();
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleString();
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
   const formatDuration = (minutes?: number): string => {
@@ -86,10 +98,9 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({ event }) => {
               height: 40,
             }}
           >
-            <FontAwesomeIcon
-              icon={getEventTypeIcon(event.eventType)}
-              style={{ color: 'white', fontSize: '16px' }}
-            />
+            {React.createElement(getEventTypeIcon(event.eventType), {
+              style: { color: 'white', fontSize: '20px' }
+            })}
           </Box>
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -102,8 +113,8 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({ event }) => {
                 color={event.toStatus === 'TREATMENT_COMPLETE' ? 'success' : 'warning'}
               />
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              <FontAwesomeIcon icon={faClock} style={{ marginRight: '4px' }} />
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <ClockIcon fontSize="small" />
               {formatDateTime(event.eventTimestamp)}
               {event.minutesFromSymptom && ` (${formatDuration(event.minutesFromSymptom)})`}
             </Typography>

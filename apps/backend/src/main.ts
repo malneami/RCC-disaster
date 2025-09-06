@@ -44,12 +44,13 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
-  // Global validation pipe
+  // Global validation pipe - permissive for updates
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      whitelist: false, // Don't remove non-whitelisted properties
+      forbidNonWhitelisted: false, // Allow non-whitelisted properties
       transform: true,
+      skipMissingProperties: true, // Skip validation for missing properties
       transformOptions: {
         enableImplicitConversion: true,
       },

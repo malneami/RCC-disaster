@@ -49,7 +49,11 @@ const TimelineStepper: React.FC<TimelineStepperProps> = ({
 
   // Sort timeline events by date
   const sortedTimeline = [...timeline].sort(
-    (a, b) => new Date(a.eventTimestamp).getTime() - new Date(b.eventTimestamp).getTime()
+    (a, b) => {
+      const dateA = new Date(a.eventTimestamp);
+      const dateB = new Date(b.eventTimestamp);
+      return dateA.getTime() - dateB.getTime();
+    }
   );
 
   return (

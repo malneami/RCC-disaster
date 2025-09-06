@@ -8,10 +8,15 @@ import {
   TableContainer,
   Paper,
   Alert,
+  TextField,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
 import {
   Add as AddIcon,
   FilterList as FilterIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 
 import { StrokeCase } from '../../../services/strokeService';
@@ -37,6 +42,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [filteredCases, setFilteredCases] = useState<StrokeCase[]>(cases);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     strokeType: '',
     status: '',
@@ -44,22 +50,30 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   });
 
   useEffect(() => {
-    setFilteredCases(cases);
-  }, [cases]);
+    applyFiltersAndSearch();
+  }, [cases, searchQuery, filters]);
 
-  const handleViewDetails = (case_: StrokeCase) => {
-    setSelectedCase(case_);
-    setDetailsDialogOpen(true);
-  };
-
-  const handleEditCase = (case_: StrokeCase) => {
-    setSelectedCase(case_);
-    setEditDialogOpen(true);
-  };
-
-  const handleApplyFilters = () => {
+  const applyFiltersAndSearch = () => {
     let filtered = cases;
 
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(case_ => {
+        const patient = case_.patient;
+        if (!patient) return false;
+        
+        const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
+        const nationalId = patient.nationalId?.toLowerCase() || '';
+        const mrn = patient.mrn?.toLowerCase() || '';
+        
+        return fullName.includes(query) || 
+               nationalId.includes(query) || 
+               mrn.includes(query);
+      });
+    }
+
+    // Apply filters
     if (filters.strokeType) {
       filtered = filtered.filter(case_ => case_.strokeType === filters.strokeType);
     }
@@ -73,9 +87,28 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
     setFilteredCases(filtered);
   };
 
+  const handleViewDetails = (case_: StrokeCase) => {
+    setSelectedCase(case_);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleEditCase = (case_: StrokeCase) => {
+    setSelectedCase(case_);
+    setEditDialogOpen(true);
+  };
+
+  const handleApplyFilters = () => {
+    applyFiltersAndSearch();
+  };
+
   const handleClearFilters = () => {
     setFilters({ strokeType: '', status: '', severity: '' });
-    setFilteredCases(cases);
+    setSearchQuery('');
+    applyFiltersAndSearch();
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
   };
 
   const handleCloseDetailsDialog = () => {
@@ -139,14 +172,44 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
         </Box>
       </Box>
 
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Search by patient name, MRN, or National ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton onClick={handleClearSearch} size="small">
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
       {/* Active Filters Alert */}
-      {(filters.strokeType || filters.status || filters.severity) && (
+      {(filters.strokeType || filters.status || filters.severity || searchQuery) && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Filters applied: {[
-            filters.strokeType && `Type: ${filters.strokeType}`,
-            filters.status && `Status: ${filters.status}`,
-            filters.severity && `Severity: ${filters.severity}`,
-          ].filter(Boolean).join(', ')}
+          {searchQuery && `Search: "${searchQuery}"`}
+          {(filters.strokeType || filters.status || filters.severity) && (
+            <>
+              {searchQuery && ' • '}
+              Filters: {[
+                filters.strokeType && `Type: ${filters.strokeType}`,
+                filters.status && `Status: ${filters.status}`,
+                filters.severity && `Severity: ${filters.severity}`,
+              ].filter(Boolean).join(', ')}
+            </>
+          )}
           <Button size="small" onClick={handleClearFilters} sx={{ ml: 1 }}>
             Clear All
           </Button>
