@@ -10,15 +10,12 @@ import {
   Alert,
   Box,
   Typography,
-  Card,
-  CardContent,
-  Chip,
 } from '@mui/material';
-import { Person as PersonIcon } from '@mui/icons-material';
 
 import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
 import NationalIdInput from '../../../../components/Common/NationalIdInput';
+import { Patient } from '../../../../services/patientService';
 
 interface BasicInformationStepProps {
   formData: CreateStrokeCaseData;
@@ -32,7 +29,7 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [hospitalError, setHospitalError] = useState<string | null>(null);
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -55,7 +52,7 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
     fetchHospitals();
   }, []);
 
-  const handlePatientSelect = (patient: any) => {
+  const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
     
     // Auto-fill form with selected patient data
@@ -96,27 +93,21 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
       {/* Selected Patient Display */}
       {selectedPatient && (
         <Grid item xs={12}>
-          <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <PersonIcon />
-                <Typography variant="h6">
-                  Selected Existing Patient: {selectedPatient.firstName} {selectedPatient.lastName}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Chip label={`National ID: ${selectedPatient.nationalId}`} size="small" />
-                {selectedPatient.mrn && (
-                  <Chip label={`MRN: ${selectedPatient.mrn}`} size="small" />
-                )}
-                <Chip label={`Gender: ${selectedPatient.gender}`} size="small" />
-                <Chip label={`${selectedPatient.strokeCasesCount} previous stroke case${selectedPatient.strokeCasesCount > 1 ? 's' : ''}`} size="small" />
-              </Box>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Patient information has been auto-filled. You can modify the details below if needed.
-              </Typography>
-            </CardContent>
-          </Card>
+          <Box sx={{ 
+            p: 2, 
+            border: '2px solid', 
+            borderColor: 'success.main', 
+            borderRadius: 2, 
+            bgcolor: 'success.light', 
+            color: 'success.contrastText' 
+          }}>
+            <Typography variant="h6" gutterBottom>
+              ✅ Existing Patient Selected: {selectedPatient.firstName} {selectedPatient.lastName}
+            </Typography>
+            <Typography variant="body2">
+              Patient information has been auto-filled. You can modify the details below if needed.
+            </Typography>
+          </Box>
         </Grid>
       )}
       
@@ -144,18 +135,18 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
           required
         />
       </Grid>
-      <Grid item xs={12} sm={6}>
-        <NationalIdInput
-          value={formData.patientInfo?.nationalId || ''}
-          onChange={(value) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            nationalId: value 
-          })}
-          onPatientSelect={handlePatientSelect}
-          label="National ID"
-          required
-        />
-      </Grid>
+        <Grid item xs={12} sm={6}>
+          <NationalIdInput
+            value={formData.patientInfo?.nationalId || ''}
+            onChange={(value) => updateFormData('patientInfo', { 
+              ...formData.patientInfo, 
+              nationalId: value 
+            })}
+            onPatientSelect={handlePatientSelect}
+            label="National ID"
+            required
+          />
+        </Grid>
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth

@@ -667,4 +667,64 @@ export class StrokeCasesService {
     const validValues = values.filter(v => v !== null && v !== undefined) as number[];
     return validValues.length > 0 ? validValues.reduce((sum, val) => sum + val, 0) / validValues.length : 0;
   }
+
+  async remove(id: string): Promise<void> {
+    console.log('=== STROKE CASE DELETE ===');
+    console.log('Deleting stroke case:', id);
+
+    try {
+      // Check if stroke case exists
+      const existingCase = await this.prisma.strokeCase.findUnique({
+        where: { id },
+        include: {
+          patient: {
+            select: {
+              firstName: true,
+              lastName: true,
+              nationalId: true,
+            }
+          }
+        }
+      });
+
+      if (!existingCase) {
+        throw new NotFoundException(`Stroke case with ID ${id} not found`);
+      }
+
+      console.log('Found stroke case:', existingCase.patient?.firstName, existingCase.patient?.lastName);
+
+      // Use transaction to ensure data integrity
+      await this.prisma.$transaction(async (tx) => {
+        // Delete related timeline events
+        await tx.strokeTimeline.deleteMany({
+          where: { strokeCaseId: id }
+        });
+
+        // Delete related assessments
+        await tx.strokeAssessmentScore.deleteMany({
+          where: { strokeCaseId: id }
+        });
+
+        // Delete related rehabilitation records
+        await tx.strokeRehabilitation.deleteMany({
+          where: { strokeCaseId: id }
+        });
+
+        // Delete related KPI summaries
+        await tx.strokeKpiSummary.deleteMany({
+          where: { strokeCaseId: id }
+        });
+
+        // Finally delete the stroke case
+        await tx.strokeCase.delete({
+          where: { id }
+        });
+      });
+
+      console.log('Stroke case deleted successfully');
+    } catch (error) {
+      console.error('Error deleting stroke case:', error);
+      throw error;
+    }
+  }
 }

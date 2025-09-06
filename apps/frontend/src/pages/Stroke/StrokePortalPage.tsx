@@ -7,7 +7,6 @@ import { Helmet } from 'react-helmet-async';
 import StrokeCasesList from './components/StrokeCasesList';
 import StrokeKPIDashboard from './components/StrokeKPIDashboardMain';
 import StrokeTimelineView from './components/StrokeTimelineView';
-import PatientSearchTimeline from './components/StrokeTimelineView/PatientSearchTimeline';
 import CreateStrokeCaseDialog from './components/CreateStrokeCaseDialog';
 import { StrokeService, StrokeCase, StrokeKPISummary } from '../../services/strokeService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -97,6 +96,22 @@ const StrokePortalPage: React.FC = () => {
       throw err;
     }
   };
+
+  const handleDeleteCase = async (id: string) => {
+    try {
+      await StrokeService.deleteStrokeCase(id);
+      setStrokeCases(prev => prev.filter(case_ => case_.id !== id));
+      // Refresh KPI data
+      const updatedKpi = await StrokeService.getKPISummary();
+      setKpiSummary(updatedKpi);
+    } catch (err) {
+      console.error('Error deleting stroke case:', err);
+      throw err;
+    }
+  };
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'RCC';
 
   if (loading) {
     return (
@@ -240,6 +255,8 @@ const StrokePortalPage: React.FC = () => {
               cases={strokeCases}
               onUpdateCase={handleUpdateCase}
               onCreateCase={() => setCreateDialogOpen(true)}
+              onDeleteCase={handleDeleteCase}
+              isAdmin={isAdmin}
             />
           </TabPanel>
 
@@ -248,7 +265,7 @@ const StrokePortalPage: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={activeTab} index={2}>
-            <PatientSearchTimeline />
+            <StrokeTimelineView cases={strokeCases} />
           </TabPanel>
         </Card>
 

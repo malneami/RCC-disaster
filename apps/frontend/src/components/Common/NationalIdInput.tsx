@@ -6,34 +6,18 @@ import {
   Typography,
   Chip,
   CircularProgress,
-  Alert,
 } from '@mui/material';
-import { Person as PersonIcon, Badge as BadgeIcon } from '@mui/icons-material';
-import { format } from 'date-fns';
-
-interface PatientSuggestion {
-  id: string;
-  firstName: string;
-  lastName: string;
-  nationalId: string;
-  mrn: string;
-  dateOfBirth: string;
-  gender: string;
-  phoneNumber?: string;
-  email?: string;
-  strokeCasesCount: number;
-  lastVisit?: string;
-}
+import { Person as PersonIcon } from '@mui/icons-material';
+import { patientService, Patient } from '../../services/patientService';
 
 interface NationalIdInputProps {
   value: string;
   onChange: (value: string) => void;
-  onPatientSelect?: (patient: PatientSuggestion) => void;
+  onPatientSelect?: (patient: Patient) => void;
   label?: string;
   required?: boolean;
   error?: boolean;
   helperText?: string;
-  disabled?: boolean;
 }
 
 const NationalIdInput: React.FC<NationalIdInputProps> = ({
@@ -44,16 +28,14 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   required = false,
   error = false,
   helperText,
-  disabled = false,
 }) => {
-  const [suggestions, setSuggestions] = useState<PatientSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Debounced search function
-  const searchPatients = useCallback(async (query: string) => {
-    if (query.length < 4) {
+  const searchPatients = useCallback(async (nationalId: string) => {
+    if (nationalId.length < 4) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -61,19 +43,18 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
 
     try {
       setLoading(true);
-      setSearchError(null);
-
-      const response = await fetch(`/api/v1/patients/search/national-id?q=${encodeURIComponent(query)}`);
-      if (!response.ok) {
-        throw new Error('Failed to search patients');
-      }
-
-      const results = await response.json();
-      setSuggestions(results);
-      setShowSuggestions(results.length > 0);
+      const results = await patientService.searchPatients(nationalId);
+      
+      // Filter results that match the National ID pattern
+      const matchingPatients = results.filter(patient => 
+        patient.nationalId && 
+        patient.nationalId.toLowerCase().includes(nationalId.toLowerCase())
+      );
+      
+      setSuggestions(matchingPatients);
+      setShowSuggestions(matchingPatients.length > 0);
     } catch (error) {
       console.error('Error searching patients:', error);
-      setSearchError('Failed to search patients');
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -84,13 +65,13 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   // Debounce the search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (value.trim()) {
-        searchPatients(value.trim());
+      if (value && value.length >= 4) {
+        searchPatients(value);
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
       }
-    }, 300); // 300ms debounce
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [value, searchPatients]);
@@ -100,21 +81,21 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     onChange(newValue);
   };
 
-  const handlePatientSelect = (patient: PatientSuggestion) => {
-    onChange(patient.nationalId);
+  const handlePatientSelect = (patient: Patient) => {
+    onChange(patient.nationalId || '');
     setShowSuggestions(false);
     onPatientSelect?.(patient);
   };
 
-  const getPatientDisplayName = (patient: PatientSuggestion): string => {
+  const getPatientDisplayName = (patient: Patient): string => {
     return `${patient.firstName} ${patient.lastName}`;
   };
 
-  const getPatientSubtitle = (patient: PatientSuggestion): string => {
+  const getPatientSubtitle = (patient: Patient): string => {
     const parts = [];
+    if (patient.nationalId) parts.push(`ID: ${patient.nationalId}`);
+    if (patient.mrn) parts.push(`MRN: ${patient.mrn}`);
     if (patient.gender !== 'UNKNOWN') parts.push(patient.gender);
-    if (patient.dateOfBirth) parts.push(format(new Date(patient.dateOfBirth), 'MMM dd, yyyy'));
-    if (patient.strokeCasesCount > 0) parts.push(`${patient.strokeCasesCount} stroke case${patient.strokeCasesCount > 1 ? 's' : ''}`);
     return parts.join(' • ');
   };
 
@@ -124,7 +105,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
         freeSolo
         options={suggestions}
         getOptionLabel={(option) => 
-          typeof option === 'string' ? option : option.nationalId
+          typeof option === 'string' ? option : option.nationalId || ''
         }
         value={value}
         onInputChange={(_, newInputValue) => {
@@ -136,18 +117,19 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
           }
         }}
         loading={loading}
-        disabled={disabled}
-        open={showSuggestions && suggestions.length > 0}
-        onClose={() => setShowSuggestions(false)}
-        filterOptions={(x) => x} // Disable default filtering since we're doing server-side search
+        loadingText="Searching patients..."
+        noOptionsText={
+          value.length >= 4 
+            ? "No patients found with this National ID"
+            : "Enter at least 4 digits to search"
+        }
         renderInput={(params) => (
           <TextField
             {...params}
-            label={required ? `${label} *` : label}
-            value={value}
-            onChange={handleInputChange}
+            label={label}
+            required={required}
             error={error}
-            helperText={helperText || (value.length >= 4 && suggestions.length === 0 && !loading ? 'No existing patients found with this National ID' : '')}
+            helperText={helperText}
             InputProps={{
               ...params.InputProps,
               endAdornment: (
@@ -161,48 +143,35 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
         )}
         renderOption={(props, option) => (
           <Box component="li" {...props}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', py: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                <PersonIcon fontSize="small" color="primary" />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+              <PersonIcon color="primary" />
+              <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                 <Typography variant="body1" fontWeight="medium">
                   {getPatientDisplayName(option)}
                 </Typography>
-                <Chip 
-                  label={option.nationalId} 
-                  size="small" 
-                  color="primary" 
-                  variant="outlined"
-                />
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                {getPatientSubtitle(option)}
-              </Typography>
-              {option.mrn && (
-                <Typography variant="caption" color="text.secondary">
-                  MRN: {option.mrn}
+                <Typography variant="body2" color="text.secondary">
+                  {getPatientSubtitle(option)}
                 </Typography>
-              )}
+                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                  <Chip 
+                    label={`${option.strokeCasesCount || 0} stroke case${(option.strokeCasesCount || 0) > 1 ? 's' : ''}`} 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                  />
+                </Box>
+              </Box>
             </Box>
           </Box>
         )}
-        noOptionsText={
-          value.length >= 4 
-            ? "No existing patients found with this National ID"
-            : "Enter at least 4 digits to search for existing patients"
-        }
+        open={showSuggestions && suggestions.length > 0}
+        onClose={() => setShowSuggestions(false)}
+        onOpen={() => {
+          if (value.length >= 4 && suggestions.length > 0) {
+            setShowSuggestions(true);
+          }
+        }}
       />
-
-      {searchError && (
-        <Alert severity="error" sx={{ mt: 1 }}>
-          {searchError}
-        </Alert>
-      )}
-
-      {value.length >= 4 && suggestions.length > 0 && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          Found {suggestions.length} existing patient{suggestions.length > 1 ? 's' : ''} with this National ID
-        </Typography>
-      )}
     </Box>
   );
 };

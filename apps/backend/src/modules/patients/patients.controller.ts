@@ -2,7 +2,6 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Requ
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
 import { PatientsService } from './patients.service';
-import { PatientSearchService } from './patient-search.service';
 import { MedicalRecordsService } from '../medical-records/medical-records.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -17,7 +16,6 @@ import { UpdatePatientDto } from './dto/patient.dto';
 export class PatientsController {
   constructor(
     private readonly patientsService: PatientsService,
-    private readonly patientSearchService: PatientSearchService,
     private readonly medicalRecordsService: MedicalRecordsService,
   ) {}
 
@@ -131,49 +129,5 @@ export class PatientsController {
   @ApiParam({ name: 'id', description: 'Patient ID' })
   async getMedicalRecords(@Param('id') patientId: string) {
     return this.medicalRecordsService.findByPatient(patientId);
-  }
-
-  @Get('search/national-id')
-  @ApiOperation({ summary: 'Search patients by National ID (partial match)' })
-  @ApiQuery({ name: 'q', description: 'Partial National ID (minimum 4 digits)', required: true })
-  async searchByNationalId(@Query('q') query: string) {
-    return this.patientSearchService.searchByNationalId(query);
-  }
-
-  @Get('search/name')
-  @ApiOperation({ summary: 'Search patients by name' })
-  @ApiQuery({ name: 'q', description: 'Name search query (minimum 2 characters)', required: true })
-  async searchByName(@Query('q') query: string) {
-    return this.patientSearchService.searchByName(query);
-  }
-
-  @Get('timeline/:patientId')
-  @ApiOperation({ summary: 'Get patient timeline (all stroke cases and events)' })
-  @ApiParam({ name: 'patientId', description: 'Patient ID' })
-  async getPatientTimeline(@Param('patientId') patientId: string) {
-    return this.patientSearchService.getPatientTimeline(patientId);
-  }
-
-  @Get('timeline/national-id/:nationalId')
-  @ApiOperation({ summary: 'Get patient timeline by National ID' })
-  @ApiParam({ name: 'nationalId', description: 'Patient National ID' })
-  async getPatientTimelineByNationalId(@Param('nationalId') nationalId: string) {
-    return this.patientSearchService.getPatientTimelineByNationalId(nationalId);
-  }
-
-  @Delete(':id')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Delete a patient record (Admin only)' })
-  @ApiParam({ name: 'id', description: 'Patient ID' })
-  async deletePatient(@Param('id') patientId: string, @Request() req: any) {
-    return this.patientsService.deletePatient(patientId, req.user.id);
-  }
-
-  @Delete(':id/force')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Force delete a patient record permanently (Admin only)' })
-  @ApiParam({ name: 'id', description: 'Patient ID' })
-  async forceDeletePatient(@Param('id') patientId: string, @Request() req: any) {
-    return this.patientsService.forceDeletePatient(patientId, req.user.id);
   }
 }
