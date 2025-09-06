@@ -64,6 +64,10 @@ model Ticket {
   completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
   activities          Activity[]
   
+  // Stroke Relations
+  strokeCases         StrokeCase[]
+  strokeTimeline      StrokeTimeline[]
+  
   @@map("tickets")
   @@index([ticketNumber])
   @@index([status])

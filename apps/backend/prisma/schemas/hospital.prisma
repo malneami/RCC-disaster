@@ -59,6 +59,21 @@ model Hospital {
   traumaLevel       TraumaLevel   @default(NONE) @map("trauma_level")
   hasCardiologyCenter Boolean     @default(false) @map("has_cardiology_center")
   
+  // Stroke-specific capabilities
+  strokeUnitBeds    Int           @default(0) @map("stroke_unit_beds")
+  strokeUnitBedsAvailable Int     @default(0) @map("stroke_unit_beds_available")
+  hasThrombolysis   Boolean       @default(false) @map("has_thrombolysis")
+  hasThrombectomy   Boolean       @default(false) @map("has_thrombectomy")
+  stroke24x7Service Boolean       @default(false) @map("stroke_24x7_service")
+  avgDoorToImagingMinutes Int?    @map("avg_door_to_imaging_minutes")
+  avgDoorToNeedleMinutes Int?     @map("avg_door_to_needle_minutes")
+  avgDoorToGroinMinutes Int?      @map("avg_door_to_groin_minutes")
+  lastStrokeCase    DateTime?     @map("last_stroke_case")
+  strokeCasesPerMonth Int         @default(0) @map("stroke_cases_per_month")
+  strokeCasesCurrentYear Int      @default(0) @map("stroke_cases_current_year")
+  strokeSuccessRate Float?       @map("stroke_success_rate")
+  strokeCertificationLevel String? @map("stroke_certification_level") // PRIMARY, COMPREHENSIVE, etc.
+  
   // Audit fields
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
@@ -70,6 +85,12 @@ model Hospital {
   destinationTickets Ticket[]     @relation("DestinationHospital")
   criticalCases     CriticalCase[]
   hospitalTickets   HospitalTicket[]
+  
+  // Stroke Relations
+  strokeOriginCases StrokeCase[]  @relation("StrokeOriginHospital")
+  strokeDestinationCases StrokeCase[] @relation("StrokeDestinationHospital")
+  // strokeKpiSummaries StrokeKpiSummary[]
+  // strokeRehabilitationCenters StrokeRehabilitation[] @relation("StrokeRehabilitationCenter")
   
   @@map("hospitals")
   @@index([status])

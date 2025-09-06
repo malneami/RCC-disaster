@@ -1,0 +1,105 @@
+// Stroke KPI Summary model for performance metrics and reporting
+model StrokeKpiSummary {
+  id                              String      @id @default(uuid())
+  hospitalId                      String      @map("hospital_id")
+  cluster                         String
+  year                           Int         NOT NULL
+  month                          Int         NOT NULL
+  
+  // Volume Metrics
+  totalStrokeVolume              Int         @default(0) @map("total_stroke_volume")
+  ischemicStrokeVolume           Int         @default(0) @map("ischemic_stroke_volume")
+  hemorrhagicStrokeVolume        Int         @default(0) @map("hemorrhagic_stroke_volume")
+  tiaVolume                      Int         @default(0) @map("tia_volume")
+  lvoStrokeVolume                Int         @default(0) @map("lvo_stroke_volume")
+  
+  // Treatment Volumes
+  thrombolysisCases              Int         @default(0) @map("thrombolysis_cases")
+  thrombectomyCases              Int         @default(0) @map("thrombectomy_cases")
+  
+  // Average Performance Timings  
+  avgDoorToImagingMinutes        Float?      @map("avg_door_to_imaging_minutes")
+  avgDoorToNeedleMinutes         Float?      @map("avg_door_to_needle_minutes")
+  avgDoorToGroinMinutes          Float?      @map("avg_door_to_groin_minutes")
+  avgStrokeUnitAdmissionMinutes  Float?      @map("avg_stroke_unit_admission_minutes")
+  
+  // Median Performance Timings
+  medianDoorToImagingMinutes     Int?        @map("median_door_to_imaging_minutes")
+  medianDoorToNeedleMinutes      Int?        @map("median_door_to_needle_minutes")
+  medianDoorToGroinMinutes       Int?        @map("median_door_to_groin_minutes")
+  
+  // Best/Worst Performance
+  bestDoorToImagingMinutes       Int?        @map("best_door_to_imaging_minutes")
+  worstDoorToImagingMinutes      Int?        @map("worst_door_to_imaging_minutes")
+  bestDoorToNeedleMinutes        Int?        @map("best_door_to_needle_minutes")
+  worstDoorToNeedleMinutes       Int?        @map("worst_door_to_needle_minutes")
+  
+  // Performance Trends
+  performanceTrendImaging        Float?      @map("performance_trend_imaging") // Month over month change
+  performanceTrendThrombolysis   Float?      @map("performance_trend_thrombolysis")
+  performanceTrendThrombectomy    Float?      @map("performance_trend_thrombectomy")
+  volumeTrend                    Float?      @map("volume_trend")
+  
+  // Clinical Outcomes
+  complicationRate               Float?      @map("complication_rate") // Percentage
+  mortalityRateInhospital         Float?      @map("mortality_rate_inhospital")
+  mortalityRate30day             Float?      @map("mortality_rate_30day")
+  mortalityRate90day             Float?      @map("mortality_rate_90day")
+  readmissionRate30day           Float?      @map("readmission_rate_30day")
+  averageLengthOfStayDays        Int?        @map("average_length_of_stay_days")
+  independentDischargeRate       Float?      @map("independent_discharge_rate") // mRS 0-2 at discharge
+  
+  // KPI Performance Metrics
+  kpi1TotalCases                 Int?        @map("kpi1_total_cases") // Door to imaging ≤25min
+  kpi1Within25min                Int?        @map("kpi1_within_25min")
+  kpi1Percentage                 Float?      @map("kpi1_percentage")
+  kpi1Status                     String?     @map("kpi1_status") // ABOVE_TARGET, AT_TARGET, BELOW_TARGET
+  
+  kpi2TotalCases                 Int?        @map("kpi2_total_cases") // Door to needle ≤60min
+  kpi2Within60min                Int?        @map("kpi2_within_60min")
+  kpi2Percentage                 Float?      @map("kpi2_percentage")
+  kpi2Status                     String?     @map("kpi2_status")
+  
+  kpi3TotalCases                 Int?        @map("kpi3_total_cases") // Door to groin ≤90min
+  kpi3Within90min                Int?        @map("kpi3_within_90min")
+  kpi3Percentage                 Float?      @map("kpi3_percentage")
+  kpi3Status                     String?     @map("kpi3_status")
+  
+  kpi4TotalCases                 Int?        @map("kpi4_total_cases") // Stroke unit admission ≤4hr
+  kpi4Within4hr                  Int?        @map("kpi4_within_4hr")
+  kpi4Percentage                 Float?      @map("kpi4_percentage")
+  kpi4Status                     String?     @map("kpi4_status")
+  
+  kpi5TotalCases                 Int?        @map("kpi5_total_cases") // Dysphagia screening ≤4hr
+  kpi5Within4hr                  Int?        @map("kpi5_within_4hr")
+  kpi5Percentage                 Float?      @map("kpi5_percentage")
+  kpi5Status                     String?     @map("kpi5_status")
+  
+  kpi6TotalCases                 Int?        @map("kpi6_total_cases") // Early mobilization ≤24hr
+  kpi6Within24hr                 Int?        @map("kpi6_within_24hr")
+  kpi6Percentage                 Float?      @map("kpi6_percentage")
+  kpi6Status                     String?     @map("kpi6_status")
+  
+  kpi7TotalCases                 Int?        @map("kpi7_total_cases") // Secondary prevention prescribed
+  kpi7Prescribed                 Int?        @map("kpi7_prescribed")
+  kpi7Percentage                 Float?      @map("kpi7_percentage")
+  kpi7Status                     String?     @map("kpi7_status")
+  
+  kpi8TotalCases                 Int?        @map("kpi8_total_cases") // Appropriate rehabilitation referral
+  kpi8Referred                   Int?        @map("kpi8_referred")
+  kpi8Percentage                 Float?      @map("kpi8_percentage")
+  kpi8Status                     String?     @map("kpi8_status")
+  
+  // Audit Fields
+  createdAt                      DateTime    @default(now()) @map("created_at")
+  updatedAt                      DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  hospital                       Hospital    @relation(fields: [hospitalId], references: [id])
+  
+  @@map("stroke_kpi_summary")
+  @@index([hospitalId])
+  @@index([cluster])
+  @@index([year, month])
+  @@unique([hospitalId, year, month])
+}

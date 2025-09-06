@@ -1,0 +1,37 @@
+// Stroke Assessment Scores model for detailed clinical assessments
+model StrokeAssessmentScore {
+  id                      String      @id @default(uuid())
+  strokeCaseId            String      @map("stroke_case_id")
+  patientId               String      @map("patient_id")
+  
+  // Assessment Type
+  assessmentType          String      NOT NULL @map("assessment_type") // NIHSS, MRS, BARTHEL, ASPECTS, GCS
+  assessmentTiming        String      NOT NULL @map("assessment_timing") // BASELINE, 24HR, DISCHARGE, 90DAY
+  
+  // Score Values
+  totalScore              Int?
+  subScores               String?     @map("sub_scores") // JSON for detailed breakdown
+  assessorName             String?     @map("assessor_name")
+  assessorQualification    String?     @map("assessor_qualification")
+  
+  // Context
+  assessmentDateTime      DateTime    NOT NULL @map("assessment_date_time")
+  assessmentNotes         String?     @map("assessment_notes")
+  
+  // Audit Fields
+  createdAt               DateTime    @default(now()) @map("created_at")
+  createdById             String      @map("created_by_id")
+  
+  // Relations
+  strokeCase              StrokeCase  @relation(fields: [strokeCaseId], references: [id])
+  patient                 Patient     @relation(fields: [patientId], references: [id])
+  createdBy               User        @relation("StrokeAssessmentCreator", fields: [createdById], references: [id])
+  
+  @@map("stroke_assessment_scores")
+  @@index([strokeCaseId])
+  @@index([patientId])
+  @@index([assessmentType])
+  @@index([assessmentTiming])
+  @@index([assessmentDateTime])
+  @@index([createdAt])
+}

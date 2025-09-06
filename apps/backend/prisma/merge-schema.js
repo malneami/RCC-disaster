@@ -16,7 +16,13 @@ const SCHEMA_ORDER = [
   'critical-case.prisma',
   'hospital-ticket.prisma',
   'activity.prisma',
-  'system.prisma'
+  'system.prisma',
+  'stroke-case.prisma',
+  'stroke-timeline.prisma'
+  // Temporarily disabled stroke models to debug schema issues
+  // 'stroke-kpi-summary.prisma',
+  // 'stroke-assessment-score.prisma',
+  // 'stroke-rehabilitation.prisma'
 ];
 
 // Prisma header
@@ -83,6 +89,8 @@ function validateMergedSchema(content) {
     { name: 'Hospital model', pattern: /model Hospital/, required: true },
     { name: 'CriticalCase model', pattern: /model CriticalCase/, required: true },
     { name: 'HospitalTicket model', pattern: /model HospitalTicket/, required: true },
+    { name: 'StrokeCase model', pattern: /model StrokeCase/, required: false },
+    { name: 'StrokeTimeline model', pattern: /model StrokeTimeline/, required: false },
     { name: 'Enums', pattern: /enum/, required: true },
   ];
   

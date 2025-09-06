@@ -45,6 +45,14 @@ model User {
   // Activity Relations
   activities        Activity[]
   
+  // Stroke Relations
+  createdStrokeCases StrokeCase[] @relation("StrokeCaseCreator")
+  triggeredStrokeTimeline StrokeTimeline[] @relation("StrokeTimelineTriggeredBy")
+  createdStrokeTimeline StrokeTimeline[] @relation("StrokeTimelineCreator")
+  // createdStrokeAssessments StrokeAssessmentScore[] @relation("StrokeAssessmentCreator")
+  // strokeRehabilitationTherapist StrokeRehabilitation[] @relation("StrokeRehabilitationTherapist")
+  // createdStrokeRehabilitation StrokeRehabilitation[] @relation("StrokeRehabilitationCreator")
+  
   @@map("users")
   @@index([email])
   @@index([role])

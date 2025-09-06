@@ -14,6 +14,8 @@ import { TicketsModule } from './modules/tickets/tickets.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 import { HealthModule } from './modules/health/health.module';
+import { StrokeCasesModule } from './modules/stroke-cases/stroke-cases.module';
+import { StrokeTimelineModule } from './modules/stroke-timeline/stroke-timeline.module';
 
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -53,20 +55,22 @@ import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
     ActivitiesModule,
     MedicalRecordsModule,
     HealthModule,
+    StrokeCasesModule,
+    StrokeTimelineModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerBehindProxyGuard,
     },
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: JwtAuthGuard,
+    // },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RolesGuard,
+    // },
   ],
 })
 export class AppModule {}

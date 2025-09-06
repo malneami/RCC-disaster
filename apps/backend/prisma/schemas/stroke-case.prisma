@@ -1,0 +1,123 @@
+// Stroke Case model for comprehensive stroke care management
+model StrokeCase {
+  id                              String      @id @default(uuid())
+  ticketId                        String      @map("ticket_id")
+  patientId                       String      @map("patient_id")
+  originHospitalId                String      @map("origin_hospital_id")
+  destinationHospitalId           String?     @map("destination_hospital_id")
+  
+  // Stroke Classification
+  strokeType                      StrokeType
+  strokeSubtype                   String?     @map("stroke_subtype") // LARGE_VESSEL, SMALL_VESSEL, CARDIOEMBOLIC, etc.
+  strokeSeverity                  StrokeSeverity?
+  
+  // Clinical Assessments
+  nihssBaseline                   Int?        @map("nihss_baseline") // 0-42 scale
+  nihss24hr                       Int?        @map("nihss_24hr")
+  nihssDischarge                  Int?        @map("nihss_discharge")
+  mrsBaseline                     Int?        @map("mrs_baseline") // 0-6 scale  
+  mrs90day                        Int?        @map("mrs_90day")
+  barthelBaseline                 Int?        @map("barthel_baseline") // 0-100 scale
+  barthelDischarge                Int?        @map("barthel_discharge")
+  aspectsScore                    Int?        @map("aspects_score") // 0-10 scale
+  gcsBaseline                     Int?        @map("gcs_baseline") // 3-15 scale
+  
+  // Symptom & Presentation
+  presentingSymptoms              String?     @map("presenting_symptoms")
+  symptomOnset                    DateTime?   @map("symptom_onset")
+  symptomToHospitalMinutes        Int?        @map("symptom_to_hospital_minutes")
+  lastKnownWell                   DateTime?   @map("last_known_well")
+  wakeUpStroke                    Boolean     @default(false) @map("wake_up_stroke")
+  
+  // Treatment Details  
+  currentStatus                   StrokeStatus @map("current_status")
+  selectedTreatment               StrokeTreatment? @map("selected_treatment")
+  eligibleForThrombolysis         Boolean?    @map("eligible_for_thrombolysis")
+  thrombolysisContraindications   String?     @map("thrombolysis_contraindications")
+  eligibleForThrombectomy         Boolean?    @map("eligible_for_thrombectomy")
+  thrombectomyContraindications   String?     @map("thrombectomy_contraindications")
+  
+  // Pathway Timings
+  pathwayStarted                  DateTime?   @map("pathway_started")
+  pathwayCompleted                DateTime?   @map("pathway_completed")
+  strokeUnitAdmissionTime         DateTime?   @map("stroke_unit_admission_time")
+  
+  // Key Performance Timings (minutes)
+  doorToImagingMinutes            Int?        @map("door_to_imaging_minutes")
+  doorToNeedleMinutes             Int?        @map("door_to_needle_minutes") // For thrombolysis
+  doorToGroinMinutes              Int?        @map("door_to_groin_minutes") // For thrombectomy  
+  symptomNeedleMinutes            Int?        @map("symptom_needle_minutes")
+  symptomGroinMinutes             Int?        @map("symptom_groin_minutes")
+  imagingToNeedleMinutes          Int?        @map("imaging_to_needle_minutes")
+  imagingToGroinMinutes           Int?        @map("imaging_to_groin_minutes")
+  
+  // Clinical Assessments Timeline  
+  dysphagiaScreeningMinutes       Int?        @map("dysphagia_screening_minutes") // From admission
+  earlyMobilizationHours          Int?        @map("early_mobilization_hours") // From admission
+  speechTherapyHours              Int?        @map("speech_therapy_hours")
+  physiotherapyHours              Int?        @map("physiotherapy_hours")
+  occupationalTherapyHours        Int?        @map("occupational_therapy_hours")
+  
+  // Imaging Results
+  ctResults                       String?     @map("ct_results")
+  ctaResults                      String?     @map("cta_results")
+  ctpResults                      String?     @map("ctp_results")
+  mriResults                      String?     @map("mri_results")
+  mraResults                      String?     @map("mra_results")
+  echocardiogram                  String?
+  carotidUcsDoppler               String?     @map("carotid_ucs_doppler")
+  
+  // Treatment Outcomes
+  successful                      Boolean?
+  recanalizationGrade             String?     @map("recanalization_grade") // mTICI 0, 1, 2a, 2b, 3
+  complications                   String?
+  secondaryPrevention             String?     @map("secondary_prevention")
+  
+  // Discharge & Follow-up
+  dischargeDestination            String?     @map("discharge_destination") // HOME, REHABILITATION, NURSING_HOME, etc.
+  dischargeDate                   DateTime?   @map("discharge_date")
+  lengthOfStayDays                Int?        @map("length_of_stay_days")
+  thirtyDayReadmission            Boolean?    @map("thirty_day_readmission")
+  ninetyDayMortality              Boolean?    @map("ninety_day_mortality")
+  followUpCallCompleted           Boolean?    @map("follow_up_call_completed")
+  followUpCallDate                DateTime?   @map("follow_up_call_date")
+  
+  // KPI Tracking
+  metKpi1                         Boolean?    @map("met_kpi1") // Door to imaging ≤25min
+  metKpi2                         Boolean?    @map("met_kpi2") // Door to needle ≤60min  
+  metKpi3                         Boolean?    @map("met_kpi3") // Door to groin ≤90min
+  metKpi4                         Boolean?    @map("met_kpi4") // Stroke unit admission ≤4hr
+  metKpi5                         Boolean?    @map("met_kpi5") // Dysphagia screening ≤4hr
+  metKpi6                         Boolean?    @map("met_kpi6") // Early mobilization ≤24hr
+  metKpi7                         Boolean?    @map("met_kpi7") // Secondary prevention prescribed
+  metKpi8                         Boolean?    @map("met_kpi8") // Appropriate rehabilitation referral
+  
+  // Audit Fields
+  createdAt                       DateTime    @default(now()) @map("created_at")
+  updatedAt                       DateTime    @updatedAt @map("updated_at")
+  deletedAt                       DateTime?   @map("deleted_at")
+  createdById                     String      @map("created_by_id")
+  
+  // Relations
+  ticket                          Ticket      @relation(fields: [ticketId], references: [id])
+  patient                         Patient     @relation(fields: [patientId], references: [id])
+  originHospital                  Hospital    @relation("StrokeOriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital             Hospital?   @relation("StrokeDestinationHospital", fields: [destinationHospitalId], references: [id])
+  createdBy                       User        @relation("StrokeCaseCreator", fields: [createdById], references: [id])
+  
+  // Related Models
+  timeline                        StrokeTimeline[]
+  // assessmentScores                StrokeAssessmentScore[]
+  // rehabilitation                  StrokeRehabilitation[]
+  
+  @@map("stroke_cases")
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([strokeType])
+  @@index([strokeSeverity])
+  @@index([currentStatus])
+  @@index([createdAt])
+  @@index([createdById])
+}

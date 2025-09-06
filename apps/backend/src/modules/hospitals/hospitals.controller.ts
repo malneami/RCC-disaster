@@ -20,6 +20,7 @@ import { UpdateHospitalCapacityDto } from './dto/update-hospital-capacity.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { Public } from '../../auth/decorators/public.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Hospitals')
@@ -39,6 +40,7 @@ export class HospitalsController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Get all hospitals with optional filters' })
   @ApiQuery({ name: 'status', enum: HospitalStatus, required: false })
   @ApiQuery({ name: 'cluster', required: false })

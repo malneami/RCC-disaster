@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StrokeType {
+  ISCHEMIC
+  HEMORRHAGIC
+  TIA
+  UNKNOWN
+}
+
+enum StrokeSeverity {
+  MILD
+  MODERATE
+  SEVERE
+  CRITICAL
+}
+
+enum StrokeStatus {
+  SUSPECTED
+  CONFIRMED
+  IMAGING_PENDING
+  IMAGING_COMPLETE
+  TREATMENT_EVALUATION
+  THROMBOLYSIS_STARTED
+  THROMBECTOMY_STARTED
+  TREATMENT_COMPLETE
+  STROKEUNIT_ADMITTED
+  REHABILITATION_STARTED
+  DISCHARGED
+  FOLLOW_UP
+}
+
+model TestModel {
+  id String @id @default(uuid())
+  strokeType StrokeType
+  strokeSeverity StrokeSeverity
+  currentStatus StrokeStatus
+}

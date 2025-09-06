@@ -73,6 +73,11 @@ model Patient {
   medicalRecords  MedicalRecord[]
   accessLogs      PatientAccessLog[]
   
+  // Stroke Relations
+  strokeCases     StrokeCase[]
+  // strokeAssessmentScores StrokeAssessmentScore[]
+  // strokeRehabilitation StrokeRehabilitation[]
+  
   @@map("patients")
   @@index([mrn])
   @@index([nationalId])

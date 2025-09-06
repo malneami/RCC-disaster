@@ -1,0 +1,45 @@
+// Stroke Rehabilitation model for tracking rehabilitation services
+model StrokeRehabilitation {
+  id                      String      @id @default(uuid())
+  strokeCaseId            String      @map("stroke_case_id")
+  patientId               String      @map("patient_id")
+  
+  // Rehabilitation Details
+  rehabilitationType      String      NOT NULL @map("rehabilitation_type") // PHYSIOTHERAPY, SPEECH, OCCUPATIONAL
+  startDate               DateTime?
+  endDate                 DateTime?
+  frequency               String?     // DAILY, BID, TID, etc.
+  durationMinutes         Int?        @map("duration_minutes")
+  
+  // Goals & Progress
+  initialGoals            String?     @map("initial_goals")
+  progressNotes           String?     @map("progress_notes")
+  dischargeRecommendations String?    @map("discharge_recommendations")
+  
+  // Outcomes
+  functionalImprovement   Boolean?    @map("functional_improvement")
+  goalsMeet               Boolean?    @map("goals_meet")
+  
+  // Provider Details  
+  therapistId             String?     @map("therapist_id")
+  rehabilitationCenterId  String?     @map("rehabilitation_center_id")
+  
+  // Audit Fields
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+  createdById             String      @map("created_by_id")
+  
+  // Relations
+  strokeCase              StrokeCase  @relation(fields: [strokeCaseId], references: [id])
+  patient                 Patient     @relation(fields: [patientId], references: [id])
+  therapist               User?       @relation("StrokeRehabilitationTherapist", fields: [therapistId], references: [id])
+  rehabilitationCenter    Hospital?   @relation("StrokeRehabilitationCenter", fields: [rehabilitationCenterId], references: [id])
+  createdBy               User        @relation("StrokeRehabilitationCreator", fields: [createdById], references: [id])
+  
+  @@map("stroke_rehabilitation")
+  @@index([strokeCaseId])
+  @@index([patientId])
+  @@index([rehabilitationType])
+  @@index([startDate])
+  @@index([createdAt])
+}
