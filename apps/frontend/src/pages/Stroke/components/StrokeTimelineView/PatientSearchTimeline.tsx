@@ -82,8 +82,8 @@ const PatientSearchTimeline: React.FC = () => {
     try {
       setSearchLoading(true);
       const endpoint = type === 'nationalId' 
-        ? `/api/patients/search/national-id?q=${encodeURIComponent(query)}`
-        : `/api/patients/search/name?q=${encodeURIComponent(query)}`;
+        ? `/api/v1/patients/search/national-id?q=${encodeURIComponent(query)}`
+        : `/api/v1/patients/search/name?q=${encodeURIComponent(query)}`;
       
       const response = await fetch(endpoint);
       if (!response.ok) {
@@ -118,7 +118,7 @@ const PatientSearchTimeline: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/patients/timeline/${patientId}`);
+      const response = await fetch(`/api/v1/patients/timeline/${patientId}`);
       if (!response.ok) {
         throw new Error('Failed to load patient timeline');
       }
