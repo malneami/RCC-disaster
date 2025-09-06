@@ -138,7 +138,7 @@ export class StrokeCasesService {
       };
 
     console.log('Creating stroke case with data:', strokeCaseData);
-    return this.prisma.strokeCase.create({
+    const strokeCase = await this.prisma.strokeCase.create({
       data: strokeCaseData,
       include: {
         ticket: {
@@ -192,6 +192,26 @@ export class StrokeCasesService {
         },
       },
     });
+
+    // Create initial timeline event for case creation
+    console.log('Creating initial timeline event...');
+    await this.prisma.strokeTimeline.create({
+      data: {
+        strokeCaseId: strokeCase.id,
+        ticketId: ticketId,
+        fromStatus: null,
+        toStatus: createStrokeCaseDto.currentStatus,
+        eventTimestamp: new Date(),
+        eventDescription: `Stroke case created - ${createStrokeCaseDto.strokeType} stroke`,
+        eventLocation: 'ED',
+        eventType: 'ARRIVAL',
+        triggeredBy: userId,
+        createdById: userId,
+      },
+    });
+
+    console.log('Stroke case and initial timeline event created successfully');
+    return strokeCase;
     } catch (error) {
       console.error('=== STROKE CASE CREATION ERROR ===');
       console.error('Error:', error);

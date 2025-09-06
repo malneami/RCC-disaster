@@ -40,7 +40,6 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateStrokeCaseData>({
-    patientId: '',
     originHospitalId: '',
     strokeType: 'ISCHEMIC',
     currentStatus: 'SUSPECTED',
@@ -50,16 +49,12 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       nationalId: '',
       mrn: '',
       dateOfBirth: '',
-      gender: 'UNKNOWN',
-      phoneNumber: '',
-      email: '',
     },
   });
 
   const handleClose = () => {
     setActiveStep(0);
     setFormData({
-      patientId: '',
       originHospitalId: '',
       strokeType: 'ISCHEMIC',
       currentStatus: 'SUSPECTED',
@@ -69,9 +64,6 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
         nationalId: '',
         mrn: '',
         dateOfBirth: '',
-        gender: 'UNKNOWN',
-        phoneNumber: '',
-        email: '',
       },
     });
     setError(null);
