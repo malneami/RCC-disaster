@@ -6,8 +6,9 @@ import Redis from 'ioredis';
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
-  private redis!: Redis;
+  private redis: Redis | null = null;
   private readonly redisConfig: RedisConfig;
+  private isConnected = false;
 
   constructor(private configService: ConfigService) {
     this.redisConfig = this.configService.get<RedisConfig>('redis')!;
@@ -29,20 +30,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
       this.redis.on('connect', () => {
         this.logger.log('Redis connected successfully');
+        this.isConnected = true;
       });
 
       this.redis.on('error', (error: Error) => {
         this.logger.error('Redis connection error:', error);
+        this.isConnected = false;
       });
 
       this.redis.on('close', () => {
         this.logger.warn('Redis connection closed');
+        this.isConnected = false;
       });
 
       await this.redis.connect();
     } catch (error) {
-      this.logger.error('Failed to initialize Redis:', error);
-      throw error;
+      this.logger.warn('Redis is not available, continuing without cache:', (error as Error).message);
+      this.redis = null;
+      this.isConnected = false;
     }
   }
 
@@ -54,6 +59,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async get(key: string): Promise<string | null> {
+    if (!this.isConnected || !this.redis) {
+      return null;
+    }
     try {
       return await this.redis.get(key);
     } catch (error) {
@@ -63,6 +71,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async set(key: string, value: string, ttl?: number): Promise<boolean> {
+    if (!this.isConnected || !this.redis) {
+      return false;
+    }
     try {
       if (ttl) {
         await this.redis.setex(key, ttl, value);
@@ -77,6 +88,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async del(key: string): Promise<boolean> {
+    if (!this.isConnected || !this.redis) {
+      return false;
+    }
     try {
       await this.redis.del(key);
       return true;
@@ -87,6 +101,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async exists(key: string): Promise<boolean> {
+    if (!this.isConnected || !this.redis) {
+      return false;
+    }
     try {
       const result = await this.redis.exists(key);
       return result === 1;
@@ -97,6 +114,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async expire(key: string, ttl: number): Promise<boolean> {
+    if (!this.isConnected || !this.redis) {
+      return false;
+    }
     try {
       await this.redis.expire(key, ttl);
       return true;
@@ -127,6 +147,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async increment(key: string, ttl?: number): Promise<number> {
+    if (!this.isConnected || !this.redis) {
+      return 0;
+    }
     try {
       const result = await this.redis.incr(key);
       if (ttl && result === 1) {
@@ -140,6 +163,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async decrement(key: string): Promise<number> {
+    if (!this.isConnected || !this.redis) {
+      return 0;
+    }
     try {
       return await this.redis.decr(key);
     } catch (error) {
@@ -148,7 +174,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async getClient(): Promise<Redis> {
+  async getClient(): Promise<Redis | null> {
     return this.redis;
+  }
+
+  isRedisAvailable(): boolean {
+    return this.isConnected && this.redis !== null;
   }
 }
