@@ -42,11 +42,14 @@ import { format } from 'date-fns';
 
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
 import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
+import EditTraumaCaseDialog from './EditTraumaCaseDialog';
+import ViewTraumaCaseDialog from './ViewTraumaCaseDialog';
 
 interface TraumaCasesListProps {
   cases: TraumaCase[];
   onCreateCase: () => void;
   onDeleteCase: (id: string) => Promise<void>;
+  onUpdateCase: (id: string, data: any) => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -71,6 +74,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   cases,
   onCreateCase,
   onDeleteCase,
+  onUpdateCase,
   isAdmin,
 }) => {
   const [page, setPage] = useState(0);
@@ -81,6 +85,8 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   });
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<TraumaCase | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,12 +217,26 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
 
   const handleViewDetails = (case_: TraumaCase) => {
     setSelectedCase(case_);
-    // TODO: Implement view dialog
+    setViewDialogOpen(true);
   };
 
   const handleEditCase = (case_: TraumaCase) => {
     setSelectedCase(case_);
-    // TODO: Implement edit dialog
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateCase = async (id: string, data: any) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await onUpdateCase(id, data);
+      setEditDialogOpen(false);
+    } catch (err) {
+      setError('Failed to update trauma case');
+      console.error('Error updating trauma case:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteClick = (case_: TraumaCase) => {
@@ -604,6 +624,21 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
         onReset={handleClearFilters}
         fields={filterFields}
         values={filters}
+      />
+
+      {/* Edit Dialog */}
+      <EditTraumaCaseDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        onSubmit={handleUpdateCase}
+        traumaCase={selectedCase}
+      />
+
+      {/* View Dialog */}
+      <ViewTraumaCaseDialog
+        open={viewDialogOpen}
+        onClose={() => setViewDialogOpen(false)}
+        traumaCase={selectedCase}
       />
     </Box>
   );
