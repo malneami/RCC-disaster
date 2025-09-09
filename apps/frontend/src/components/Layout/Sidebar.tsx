@@ -22,6 +22,7 @@ import {
   faHeart,
   faBrain,
   faAmbulance,
+  faShieldAlt,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -56,6 +57,12 @@ const Sidebar: React.FC = () => {
       path: '/hospitals',
       roles: ['ADMIN', 'RCC', 'EMS'],
     },
+    {
+      text: 'EMS Dashboard',
+      icon: <FontAwesomeIcon icon={faAmbulance} />,
+      path: '/ems-dashboard',
+      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR'],
+    },
   ];
 
   const portalItems = [
@@ -79,6 +86,13 @@ const Sidebar: React.FC = () => {
       path: '/portals/trauma',
       roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
       color: 'info',
+    },
+    {
+      text: 'EMS Portal',
+      icon: <FontAwesomeIcon icon={faShieldAlt} />,
+      path: '/portals/ems',
+      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR'],
+      color: 'success',
     },
   ];
 

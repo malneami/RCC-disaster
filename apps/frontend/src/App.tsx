@@ -13,6 +13,8 @@ import HospitalDashboardPage from './pages/Hospitals/HospitalDashboardPage';
 import STEMIPortal from './pages/Portals/STEMIPortal';
 import StrokePortal from './pages/Portals/StrokePortal';
 import TraumaPortal from './pages/Portals/TraumaPortal';
+import EMSPortal from './pages/EMS/EMSPortal';
+import EMSDashboardPage from './pages/Dashboard/EMSDashboardPage';
 import AdminPage from './pages/Admin/AdminPage';
 import ProfilePage from './pages/Profile/ProfilePage';
 import LoadingSpinner from './components/Common/LoadingSpinner';
@@ -40,6 +42,7 @@ function App() {
           <Route path="/patients/:id" element={<PatientDetailsPage />} />
           <Route path="/hospitals" element={<HospitalsPage />} />
           <Route path="/hospitals/:hospitalId" element={<HospitalDashboardPage />} />
+          <Route path="/ems-dashboard" element={<EMSDashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           
           {/* Portal Routes */}
@@ -64,6 +67,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
                 <TraumaPortal />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portals/ems"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR']}>
+                <EMSPortal />
               </ProtectedRoute>
             }
           />
