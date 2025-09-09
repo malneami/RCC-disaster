@@ -145,7 +145,6 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
     ? kpiSummary.mortalityRate.toFixed(1)
     : '0.0';
 
-  const averageLengthOfStay = 0; // This field doesn't exist in the interface yet
 
   // Performance indicators
   const responseTimeStatus = averageResponseTime <= 15 ? 'excellent' : 
@@ -303,21 +302,6 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
 
       {/* Additional Metrics */}
       <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Average Length of Stay
-              </Typography>
-              <Typography variant="h4" color="primary">
-                {averageLengthOfStay} days
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Hospital stay duration
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
