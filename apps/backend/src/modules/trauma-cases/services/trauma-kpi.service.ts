@@ -6,7 +6,9 @@ export class TraumaKpiService {
   constructor(private prisma: PrismaService) {}
 
   async getKPISummary(hospitalId?: string, startDate?: string, endDate?: string): Promise<any> {
-    const where: any = {};
+    const where: any = {
+      deletedAt: null, // Only include non-deleted records
+    };
 
     if (hospitalId) {
       where.originHospitalId = hospitalId;
@@ -22,42 +24,66 @@ export class TraumaKpiService {
       }
     }
 
-    const [
-      totalCases,
-      criticalCases,
-      transferCases,
-      averageResponseTime,
-      averageGlasgowScore,
-      mortalityRate,
-    ] = await Promise.all([
-      this.prisma.traumaCase.count({ where }),
-      this.prisma.traumaCase.count({ where: { ...where, criticalCase: true } }),
-      this.prisma.traumaCase.count({ where: { ...where, transferCase: true } }),
-      this.prisma.traumaCase.aggregate({
-        where: { ...where, responseTimeMinutes: { not: null } },
-        _avg: { responseTimeMinutes: true },
-      }),
-      this.prisma.traumaCase.aggregate({
-        where: { ...where, glasgowComaScale: { not: null } },
-        _avg: { glasgowComaScale: true },
-      }),
-      this.prisma.traumaCase.aggregate({
-        where: { ...where, edDisposition: 'DEATH' },
-        _count: { id: true },
-      }),
-    ]);
+    // Get all cases for detailed calculations
+    const allCases = await this.prisma.traumaCase.findMany({
+      where,
+      select: {
+        id: true,
+        arrivalDateTime: true,
+        incidentDateTime: true,
+        responseTimeMinutes: true,
+        glasgowComaScale: true,
+        criticalCase: true,
+        transferCase: true,
+        edDisposition: true,
+        createdAt: true,
+      },
+    });
 
-    const totalCasesForMortality = await this.prisma.traumaCase.count({ where });
+    const totalCases = allCases.length;
+    const criticalCases = allCases.filter(c => c.criticalCase).length;
+    const transferCases = allCases.filter(c => c.transferCase).length;
+    const deathCases = allCases.filter(c => c.edDisposition === 'DEATH').length;
+
+    // Calculate response time properly (from incident to arrival)
+    const responseTimes = allCases
+      .filter(c => c.arrivalDateTime && c.incidentDateTime)
+      .map(c => {
+        const arrival = new Date(c.arrivalDateTime!);
+        const incident = new Date(c.incidentDateTime!);
+        const diffMinutes = (arrival.getTime() - incident.getTime()) / (1000 * 60);
+        return diffMinutes;
+      })
+      .filter(time => time >= 0 && time <= 1440); // Filter out negative times and times > 24 hours
+
+    const averageResponseTime = responseTimes.length > 0 
+      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length 
+      : 0;
+
+    // Calculate Glasgow Coma Scale average (filter out invalid values)
+    const glasgowScores = allCases
+      .filter(c => c.glasgowComaScale && c.glasgowComaScale >= 3 && c.glasgowComaScale <= 15)
+      .map(c => c.glasgowComaScale)
+      .filter(score => score !== null && score !== undefined);
+
+    const averageGlasgowScore = glasgowScores.length > 0 
+      ? glasgowScores.reduce((sum, score) => (sum || 0) + (score || 0), 0) / glasgowScores.length 
+      : 0;
+
+    // Calculate rates
+    const mortalityRate = totalCases > 0 ? (deathCases / totalCases) * 100 : 0;
+    const criticalCaseRate = totalCases > 0 ? (criticalCases / totalCases) * 100 : 0;
+    const transferRate = totalCases > 0 ? (transferCases / totalCases) * 100 : 0;
 
     return {
       totalCases,
       criticalCases,
       transferCases,
-      averageResponseTime: averageResponseTime._avg.responseTimeMinutes || 0,
-      averageGlasgowScore: averageGlasgowScore._avg.glasgowComaScale || 0,
-      mortalityRate: totalCasesForMortality > 0 ? (mortalityRate._count.id / totalCasesForMortality) * 100 : 0,
-      criticalCaseRate: totalCases > 0 ? (criticalCases / totalCases) * 100 : 0,
-      transferRate: totalCases > 0 ? (transferCases / totalCases) * 100 : 0,
+      averageResponseTime: Math.round(averageResponseTime * 10) / 10, // Round to 1 decimal
+      averageGlasgowScore: Math.round(averageGlasgowScore * 10) / 10, // Round to 1 decimal
+      mortalityRate: Math.round(mortalityRate * 10) / 10, // Round to 1 decimal
+      criticalCaseRate: Math.round(criticalCaseRate * 10) / 10, // Round to 1 decimal
+      transferRate: Math.round(transferRate * 10) / 10, // Round to 1 decimal
     };
   }
 }
