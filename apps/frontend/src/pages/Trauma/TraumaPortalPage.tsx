@@ -172,6 +172,16 @@ const TraumaPortalPage: React.FC = () => {
     }
   };
 
+  const handleUpdateCase = async (id: string, data: any) => {
+    try {
+      await TraumaService.updateTraumaCase(id, data);
+      await loadData(); // Refresh data
+    } catch (err) {
+      console.error('Error updating trauma case:', err);
+      throw err;
+    }
+  };
+
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
   if (loading) {
@@ -298,6 +308,7 @@ const TraumaPortalPage: React.FC = () => {
             cases={traumaCases}
             onCreateCase={() => setCreateDialogOpen(true)}
             onDeleteCase={handleDeleteCase}
+            onUpdateCase={handleUpdateCase}
             isAdmin={isAdmin}
           />
         </TabPanel>

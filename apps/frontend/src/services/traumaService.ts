@@ -233,7 +233,7 @@ export class TraumaService {
   // Update a trauma case
   static async updateTraumaCase(id: string, data: UpdateTraumaCaseData): Promise<TraumaCase> {
     try {
-      const response = await apiClient.patch(`/api/v1/trauma-cases/${id}`, data);
+      const response = await apiClient.patch(`/trauma-cases/${id}`, data);
       return response.data;
     } catch (error) {
       console.error('Error updating trauma case:', error);
