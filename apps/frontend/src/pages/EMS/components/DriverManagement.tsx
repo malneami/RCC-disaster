@@ -30,6 +30,7 @@ const DriverManagement: React.FC = () => {
   
   const [openDialog, setOpenDialog] = useState(false);
   const [editingDriver, setEditingDriver] = useState<any | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -79,6 +80,7 @@ const DriverManagement: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true);
       if (editingDriver) {
         await updateDriver({ id: editingDriver.id, data: formData });
       } else {
@@ -87,6 +89,8 @@ const DriverManagement: React.FC = () => {
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving driver:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -146,6 +150,7 @@ const DriverManagement: React.FC = () => {
           onSubmit={handleSubmit}
           onFormDataChange={handleFormDataChange}
           hospitals={hospitals}
+          loading={isSubmitting}
         />
       </Box>
     );
@@ -227,6 +232,7 @@ const DriverManagement: React.FC = () => {
         onSubmit={handleSubmit}
         onFormDataChange={handleFormDataChange}
         hospitals={hospitals}
+        loading={isSubmitting}
       />
     </Box>
   );

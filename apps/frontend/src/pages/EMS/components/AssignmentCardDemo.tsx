@@ -202,16 +202,32 @@ const AssignmentCardDemo: React.FC = () => {
     console.log('Edit assignment:', assignment);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     console.log('Delete assignment:', id);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Assignment deleted successfully');
   };
 
-  const handleStartAssignment = (id: string) => {
+  const handleStartAssignment = async (id: string) => {
     console.log('Start assignment:', id);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log('Assignment started successfully');
   };
 
-  const handleCompleteAssignment = (id: string) => {
+  const handleMarkArrived = async (id: string) => {
+    console.log('Mark arrived assignment:', id);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log('Assignment marked as arrived successfully');
+  };
+
+  const handleCompleteAssignment = async (id: string) => {
     console.log('Complete assignment:', id);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log('Assignment completed successfully');
   };
 
 
@@ -233,7 +249,7 @@ const AssignmentCardDemo: React.FC = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onStartAssignment={handleStartAssignment}
-            onMarkArrived={handleStartAssignment}
+            onMarkArrived={handleMarkArrived}
             onCompleteAssignment={handleCompleteAssignment}
           />
         ))}

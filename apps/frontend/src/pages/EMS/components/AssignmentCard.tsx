@@ -11,6 +11,7 @@ import {
   Menu,
   MenuItem,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -31,10 +32,10 @@ import { EMSAssignment } from '../types/ems';
 interface AssignmentCardProps {
   assignment: EMSAssignment;
   onEdit: (assignment: EMSAssignment) => void;
-  onDelete: (id: string) => void;
-  onStartAssignment: (id: string) => void;
-  onMarkArrived: (id: string) => void;
-  onCompleteAssignment: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
+  onStartAssignment: (id: string) => Promise<void>;
+  onMarkArrived: (id: string) => Promise<void>;
+  onCompleteAssignment: (id: string) => Promise<void>;
   onAssignAmbulance?: (assignment: EMSAssignment) => void;
 }
 
@@ -56,6 +57,17 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   onCompleteAssignment,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [loadingStates, setLoadingStates] = React.useState<{
+    startAssignment: boolean;
+    markArrived: boolean;
+    completeAssignment: boolean;
+    delete: boolean;
+  }>({
+    startAssignment: false,
+    markArrived: false,
+    completeAssignment: false,
+    delete: false,
+  });
   const open = Boolean(anchorEl);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -64,6 +76,46 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const setLoading = (action: keyof typeof loadingStates, loading: boolean) => {
+    setLoadingStates(prev => ({ ...prev, [action]: loading }));
+  };
+
+  const handleStartAssignment = async () => {
+    setLoading('startAssignment', true);
+    try {
+      await onStartAssignment(assignment.id);
+    } finally {
+      setLoading('startAssignment', false);
+    }
+  };
+
+  const handleMarkArrived = async () => {
+    setLoading('markArrived', true);
+    try {
+      await onMarkArrived(assignment.id);
+    } finally {
+      setLoading('markArrived', false);
+    }
+  };
+
+  const handleCompleteAssignment = async () => {
+    setLoading('completeAssignment', true);
+    try {
+      await onCompleteAssignment(assignment.id);
+    } finally {
+      setLoading('completeAssignment', false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setLoading('delete', true);
+    try {
+      await onDelete(assignment.id);
+    } finally {
+      setLoading('delete', false);
+    }
   };
 
   const getTimelineSteps = (): TimelineStep[] => {
@@ -150,11 +202,12 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             key="start"
             variant="contained"
             color="primary"
-            startIcon={<FontAwesomeIcon icon={faPlay} />}
-            onClick={() => onStartAssignment(assignment.id)}
+            startIcon={loadingStates.startAssignment ? <CircularProgress size={16} color="inherit" /> : <FontAwesomeIcon icon={faPlay} />}
+            onClick={handleStartAssignment}
+            disabled={loadingStates.startAssignment}
             sx={{ minWidth: 120 }}
           >
-            EMS Arrival
+            {loadingStates.startAssignment ? 'Processing...' : 'EMS Arrival'}
           </Button>
         );
         break;
@@ -165,11 +218,12 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             key="arrived"
             variant="contained"
             color="warning"
-            startIcon={<FontAwesomeIcon icon={faMapMarkerAlt} />}
-            onClick={() => onMarkArrived(assignment.id)}
+            startIcon={loadingStates.markArrived ? <CircularProgress size={16} color="inherit" /> : <FontAwesomeIcon icon={faMapMarkerAlt} />}
+            onClick={handleMarkArrived}
+            disabled={loadingStates.markArrived}
             sx={{ minWidth: 120 }}
           >
-            Departed
+            {loadingStates.markArrived ? 'Processing...' : 'Departed'}
           </Button>
         );
         break;
@@ -180,11 +234,12 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             key="complete"
             variant="contained"
             color="success"
-            startIcon={<FontAwesomeIcon icon={faCheck} />}
-            onClick={() => onCompleteAssignment(assignment.id)}
+            startIcon={loadingStates.completeAssignment ? <CircularProgress size={16} color="inherit" /> : <FontAwesomeIcon icon={faCheck} />}
+            onClick={handleCompleteAssignment}
+            disabled={loadingStates.completeAssignment}
             sx={{ minWidth: 120 }}
           >
-            Arrived
+            {loadingStates.completeAssignment ? 'Processing...' : 'Arrived'}
           </Button>
         );
         break;
@@ -280,11 +335,16 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             </MenuItem>
             <Divider />
             <MenuItem 
-              onClick={() => { onDelete(assignment.id); handleMenuClose(); }}
+              onClick={() => { handleDelete(); handleMenuClose(); }}
+              disabled={loadingStates.delete}
               sx={{ color: 'error.main' }}
             >
-              <FontAwesomeIcon icon={faTrash} style={{ marginRight: 8 }} />
-              Delete Assignment
+              {loadingStates.delete ? (
+                <CircularProgress size={16} style={{ marginRight: 8 }} />
+              ) : (
+                <FontAwesomeIcon icon={faTrash} style={{ marginRight: 8 }} />
+              )}
+              {loadingStates.delete ? 'Deleting...' : 'Delete Assignment'}
             </MenuItem>
           </Menu>
         </Box>

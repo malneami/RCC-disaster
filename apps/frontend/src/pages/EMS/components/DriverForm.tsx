@@ -11,6 +11,7 @@ import {
   Select,
   MenuItem,
   Grid,
+  CircularProgress,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -30,6 +31,7 @@ interface DriverFormProps {
   onSubmit: () => void;
   onFormDataChange: (field: string, value: string) => void;
   hospitals: any[];
+  loading?: boolean;
 }
 
 const DriverForm: React.FC<DriverFormProps> = ({
@@ -40,6 +42,7 @@ const DriverForm: React.FC<DriverFormProps> = ({
   onSubmit,
   onFormDataChange,
   hospitals,
+  loading = false,
 }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,16 +143,18 @@ const DriverForm: React.FC<DriverFormProps> = ({
             onClick={onClose}
             startIcon={<FontAwesomeIcon icon={faTimes} />}
             variant="outlined"
+            disabled={loading}
           >
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
-            startIcon={<FontAwesomeIcon icon={faSave} />}
+            startIcon={loading ? <CircularProgress size={16} /> : <FontAwesomeIcon icon={faSave} />}
             color="primary"
+            disabled={loading}
           >
-            {editingDriver ? 'Update Driver' : 'Create Driver'}
+            {loading ? 'Saving...' : (editingDriver ? 'Update Driver' : 'Create Driver')}
           </Button>
         </DialogActions>
       </form>

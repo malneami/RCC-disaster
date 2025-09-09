@@ -11,6 +11,7 @@ import {
   MenuItem,
   Grid,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import { Ambulance } from '../types/ems';
 
@@ -35,6 +36,7 @@ interface AmbulanceFormProps {
   onSubmit: () => void;
   onFormDataChange: (field: string, value: string | number) => void;
   drivers: Array<{ id: string; firstName: string; lastName: string; status?: string }>;
+  loading?: boolean;
 }
 
 const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
@@ -45,6 +47,7 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
   onSubmit,
   onFormDataChange,
   drivers,
+  loading = false,
 }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -177,9 +180,14 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSubmit} variant="contained">
-          {editingAmbulance ? 'Update' : 'Add'}
+        <Button onClick={onClose} disabled={loading}>Cancel</Button>
+        <Button 
+          onClick={onSubmit} 
+          variant="contained"
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={16} /> : null}
+        >
+          {loading ? 'Saving...' : (editingAmbulance ? 'Update' : 'Add')}
         </Button>
       </DialogActions>
     </Dialog>

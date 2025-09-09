@@ -8,11 +8,11 @@ import { EMSAssignment } from '../types/ems';
 interface AssignmentGridProps {
   assignments: EMSAssignment[];
   onEdit: (assignment: EMSAssignment) => void;
-  onDelete: (id: string) => void;
-  onStartAssignment: (id: string) => void;
-  onMarkArrived: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
+  onStartAssignment: (id: string) => Promise<void>;
+  onMarkArrived: (id: string) => Promise<void>;
   onLoadPatient: (id: string) => void;
-  onCompleteAssignment: (id: string) => void;
+  onCompleteAssignment: (id: string) => Promise<void>;
   onAssignAmbulance?: (assignment: EMSAssignment) => void;
   getStatusColor: (status: string) => string;
 }

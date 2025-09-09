@@ -79,6 +79,7 @@ const AssignmentManagement: React.FC = () => {
 
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<EMSAssignment | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const [formData, setFormData] = useState({
     ticketId: '',
@@ -151,6 +152,7 @@ const AssignmentManagement: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true);
       const assignmentData = {
         ...formData,
         assignedAt: new Date(formData.assignedAt).toISOString(),
@@ -169,6 +171,8 @@ const AssignmentManagement: React.FC = () => {
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving assignment:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -237,6 +241,7 @@ const AssignmentManagement: React.FC = () => {
           tickets={[]}
           ambulances={[]}
           drivers={[]}
+          loading={isSubmitting}
         />
       </Box>
     );
@@ -328,6 +333,7 @@ const AssignmentManagement: React.FC = () => {
         tickets={tickets}
         ambulances={ambulances}
         drivers={drivers}
+        loading={isSubmitting}
       />
     </Box>
   );

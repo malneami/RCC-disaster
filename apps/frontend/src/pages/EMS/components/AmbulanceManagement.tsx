@@ -25,6 +25,7 @@ const AmbulanceManagement: React.FC = () => {
   const { drivers } = useEMSDrivers();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAmbulance, setEditingAmbulance] = useState<Ambulance | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     vehicleId: '',
     callSign: '',
@@ -87,6 +88,7 @@ const AmbulanceManagement: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true);
       if (editingAmbulance) {
         await updateAmbulance({ id: editingAmbulance.id, data: formData });
       } else {
@@ -95,6 +97,8 @@ const AmbulanceManagement: React.FC = () => {
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving ambulance:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -174,6 +178,7 @@ const AmbulanceManagement: React.FC = () => {
           onSubmit={handleSubmit}
           onFormDataChange={handleFormDataChange}
           drivers={activeDrivers}
+          loading={isSubmitting}
         />
       </Box>
     );
@@ -257,6 +262,7 @@ const AmbulanceManagement: React.FC = () => {
         onSubmit={handleSubmit}
         onFormDataChange={handleFormDataChange}
         drivers={drivers}
+        loading={isSubmitting}
       />
     </Box>
   );

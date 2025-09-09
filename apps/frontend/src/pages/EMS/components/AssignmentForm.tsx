@@ -12,6 +12,7 @@ import {
   Grid,
   Button,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import { EMSAssignment } from '../types/ems';
 import { formatForDateTimeLocal } from '../../../helpers';
@@ -37,6 +38,7 @@ interface AssignmentFormProps {
   tickets: Array<{ id: string; ticketNumber: string; patient: { firstName: string; lastName: string } }>;
   ambulances: Array<{ id: string; callSign: string; plateNumber: string }>;
   drivers: Array<{ id: string; firstName: string; lastName: string }>;
+  loading?: boolean;
 }
 
 const AssignmentForm: React.FC<AssignmentFormProps> = ({
@@ -49,6 +51,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
   tickets,
   ambulances,
   drivers,
+  loading = false,
 }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -198,9 +201,14 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSubmit} variant="contained">
-          {editingAssignment ? 'Update' : 'Create'}
+        <Button onClick={onClose} disabled={loading}>Cancel</Button>
+        <Button 
+          onClick={onSubmit} 
+          variant="contained"
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={16} /> : null}
+        >
+          {loading ? 'Saving...' : (editingAssignment ? 'Update' : 'Create')}
         </Button>
       </DialogActions>
     </Dialog>

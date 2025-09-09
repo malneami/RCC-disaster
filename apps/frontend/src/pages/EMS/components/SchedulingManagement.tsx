@@ -53,6 +53,7 @@ const SchedulingManagement: React.FC = () => {
 
   const [openDialog, setOpenDialog] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<DriverSchedule | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const [formData, setFormData] = useState({
     driverId: '',
@@ -101,6 +102,7 @@ const SchedulingManagement: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true);
       const scheduleData = {
         ...formData,
         shiftType: formData.shiftType as 'DAY' | 'NIGHT' | 'OVERTIME',
@@ -115,6 +117,8 @@ const SchedulingManagement: React.FC = () => {
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving schedule:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -192,6 +196,7 @@ const SchedulingManagement: React.FC = () => {
           onFormDataChange={handleFormDataChange}
           drivers={(drivers || []).filter(driver => driver.status === 'ACTIVE')}
           ambulances={ambulances || []}
+          loading={isSubmitting}
         />
       </Box>
     );
@@ -283,6 +288,7 @@ const SchedulingManagement: React.FC = () => {
         onFormDataChange={handleFormDataChange}
         drivers={(drivers || []).filter(driver => driver.status === 'ACTIVE')}
         ambulances={ambulances}
+        loading={isSubmitting}
       />
     </Box>
   );

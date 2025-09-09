@@ -29,3 +29,5 @@ ALTER TABLE ems_assignments
 ALTER COLUMN status SET DEFAULT 'EMS_CONTACT';
 
 
+
+

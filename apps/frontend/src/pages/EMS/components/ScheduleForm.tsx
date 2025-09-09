@@ -11,6 +11,7 @@ import {
   MenuItem,
   Grid,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import { DriverSchedule } from '../types/ems';
 
@@ -31,6 +32,7 @@ interface ScheduleFormProps {
   onFormDataChange: (field: string, value: string) => void;
   drivers: Array<{ id: string; firstName: string; lastName: string }>;
   ambulances: Array<{ id: string; callSign: string; plateNumber: string }>;
+  loading?: boolean;
 }
 
 const ScheduleForm: React.FC<ScheduleFormProps> = ({
@@ -42,6 +44,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
   onFormDataChange,
   drivers,
   ambulances,
+  loading = false,
 }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -145,9 +148,14 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSubmit} variant="contained">
-          {editingSchedule ? 'Update' : 'Create'}
+        <Button onClick={onClose} disabled={loading}>Cancel</Button>
+        <Button 
+          onClick={onSubmit} 
+          variant="contained"
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={16} /> : null}
+        >
+          {loading ? 'Saving...' : (editingSchedule ? 'Update' : 'Create')}
         </Button>
       </DialogActions>
     </Dialog>

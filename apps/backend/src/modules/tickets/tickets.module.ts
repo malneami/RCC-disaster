@@ -7,11 +7,15 @@ import { TicketsGateway } from './tickets.gateway';
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../../auth/auth.module';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
+import { EmsAssignmentsModule } from '../ems-assignments/ems-assignments.module';
+import { AmbulancesModule } from '../ambulances/ambulances.module';
 
 @Module({
   imports: [
     DatabaseModule, 
     AuthModule,
+    EmsAssignmentsModule,
+    AmbulancesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
