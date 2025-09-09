@@ -250,7 +250,7 @@ const TraumaPortalPage: React.FC = () => {
     },
     {
       title: 'Mortality Rate',
-      value: kpiSummary?.mortalityRate ? `${kpiSummary.mortalityRate.toFixed(1)}%` : 'N/A',
+      value: kpiSummary?.mortalityRate !== undefined ? `${kpiSummary.mortalityRate.toFixed(1)}%` : 'N/A',
       color: '#d32f2f',
       icon: <Warning />,
     },
