@@ -2,7 +2,7 @@
  * Trauma-specific TypeScript types and interfaces
  */
 
-import { TraumaCase, CreateTraumaCaseData, UpdateTraumaCaseData, TraumaKPISummary } from '../../../services/traumaService';
+import { TraumaCase, CreateTraumaCaseData, UpdateTraumaCaseData } from '../../../services/traumaService';
 
 // Form data interfaces
 export interface PatientInfoFormData {
@@ -14,7 +14,7 @@ export interface PatientInfoFormData {
   phoneNumber: string;
   address: string;
   emergencyContact: string;
-  emergencyContactPhone: string;
+  emergencyPhone: string;
   medicalHistory: string;
   allergies: string;
   medications: string;
@@ -194,7 +194,7 @@ export interface TraumaCasesListProps {
 
 // Dashboard component props
 export interface TraumaKPIDashboardProps {
-  kpiSummary: TraumaKPISummary | null;
+  kpiSummary: TraumaKPIsResponse | null;
 }
 
 // Portal page props

@@ -97,7 +97,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           error={!!errors.nationalId}
           helperText={errors.nationalId}
           portalType="trauma"
-          disabled={!isAdmin}
         />
       </Grid>
       

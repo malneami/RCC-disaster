@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient';
+import type { TraumaKPIsResponse } from '../pages/Trauma/types/traumaTypes';
 
 // Trauma Types
 export type TraumaModeOfArrival = 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
@@ -252,7 +253,7 @@ export class TraumaService {
   }
 
   // Get trauma KPIs
-  static async getKPISummary(hospitalId?: string, startDate?: string, endDate?: string): Promise<TraumaKPISummary> {
+  static async getKPISummary(hospitalId?: string, startDate?: string, endDate?: string): Promise<TraumaKPIsResponse> {
     try {
       const params = new URLSearchParams();
       if (hospitalId) params.append('hospitalId', hospitalId);

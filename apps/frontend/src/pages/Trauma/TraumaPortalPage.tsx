@@ -8,7 +8,8 @@ import TraumaKPIDashboard from './components/TraumaKPIDashboardMain';
 import CreateTraumaCaseDialog from './components/CreateTraumaCaseDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
-import { TraumaService, TraumaCase, TraumaKPISummary } from '../../services/traumaService';
+import { TraumaService, TraumaCase } from '../../services/traumaService';
+import { TraumaKPIsResponse } from './types/traumaTypes';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface TabPanelProps {
@@ -37,7 +38,7 @@ const TraumaPortalPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [traumaCases, setTraumaCases] = useState<TraumaCase[]>([]);
-  const [kpiSummary, setKpiSummary] = useState<TraumaKPISummary | null>(null);
+  const [kpiSummary, setKpiSummary] = useState<TraumaKPIsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -175,14 +176,13 @@ const TraumaPortalPage: React.FC = () => {
     }
   };
 
-  const handleUpdateCase = async (id: string, data: any) => {
+  const handleUpdateCase = async (id: string, data: any): Promise<void> => {
     try {
       const updatedCase = await TraumaService.updateTraumaCase(id, data);
       setTraumaCases(prev => prev.map(case_ => case_.id === id ? updatedCase : case_));
       // Refresh KPI data
       const updatedKpi = await TraumaService.getKPISummary();
       setKpiSummary(updatedKpi);
-      return updatedCase; // Return the updated case so the dialog can update its state
     } catch (err) {
       console.error('Error updating trauma case:', err);
       throw err;
