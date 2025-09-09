@@ -514,13 +514,62 @@ export class StrokeCasesService {
   async update(id: string, updateStrokeCaseDto: UpdateStrokeCaseDto, userId: string): Promise<StrokeCase> {
     const existingCase = await this.findOne(id);
 
+    // Handle patient info updates if provided
+    if (updateStrokeCaseDto.patientInfo && existingCase.patientId) {
+      console.log('=== UPDATING PATIENT INFO ===');
+      console.log('Patient Info:', updateStrokeCaseDto.patientInfo);
+      
+      const patientUpdateData: any = {};
+      
+      if (updateStrokeCaseDto.patientInfo.firstName) {
+        patientUpdateData.firstName = updateStrokeCaseDto.patientInfo.firstName.trim();
+      }
+      if (updateStrokeCaseDto.patientInfo.lastName) {
+        patientUpdateData.lastName = updateStrokeCaseDto.patientInfo.lastName.trim();
+      }
+      if (updateStrokeCaseDto.patientInfo.nationalId) {
+        patientUpdateData.nationalId = updateStrokeCaseDto.patientInfo.nationalId.trim();
+      }
+      if (updateStrokeCaseDto.patientInfo.mrn) {
+        patientUpdateData.mrn = updateStrokeCaseDto.patientInfo.mrn.trim();
+      }
+      if (updateStrokeCaseDto.patientInfo.phoneNumber) {
+        patientUpdateData.phoneNumber = updateStrokeCaseDto.patientInfo.phoneNumber.trim();
+      }
+      if (updateStrokeCaseDto.patientInfo.email) {
+        patientUpdateData.email = updateStrokeCaseDto.patientInfo.email.trim();
+      }
+      if (updateStrokeCaseDto.patientInfo.dateOfBirth) {
+        patientUpdateData.dateOfBirth = new Date(updateStrokeCaseDto.patientInfo.dateOfBirth);
+      }
+      if (updateStrokeCaseDto.patientInfo.gender) {
+        patientUpdateData.gender = updateStrokeCaseDto.patientInfo.gender;
+      }
+      
+      if (Object.keys(patientUpdateData).length > 0) {
+        try {
+          await this.prisma.patient.update({
+            where: { id: existingCase.patientId },
+            data: patientUpdateData,
+          });
+          console.log('Patient info updated successfully');
+        } catch (error) {
+          console.error('Error updating patient info:', error);
+          throw new BadRequestException('Failed to update patient information');
+        }
+      }
+    }
+
     // Calculate updated KPIs
     const kpiData = this.calculateKPIs({ ...existingCase, ...updateStrokeCaseDto });
+
+    // Remove patientInfo from the update data since we handle it separately
+    const { patientInfo, ...strokeCaseUpdateData } = updateStrokeCaseDto;
 
     return this.prisma.strokeCase.update({
       where: { id },
       data: {
-        ...updateStrokeCaseDto,
+        ...strokeCaseUpdateData,
         symptomOnset: updateStrokeCaseDto.symptomOnset ? new Date(updateStrokeCaseDto.symptomOnset) : undefined,
         lastKnownWell: updateStrokeCaseDto.lastKnownWell ? new Date(updateStrokeCaseDto.lastKnownWell) : undefined,
         pathwayStarted: updateStrokeCaseDto.pathwayStarted ? new Date(updateStrokeCaseDto.pathwayStarted) : undefined,
