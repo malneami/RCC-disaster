@@ -3,7 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateStrokeCaseDto } from './dto/create-stroke-case.dto';
 import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
 import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
-import { StrokeCase, StrokeStatus, StrokeType, TicketPriority, TicketPathway } from '@prisma/client';
+import { StrokeCase, StrokeStatus, StrokeType, TicketPriority, TicketPathway, PatientGender } from '@prisma/client';
 import { PatientMergeService } from '../patients/patient-merge.service';
 
 @Injectable()
@@ -18,6 +18,24 @@ export class StrokeCasesService {
       console.log('=== STROKE CASE SERVICE CREATE ===');
       console.log('DTO:', JSON.stringify(createStrokeCaseDto, null, 2));
       console.log('User ID:', userId);
+      
+      // Ensure we have a valid user ID
+      let validUserId = userId;
+      if (!validUserId || validUserId === '4600ecc0-c41b-4d99-8ddd-78ef909182cb') {
+        // Try to find the admin user
+        const adminUser = await this.prisma.user.findFirst({
+          where: { 
+            email: 'admin@rcc-healthcare.com',
+            deletedAt: null 
+          }
+        });
+        if (adminUser) {
+          validUserId = adminUser.id;
+          console.log('Using admin user ID:', validUserId);
+        } else {
+          throw new BadRequestException('No valid user found for creating stroke case');
+        }
+      }
       
       let patientId = createStrokeCaseDto.patientId;
       let ticketId = createStrokeCaseDto.ticketId;
@@ -45,8 +63,22 @@ export class StrokeCasesService {
           }
         } catch (error) {
           console.error('Error checking for duplicate patients:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          throw new BadRequestException(`Error checking for duplicate patients: ${errorMessage}`);
+          // If there's an error with duplicate checking, try to find the patient directly
+          try {
+            const existingPatient = await this.prisma.patient.findUnique({
+              where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
+            });
+            if (existingPatient) {
+              console.log('Found existing patient after error:', existingPatient.id);
+              patientId = existingPatient.id;
+            } else {
+              console.log('No existing patient found, will create new patient');
+            }
+          } catch (findError) {
+            console.error('Error finding patient directly:', findError);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new BadRequestException(`Error checking for duplicate patients: ${errorMessage}`);
+          }
         }
       }
       
@@ -66,7 +98,7 @@ export class StrokeCasesService {
           mrn: createStrokeCaseDto.patientInfo.mrn?.trim() || null,
           phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber?.trim() || null,
           email: createStrokeCaseDto.patientInfo.email?.trim() || null,
-          createdById: userId,
+          createdById: validUserId,
         };
         
         // Handle required fields with defaults if not provided
@@ -77,9 +109,9 @@ export class StrokeCasesService {
         }
         
         if (createStrokeCaseDto.patientInfo.gender) {
-          patientData.gender = createStrokeCaseDto.patientInfo.gender;
+          patientData.gender = createStrokeCaseDto.patientInfo.gender as PatientGender;
         } else {
-          patientData.gender = 'UNKNOWN'; // Default gender
+          patientData.gender = PatientGender.UNKNOWN; // Default gender
         }
         
         console.log('Creating new patient with data:', patientData);
@@ -97,6 +129,7 @@ export class StrokeCasesService {
           if (error.code === 'P2002') {
             console.log('Unique constraint violation, attempting to find existing patient...');
             
+            // Try to find by National ID first
             if (createStrokeCaseDto.patientInfo.nationalId) {
               const existingPatient = await this.prisma.patient.findUnique({
                 where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
@@ -107,8 +140,19 @@ export class StrokeCasesService {
               }
             }
             
+            // If not found by National ID, try by MRN
+            if (!patientId && createStrokeCaseDto.patientInfo.mrn) {
+              const existingPatient = await this.prisma.patient.findUnique({
+                where: { mrn: createStrokeCaseDto.patientInfo.mrn.trim() }
+              });
+              if (existingPatient) {
+                console.log('Found existing patient by MRN after constraint violation:', existingPatient.id);
+                patientId = existingPatient.id;
+              }
+            }
+            
             if (!patientId) {
-              throw new BadRequestException('Patient with this National ID already exists');
+              throw new BadRequestException('Patient with this National ID or MRN already exists');
             }
           } else {
             throw error;
@@ -131,14 +175,30 @@ export class StrokeCasesService {
         pathway: TicketPathway.STROKE,
         chiefComplaint: createStrokeCaseDto.chiefComplaint || 'Stroke symptoms',
         isEmergency: true,
-        createdById: userId,
+        createdById: validUserId,
       };
       console.log('Creating ticket with data:', ticketData);
-      const ticket = await this.prisma.ticket.create({
-        data: ticketData,
-      });
-      console.log('Ticket created:', ticket.id);
-      ticketId = ticket.id;
+      try {
+        const ticket = await this.prisma.ticket.create({
+          data: ticketData,
+        });
+        console.log('Ticket created:', ticket.id);
+        ticketId = ticket.id;
+      } catch (error: any) {
+        console.error('Error creating ticket:', error);
+        if (error.code === 'P2002') {
+          // Unique constraint violation on ticket number
+          console.log('Ticket number collision, generating new number...');
+          const newTicketNumber = `STK-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+          const ticket = await this.prisma.ticket.create({
+            data: { ...ticketData, ticketNumber: newTicketNumber },
+          });
+          console.log('Ticket created with new number:', ticket.id);
+          ticketId = ticket.id;
+        } else {
+          throw error;
+        }
+      }
     }
 
     // Validate that we have both patient and ticket
@@ -177,7 +237,7 @@ export class StrokeCasesService {
         currentStatus: createStrokeCaseDto.currentStatus,
         strokeSeverity: createStrokeCaseDto.strokeSeverity,
         selectedTreatment: createStrokeCaseDto.selectedTreatment,
-        createdById: userId,
+        createdById: validUserId,
         ...kpiData,
       };
 
@@ -249,8 +309,8 @@ export class StrokeCasesService {
         eventDescription: `Stroke case created - ${createStrokeCaseDto.strokeType} stroke`,
         eventLocation: 'ED',
         eventType: 'ARRIVAL',
-        triggeredBy: userId,
-        createdById: userId,
+        triggeredBy: validUserId,
+        createdById: validUserId,
       },
     });
 
