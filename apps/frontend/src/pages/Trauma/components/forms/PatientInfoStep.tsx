@@ -22,12 +22,14 @@ interface PatientInfoStepProps {
   data: PatientInfoFormData;
   onChange: (data: Partial<PatientInfoFormData>) => void;
   errors: Record<string, string>;
+  isAdmin?: boolean;
 }
 
 const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
   data,
   onChange,
   errors,
+  isAdmin = true,
 }) => {
   const handleChange = (field: keyof PatientInfoFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -68,6 +70,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           error={!!errors.firstName}
           helperText={errors.firstName}
           required
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -80,6 +83,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           error={!!errors.lastName}
           helperText={errors.lastName}
           required
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -93,6 +97,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           error={!!errors.nationalId}
           helperText={errors.nationalId}
           portalType="trauma"
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -107,6 +112,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           error={!!errors.dateOfBirth}
           helperText={errors.dateOfBirth}
           required
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -117,6 +123,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             value={data.gender}
             onChange={handleChange('gender')}
             error={!!errors.gender}
+            disabled={!isAdmin}
           >
             {GENDER_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -135,6 +142,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('phoneNumber')}
           error={!!errors.phoneNumber}
           helperText={errors.phoneNumber}
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -148,6 +156,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('address')}
           error={!!errors.address}
           helperText={errors.address}
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -159,6 +168,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('emergencyContact')}
           error={!!errors.emergencyContact}
           helperText={errors.emergencyContact}
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -170,6 +180,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('emergencyContactPhone')}
           error={!!errors.emergencyContactPhone}
           helperText={errors.emergencyContactPhone}
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -183,6 +194,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('medicalHistory')}
           error={!!errors.medicalHistory}
           helperText={errors.medicalHistory}
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -194,6 +206,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('allergies')}
           error={!!errors.allergies}
           helperText={errors.allergies}
+          disabled={!isAdmin}
         />
       </Grid>
       
@@ -205,6 +218,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('medications')}
           error={!!errors.medications}
           helperText={errors.medications}
+          disabled={!isAdmin}
         />
       </Grid>
 
