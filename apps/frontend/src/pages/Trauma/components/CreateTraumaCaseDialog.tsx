@@ -56,7 +56,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       phoneNumber: '',
       address: '',
       emergencyContact: '',
-      emergencyContactPhone: '',
+      emergencyPhone: '',
       medicalHistory: '',
       allergies: '',
       medications: '',

@@ -166,6 +166,24 @@ export class TraumaPatientService {
     if (patientInfo.gender) {
       patientUpdateData.gender = patientInfo.gender as PatientGender;
     }
+    if (patientInfo.address) {
+      patientUpdateData.address = patientInfo.address.trim();
+    }
+    if (patientInfo.emergencyContact) {
+      patientUpdateData.emergencyContact = patientInfo.emergencyContact.trim();
+    }
+    if (patientInfo.emergencyPhone) {
+      patientUpdateData.emergencyPhone = patientInfo.emergencyPhone.trim();
+    }
+    if (patientInfo.medicalHistory) {
+      patientUpdateData.medicalHistory = patientInfo.medicalHistory.trim();
+    }
+    if (patientInfo.allergies) {
+      patientUpdateData.allergies = patientInfo.allergies.trim();
+    }
+    if (patientInfo.medications) {
+      patientUpdateData.medications = patientInfo.medications.trim();
+    }
     
     if (Object.keys(patientUpdateData).length > 0) {
       try {

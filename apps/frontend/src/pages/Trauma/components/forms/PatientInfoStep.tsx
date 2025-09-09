@@ -47,7 +47,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
       phoneNumber: patient.phoneNumber || '',
       address: patient.address || '',
       emergencyContact: patient.emergencyContact || '',
-      emergencyContactPhone: patient.emergencyPhone || '',
+      emergencyPhone: patient.emergencyPhone || '',
       medicalHistory: patient.medicalHistory || '',
       allergies: patient.allergies || '',
       medications: patient.medications || '',
@@ -176,10 +176,10 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
         <TextField
           fullWidth
           label="Emergency Contact Phone"
-          value={data.emergencyContactPhone}
-          onChange={handleChange('emergencyContactPhone')}
-          error={!!errors.emergencyContactPhone}
-          helperText={errors.emergencyContactPhone}
+          value={data.emergencyPhone}
+          onChange={handleChange('emergencyPhone')}
+          error={!!errors.emergencyPhone}
+          helperText={errors.emergencyPhone}
           disabled={!isAdmin}
         />
       </Grid>
