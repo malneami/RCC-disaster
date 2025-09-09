@@ -111,6 +111,11 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
 
   useEffect(() => {
     if (traumaCase && open) {
+      console.log('EditTraumaCaseDialog: Initializing with traumaCase:', traumaCase);
+      console.log('EditTraumaCaseDialog: Patient data:', traumaCase.patient);
+      console.log('EditTraumaCaseDialog: Vital signs:', traumaCase.vitalSigns);
+      console.log('EditTraumaCaseDialog: Disposition:', traumaCase.disposition);
+      
       setActiveStep(0);
       setError(null);
       setLoading(false);
