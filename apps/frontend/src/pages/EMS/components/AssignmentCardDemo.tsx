@@ -214,16 +214,6 @@ const AssignmentCardDemo: React.FC = () => {
     console.log('Complete assignment:', id);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'EMS_CONTACT': return 'default';
-      case 'EMS_ARRIVAL': return 'primary';
-      case 'DEPARTED': return 'info';
-      case 'ARRIVED': return 'success';
-      case 'CANCELLED': return 'error';
-      default: return 'default';
-    }
-  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -243,8 +233,8 @@ const AssignmentCardDemo: React.FC = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onStartAssignment={handleStartAssignment}
+            onMarkArrived={handleStartAssignment}
             onCompleteAssignment={handleCompleteAssignment}
-            getStatusColor={getStatusColor}
           />
         ))}
       </Box>

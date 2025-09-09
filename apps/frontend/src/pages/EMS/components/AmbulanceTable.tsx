@@ -110,8 +110,8 @@ const AmbulanceTable: React.FC<AmbulanceTableProps> = ({
               </TableCell>
               <TableCell>
                 <Chip
-                  label={ambulance.equipmentStatus || 'OPERATIONAL'}
-                  color={getEquipmentStatusColor(ambulance.equipmentStatus || 'OPERATIONAL') as any}
+                  label={(ambulance as any).equipmentStatus || 'OPERATIONAL'}
+                  color={getEquipmentStatusColor((ambulance as any).equipmentStatus || 'OPERATIONAL') as any}
                   size="small"
                   icon={<FontAwesomeIcon icon={faWrench} size="xs" />}
                 />

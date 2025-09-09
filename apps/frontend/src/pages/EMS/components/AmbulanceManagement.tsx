@@ -52,12 +52,12 @@ const AmbulanceManagement: React.FC = () => {
         plateNumber: ambulance.plateNumber,
         type: ambulance.type,
         status: ambulance.status,
-        manufacturer: ambulance.manufacturer || '',
-        model: ambulance.model || '',
-        year: ambulance.year || new Date().getFullYear(),
-        baseStation: ambulance.baseStation || '',
+        manufacturer: (ambulance as any).manufacturer || '',
+        model: (ambulance as any).model || '',
+        year: (ambulance as any).year || new Date().getFullYear(),
+        baseStation: (ambulance as any).baseStation || '',
         driverId: ambulance.driverId || '',
-        equipmentStatus: ambulance.equipmentStatus || 'OPERATIONAL',
+        equipmentStatus: (ambulance as any).equipmentStatus || 'OPERATIONAL',
         isActive: ambulance.isActive,
       });
     } else {

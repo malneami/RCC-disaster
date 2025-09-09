@@ -2,13 +2,12 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Chip,
   Divider,
 } from '@mui/material';
 import {
   FiberManualRecord,
 } from '@mui/icons-material';
-import { TimelineEvent } from '../../pages/Stemi/types';
+import { TimelineEvent } from './TimelineView';
 
 interface TimelineProps {
   events?: TimelineEvent[] | null;
@@ -55,7 +54,7 @@ const TimelineComponent: React.FC<TimelineProps> = ({ events }) => {
               <FiberManualRecord 
                 sx={{ 
                   fontSize: 12, 
-                  color: getStatusColor(event.toStatus),
+                  color: getStatusColor(event.status),
                   mb: 1 
                 }} 
               />
@@ -74,42 +73,17 @@ const TimelineComponent: React.FC<TimelineProps> = ({ events }) => {
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  {event.toStatus.replace(/_/g, ' ')}
+                  {event.status.replace(/_/g, ' ')}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {formatDate(event.eventTimestamp)}
+                  {formatDate(event.timestamp)}
                 </Typography>
               </Box>
               
               <Typography variant="body2" sx={{ mb: 1 }}>
-                {event.eventDescription}
+                {event.description}
               </Typography>
               
-              {event.eventLocation && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Location: {event.eventLocation}
-                </Typography>
-              )}
-              
-              {event.minutesFromFmc !== undefined && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {event.minutesFromFmc} minutes from FMC
-                  </Typography>
-                  {event.withinTarget !== undefined && (
-                    <Chip
-                      label={event.withinTarget ? '✓ Target Met' : '✗ Target Missed'}
-                      size="small"
-                      sx={{
-                        backgroundColor: event.withinTarget ? '#4caf50' : '#f44336',
-                        color: 'white',
-                        fontSize: '0.6rem',
-                        height: 20,
-                      }}
-                    />
-                  )}
-                </Box>
-              )}
             </Box>
           </Box>
           
