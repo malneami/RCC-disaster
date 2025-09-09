@@ -5,25 +5,28 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Grid,
-  Alert,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Typography,
-  Divider,
+  Stepper,
+  Step,
+  StepLabel,
   Box,
-  Chip,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 
-import { TraumaCase, TraumaService } from '../../../services/traumaService';
+// Form step components (same as creation)
+import PatientInfoStep from './forms/PatientInfoStep';
+import IncidentDetailsStep from './forms/IncidentDetailsStep';
+import VitalsAssessmentStep from './forms/VitalsAssessmentStep';
+import InjuryAssessmentStep from './forms/InjuryAssessmentStep';
+import DispositionStep from './forms/DispositionStep';
+
+// Types and constants
+import { TraumaCase, UpdateTraumaCaseData } from '../../../services/traumaService';
+import { TRAUMA_FORM_STEPS } from '../constants/traumaConstants';
+import { validateTraumaCaseForm } from '../helpers/traumaHelpers';
 import { useAuth } from '../../../contexts/AuthContext';
-import HospitalSelect from '../../../components/Common/HospitalSelect';
 
 interface EditTraumaCaseDialogProps {
   open: boolean;
@@ -39,105 +42,279 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
   traumaCase,
 }) => {
   const { user } = useAuth();
+  const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState({
+    patientInfo: {
+      firstName: '',
+      lastName: '',
+      nationalId: '',
+      dateOfBirth: '',
+      gender: 'MALE' as const,
+      phoneNumber: '',
+      address: '',
+      emergencyContact: '',
+      emergencyContactPhone: '',
+      medicalHistory: '',
+      allergies: '',
+      medications: '',
+      originHospitalId: '',
+      destinationHospitalId: '',
+    },
+    incidentDetails: {
+      arrivalDateTime: '',
+      incidentDateTime: '',
+      modeOfArrival: 'AMBULANCE',
+      transferRequestDateTime: '',
+      transferArrivalDateTime: '',
+      chiefComplaint: '',
+      mechanismOfInjury: 'MOTOR_VEHICLE_ACCIDENT',
+      primarySurveyFindings: '',
+      additionalNotes: '',
+    },
+    vitalsAssessment: {
+      vitalSigns: {
+        temperature: 0,
+        heartRate: 0,
+        bloodPressure: '',
+        oxygenSaturation: 0,
+        respiratoryRate: 0,
+      },
+      glasgowComaScale: 15,
+      systolicBloodPressure: 0,
+      respiratoryRate: 0,
+      additionalVitalSigns: '',
+    },
+    injuryAssessment: {
+      headAndNeckInjury: '1 - No Injury: - No injury',
+      faceInjury: '1 - No Injury: - No injury',
+      chestInjury: '1 - No Injury: - No injury',
+      abdomenInjury: '1 - No Injury: - No injury',
+      extremitiesInjury: '1 - No Injury: - No injury',
+      externalInjury: '1 - No Injury: - No injury',
+    },
+    disposition: {
+      edDisposition: 'DISCHARGE',
+      disposition: {
+        dischargeInstructions: '',
+        followUpRequired: false,
+        followUpDate: '',
+        medicationsPrescribed: '',
+        restrictions: '',
+      },
+    },
+  });
+  const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
   useEffect(() => {
-    if (traumaCase) {
+    if (traumaCase && open) {
+      setActiveStep(0);
+      setError(null);
+      setLoading(false);
+      setStepErrors({});
+      
+      // Convert trauma case data to form structure (exactly like creation form)
       setFormData({
-        // Hospital Information
-        originHospitalId: traumaCase.originHospitalId || '',
-        destinationHospitalId: traumaCase.destinationHospitalId || '',
-        
-        // Incident Details
-        arrivalDateTime: traumaCase.arrivalDateTime || '',
-        incidentDateTime: traumaCase.incidentDateTime || '',
-        modeOfArrival: traumaCase.modeOfArrival || 'AMBULANCE',
-        transferRequestDateTime: traumaCase.transferRequestDateTime || '',
-        transferArrivalDateTime: traumaCase.transferArrivalDateTime || '',
-        transferDurationMinutes: traumaCase.transferDurationMinutes || '',
-        chiefComplaint: traumaCase.chiefComplaint || '',
-        mechanismOfInjury: traumaCase.mechanismOfInjury || 'BLUNT',
-        
-        // Vitals Assessment
-        glasgowComaScale: traumaCase.glasgowComaScale || '',
-        systolicBloodPressure: traumaCase.systolicBloodPressure || '',
-        respiratoryRate: traumaCase.respiratoryRate || '',
-        additionalVitalSigns: traumaCase.additionalVitalSigns || '',
-        
-        // Injury Assessment
-        headAndNeckInjury: traumaCase.headAndNeckInjury || '',
-        faceInjury: traumaCase.faceInjury || '',
-        chestInjury: traumaCase.chestInjury || '',
-        abdomenInjury: traumaCase.abdomenInjury || '',
-        extremitiesInjury: traumaCase.extremitiesInjury || '',
-        externalInjury: traumaCase.externalInjury || '',
-        primarySurveyFindings: traumaCase.primarySurveyFindings || '',
-        
-        // Disposition
-        edDisposition: traumaCase.edDisposition || 'DISCHARGE',
-        additionalNotes: traumaCase.additionalNotes || '',
-        
-        // Patient Information (for admin editing)
         patientInfo: {
           firstName: traumaCase.patient?.firstName || '',
           lastName: traumaCase.patient?.lastName || '',
           nationalId: traumaCase.patient?.nationalId || '',
-          mrn: traumaCase.patient?.mrn || '',
-          dateOfBirth: traumaCase.patient?.dateOfBirth || '',
-          gender: traumaCase.patient?.gender || '',
+          dateOfBirth: traumaCase.patient?.dateOfBirth ? new Date(traumaCase.patient.dateOfBirth).toISOString().split('T')[0] : '',
+          gender: (traumaCase.patient?.gender as 'MALE' | 'FEMALE' | 'OTHER') || 'MALE',
           phoneNumber: traumaCase.patient?.phoneNumber || '',
-          email: traumaCase.patient?.email || '',
           address: traumaCase.patient?.address || '',
           emergencyContact: traumaCase.patient?.emergencyContact || '',
-          emergencyPhone: traumaCase.patient?.emergencyPhone || '',
+          emergencyContactPhone: traumaCase.patient?.emergencyPhone || '',
           medicalHistory: traumaCase.patient?.medicalHistory || '',
           allergies: traumaCase.patient?.allergies || '',
           medications: traumaCase.patient?.medications || '',
+          originHospitalId: traumaCase.originHospitalId || '',
+          destinationHospitalId: traumaCase.destinationHospitalId || '',
+        },
+        incidentDetails: {
+          arrivalDateTime: traumaCase.arrivalDateTime ? new Date(traumaCase.arrivalDateTime).toISOString().slice(0, 16) : '',
+          incidentDateTime: traumaCase.incidentDateTime ? new Date(traumaCase.incidentDateTime).toISOString().slice(0, 16) : '',
+          modeOfArrival: traumaCase.modeOfArrival || 'AMBULANCE',
+          transferRequestDateTime: traumaCase.transferRequestDateTime ? new Date(traumaCase.transferRequestDateTime).toISOString().slice(0, 16) : '',
+          transferArrivalDateTime: traumaCase.transferArrivalDateTime ? new Date(traumaCase.transferArrivalDateTime).toISOString().slice(0, 16) : '',
+          chiefComplaint: traumaCase.chiefComplaint || '',
+          mechanismOfInjury: traumaCase.mechanismOfInjury || 'MOTOR_VEHICLE_ACCIDENT',
+          primarySurveyFindings: traumaCase.primarySurveyFindings || '',
+          additionalNotes: traumaCase.additionalNotes || '',
+        },
+        vitalsAssessment: {
+          vitalSigns: {
+            temperature: traumaCase.vitalSigns?.temperature || 0,
+            heartRate: traumaCase.vitalSigns?.heartRate || 0,
+            bloodPressure: traumaCase.vitalSigns?.bloodPressure || '',
+            oxygenSaturation: traumaCase.vitalSigns?.oxygenSaturation || 0,
+            respiratoryRate: traumaCase.vitalSigns?.respiratoryRate || 0,
+          },
+          glasgowComaScale: traumaCase.glasgowComaScale || 15,
+          systolicBloodPressure: traumaCase.systolicBloodPressure || 0,
+          respiratoryRate: traumaCase.respiratoryRate || 0,
+          additionalVitalSigns: traumaCase.additionalVitalSigns || '',
+        },
+        injuryAssessment: {
+          headAndNeckInjury: traumaCase.headAndNeckInjury || '1 - No Injury: - No injury',
+          faceInjury: traumaCase.faceInjury || '1 - No Injury: - No injury',
+          chestInjury: traumaCase.chestInjury || '1 - No Injury: - No injury',
+          abdomenInjury: traumaCase.abdomenInjury || '1 - No Injury: - No injury',
+          extremitiesInjury: traumaCase.extremitiesInjury || '1 - No Injury: - No injury',
+          externalInjury: traumaCase.externalInjury || '1 - No Injury: - No injury',
+        },
+        disposition: {
+          edDisposition: traumaCase.edDisposition || 'DISCHARGE',
+          disposition: {
+            dischargeInstructions: traumaCase.disposition?.dischargeInstructions || '',
+            followUpRequired: traumaCase.disposition?.followUpRequired || false,
+            followUpDate: traumaCase.disposition?.followUpDate || '',
+            medicationsPrescribed: traumaCase.disposition?.medicationsPrescribed || '',
+            restrictions: traumaCase.disposition?.restrictions || '',
+          },
         },
       });
     }
-  }, [traumaCase]);
+  }, [traumaCase, open]);
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleStepDataChange = (stepData: any) => {
+    setFormData(prev => ({ ...prev, ...stepData }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleNext = () => {
+    setActiveStep(prev => prev + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep(prev => prev - 1);
+  };
+
+  const handleSubmit = async () => {
     if (!traumaCase) return;
 
     try {
       setLoading(true);
       setError(null);
-      
-      // For admins, include patient info; for regular users, exclude it
-      const { patientInfo, ...updateData } = formData;
-      
-      const cleanedData = Object.entries(updateData).reduce((acc, [key, value]) => {
-        if (value !== '' && value !== null && value !== undefined) {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
+
+      // Validate the complete form
+      const validationErrors = validateTraumaCaseForm(formData);
+      if (validationErrors.length > 0) {
+        setError(validationErrors.join(', '));
+        return;
+      }
+
+      // Prepare data for submission (exactly like creation form)
+      const submitData: UpdateTraumaCaseData = {
+        originHospitalId: formData.patientInfo.originHospitalId,
+        destinationHospitalId: formData.patientInfo.destinationHospitalId || undefined,
+        arrivalDateTime: formData.incidentDetails.arrivalDateTime,
+        incidentDateTime: formData.incidentDetails.incidentDateTime || undefined,
+        modeOfArrival: formData.incidentDetails.modeOfArrival as any,
+        transferRequestDateTime: formData.incidentDetails.transferRequestDateTime || undefined,
+        transferArrivalDateTime: formData.incidentDetails.transferArrivalDateTime || undefined,
+        chiefComplaint: formData.incidentDetails.chiefComplaint || undefined,
+        mechanismOfInjury: formData.incidentDetails.mechanismOfInjury as any,
+        vitalSigns: formData.vitalsAssessment.vitalSigns,
+        glasgowComaScale: formData.vitalsAssessment.glasgowComaScale,
+        systolicBloodPressure: formData.vitalsAssessment.systolicBloodPressure || undefined,
+        respiratoryRate: formData.vitalsAssessment.respiratoryRate || undefined,
+        additionalVitalSigns: formData.vitalsAssessment.additionalVitalSigns || undefined,
+        headAndNeckInjury: formData.injuryAssessment.headAndNeckInjury as any,
+        faceInjury: formData.injuryAssessment.faceInjury as any,
+        chestInjury: formData.injuryAssessment.chestInjury as any,
+        abdomenInjury: formData.injuryAssessment.abdomenInjury as any,
+        extremitiesInjury: formData.injuryAssessment.extremitiesInjury as any,
+        externalInjury: formData.injuryAssessment.externalInjury as any,
+        primarySurveyFindings: formData.incidentDetails.primarySurveyFindings || undefined,
+        edDisposition: formData.disposition.edDisposition as any,
+        additionalNotes: formData.incidentDetails.additionalNotes || undefined,
+        disposition: formData.disposition.disposition,
+      };
 
       // Add patient info for admins only
-      if (isAdmin && patientInfo) {
-        cleanedData.patientInfo = patientInfo;
+      if (isAdmin) {
+        submitData.patientInfo = formData.patientInfo;
       }
-      
-      await onSubmit(traumaCase.id, cleanedData);
+
+      await onSubmit(traumaCase.id, submitData);
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to update trauma case');
+      console.error('Error updating trauma case:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const isStepValid = (stepIndex: number): boolean => {
+    switch (stepIndex) {
+      case 0: // Patient Info
+        return !!(formData.patientInfo.firstName && formData.patientInfo.lastName && 
+                 formData.patientInfo.nationalId && formData.patientInfo.dateOfBirth &&
+                 formData.patientInfo.originHospitalId);
+      case 1: // Incident Details
+        return !!(formData.incidentDetails.arrivalDateTime && 
+                 formData.incidentDetails.modeOfArrival && 
+                 formData.incidentDetails.mechanismOfInjury);
+      case 2: // Vitals Assessment
+        return true; // Optional step
+      case 3: // Injury Assessment
+        return true; // Optional step
+      case 4: // Disposition
+        return !!(formData.disposition.edDisposition);
+      default:
+        return false;
+    }
+  };
+
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <PatientInfoStep
+            data={formData.patientInfo}
+            onChange={(data) => handleStepDataChange({ patientInfo: { ...formData.patientInfo, ...data } })}
+            errors={stepErrors}
+            isAdmin={isAdmin}
+          />
+        );
+      case 1:
+        return (
+          <IncidentDetailsStep
+            data={formData.incidentDetails}
+            onChange={(data) => handleStepDataChange({ incidentDetails: { ...formData.incidentDetails, ...data } })}
+            errors={stepErrors}
+          />
+        );
+      case 2:
+        return (
+          <VitalsAssessmentStep
+            data={formData.vitalsAssessment}
+            onChange={(data) => handleStepDataChange({ vitalsAssessment: { ...formData.vitalsAssessment, ...data } })}
+            errors={stepErrors}
+          />
+        );
+      case 3:
+        return (
+          <InjuryAssessmentStep
+            data={formData.injuryAssessment}
+            onChange={(data) => handleStepDataChange({ injuryAssessment: { ...formData.injuryAssessment, ...data } })}
+            errors={stepErrors}
+          />
+        );
+      case 4:
+        return (
+          <DispositionStep
+            data={formData.disposition}
+            onChange={(data) => handleStepDataChange({ disposition: { ...formData.disposition, ...data } })}
+            errors={stepErrors}
+          />
+        );
+      default:
+        return null;
     }
   };
 
@@ -145,17 +322,29 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box display="flex" alignItems="center" gap={2}>
-            <Typography variant="h6">
-              Edit Trauma Case - {traumaCase.patient?.firstName} {traumaCase.patient?.lastName}
-            </Typography>
+            <span>✏️</span>
+            <span>Edit Trauma Case - {traumaCase.patient?.firstName} {traumaCase.patient?.lastName}</span>
             {isAdmin && (
-              <Chip label="Admin Edit" color="primary" size="small" />
+              <Box sx={{ ml: 'auto' }}>
+                <Box sx={{ 
+                  px: 1, 
+                  py: 0.5, 
+                  bgcolor: 'primary.main', 
+                  color: 'white', 
+                  borderRadius: 1, 
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold'
+                }}>
+                  ADMIN EDIT
+                </Box>
+              </Box>
             )}
           </Box>
         </DialogTitle>
+        
         <DialogContent>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -163,359 +352,49 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-              {/* Patient Information Section (Admin Only) */}
-              {isAdmin && (
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    Patient Information (Admin Only)
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="First Name"
-                        value={formData.patientInfo?.firstName || ''}
-                        onChange={(e) => handleInputChange('patientInfo', { ...formData.patientInfo, firstName: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Last Name"
-                        value={formData.patientInfo?.lastName || ''}
-                        onChange={(e) => handleInputChange('patientInfo', { ...formData.patientInfo, lastName: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="National ID"
-                        value={formData.patientInfo?.nationalId || ''}
-                        onChange={(e) => handleInputChange('patientInfo', { ...formData.patientInfo, nationalId: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="MRN"
-                        value={formData.patientInfo?.mrn || ''}
-                        onChange={(e) => handleInputChange('patientInfo', { ...formData.patientInfo, mrn: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Phone Number"
-                        value={formData.patientInfo?.phoneNumber || ''}
-                        onChange={(e) => handleInputChange('patientInfo', { ...formData.patientInfo, phoneNumber: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Email"
-                        value={formData.patientInfo?.email || ''}
-                        onChange={(e) => handleInputChange('patientInfo', { ...formData.patientInfo, email: e.target.value })}
-                      />
-                    </Grid>
-                  </Grid>
-                </Grid>
-              )}
+          <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+            {TRAUMA_FORM_STEPS.map((step) => (
+              <Step key={step.id}>
+                <StepLabel icon={step.icon}>
+                  {step.label}
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
 
-              {/* Hospital Information */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Hospital Information
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <HospitalSelect
-                      label="Origin Hospital *"
-                      value={formData.originHospitalId || ''}
-                      onChange={(value) => handleInputChange('originHospitalId', value)}
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <HospitalSelect
-                      label="Destination Hospital"
-                      value={formData.destinationHospitalId || ''}
-                      onChange={(value) => handleInputChange('destinationHospitalId', value)}
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-
-              {/* Incident Details */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Incident Details
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <DateTimePicker
-                      label="Arrival Date/Time *"
-                      value={formData.arrivalDateTime ? new Date(formData.arrivalDateTime) : null}
-                      onChange={(value) => handleInputChange('arrivalDateTime', value?.toISOString())}
-                      slotProps={{ textField: { fullWidth: true, required: true } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <DateTimePicker
-                      label="Incident Date/Time"
-                      value={formData.incidentDateTime ? new Date(formData.incidentDateTime) : null}
-                      onChange={(value) => handleInputChange('incidentDateTime', value?.toISOString())}
-                      slotProps={{ textField: { fullWidth: true } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required>
-                      <InputLabel>Mode of Arrival</InputLabel>
-                      <Select
-                        value={formData.modeOfArrival || ''}
-                        onChange={(e) => handleInputChange('modeOfArrival', e.target.value)}
-                        label="Mode of Arrival"
-                      >
-                        <MenuItem value="AMBULANCE">Ambulance</MenuItem>
-                        <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
-                        <MenuItem value="AIR_TRANSPORT">Air Transport</MenuItem>
-                        <MenuItem value="WALK_IN">Walk-in</MenuItem>
-                        <MenuItem value="POLICE">Police</MenuItem>
-                        <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
-                        <MenuItem value="OTHER">Other</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required>
-                      <InputLabel>Mechanism of Injury</InputLabel>
-                      <Select
-                        value={formData.mechanismOfInjury || ''}
-                        onChange={(e) => handleInputChange('mechanismOfInjury', e.target.value)}
-                        label="Mechanism of Injury"
-                      >
-                        <MenuItem value="PENETRATING">Penetrating</MenuItem>
-                        <MenuItem value="BLUNT">Blunt</MenuItem>
-                        <MenuItem value="BURN">Burn</MenuItem>
-                        <MenuItem value="FALL">Fall</MenuItem>
-                        <MenuItem value="MOTOR_VEHICLE_ACCIDENT">Motor Vehicle Accident</MenuItem>
-                        <MenuItem value="OTHER">Other</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Chief Complaint"
-                      value={formData.chiefComplaint || ''}
-                      onChange={(e) => handleInputChange('chiefComplaint', e.target.value)}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-
-              {/* Vitals Assessment */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Vitals Assessment
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth>
-                      <InputLabel>Glasgow Coma Scale</InputLabel>
-                      <Select
-                        value={formData.glasgowComaScale || ''}
-                        onChange={(e) => handleInputChange('glasgowComaScale', e.target.value)}
-                        label="Glasgow Coma Scale"
-                      >
-                        <MenuItem value={3}>3 - Critical</MenuItem>
-                        <MenuItem value={4}>4 - Critical</MenuItem>
-                        <MenuItem value={5}>5 - Critical</MenuItem>
-                        <MenuItem value={6}>6 - Critical</MenuItem>
-                        <MenuItem value={7}>7 - Critical</MenuItem>
-                        <MenuItem value={8}>8 - Critical</MenuItem>
-                        <MenuItem value={9}>9 - Severe</MenuItem>
-                        <MenuItem value={10}>10 - Severe</MenuItem>
-                        <MenuItem value={11}>11 - Severe</MenuItem>
-                        <MenuItem value={12}>12 - Severe</MenuItem>
-                        <MenuItem value={13}>13 - Mild</MenuItem>
-                        <MenuItem value={14}>14 - Mild</MenuItem>
-                        <MenuItem value={15}>15 - Mild</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Systolic Blood Pressure (mmHg)"
-                      type="number"
-                      value={formData.systolicBloodPressure || ''}
-                      onChange={(e) => handleInputChange('systolicBloodPressure', e.target.value)}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Respiratory Rate (/min)"
-                      type="number"
-                      value={formData.respiratoryRate || ''}
-                      onChange={(e) => handleInputChange('respiratoryRate', e.target.value)}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Additional Vital Signs"
-                      value={formData.additionalVitalSigns || ''}
-                      onChange={(e) => handleInputChange('additionalVitalSigns', e.target.value)}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-
-              {/* Injury Assessment */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Injury Assessment
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Head & Neck Injury"
-                      value={formData.headAndNeckInjury || ''}
-                      onChange={(e) => handleInputChange('headAndNeckInjury', e.target.value)}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Face Injury"
-                      value={formData.faceInjury || ''}
-                      onChange={(e) => handleInputChange('faceInjury', e.target.value)}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Chest Injury"
-                      value={formData.chestInjury || ''}
-                      onChange={(e) => handleInputChange('chestInjury', e.target.value)}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Abdomen Injury"
-                      value={formData.abdomenInjury || ''}
-                      onChange={(e) => handleInputChange('abdomenInjury', e.target.value)}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Extremities Injury"
-                      value={formData.extremitiesInjury || ''}
-                      onChange={(e) => handleInputChange('extremitiesInjury', e.target.value)}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="External Injury"
-                      value={formData.externalInjury || ''}
-                      onChange={(e) => handleInputChange('externalInjury', e.target.value)}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Primary Survey Findings"
-                      value={formData.primarySurveyFindings || ''}
-                      onChange={(e) => handleInputChange('primarySurveyFindings', e.target.value)}
-                      multiline
-                      rows={3}
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-
-              {/* Disposition */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Disposition
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required>
-                      <InputLabel>ED Disposition</InputLabel>
-                      <Select
-                        value={formData.edDisposition || ''}
-                        onChange={(e) => handleInputChange('edDisposition', e.target.value)}
-                        label="ED Disposition"
-                      >
-                        <MenuItem value="ICU_ADMISSION">ICU Admission</MenuItem>
-                        <MenuItem value="SURGICAL_WARD_ADMISSION">Surgical Ward Admission</MenuItem>
-                        <MenuItem value="MEDICAL_WARD_ADMISSION">Medical Ward Admission</MenuItem>
-                        <MenuItem value="DISCHARGE">Discharge</MenuItem>
-                        <MenuItem value="OPERATING_THEATRE">Operating Theatre</MenuItem>
-                        <MenuItem value="TRANSFER_TO_HIGHER_CENTER">Transfer to Higher Center</MenuItem>
-                        <MenuItem value="DEATH">Death</MenuItem>
-                        <MenuItem value="DISCHARGE_AGAINST_MEDICAL_ADVICE">Discharge Against Medical Advice</MenuItem>
-                        <MenuItem value="OTHER">Other</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Additional Notes"
-                      value={formData.additionalNotes || ''}
-                      onChange={(e) => handleInputChange('additionalNotes', e.target.value)}
-                      multiline
-                      rows={3}
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-            </Grid>
-          </form>
+          <Box minHeight="400px">
+            {renderStepContent()}
+          </Box>
         </DialogContent>
-        <DialogActions>
+
+        <DialogActions sx={{ p: 3 }}>
           <Button onClick={onClose} disabled={loading}>
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={loading}
+            onClick={handleBack}
+            disabled={activeStep === 0 || loading}
           >
-            {loading ? 'Updating...' : 'Update'}
+            Back
           </Button>
+          {activeStep === TRAUMA_FORM_STEPS.length - 1 ? (
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              disabled={!isStepValid(activeStep) || loading}
+              startIcon={loading ? <CircularProgress size={20} /> : null}
+            >
+              {loading ? 'Updating...' : 'Update Case'}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleNext}
+              variant="contained"
+              disabled={!isStepValid(activeStep) || loading}
+            >
+              Next
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </LocalizationProvider>
