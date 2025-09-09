@@ -21,7 +21,9 @@ export class TraumaQueryService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(filters?: TraumaFilters): Promise<{ cases: TraumaCase[]; total: number }> {
-    const where: any = {};
+    const where: any = {
+      deletedAt: null, // Only show non-deleted records
+    };
 
     if (filters?.patientId) {
       where.patientId = filters.patientId;
@@ -89,7 +91,10 @@ export class TraumaQueryService {
 
   async findOne(id: string): Promise<TraumaCase> {
     const traumaCase = await this.prisma.traumaCase.findUnique({
-      where: { id },
+      where: { 
+        id,
+        deletedAt: null, // Only show non-deleted records
+      },
       include: {
         patient: true,
         originHospital: true,

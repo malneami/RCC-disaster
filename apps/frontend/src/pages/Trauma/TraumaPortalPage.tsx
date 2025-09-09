@@ -165,7 +165,10 @@ const TraumaPortalPage: React.FC = () => {
   const handleDeleteCase = async (id: string) => {
     try {
       await TraumaService.deleteTraumaCase(id);
-      await loadData(); // Refresh data
+      setTraumaCases(prev => prev.filter(case_ => case_.id !== id));
+      // Refresh KPI data
+      const updatedKpi = await TraumaService.getKPISummary();
+      setKpiSummary(updatedKpi);
     } catch (err) {
       console.error('Error deleting trauma case:', err);
       throw err;
@@ -174,8 +177,11 @@ const TraumaPortalPage: React.FC = () => {
 
   const handleUpdateCase = async (id: string, data: any) => {
     try {
-      await TraumaService.updateTraumaCase(id, data);
-      await loadData(); // Refresh data
+      const updatedCase = await TraumaService.updateTraumaCase(id, data);
+      setTraumaCases(prev => prev.map(case_ => case_.id === id ? updatedCase : case_));
+      // Refresh KPI data
+      const updatedKpi = await TraumaService.getKPISummary();
+      setKpiSummary(updatedKpi);
     } catch (err) {
       console.error('Error updating trauma case:', err);
       throw err;
