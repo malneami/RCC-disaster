@@ -225,10 +225,6 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
       setLoading(true);
       // Fetch the latest case data directly from the API to ensure we have the most up-to-date data
       const latestCase = await TraumaService.getTraumaCaseById(case_.id);
-      console.log('TraumaCasesList: Opening edit dialog with fresh case data:', latestCase);
-      console.log('TraumaCasesList: Patient data:', latestCase.patient);
-      console.log('TraumaCasesList: Vital signs:', latestCase.vitalSigns);
-      console.log('TraumaCasesList: Disposition:', latestCase.disposition);
       setSelectedCase(latestCase);
       setEditDialogOpen(true);
     } catch (err) {
