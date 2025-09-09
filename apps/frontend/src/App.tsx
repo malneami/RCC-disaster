@@ -12,7 +12,7 @@ import HospitalsPage from './pages/Hospitals/HospitalsPage';
 import HospitalDashboardPage from './pages/Hospitals/HospitalDashboardPage';
 import STEMIPortal from './pages/Portals/STEMIPortal';
 import StrokePortal from './pages/Portals/StrokePortal';
-import TraumaPortal from './pages/Portals/TraumaPortal';
+import TraumaPortalPage from './pages/Trauma/TraumaPortalPage';
 import EMSPortal from './pages/EMS/EMSPortal';
 import EMSDashboardPage from './pages/Dashboard/EMSDashboardPage';
 import AdminPage from './pages/Admin/AdminPage';
@@ -66,7 +66,7 @@ function App() {
             path="/portals/trauma"
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
-                <TraumaPortal />
+                <TraumaPortalPage />
               </ProtectedRoute>
             }
           />
