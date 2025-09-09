@@ -75,8 +75,8 @@ model Patient {
   
   // Stroke Relations
   strokeCases     StrokeCase[]
-  // strokeAssessmentScores StrokeAssessmentScore[]
-  // strokeRehabilitation StrokeRehabilitation[]
+  strokeAssessmentScores StrokeAssessmentScore[]
+  strokeRehabilitation StrokeRehabilitation[]
   
   @@map("patients")
   @@index([mrn])

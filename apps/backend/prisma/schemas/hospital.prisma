@@ -89,8 +89,8 @@ model Hospital {
   // Stroke Relations
   strokeOriginCases StrokeCase[]  @relation("StrokeOriginHospital")
   strokeDestinationCases StrokeCase[] @relation("StrokeDestinationHospital")
-  // strokeKpiSummaries StrokeKpiSummary[]
-  // strokeRehabilitationCenters StrokeRehabilitation[] @relation("StrokeRehabilitationCenter")
+  strokeKpiSummaries StrokeKpiSummary[]
+  strokeRehabilitationCenters StrokeRehabilitation[] @relation("StrokeRehabilitationCenter")
   
   @@map("hospitals")
   @@index([status])

@@ -3,8 +3,8 @@ model StrokeKpiSummary {
   id                              String      @id @default(uuid())
   hospitalId                      String      @map("hospital_id")
   cluster                         String
-  year                           Int         NOT NULL
-  month                          Int         NOT NULL
+  year                           Int
+  month                          Int
   
   // Volume Metrics
   totalStrokeVolume              Int         @default(0) @map("total_stroke_volume")

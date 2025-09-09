@@ -5,7 +5,7 @@ model StrokeRehabilitation {
   patientId               String      @map("patient_id")
   
   // Rehabilitation Details
-  rehabilitationType      String      NOT NULL @map("rehabilitation_type") // PHYSIOTHERAPY, SPEECH, OCCUPATIONAL
+  rehabilitationType      String      @map("rehabilitation_type") // PHYSIOTHERAPY, SPEECH, OCCUPATIONAL
   startDate               DateTime?
   endDate                 DateTime?
   frequency               String?     // DAILY, BID, TID, etc.

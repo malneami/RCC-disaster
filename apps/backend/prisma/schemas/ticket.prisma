@@ -68,6 +68,10 @@ model Ticket {
   strokeCases         StrokeCase[]
   strokeTimeline      StrokeTimeline[]
   
+  // EMS Relations
+  emsAssignments      EMSAssignment[]    @relation("EMSAssignmentTicket")
+  timelineEvents      TimelineEvent[]    @relation("TimelineEventTicket")
+  
   @@map("tickets")
   @@index([ticketNumber])
   @@index([status])

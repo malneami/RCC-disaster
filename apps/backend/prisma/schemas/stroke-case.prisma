@@ -107,8 +107,9 @@ model StrokeCase {
   
   // Related Models
   timeline                        StrokeTimeline[]
-  // assessmentScores                StrokeAssessmentScore[]
-  // rehabilitation                  StrokeRehabilitation[]
+  timelineEvents                  TimelineEvent[] @relation("TimelineEventStrokeCase")
+  assessmentScores                StrokeAssessmentScore[]
+  rehabilitation                  StrokeRehabilitation[]
   
   @@map("stroke_cases")
   @@index([ticketId])

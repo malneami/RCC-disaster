@@ -9,6 +9,7 @@ const RELATIONS_DIR = path.join(__dirname, 'relations');
 // Schema file order (important for dependencies)
 const SCHEMA_ORDER = [
   'enums.prisma',
+  'ems-enums.prisma',
   'user.prisma',
   'hospital.prisma',
   'patient.prisma',
@@ -18,11 +19,21 @@ const SCHEMA_ORDER = [
   'activity.prisma',
   'system.prisma',
   'stroke-case.prisma',
-  'stroke-timeline.prisma'
-  // Temporarily disabled stroke models to debug schema issues
-  // 'stroke-kpi-summary.prisma',
-  // 'stroke-assessment-score.prisma',
-  // 'stroke-rehabilitation.prisma'
+  'stroke-timeline.prisma',
+  // EMS related schemas
+  'ambulance.prisma',
+  'driver-schedule.prisma',
+  'ems-assignment.prisma',
+  'ems-alerts.prisma',
+  'ems-performance.prisma',
+  'equipment-inventory.prisma',
+  'gps-tracking.prisma',
+  'maintenance-record.prisma',
+  'timeline-events.prisma',
+  // Stroke assessment and rehabilitation models
+  'stroke-kpi-summary.prisma',
+  'stroke-assessment-score.prisma',
+  'stroke-rehabilitation.prisma'
 ];
 
 // Prisma header
@@ -91,6 +102,17 @@ function validateMergedSchema(content) {
     { name: 'HospitalTicket model', pattern: /model HospitalTicket/, required: true },
     { name: 'StrokeCase model', pattern: /model StrokeCase/, required: false },
     { name: 'StrokeTimeline model', pattern: /model StrokeTimeline/, required: false },
+    // EMS model validations
+    { name: 'Ambulance model', pattern: /model Ambulance/, required: true },
+    { name: 'DriverSchedule model', pattern: /model DriverSchedule/, required: true },
+    { name: 'EMSAssignment model', pattern: /model EMSAssignment/, required: true },
+    { name: 'EMSAlert model', pattern: /model EMSAlert/, required: true },
+    { name: 'GPSTracking model', pattern: /model GPSTracking/, required: true },
+    { name: 'TimelineEvent model', pattern: /model TimelineEvent/, required: true },
+    // Stroke assessment and rehabilitation models
+    { name: 'StrokeKpiSummary model', pattern: /model StrokeKpiSummary/, required: false },
+    { name: 'StrokeAssessmentScore model', pattern: /model StrokeAssessmentScore/, required: false },
+    { name: 'StrokeRehabilitation model', pattern: /model StrokeRehabilitation/, required: false },
     { name: 'Enums', pattern: /enum/, required: true },
   ];
   

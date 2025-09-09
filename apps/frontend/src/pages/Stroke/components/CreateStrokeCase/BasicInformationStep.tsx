@@ -14,8 +14,8 @@ import {
 
 import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
-import NationalIdInput from '../../../../components/common/NationalIdInput';
-import PortalPatientEdit from '../../../../components/common/PortalPatientEdit';
+import NationalIdInput from '../../../../components/Common/NationalIdInput';
+import PortalPatientEdit from '../../../../components/Common/PortalPatientEdit';
 import { Patient } from '../../../../services/patientService';
 
 interface BasicInformationStepProps {

@@ -25,7 +25,7 @@ model Ambulance {
   // Driver Information
   driverName              String?         @map("driver_name")
   driverPhone             String?         @map("driver_phone")
-  driverId                String?         @map("driver_id")
+  driverId                String?         @unique @map("driver_id")
   
   // Equipment & Maintenance
   equipmentStatus         EquipmentStatus @default(OPERATIONAL) @map("equipment_status")

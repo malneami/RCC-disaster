@@ -5,8 +5,8 @@ model StrokeAssessmentScore {
   patientId               String      @map("patient_id")
   
   // Assessment Type
-  assessmentType          String      NOT NULL @map("assessment_type") // NIHSS, MRS, BARTHEL, ASPECTS, GCS
-  assessmentTiming        String      NOT NULL @map("assessment_timing") // BASELINE, 24HR, DISCHARGE, 90DAY
+  assessmentType          String      @map("assessment_type") // NIHSS, MRS, BARTHEL, ASPECTS, GCS
+  assessmentTiming        String      @map("assessment_timing") // BASELINE, 24HR, DISCHARGE, 90DAY
   
   // Score Values
   totalScore              Int?
@@ -15,7 +15,7 @@ model StrokeAssessmentScore {
   assessorQualification    String?     @map("assessor_qualification")
   
   // Context
-  assessmentDateTime      DateTime    NOT NULL @map("assessment_date_time")
+  assessmentDateTime      DateTime    @map("assessment_date_time")
   assessmentNotes         String?     @map("assessment_notes")
   
   // Audit Fields
