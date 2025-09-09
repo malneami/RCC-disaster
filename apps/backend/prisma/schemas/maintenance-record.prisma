@@ -1,0 +1,52 @@
+// Maintenance Record model for tracking vehicle and equipment maintenance
+model MaintenanceRecord {
+  id                      String          @id @default(uuid())
+  
+  // Reference Information
+  ambulanceId             String?         @map("ambulance_id")
+  equipmentId             String?         @map("equipment_id")
+  
+  // Maintenance Details
+  type                    MaintenanceType
+  status                  MaintenanceStatus @default(SCHEDULED)
+  description             String
+  workPerformed           String?         @map("work_performed")
+  
+  // Scheduling
+  scheduledDate           DateTime?       @map("scheduled_date")
+  startDate               DateTime?       @map("start_date")
+  completionDate          DateTime?       @map("completion_date")
+  
+  // Cost & Resources
+  cost                    Float?
+  laborHours             Float?          @map("labor_hours")
+  partsUsed               String?         @map("parts_used") // JSON string
+  technicianName          String?         @map("technician_name")
+  
+  // Additional Information
+  mileageAtService        Float?          @map("mileage_at_service")
+  nextServiceDue          DateTime?       @map("next_service_due")
+  warrantyWork            Boolean         @default(false) @map("warranty_work")
+  
+  // Audit Fields
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+  createdBy               String          @map("created_by")
+  
+  // Relations
+  ambulance               Ambulance?      @relation(fields: [ambulanceId], references: [id])
+  equipment               EquipmentInventory? @relation(fields: [equipmentId], references: [id])
+  createdByUser           User            @relation("MaintenanceRecordCreator", fields: [createdBy], references: [id])
+  
+  @@map("maintenance_records")
+  @@index([ambulanceId])
+  @@index([equipmentId])
+  @@index([type])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([completionDate])
+  @@index([nextServiceDue])
+  @@index([createdAt])
+}
+
+

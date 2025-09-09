@@ -1,0 +1,42 @@
+// Driver Schedule model for managing driver shifts and assignments
+model DriverSchedule {
+  id                      String          @id @default(uuid())
+  
+  // Schedule Details
+  driverId                String          @map("driver_id")
+  ambulanceId             String          @map("ambulance_id")
+  
+  // Shift Information
+  shiftStart              DateTime        @map("shift_start")
+  shiftEnd                DateTime        @map("shift_end")
+  shiftType               ShiftType       @map("shift_type")
+  status                  ScheduleStatus  @default(SCHEDULED)
+  
+  // Break Tracking
+  breakStart              DateTime?       @map("break_start")
+  breakEnd                DateTime?       @map("break_end")
+  overtimeHours           Float?         @map("overtime_hours")
+  
+  // Additional Information
+  notes                   String?
+  
+  // Audit Fields
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+  deletedAt               DateTime?       @map("deleted_at")
+  
+  // Relations
+  driver                  User            @relation("DriverScheduleDriver", fields: [driverId], references: [id])
+  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
+  
+  @@map("driver_schedules")
+  @@index([driverId])
+  @@index([ambulanceId])
+  @@index([shiftStart])
+  @@index([shiftEnd])
+  @@index([status])
+  @@index([shiftType])
+  @@index([createdAt])
+}
+
+

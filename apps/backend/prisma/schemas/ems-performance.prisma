@@ -1,0 +1,45 @@
+// EMS Performance Metrics model for KPI tracking and analytics
+model EMSPerformanceMetric {
+  id                      String          @id @default(uuid())
+  
+  // Reference Information
+  ambulanceId             String          @map("ambulance_id")
+  date                   DateTime        // Date of metrics
+  
+  // Transfer Metrics
+  totalTransfers         Int             @map("total_transfers")
+  averageResponseTime    Float?          @map("average_response_time") // minutes
+  averageTransferTime    Float?          @map("average_transfer_time") // minutes
+  
+  // Distance & Fuel
+  totalDistanceKm        Float?          @map("total_distance_km")
+  fuelConsumptionLiters  Float?          @map("fuel_consumption_liters")
+  
+  // Maintenance
+  maintenanceHours       Float?          @map("maintenance_hours")
+  
+  // Quality Metrics
+  driverRating           Float?          @map("driver_rating") // 1-5 scale
+  patientSatisfactionScore Float?       @map("patient_satisfaction_score") // 1-10 scale
+  
+  // Additional KPIs
+  onTimeArrivals         Int?            @map("on_time_arrivals")
+  delayedArrivals        Int?            @map("delayed_arrivals")
+  cancelledTransfers     Int?            @map("cancelled_transfers")
+  equipmentFailures      Int?            @map("equipment_failures")
+  
+  // Audit Fields
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  ambulance              Ambulance       @relation(fields: [ambulanceId], references: [id])
+  
+  @@map("ems_performance_metrics")
+  @@index([ambulanceId])
+  @@index([date])
+  @@index([createdAt])
+  @@unique([ambulanceId, date])
+}
+
+

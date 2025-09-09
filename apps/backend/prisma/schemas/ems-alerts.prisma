@@ -1,0 +1,45 @@
+// EMS Alerts model for system notifications and alerts
+model EMSAlert {
+  id                      String          @id @default(uuid())
+  
+  // Alert Details
+  type                    AlertType
+  priority                AlertPriority
+  message                 String
+  
+  // References (nullable for system-wide alerts)
+  ambulanceId             String?         @map("ambulance_id")
+  driverId                String?         @map("driver_id")
+  equipmentId             String?         @map("equipment_id")
+  
+  // Alert Status
+  status                  AlertStatus     @default(ACTIVE)
+  acknowledgedBy          String?         @map("acknowledged_by")
+  acknowledgedAt          DateTime?       @map("acknowledged_at")
+  resolvedAt              DateTime?       @map("resolved_at")
+  
+  // Additional Information
+  metadata                String?         // JSON string for additional data
+  escalationLevel         Int?            @map("escalation_level")
+  
+  // Audit Fields
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  ambulance               Ambulance?      @relation(fields: [ambulanceId], references: [id])
+  driver                  User?           @relation("EMSAlertDriver", fields: [driverId], references: [id])
+  acknowledgedByUser      User?           @relation("EMSAlertAcknowledgedBy", fields: [acknowledgedBy], references: [id])
+  equipment               EquipmentInventory? @relation(fields: [equipmentId], references: [id])
+  
+  @@map("ems_alerts")
+  @@index([type])
+  @@index([priority])
+  @@index([status])
+  @@index([ambulanceId])
+  @@index([driverId])
+  @@index([createdAt])
+  @@index([acknowledgedAt])
+}
+
+

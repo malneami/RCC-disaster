@@ -1,0 +1,36 @@
+// GPS Tracking Log model for real-time location monitoring
+model GPSTrackingLog {
+  id                      String          @id @default(uuid())
+  
+  // Vehicle Reference
+  ambulanceId             String          @map("ambulance_id")
+  
+  // GPS Data
+  latitude                Float
+  longitude               Float
+  speed                   Float?          // km/h
+  direction               Float?         // degrees (0-360)
+  timestamp               DateTime        // When GPS data was recorded
+  
+  // Vehicle Status
+  fuelLevel               Float?          @map("fuel_level") // Percentage if available
+  engineStatus            Boolean?        @map("engine_status") // on/off
+  
+  // Location Details
+  locationAddress         String?         @map("location_address") // Reverse geocoded
+  accuracy                Float?         // GPS accuracy in meters
+  
+  // Audit Fields
+  createdAt               DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
+  
+  @@map("gps_tracking_logs")
+  @@index([ambulanceId])
+  @@index([timestamp])
+  @@index([latitude, longitude])
+  @@index([createdAt])
+}
+
+

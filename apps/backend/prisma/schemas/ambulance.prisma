@@ -1,0 +1,67 @@
+// Ambulance model for fleet management with GPS tracking
+model Ambulance {
+  id                      String          @id @default(uuid())
+  
+  // Vehicle Identification
+  vehicleId               String          @unique @map("vehicle_id") // GPS tracking ID
+  callSign                String          @unique @map("call_sign") // Radio call sign
+  plateNumber             String          @unique @map("plate_number") // License plate
+  
+  // Vehicle Specifications
+  model                   String
+  year                    Int
+  type                    AmbulanceType
+  manufacturer            String?
+  vin                     String?         @unique // Vehicle Identification Number
+  
+  // Location & Status
+  baseStation             String          @map("base_station") // Home location/station
+  status                  AmbulanceStatus @default(AVAILABLE)
+  currentLocationLat      Float?          @map("current_location_lat")
+  currentLocationLng      Float?          @map("current_location_lng")
+  currentLocationAddress  String?         @map("current_location_address")
+  lastUpdated             DateTime?        @map("last_updated")
+  
+  // Driver Information
+  driverName              String?         @map("driver_name")
+  driverPhone             String?         @map("driver_phone")
+  driverId                String?         @map("driver_id")
+  
+  // Equipment & Maintenance
+  equipmentStatus         EquipmentStatus @default(OPERATIONAL) @map("equipment_status")
+  fuelLevel               Float?          @map("fuel_level") // Percentage
+  mileage                 Float?          // Odometer reading in km
+  lastMaintenanceDate     DateTime?       @map("last_maintenance_date")
+  nextMaintenanceDue      DateTime?       @map("next_maintenance_due")
+  
+  // Operational Status
+  isActive                Boolean         @default(true) @map("is_active")
+  
+  // Audit Fields
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+  deletedAt               DateTime?       @map("deleted_at")
+  
+  // Relations
+  driver                  User?           @relation("AmbulanceDriver", fields: [driverId], references: [id])
+  assignments             EMSAssignment[]
+  gpsTrackingLogs         GPSTrackingLog[]
+  driverSchedules         DriverSchedule[]
+  equipmentInventory      EquipmentInventory[]
+  performanceMetrics      EMSPerformanceMetric[]
+  alerts                  EMSAlert[]
+  timelineEvents          TimelineEvent[]
+  maintenanceRecords      MaintenanceRecord[]
+  
+  @@map("ambulances")
+  @@index([status])
+  @@index([baseStation])
+  @@index([isActive])
+  @@index([vehicleId])
+  @@index([plateNumber])
+  @@index([callSign])
+  @@index([driverId])
+  @@index([nextMaintenanceDue])
+}
+
+

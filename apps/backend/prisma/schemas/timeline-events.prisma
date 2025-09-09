@@ -1,0 +1,63 @@
+// Enhanced Timeline Events model for tracking all system events including EMS
+model TimelineEvent {
+  id                      String          @id @default(uuid())
+  
+  // Event Classification
+  eventType               String          @map("event_type") // Can be StrokeEventType or EMSEventType
+  eventCategory           String          @map("event_category") // STROKE, EMS, GENERAL
+  
+  // References (optional based on event type)
+  ticketId                String?         @map("ticket_id")
+  strokeCaseId            String?         @map("stroke_case_id")
+  ambulanceId             String?         @map("ambulance_id")
+  driverId                String?         @map("driver_id")
+  
+  // Event Details
+  eventTimestamp          DateTime        @map("event_timestamp")
+  eventDescription        String          @map("event_description")
+  eventLocation           String?         @map("event_location")
+  
+  // EMS-specific fields
+  gpsCoordinates          String?         @map("gps_coordinates") // JSON: {lat, lng}
+  distanceKm              Float?          @map("distance_km")
+  speed                   Float?          // km/h
+  fuelLevel               Float?          @map("fuel_level")
+  
+  // Stroke-specific fields
+  fromStatus              String?         @map("from_status") // StrokeStatus
+  toStatus                String?         @map("to_status") // StrokeStatus
+  minutesFromSymptom      Int?            @map("minutes_from_symptom")
+  minutesFromAdmission    Int?            @map("minutes_from_admission")
+  withinTarget            Boolean?        @map("within_target")
+  targetMinutes           Int?            @map("target_minutes")
+  nihssAtSession          Int?            @map("nihss_at_session")
+  clinicalNotes           String?         @map("clinical_notes")
+  
+  // General fields
+  triggeredBy             String          @map("triggered_by")
+  metadata                String?         // JSON string for additional data
+  
+  // Audit Fields
+  createdAt               DateTime        @default(now()) @map("created_at")
+  createdById             String          @map("created_by_id")
+  
+  // Relations
+  ticket                  Ticket?         @relation("TimelineEventTicket", fields: [ticketId], references: [id])
+  strokeCase              StrokeCase?     @relation("TimelineEventStrokeCase", fields: [strokeCaseId], references: [id])
+  ambulance               Ambulance?      @relation(fields: [ambulanceId], references: [id])
+  driver                  User?           @relation("TimelineEventDriver", fields: [driverId], references: [id])
+  triggeredByUser         User            @relation("TimelineEventTriggeredBy", fields: [triggeredBy], references: [id])
+  createdBy               User            @relation("TimelineEventCreator", fields: [createdById], references: [id])
+  
+  @@map("timeline_events")
+  @@index([eventType])
+  @@index([eventCategory])
+  @@index([ticketId])
+  @@index([strokeCaseId])
+  @@index([ambulanceId])
+  @@index([driverId])
+  @@index([eventTimestamp])
+  @@index([createdAt])
+}
+
+

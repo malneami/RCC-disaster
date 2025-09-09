@@ -1,0 +1,40 @@
+// Equipment Inventory model for tracking ambulance equipment
+model EquipmentInventory {
+  id                      String          @id @default(uuid())
+  
+  // Equipment Details
+  ambulanceId             String          @map("ambulance_id")
+  equipmentType           String          @map("equipment_type") // defibrillator, oxygen, stretcher, etc.
+  serialNumber            String?         @map("serial_number")
+  manufacturer            String?
+  model                   String?
+  
+  // Status & Maintenance
+  status                  EquipmentStatus @default(OPERATIONAL)
+  lastInspectionDate      DateTime?       @map("last_inspection_date")
+  nextInspectionDue       DateTime?       @map("next_inspection_due")
+  maintenanceNotes        String?         @map("maintenance_notes")
+  
+  // Additional Information
+  purchaseDate            DateTime?       @map("purchase_date")
+  warrantyExpiry          DateTime?       @map("warranty_expiry")
+  location                String?         // Where in the ambulance
+  
+  // Audit Fields
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+  deletedAt               DateTime?       @map("deleted_at")
+  
+  // Relations
+  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
+  maintenanceRecords      MaintenanceRecord[]
+  alerts                  EMSAlert[]
+  
+  @@map("equipment_inventory")
+  @@index([ambulanceId])
+  @@index([equipmentType])
+  @@index([status])
+  @@index([serialNumber])
+  @@index([nextInspectionDue])
+  @@index([createdAt])
+}
