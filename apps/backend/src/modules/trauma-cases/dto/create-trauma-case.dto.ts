@@ -2,6 +2,50 @@ import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, IsNumber,
 import { Type } from 'class-transformer';
 import { TraumaModeOfArrival, TraumaMechanismOfInjury, TraumaDispositionType } from '@prisma/client';
 
+export class VitalSignsDto {
+  @IsOptional()
+  @IsNumber()
+  temperature?: number;
+
+  @IsOptional()
+  @IsNumber()
+  heartRate?: number;
+
+  @IsOptional()
+  @IsString()
+  bloodPressure?: string;
+
+  @IsOptional()
+  @IsNumber()
+  oxygenSaturation?: number;
+
+  @IsOptional()
+  @IsNumber()
+  respiratoryRate?: number;
+}
+
+export class DispositionDto {
+  @IsOptional()
+  @IsString()
+  dischargeInstructions?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  followUpRequired?: boolean;
+
+  @IsOptional()
+  @IsString()
+  followUpDate?: string;
+
+  @IsOptional()
+  @IsString()
+  medicationsPrescribed?: string;
+
+  @IsOptional()
+  @IsString()
+  restrictions?: string;
+}
+
 export class PatientInfoDto {
   @IsOptional()
   @IsString()
@@ -118,8 +162,9 @@ export class CreateTraumaCaseDto {
 
   // Vital Signs
   @IsOptional()
-  @IsObject()
-  vitalSigns?: any;
+  @ValidateNested()
+  @Type(() => VitalSignsDto)
+  vitalSigns?: VitalSignsDto;
 
   @IsOptional()
   @IsInt()
@@ -163,8 +208,9 @@ export class CreateTraumaCaseDto {
   additionalNotes?: string;
 
   @IsOptional()
-  @IsObject()
-  disposition?: any;
+  @ValidateNested()
+  @Type(() => DispositionDto)
+  disposition?: DispositionDto;
 
   // Patient Information
   @IsOptional()
