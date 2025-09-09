@@ -142,47 +142,47 @@ export class TraumaPatientService {
     
     const patientUpdateData: any = {};
     
-    if (patientInfo.firstName) {
-      patientUpdateData.firstName = patientInfo.firstName.trim();
+    if (patientInfo.firstName !== undefined) {
+      patientUpdateData.firstName = patientInfo.firstName ? patientInfo.firstName.trim() : null;
     }
-    if (patientInfo.lastName) {
-      patientUpdateData.lastName = patientInfo.lastName.trim();
+    if (patientInfo.lastName !== undefined) {
+      patientUpdateData.lastName = patientInfo.lastName ? patientInfo.lastName.trim() : null;
     }
-    if (patientInfo.nationalId) {
-      patientUpdateData.nationalId = patientInfo.nationalId.trim();
+    if (patientInfo.nationalId !== undefined) {
+      patientUpdateData.nationalId = patientInfo.nationalId ? patientInfo.nationalId.trim() : null;
     }
-    if (patientInfo.mrn) {
-      patientUpdateData.mrn = patientInfo.mrn.trim();
+    if (patientInfo.mrn !== undefined) {
+      patientUpdateData.mrn = patientInfo.mrn ? patientInfo.mrn.trim() : null;
     }
-    if (patientInfo.phoneNumber) {
-      patientUpdateData.phoneNumber = patientInfo.phoneNumber.trim();
+    if (patientInfo.phoneNumber !== undefined) {
+      patientUpdateData.phoneNumber = patientInfo.phoneNumber ? patientInfo.phoneNumber.trim() : null;
     }
-    if (patientInfo.email) {
-      patientUpdateData.email = patientInfo.email.trim();
+    if (patientInfo.email !== undefined) {
+      patientUpdateData.email = patientInfo.email ? patientInfo.email.trim() : null;
     }
-    if (patientInfo.dateOfBirth) {
-      patientUpdateData.dateOfBirth = new Date(patientInfo.dateOfBirth);
+    if (patientInfo.dateOfBirth !== undefined) {
+      patientUpdateData.dateOfBirth = patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth) : null;
     }
-    if (patientInfo.gender) {
-      patientUpdateData.gender = patientInfo.gender as PatientGender;
+    if (patientInfo.gender !== undefined) {
+      patientUpdateData.gender = patientInfo.gender ? patientInfo.gender as PatientGender : null;
     }
-    if (patientInfo.address) {
-      patientUpdateData.address = patientInfo.address.trim();
+    if (patientInfo.address !== undefined) {
+      patientUpdateData.address = patientInfo.address ? patientInfo.address.trim() : null;
     }
-    if (patientInfo.emergencyContact) {
-      patientUpdateData.emergencyContact = patientInfo.emergencyContact.trim();
+    if (patientInfo.emergencyContact !== undefined) {
+      patientUpdateData.emergencyContact = patientInfo.emergencyContact ? patientInfo.emergencyContact.trim() : null;
     }
-    if (patientInfo.emergencyPhone) {
-      patientUpdateData.emergencyPhone = patientInfo.emergencyPhone.trim();
+    if (patientInfo.emergencyPhone !== undefined) {
+      patientUpdateData.emergencyPhone = patientInfo.emergencyPhone ? patientInfo.emergencyPhone.trim() : null;
     }
-    if (patientInfo.medicalHistory) {
-      patientUpdateData.medicalHistory = patientInfo.medicalHistory.trim();
+    if (patientInfo.medicalHistory !== undefined) {
+      patientUpdateData.medicalHistory = patientInfo.medicalHistory ? patientInfo.medicalHistory.trim() : null;
     }
-    if (patientInfo.allergies) {
-      patientUpdateData.allergies = patientInfo.allergies.trim();
+    if (patientInfo.allergies !== undefined) {
+      patientUpdateData.allergies = patientInfo.allergies ? patientInfo.allergies.trim() : null;
     }
-    if (patientInfo.medications) {
-      patientUpdateData.medications = patientInfo.medications.trim();
+    if (patientInfo.medications !== undefined) {
+      patientUpdateData.medications = patientInfo.medications ? patientInfo.medications.trim() : null;
     }
     
     if (Object.keys(patientUpdateData).length > 0) {
