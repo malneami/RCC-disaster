@@ -299,9 +299,9 @@ export class TraumaCasesService {
   async remove(id: string): Promise<void> {
     const existingCase = await this.findOne(id);
 
-    await this.prisma.traumaCase.update({
+    // Hard delete like stroke portal
+    await this.prisma.traumaCase.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
   }
 
