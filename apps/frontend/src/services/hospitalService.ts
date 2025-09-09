@@ -37,6 +37,8 @@ export interface Hospital {
   hasStemiService: boolean;
   hasStrokeService: boolean;
   hasTraumaService: boolean;
+  hasThrombolysis: boolean;
+  hasThrombectomy: boolean;
   
   // Hospital Info
   cluster: string;

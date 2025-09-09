@@ -1,2 +1,2 @@
 export { default as MultiStepPatientForm } from './MultiStepPatientForm';
-export { default as PatientActions } from './PatientActions';
+export { usePatientActions as PatientActions } from './PatientActions';

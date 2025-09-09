@@ -10,13 +10,8 @@ import {
   Grid,
   Paper,
   IconButton,
-  Tooltip,
   Collapse,
   Alert,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
   TextField,
   InputAdornment,
   Button,
@@ -30,7 +25,6 @@ import {
   Assignment,
   CheckCircle,
   Warning,
-  Error,
   Info,
   Search,
   Clear,
@@ -78,12 +72,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   portalType,
   title = 'Timeline View',
   showSearch = true,
-  onSearch,
   loading = false,
   error,
 }) => {
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
-  const [filteredEvents, setFilteredEvents] = useState<TimelineEvent[]>(events);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<TimelineFilters>({
     eventType: '',
@@ -101,7 +93,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     }
   };
 
-  const getEventIcon = (type: TimelineEvent['type'], status: TimelineEvent['status']) => {
+  const getEventIcon = (type: TimelineEvent['type']) => {
     const iconProps = {
       sx: { fontSize: 20 },
     };
@@ -206,15 +198,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   const sortedEvents = applyFiltersAndSearch;
 
-  const eventStats = useMemo(() => {
-    const stats = {
-      total: events.length,
-      completed: events.filter(e => e.status === 'completed').length,
-      inProgress: events.filter(e => e.status === 'in-progress').length,
-      pending: events.filter(e => e.status === 'pending').length,
-    };
-    return stats;
-  }, [events]);
 
   if (loading) {
     return (
@@ -443,10 +426,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             }}
           />
           
-          {sortedEvents.map((event, index) => {
+          {sortedEvents.map((event) => {
             const isExpanded = expandedEvents.has(event.id);
             const { date, time } = formatTimestamp(event.timestamp);
-            const isLast = index === sortedEvents.length - 1;
 
             return (
               <Box key={event.id} sx={{ position: 'relative', mb: 2 }}>
@@ -470,7 +452,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     justifyContent: 'center',
                   }}
                 >
-                  {getEventIcon(event.type, event.status)}
+                  {getEventIcon(event.type)}
                 </Box>
 
                 {/* Event Content */}

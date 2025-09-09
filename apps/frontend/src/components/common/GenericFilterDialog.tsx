@@ -16,7 +16,7 @@ import {
   generateFilterChips,
   getActiveFiltersCount,
   resetFilters,
-} from '../../components/common/FilterComponents';
+} from '../../components/Common/FilterComponents';
 
 interface GenericFilterDialogProps {
   open: boolean;

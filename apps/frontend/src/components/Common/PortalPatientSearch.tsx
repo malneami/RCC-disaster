@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   TextField,
   Box,
@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import {
   Search,
-  FilterList,
   Clear,
   Person,
   LocalHospital,

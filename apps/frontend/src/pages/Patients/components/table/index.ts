@@ -1,2 +1,2 @@
-export { default as PatientTableColumns } from './PatientTableColumns';
-export { default as PatientTabsContent } from './PatientTabsContent';
+export { usePatientTableColumns as PatientTableColumns } from './PatientTableColumns';
+export { usePatientTabsContent as PatientTabsContent } from './PatientTabsContent';

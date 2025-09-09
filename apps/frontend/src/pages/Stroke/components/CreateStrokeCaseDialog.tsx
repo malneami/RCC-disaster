@@ -12,7 +12,7 @@ import {
   Alert,
 } from '@mui/material';
 
-import { CreateStrokeCaseData, StrokeService } from '../../../services/strokeService';
+import { CreateStrokeCaseData } from '../../../services/strokeService';
 import BasicInformationStep from './CreateStrokeCase/BasicInformationStep';
 import ClinicalAssessmentsStep from './CreateStrokeCase/ClinicalAssessmentsStep';
 import TreatmentInformationStep from './CreateStrokeCase/TreatmentInformationStep';

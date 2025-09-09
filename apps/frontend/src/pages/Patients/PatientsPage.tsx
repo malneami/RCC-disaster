@@ -7,17 +7,17 @@ import {
 } from '@mui/material';
 import { Patient } from '../../services/patientService';
 import MultiStepPatientForm from './components/forms/MultiStepPatientForm';
-import GenericPageHeader from '../../components/common/GenericPageHeader';
-import GenericTabs from '../../components/common/GenericTabs';
-import GenericFilterDialog from '../../components/common/GenericFilterDialog';
-import ExportDialog from '../../components/common/ExportDialog';
-import SearchBar from '../../components/common/SearchBar';
+import GenericPageHeader from '../../components/Common/GenericPageHeader';
+import GenericTabs from '../../components/Common/GenericTabs';
+import GenericFilterDialog from '../../components/Common/GenericFilterDialog';
+import ExportDialog from '../../components/Common/ExportDialog';
+import SearchBar from '../../components/Common/SearchBar';
 import { usePatientData } from './hooks/usePatientData';
 import { usePatientExport } from './hooks/usePatientExport';
 import { usePatientTabsContent } from './components/table/PatientTabsContent';
 import { usePatientActions } from './components/forms/PatientActions';
 import { createPatientFilterFields } from './config/patientFilterFields';
-import { ExportOptions } from '../../components/common/ExportDialog';
+import { ExportOptions } from '../../components/Common/ExportDialog';
 
 const PatientsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const PatientsPage: React.FC = () => {
     handlePatientUpdated,
   } = usePatientData();
 
-  const { exportPatient: exportPatientData, loading: exportLoading, error: exportError } = usePatientExport();
+  const { exportPatient: exportPatientData } = usePatientExport();
 
   const handleViewPatient = (patient: Patient) => {
     navigate(`/patients/${patient.id}`);

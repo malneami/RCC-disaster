@@ -12,7 +12,6 @@ import {
 } from '@mui/material';
 import {
   Search,
-  FilterList,
   Clear,
   Person,
   LocalHospital,

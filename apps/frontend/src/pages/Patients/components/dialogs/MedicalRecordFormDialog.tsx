@@ -1,5 +1,5 @@
 import React from 'react';
-import MultiStepDialog from '../../../../components/common/MultiStepDialog';
+import MultiStepDialog from '../../../../components/Common/MultiStepDialog';
 import { useMedicalRecordForm } from '../../hooks/useMedicalRecordForm';
 import { createMedicalRecordStepsConfig } from '../../config/medicalRecordFormSteps';
 import { MedicalRecord } from '../../../../services/medicalRecordService';

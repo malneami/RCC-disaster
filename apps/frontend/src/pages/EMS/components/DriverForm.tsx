@@ -11,7 +11,6 @@ import {
   Select,
   MenuItem,
   Grid,
-  Box,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';

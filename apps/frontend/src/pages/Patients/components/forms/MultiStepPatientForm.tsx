@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert } from '@mui/material';
 import { Patient, CreatePatientData } from '../../../../services/patientService';
-import MultiStepDialog from '../../../../components/common/MultiStepDialog';
+import MultiStepDialog from '../../../../components/Common/MultiStepDialog';
 import PersonalInfoStep from '../PatientFormSteps/PersonalInfoStep';
 import ContactInfoStep from '../PatientFormSteps/ContactInfoStep';
 import MedicalInfoStep from '../PatientFormSteps/MedicalInfoStep';

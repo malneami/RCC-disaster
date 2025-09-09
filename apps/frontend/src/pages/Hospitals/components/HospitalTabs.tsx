@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import { Hospital, CapacityAlert } from '../../../services/hospitalService';
-import GenericTabs, { TabConfig } from '../../../components/common/GenericTabs';
+import GenericTabs, { TabConfig } from '../../../components/Common/GenericTabs';
 import HospitalCapacityChart from './HospitalCapacityChart';
 import HospitalMap from './HospitalMap';
 import AlertsTab from './AlertsTab';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { CreateHospitalDto } from '../../../services/hospitalService';
-import FormDialog, { FormField } from '../../../components/common/FormDialog';
+import FormDialog, { FormField } from '../../../components/Common/FormDialog';
 
 interface CreateHospitalDialogProps {
   open: boolean;

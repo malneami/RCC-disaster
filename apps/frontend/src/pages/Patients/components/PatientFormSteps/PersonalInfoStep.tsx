@@ -10,7 +10,7 @@ import {
   Box,
 } from '@mui/material';
 import { CreatePatientData, Patient } from '../../../../services/patientService';
-import NationalIdInput from '../../../../components/common/NationalIdInput';
+import NationalIdInput from '../../../../components/Common/NationalIdInput';
 
 interface PersonalInfoStepProps {
   formData: CreatePatientData;
@@ -20,7 +20,7 @@ interface PersonalInfoStepProps {
   isEditing?: boolean; // Add this prop to indicate if we're editing
 }
 
-const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataChange, onViewDuplicate, onPatientSelected, isEditing = false }) => {
+const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataChange, onPatientSelected }) => {
   const handleChange = (field: keyof CreatePatientData, value: any) => {
     onDataChange({ [field]: value });
   };

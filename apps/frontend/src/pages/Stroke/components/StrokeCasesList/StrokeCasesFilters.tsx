@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextField,
   FormControl,
   InputLabel,
   Select,
@@ -13,7 +12,6 @@ import {
   Grid,
 } from '@mui/material';
 
-import { StrokeType, StrokeStatus, StrokeSeverity } from '../../../../services/strokeService';
 
 interface StrokeCasesFiltersProps {
   open: boolean;

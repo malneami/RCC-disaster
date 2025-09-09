@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, Grid, Tabs, Tab, Alert, CircularProgress, Fab } from '@mui/material';
+import { Box, Tabs, Tab, CircularProgress, Fab } from '@mui/material';
 import { Add, Assessment, Timeline, Dashboard } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import StrokeCasesList from './components/StrokeCasesList';
 import StrokeKPIDashboard from './components/StrokeKPIDashboardMain';
 import CreateStrokeCaseDialog from './components/CreateStrokeCaseDialog';
-import PortalSkeleton, { PortalStep } from '../../components/common/PortalSkeleton';
-import TimelineView, { TimelineEvent } from '../../components/common/TimelineView';
-import PortalSearch from '../../components/common/PortalSearch';
+import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
+import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { StrokeService, StrokeCase, StrokeKPISummary } from '../../services/strokeService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -64,7 +63,7 @@ const StrokePortalPage: React.FC = () => {
         events.push({
           id: `${case_.id}-arrival`,
           timestamp: case_.createdAt,
-          title: `Patient Arrival - ${case_.patient.firstName} ${case_.patient.lastName}`,
+          title: `Patient Arrival - ${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
           description: `Patient arrived at ${case_.originHospital?.name || 'hospital'} with ${case_.strokeType.toLowerCase()} stroke`,
           type: 'arrival',
           status: 'completed',
@@ -80,8 +79,8 @@ const StrokePortalPage: React.FC = () => {
             strokeType: case_.strokeType,
             currentStatus: case_.currentStatus,
             presentingSymptoms: case_.presentingSymptoms,
-            patientName: `${case_.patient.firstName} ${case_.patient.lastName}`,
-            patientNationalId: case_.patient.nationalId,
+            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
+            patientNationalId: case_.patient?.nationalId || 'N/A',
           },
         });
       }
@@ -98,8 +97,8 @@ const StrokePortalPage: React.FC = () => {
           details: {
             nihssScore: case_.nihssBaseline,
             strokeSeverity: case_.strokeSeverity,
-            patientName: `${case_.patient.firstName} ${case_.patient.lastName}`,
-            patientNationalId: case_.patient.nationalId,
+            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
+            patientNationalId: case_.patient?.nationalId || 'N/A',
           },
         });
       }
@@ -112,31 +111,30 @@ const StrokePortalPage: React.FC = () => {
           title: `Treatment Initiated - ${case_.selectedTreatment}`,
           description: `Stroke treatment protocol initiated`,
           type: 'treatment',
-          status: case_.currentStatus === 'COMPLETED' ? 'completed' : 'in-progress',
+          status: case_.currentStatus === 'DISCHARGED' ? 'completed' : 'in-progress',
           details: {
             treatment: case_.selectedTreatment,
             doorToNeedleMinutes: case_.doorToNeedleMinutes,
             doorToImagingMinutes: case_.doorToImagingMinutes,
-            patientName: `${case_.patient.firstName} ${case_.patient.lastName}`,
-            patientNationalId: case_.patient.nationalId,
+            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
+            patientNationalId: case_.patient?.nationalId || 'N/A',
           },
         });
       }
 
       // Discharge/Transfer
-      if (case_.currentStatus === 'COMPLETED' || case_.currentStatus === 'DISCHARGED') {
+      if (case_.currentStatus === 'DISCHARGED') {
         events.push({
           id: `${case_.id}-discharge`,
           timestamp: case_.updatedAt || case_.createdAt,
-          title: `Case ${case_.currentStatus === 'COMPLETED' ? 'Completed' : 'Discharged'}`,
-          description: `Patient ${case_.currentStatus === 'COMPLETED' ? 'treatment completed' : 'discharged'}`,
+          title: `Case Discharged`,
+          description: `Patient discharged`,
           type: 'discharge',
           status: 'completed',
           details: {
             finalStatus: case_.currentStatus,
-            outcome: case_.outcome,
-            patientName: `${case_.patient.firstName} ${case_.patient.lastName}`,
-            patientNationalId: case_.patient.nationalId,
+            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
+            patientNationalId: case_.patient?.nationalId || 'N/A',
           },
         });
       }
@@ -169,7 +167,7 @@ const StrokePortalPage: React.FC = () => {
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -288,13 +286,6 @@ const StrokePortalPage: React.FC = () => {
         headerActions={headerActions}
         kpiCards={kpiCards}
       >
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
-
         {/* Main Content Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
           <Tabs 
@@ -358,7 +349,7 @@ const StrokePortalPage: React.FC = () => {
               console.log('Timeline search:', query, filter);
             }}
             loading={loading}
-            error={error}
+            error={error || undefined}
           />
         </TabPanel>
 

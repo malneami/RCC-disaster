@@ -4,9 +4,9 @@ import { Box, Typography, Tabs, Tab, Alert, CircularProgress, Fab, Card, CardCon
 import { Add, Assessment, Timeline, Person, LocalHospital, Assignment } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
-import PortalSkeleton, { PortalStep, KPICard } from '../../components/common/PortalSkeleton';
+import PortalSkeleton, { PortalStep, KPICard } from '../../components/Common/PortalSkeleton';
 import PortalPatientSearch from '../../components/Common/PortalPatientSearch';
-import TimelineView, { TimelineEvent } from '../../components/common/TimelineView';
+import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { Patient, PatientWithDetails, patientService } from '../../services/patientService';
 // import { useAuth } from '../../contexts/AuthContext'; // For future admin functionality
 

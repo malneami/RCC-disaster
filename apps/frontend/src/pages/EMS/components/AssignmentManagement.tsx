@@ -22,8 +22,8 @@ import { useEMSDrivers } from '../hooks/useEMSDrivers';
 import { EMSAssignment } from '../types/ems';
 import AssignmentForm from './AssignmentForm';
 import AssignmentGrid from './AssignmentGrid';
-import GenericPageHeader from '../../../components/common/GenericPageHeader';
-import EmptyState from '../../../components/common/EmptyState';
+import GenericPageHeader from '../../../components/Common/GenericPageHeader';
+import EmptyState from '../../../components/Common/EmptyState';
 import { ticketService } from '../../../services/ticketService';
 import { useState, useEffect } from 'react';
 

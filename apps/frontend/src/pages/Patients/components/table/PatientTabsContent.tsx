@@ -1,6 +1,6 @@
-import { Patient } from '../../../services/patientService';
-import DataTable from '../../../../components/common/DataTable';
-import Pagination from '../../../../components/common/Pagination';
+import { Patient } from '../../../../services/patientService';
+import DataTable from '../../../../components/Common/DataTable';
+import Pagination from '../../../../components/Common/Pagination';
 import PatientStatistics from '../PatientStatistics';
 import DuplicateDetection from '../DuplicateDetection';
 import { usePatientTableColumns } from './PatientTableColumns';

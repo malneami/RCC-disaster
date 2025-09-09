@@ -24,7 +24,6 @@ import {
   faStop,
   faEdit,
   faTrash,
-  faHandPaper,
 } from '@fortawesome/free-solid-svg-icons';
 import { alpha } from '@mui/material/styles';
 import { EMSAssignment } from '../types/ems';
@@ -55,7 +54,6 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   onStartAssignment,
   onMarkArrived,
   onCompleteAssignment,
-  onAssignAmbulance,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);

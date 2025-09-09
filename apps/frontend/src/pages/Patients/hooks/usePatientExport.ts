@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Patient } from '../../../services/patientService';
 import { patientService } from '../../../services/patientService';
-import { ExportOptions } from '../../../components/common/ExportDialog';
+import { ExportOptions } from '../../../components/Common/ExportDialog';
 import { downloadFile, isPdfFile, validatePdfContent, sanitizeFilename } from '../../../utils/fileUtils';
 
 export const usePatientExport = () => {

@@ -9,7 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useEMSDashboard } from '../hooks/useEMSDashboard';
-import EmptyState from '../../../components/common/EmptyState';
+import EmptyState from '../../../components/Common/EmptyState';
 
 interface KPICardProps {
   title: string;

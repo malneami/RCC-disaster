@@ -19,7 +19,7 @@ import {
   Download,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { PatientAccessLog } from '../../../services/patientService';
+import { PatientAccessLog } from '../../../../services/patientService';
 
 interface PatientAccessLogsTabProps {
   accessLogs: PatientAccessLog[];

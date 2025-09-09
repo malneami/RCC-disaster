@@ -18,7 +18,6 @@ import {
   MenuItem,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { Patient, CreatePatientData, patientService } from '../../../services/patientService';

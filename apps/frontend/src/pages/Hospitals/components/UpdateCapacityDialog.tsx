@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Hospital, UpdateHospitalCapacityDto } from '../../../services/hospitalService';
-import FormDialog, { FormField } from '../../../components/common/FormDialog';
+import FormDialog, { FormField } from '../../../components/Common/FormDialog';
 
 interface UpdateCapacityDialogProps {
   open: boolean;

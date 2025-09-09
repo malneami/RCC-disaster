@@ -17,8 +17,8 @@ import { useEMSDrivers } from '../hooks/useEMSDrivers';
 import { Ambulance } from '../types/ems';
 import AmbulanceForm from './AmbulanceForm';
 import AmbulanceTable from './AmbulanceTable';
-import GenericPageHeader from '../../../components/common/GenericPageHeader';
-import EmptyState from '../../../components/common/EmptyState';
+import GenericPageHeader from '../../../components/Common/GenericPageHeader';
+import EmptyState from '../../../components/Common/EmptyState';
 
 const AmbulanceManagement: React.FC = () => {
   const { ambulances, isLoading, createAmbulance, updateAmbulance, deleteAmbulance } = useAmbulances();

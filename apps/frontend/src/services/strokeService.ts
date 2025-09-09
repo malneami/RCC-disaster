@@ -428,9 +428,6 @@ export class StrokeService {
     return response.data;
   }
 
-  static async deleteStrokeCase(id: string): Promise<void> {
-    await apiClient.delete(`/stroke-cases/${id}`);
-  }
 
   // Stroke Timeline
   static async createStrokeTimeline(data: CreateStrokeTimelineData): Promise<StrokeTimeline> {

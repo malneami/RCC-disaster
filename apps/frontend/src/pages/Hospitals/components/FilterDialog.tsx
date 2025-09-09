@@ -1,6 +1,6 @@
 import React from 'react';
 import { HospitalFilters } from '../../../services/hospitalService';
-import GenericFilterDialog from '../../../components/common/GenericFilterDialog';
+import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
 import { hospitalFilterFields, hospitalFiltersToValues, valuesToHospitalFilters } from '../config/hospitalFilters';
 
 interface FilterDialogProps {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Hospital } from '../../../services/hospitalService';
 import { getStatusColor, getAvailabilityPercentage, getAvailabilityColor } from '../utils/hospitalUtils';
-import EntityCard, { CardField, CardAction } from '../../../components/common/EntityCard';
+import EntityCard, { CardField, CardAction } from '../../../components/Common/EntityCard';
 
 interface HospitalCardProps {
   hospital: Hospital;

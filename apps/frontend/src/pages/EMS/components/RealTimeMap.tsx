@@ -7,8 +7,8 @@ import { useWebSocket } from '../../../hooks/useWebSocket';
 import { useAmbulances } from '../hooks/useAmbulances';
 import AmbulanceMarker from './AmbulanceMarker';
 import MapControls from './MapControls';
-import GenericPageHeader from '../../../components/common/GenericPageHeader';
-import EmptyState from '../../../components/common/EmptyState';
+import GenericPageHeader from '../../../components/Common/GenericPageHeader';
+import EmptyState from '../../../components/Common/EmptyState';
 
 interface AmbulanceLocation {
   id: string;

@@ -18,7 +18,7 @@ import {
   Visibility,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { Ticket } from '../../../services/patientService';
+import { Ticket } from '../../../../services/patientService';
 
 interface PatientTicketsTabProps {
   tickets: Ticket[];

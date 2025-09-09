@@ -15,8 +15,8 @@ import { faBell } from '@fortawesome/free-solid-svg-icons';
 import { useWebSocket } from '../../../hooks/useWebSocket';
 import NotificationHeader from './NotificationHeader';
 import NotificationItem from './NotificationItem';
-import GenericPageHeader from '../../../components/common/GenericPageHeader';
-import EmptyState from '../../../components/common/EmptyState';
+import GenericPageHeader from '../../../components/Common/GenericPageHeader';
+import EmptyState from '../../../components/Common/EmptyState';
 
 interface Notification {
   id: string;

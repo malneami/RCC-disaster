@@ -52,6 +52,11 @@ export interface Patient {
     lastName: string;
     email: string;
   };
+  
+  // Case counts
+  strokeCasesCount?: number;
+  traumaCasesCount?: number;
+  stemiCasesCount?: number;
 }
 
 export interface CreatePatientData {

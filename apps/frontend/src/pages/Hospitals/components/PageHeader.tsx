@@ -5,7 +5,7 @@ import {
   FilterList as FilterIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import GenericPageHeader, { HeaderAction } from '../../../components/common/GenericPageHeader';
+import GenericPageHeader, { HeaderAction } from '../../../components/Common/GenericPageHeader';
 
 interface PageHeaderProps {
   title: string;

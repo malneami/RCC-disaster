@@ -15,7 +15,7 @@ import {
 import { useEMSPerformance } from '../hooks/useEMSPerformance';
 import PerformanceKPIs from './PerformanceKPIs';
 import PerformanceCharts from './PerformanceCharts';
-import GenericPageHeader from '../../../components/common/GenericPageHeader';
+import GenericPageHeader from '../../../components/Common/GenericPageHeader';
 
 interface TabPanelProps {
   children?: React.ReactNode;

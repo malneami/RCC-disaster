@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, Tabs, Tab, Alert, CircularProgress, Fab } from '@mui/material';
 import { Add, Assessment, Timeline, Dashboard, Favorite } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
-import PortalSkeleton, { PortalStep, KPICard } from '../../components/common/PortalSkeleton';
+import PortalSkeleton, { PortalStep, KPICard } from '../../components/Common/PortalSkeleton';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -29,8 +29,8 @@ function TabPanel(props: TabPanelProps) {
 
 const StemiPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading] = useState(false);
+  const [error] = useState<string | null>(null);
 
   // Define portal steps
   const portalSteps: PortalStep[] = [
@@ -39,7 +39,7 @@ const StemiPortal: React.FC = () => {
     { label: 'Timeline View', description: 'Track case progression', icon: <Timeline /> },
   ];
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 

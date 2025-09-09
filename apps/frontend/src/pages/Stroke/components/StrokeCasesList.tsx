@@ -20,7 +20,7 @@ import {
 } from '@mui/icons-material';
 import { Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } from '@mui/material';
 
-import { StrokeCase, StrokeService } from '../../../services/strokeService';
+import { StrokeCase } from '../../../services/strokeService';
 import StrokeCaseDetailsDialog from './StrokeCaseDetailsDialog';
 import EditStrokeCaseDialog from './EditStrokeCaseDialog';
 import StrokeCasesFilters from './StrokeCasesList/StrokeCasesFilters';

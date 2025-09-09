@@ -1,4 +1,4 @@
-import { FilterField } from '../../../components/common/FilterComponents';
+import { FilterField } from '../../../components/Common/FilterComponents';
 import { Hospital } from '../../../services/hospitalService';
 
 export const createPatientFilterFields = (hospitals: Hospital[]): FilterField[] => [

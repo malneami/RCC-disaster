@@ -7,7 +7,7 @@ import {
   Button,
 } from '@mui/material';
 import { CapacityAlert } from '../../../services/hospitalService';
-import AlertDisplay, { AlertItem } from '../../../components/common/AlertDisplay';
+import AlertDisplay, { AlertItem } from '../../../components/Common/AlertDisplay';
 
 interface AlertDialogProps {
   open: boolean;

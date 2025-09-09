@@ -11,7 +11,6 @@ import {
   Checkbox,
 } from '@mui/material';
 
-import { StrokeType, StrokeStatus, StrokeSeverity } from '../../../../services/strokeService';
 
 interface BasicInformationSectionProps {
   formData: any;

@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Grid,
 } from '@mui/material';
-import { PatientWithDetails } from '../../../services/patientService';
+import { PatientWithDetails } from '../../../../services/patientService';
 import {
   PatientDemographicsCard,
   PatientContactCard,

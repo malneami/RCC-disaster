@@ -23,10 +23,8 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   onDelete,
   onStartAssignment,
   onMarkArrived,
-  onLoadPatient,
   onCompleteAssignment,
   onAssignAmbulance,
-  getStatusColor,
 }) => {
   if (assignments.length === 0) {
     return (

@@ -12,16 +12,16 @@ import {
   Security,
 } from '@mui/icons-material';
 import { patientService, PatientWithDetails, Patient } from '../../services/patientService';
-import GenericTabs from '../../components/common/GenericTabs';
+import GenericTabs from '../../components/Common/GenericTabs';
 import MultiStepPatientForm from './components/forms/MultiStepPatientForm';
-import ExportDialog from '../../components/common/ExportDialog';
+import ExportDialog from '../../components/Common/ExportDialog';
 import PatientHeader from './components/PatientHeader';
 import PatientOverviewTab from './components/tabs/PatientOverviewTab';
 import PatientMedicalRecordsTab from './components/tabs/PatientMedicalRecordsTab';
 import PatientTicketsTab from './components/tabs/PatientTicketsTab';
 import PatientAccessLogsTab from './components/tabs/PatientAccessLogsTab';
 import { usePatientExport } from './hooks/usePatientExport';
-import { ExportOptions } from '../../components/common/ExportDialog';
+import { ExportOptions } from '../../components/Common/ExportDialog';
 
 const PatientDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -105,21 +105,21 @@ const PatientDetailsPage: React.FC = () => {
     setShowPatientForm(false);
   };
 
-  const handleMedicalRecordCreated = (medicalRecord: any) => {
+  const handleMedicalRecordCreated = (_medicalRecord: any) => {
     // Refresh the patient data to include the new medical record
     if (patient) {
       loadPatientDetails(patient.id);
     }
   };
 
-  const handleMedicalRecordUpdated = (medicalRecord: any) => {
+  const handleMedicalRecordUpdated = (_medicalRecord: any) => {
     // Refresh the patient data to include the updated medical record
     if (patient) {
       loadPatientDetails(patient.id);
     }
   };
 
-  const handleMedicalRecordDeleted = (medicalRecordId: string) => {
+  const handleMedicalRecordDeleted = (_medicalRecordId: string) => {
     // Refresh the patient data to remove the deleted medical record
     if (patient) {
       loadPatientDetails(patient.id);

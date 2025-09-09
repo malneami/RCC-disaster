@@ -10,8 +10,8 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { Patient } from '../../../services/patientService';
-import { TableColumn } from '../../../../components/common/DataTable';
+import { Patient } from '../../../../services/patientService';
+import { TableColumn } from '../../../../components/Common/DataTable';
 
 interface PatientTableColumnsProps {
   onViewPatient: (patient: Patient) => void;

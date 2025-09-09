@@ -20,8 +20,8 @@ import { useAmbulances } from '../hooks/useAmbulances';
 import { DriverSchedule } from '../types/ems';
 import ScheduleForm from './ScheduleForm';
 import ScheduleTable from './ScheduleTable';
-import GenericPageHeader from '../../../components/common/GenericPageHeader';
-import EmptyState from '../../../components/common/EmptyState';
+import GenericPageHeader from '../../../components/Common/GenericPageHeader';
+import EmptyState from '../../../components/Common/EmptyState';
 
 interface TabPanelProps {
   children?: React.ReactNode;

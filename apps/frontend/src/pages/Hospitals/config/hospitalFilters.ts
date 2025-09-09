@@ -1,4 +1,4 @@
-import { FilterField } from '../../../components/common/FilterComponents';
+import { FilterField } from '../../../components/Common/FilterComponents';
 import { HospitalFilters } from '../../../services/hospitalService';
 
 /**

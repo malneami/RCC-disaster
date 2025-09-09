@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { medicalRecordService, CreateMedicalRecordData, MedicalRecord, MedicalRecordType } from '../../../services/medicalRecordService';
+import { medicalRecordService, CreateMedicalRecordData, MedicalRecord } from '../../../services/medicalRecordService';
 
 export interface UseMedicalRecordFormProps {
   patientId: string;
@@ -46,14 +46,14 @@ export const useMedicalRecordForm = ({
   onMedicalRecordCreated,
   onMedicalRecordUpdated,
 }: UseMedicalRecordFormProps) => {
-  const [formData, setFormData] = useState<CreateMedicalRecordData>(initializeFormData(medicalRecord));
+  const [formData, setFormData] = useState<CreateMedicalRecordData>(initializeFormData(medicalRecord || null));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Initialize form with medical record data if editing
   useEffect(() => {
     if (open) {
-      const initialData = initializeFormData(medicalRecord);
+      const initialData = initializeFormData(medicalRecord || null);
       initialData.patientId = patientId;
       setFormData(initialData);
     }

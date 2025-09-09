@@ -9,7 +9,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-import { StrokeTimeline, StrokeService } from '../../../../services/strokeService';
+import { StrokeTimeline } from '../../../../services/strokeService';
 import TimelineEvent from './TimelineEvent';
 
 interface TimelineStepperProps {
@@ -63,7 +63,7 @@ const TimelineStepper: React.FC<TimelineStepperProps> = ({
       </Typography>
       
       <Stepper orientation="vertical" sx={{ mt: 2 }}>
-        {sortedTimeline.map((event, index) => (
+        {sortedTimeline.map((event) => (
           <Step key={event.id} active={true} completed={event.toStatus === 'TREATMENT_COMPLETE'}>
             <StepLabel
               StepIconProps={{

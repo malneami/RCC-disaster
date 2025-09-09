@@ -96,10 +96,6 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     return () => clearTimeout(timeoutId);
   }, [value, searchPatients]);
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = event.target.value;
-    onChange(newValue);
-  };
 
   const handlePatientSelect = (patient: Patient) => {
     onChange(patient.nationalId || '');
@@ -189,8 +185,8 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
           const { key, ...otherProps } = props;
           return (
             <Box component="li" key={key} {...otherProps}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-              <PersonIcon sx={{ color: getPortalColor() }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                <PersonIcon sx={{ color: getPortalColor() }} />
               <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                 <Typography variant="body1" fontWeight="medium">
                   {getPatientDisplayName(option)}

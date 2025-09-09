@@ -1,5 +1,4 @@
-import React from 'react';
-import { HeaderAction } from '../../../components/common/GenericPageHeader';
+import { HeaderAction } from '../../../../components/Common/GenericPageHeader';
 import { Add } from '@mui/icons-material';
 
 interface UsePatientActionsProps {

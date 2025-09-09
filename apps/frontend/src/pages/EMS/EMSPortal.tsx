@@ -10,7 +10,7 @@ import {
   faUser
 } from '@fortawesome/free-solid-svg-icons';
 
-import GenericTabs, { TabConfig } from '../../components/common/GenericTabs';
+import GenericTabs, { TabConfig } from '../../components/Common/GenericTabs';
 import AmbulanceManagement from './components/AmbulanceManagement';
 import AssignmentManagement from './components/AssignmentManagement';
 import PerformanceAnalytics from './components/PerformanceAnalytics';

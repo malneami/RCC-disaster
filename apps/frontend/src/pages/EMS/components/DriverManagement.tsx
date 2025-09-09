@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -10,14 +10,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUser, 
   faPlus,
-  faUsers
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useEMSDrivers } from '../hooks/useEMSDrivers';
 import DriverForm from './DriverForm';
 import DriverTable from './DriverTable';
-import GenericPageHeader from '../../../components/common/GenericPageHeader';
-import EmptyState from '../../../components/common/EmptyState';
+import GenericPageHeader from '../../../components/Common/GenericPageHeader';
+import EmptyState from '../../../components/Common/EmptyState';
 
 const DriverManagement: React.FC = () => {
   const { 

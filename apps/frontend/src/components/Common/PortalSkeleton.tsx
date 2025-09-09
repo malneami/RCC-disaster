@@ -18,9 +18,6 @@ import {
   ArrowBack,
   Refresh,
   Settings,
-  Assessment,
-  Timeline,
-  Dashboard,
 } from '@mui/icons-material';
 
 export interface PortalStep {
