@@ -5,6 +5,26 @@ import { PrismaService } from '../../../database/prisma.service';
 export class TraumaKpiService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Calculate response time in minutes between incident and arrival
+   * Uses the same logic as the frontend helper function
+   */
+  private calculateResponseTime(incidentTime: string | Date | null, arrivalTime: string | Date | null): number {
+    if (!incidentTime || !arrivalTime) return 0;
+    
+    const incident = new Date(incidentTime);
+    const arrival = new Date(arrivalTime);
+    
+    if (isNaN(incident.getTime()) || isNaN(arrival.getTime())) return 0;
+    
+    const diffMinutes = (arrival.getTime() - incident.getTime()) / (1000 * 60);
+    
+    // Return 0 for invalid times (negative, too large, etc.)
+    if (diffMinutes < 0 || diffMinutes > 1440) return 0; // Max 24 hours
+    
+    return Math.floor(diffMinutes);
+  }
+
   async getKPISummary(hospitalId?: string, startDate?: string, endDate?: string): Promise<any> {
     const where: any = {
       deletedAt: null, // Only include non-deleted records
@@ -45,16 +65,10 @@ export class TraumaKpiService {
     const transferCases = allCases.filter(c => c.transferCase).length;
     const deathCases = allCases.filter(c => c.edDisposition === 'DEATH').length;
 
-    // Calculate response time properly (from incident to arrival)
+    // Calculate response time properly using helper function
     const responseTimes = allCases
-      .filter(c => c.arrivalDateTime && c.incidentDateTime)
-      .map(c => {
-        const arrival = new Date(c.arrivalDateTime!);
-        const incident = new Date(c.incidentDateTime!);
-        const diffMinutes = (arrival.getTime() - incident.getTime()) / (1000 * 60);
-        return diffMinutes;
-      })
-      .filter(time => time >= 0 && time <= 1440); // Filter out negative times and times > 24 hours
+      .map(c => this.calculateResponseTime(c.incidentDateTime, c.arrivalDateTime))
+      .filter(time => time > 0); // Only include valid response times
 
     const averageResponseTime = responseTimes.length > 0 
       ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length 
@@ -75,6 +89,24 @@ export class TraumaKpiService {
     const criticalCaseRate = totalCases > 0 ? (criticalCases / totalCases) * 100 : 0;
     const transferRate = totalCases > 0 ? (transferCases / totalCases) * 100 : 0;
 
+    // Calculate cases this month and week
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const casesThisMonth = allCases.filter(c => 
+      c.createdAt && new Date(c.createdAt) >= startOfMonth
+    ).length;
+
+    const casesThisWeek = allCases.filter(c => 
+      c.createdAt && new Date(c.createdAt) >= startOfWeek
+    ).length;
+
+    // Calculate average length of stay (placeholder - would need discharge data)
+    const averageLengthOfStay = 0; // TODO: Implement when discharge data is available
+
     return {
       totalCases,
       criticalCases,
@@ -84,6 +116,9 @@ export class TraumaKpiService {
       mortalityRate: Math.round(mortalityRate * 10) / 10, // Round to 1 decimal
       criticalCaseRate: Math.round(criticalCaseRate * 10) / 10, // Round to 1 decimal
       transferRate: Math.round(transferRate * 10) / 10, // Round to 1 decimal
+      averageLengthOfStay,
+      casesThisMonth,
+      casesThisWeek,
     };
   }
 }
