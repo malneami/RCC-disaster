@@ -45,6 +45,9 @@ const PatientDetailsPage: React.FC = () => {
     try {
       setLoading(true);
       const data = await patientService.getPatientById(patientId);
+      console.log('Patient data loaded:', data);
+      console.log('Medical records:', data.medicalRecords);
+      console.log('Tickets:', data.tickets);
       setPatient(data);
     } catch (err) {
       setError('Failed to load patient details');

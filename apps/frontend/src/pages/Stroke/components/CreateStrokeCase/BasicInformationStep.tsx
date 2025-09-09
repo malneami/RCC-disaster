@@ -14,7 +14,8 @@ import {
 
 import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
-import NationalIdInput from '../../../../components/Common/NationalIdInput';
+import NationalIdInput from '../../../../components/common/NationalIdInput';
+import PortalPatientEdit from '../../../../components/common/PortalPatientEdit';
 import { Patient } from '../../../../services/patientService';
 
 interface BasicInformationStepProps {
@@ -30,16 +31,14 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [hospitalError, setHospitalError] = useState<string | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [editPatientDialogOpen, setEditPatientDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
         setLoadingHospitals(true);
-        // Filter for hospitals with stroke services
-        const hospitalsData = await hospitalService.getAllHospitals({
-          hasStrokeService: true,
-          status: 'ACTIVE'
-        });
+        // Load all hospitals for origin/destination selection
+        const hospitalsData = await hospitalService.getAllHospitals();
         setHospitals(hospitalsData);
       } catch (error) {
         console.error('Error fetching hospitals:', error);
@@ -66,6 +65,22 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
       gender: patient.gender,
       phoneNumber: patient.phoneNumber || '',
       email: patient.email || '',
+    });
+  };
+
+  const handlePatientUpdate = (updatedPatient: Patient) => {
+    setSelectedPatient(updatedPatient);
+    
+    // Update form data with updated patient information
+    updateFormData('patientInfo', {
+      firstName: updatedPatient.firstName,
+      lastName: updatedPatient.lastName,
+      nationalId: updatedPatient.nationalId,
+      mrn: updatedPatient.mrn,
+      dateOfBirth: updatedPatient.dateOfBirth ? new Date(updatedPatient.dateOfBirth).toISOString().split('T')[0] : '',
+      gender: updatedPatient.gender,
+      phoneNumber: updatedPatient.phoneNumber || '',
+      email: updatedPatient.email || '',
     });
   };
 
@@ -145,6 +160,7 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
             onPatientSelect={handlePatientSelect}
             label="National ID"
             required
+            portalType="stroke"
           />
         </Grid>
       <Grid item xs={12} sm={6}>
@@ -323,6 +339,14 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
         />
       </Grid>
 
+      {/* Patient Edit Dialog */}
+      <PortalPatientEdit
+        open={editPatientDialogOpen}
+        onClose={() => setEditPatientDialogOpen(false)}
+        patient={selectedPatient}
+        portalType="stroke"
+        onPatientUpdated={handlePatientUpdate}
+      />
     </Grid>
   );
 };

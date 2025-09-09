@@ -26,12 +26,25 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
   onPatientUpdated,
   onViewDuplicate,
 }) => {
+  const [selectedPatient, setSelectedPatient] = React.useState<Patient | null>(patient || null);
+  
+  // Reset selected patient when form opens/closes
+  React.useEffect(() => {
+    if (open) {
+      setSelectedPatient(patient || null);
+    }
+  }, [open, patient]);
+  
   const { formData, error, handleDataChange, handleComplete, loading } = usePatientForm({
-    patient,
+    patient: selectedPatient,
     open,
     onPatientCreated,
     onPatientUpdated,
   });
+
+  const handlePatientSelected = (patient: Patient) => {
+    setSelectedPatient(patient);
+  };
 
   // Helper function to create steps configuration
   const createStepsConfig = (
@@ -46,6 +59,7 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
           formData={formData}
           onDataChange={onDataChange}
           onViewDuplicate={onViewDuplicate}
+          onPatientSelected={handlePatientSelected}
           isEditing={isEditing}
         />
       ),
@@ -87,13 +101,13 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
     },
   ];
 
-  const steps = createStepsConfig(formData, handleDataChange, !!patient);
+  const steps = createStepsConfig(formData, handleDataChange, !!selectedPatient);
 
   return (
     <>
       <MultiStepDialog
         open={open}
-        title={patient ? 'Edit Patient' : 'Create New Patient'}
+        title={selectedPatient ? 'Edit Patient' : 'Create New Patient'}
         steps={steps}
         onClose={onClose}
         onComplete={handleComplete}

@@ -36,9 +36,9 @@ export class StrokeCasesController {
       console.log('=== STROKE CASE CREATION DEBUG V2 ===');
       console.log('Received DTO:', JSON.stringify(createStrokeCaseDto, null, 2));
       console.log('DTO keys:', Object.keys(createStrokeCaseDto));
-      console.log('User ID:', req.user?.id || 'fdb96cd9-d484-4f21-83ea-917cff0cb059');
+      console.log('User ID:', req.user?.id || '4600ecc0-c41b-4d99-8ddd-78ef909182cb');
       
-      const result = await this.strokeCasesService.create(createStrokeCaseDto, req.user?.id || 'fdb96cd9-d484-4f21-83ea-917cff0cb059');
+      const result = await this.strokeCasesService.create(createStrokeCaseDto, req.user?.id || '4600ecc0-c41b-4d99-8ddd-78ef909182cb');
       console.log('=== SERVICE CALL COMPLETED ===');
       return result;
     } catch (error) {
@@ -63,7 +63,7 @@ export class StrokeCasesController {
     console.log('Data:', JSON.stringify(data, null, 2));
     
     try {
-      const result = await this.strokeCasesService.create(data, req.user?.id || 'fdb96cd9-d484-4f21-83ea-917cff0cb059');
+      const result = await this.strokeCasesService.create(data, req.user?.id || '4600ecc0-c41b-4d99-8ddd-78ef909182cb');
       return { message: 'MRN test successful', result };
     } catch (error) {
       console.error('MRN test error:', error);
@@ -122,7 +122,7 @@ export class StrokeCasesController {
       console.log('Update DTO:', JSON.stringify(updateStrokeCaseDto, null, 2));
       console.log('DTO keys:', Object.keys(updateStrokeCaseDto));
       
-      const result = await this.strokeCasesService.update(id, updateStrokeCaseDto, req.user?.id || 'fdb96cd9-d484-4f21-83ea-917cff0cb059');
+      const result = await this.strokeCasesService.update(id, updateStrokeCaseDto, req.user?.id || '4600ecc0-c41b-4d99-8ddd-78ef909182cb');
       console.log('=== UPDATE SUCCESSFUL ===');
       return result;
     } catch (error) {

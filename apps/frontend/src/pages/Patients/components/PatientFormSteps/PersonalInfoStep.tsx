@@ -9,31 +9,62 @@ import {
   Typography,
   Box,
 } from '@mui/material';
-import { CreatePatientData } from '../../../../services/patientService';
-import { useDuplicateChecker } from '../../../../hooks/useDuplicateChecker';
-import DuplicateAlert from '../../../../components/common/DuplicateAlert';
+import { CreatePatientData, Patient } from '../../../../services/patientService';
+import NationalIdInput from '../../../../components/common/NationalIdInput';
 
 interface PersonalInfoStepProps {
   formData: CreatePatientData;
   onDataChange: (data: Partial<CreatePatientData>) => void;
-  onViewDuplicate?: (patient: any) => void;
+  onViewDuplicate?: (patient: Patient) => void;
+  onPatientSelected?: (patient: Patient) => void; // New callback for when patient is selected from suggestions
   isEditing?: boolean; // Add this prop to indicate if we're editing
 }
 
-const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataChange, onViewDuplicate, isEditing = false }) => {
+const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataChange, onViewDuplicate, onPatientSelected, isEditing = false }) => {
   const handleChange = (field: keyof CreatePatientData, value: any) => {
     onDataChange({ [field]: value });
   };
 
-  // Live duplicate checking - disabled when editing
-  const { hasDuplicates, duplicates, loading, error } = useDuplicateChecker({
-    nationalId: formData.nationalId,
-    firstName: formData.firstName,
-    lastName: formData.lastName,
-    dateOfBirth: formData.dateOfBirth,
-    enabled: !isEditing && !!(formData.nationalId || (formData.firstName && formData.lastName)),
-    debounceMs: 800,
-  });
+  const handlePatientSelect = (patient: Patient) => {
+    // Auto-fill form with selected patient data
+    onDataChange({
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      nationalId: patient.nationalId,
+      mrn: patient.mrn,
+      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+      gender: patient.gender,
+      phoneNumber: patient.phoneNumber || '',
+      email: patient.email || '',
+      address: patient.address || '',
+      city: patient.city || '',
+      state: patient.state || '',
+      zipCode: patient.zipCode || '',
+      country: patient.country || 'Saudi Arabia',
+      emergencyContact: patient.emergencyContact || '',
+      emergencyPhone: patient.emergencyPhone || '',
+      emergencyEmail: patient.emergencyEmail || '',
+      emergencyRelationship: patient.emergencyRelationship || '',
+      insuranceProvider: patient.insuranceProvider || '',
+      insuranceNumber: patient.insuranceNumber || '',
+      insuranceGroup: patient.insuranceGroup || '',
+      insuranceExpiry: patient.insuranceExpiry ? new Date(patient.insuranceExpiry).toISOString().split('T')[0] : '',
+      bloodType: patient.bloodType || '',
+      rhFactor: patient.rhFactor || '',
+      allergies: patient.allergies || '',
+      medications: patient.medications || '',
+      medicalHistory: patient.medicalHistory || '',
+      riskFactors: patient.riskFactors || '',
+      chronicConditions: patient.chronicConditions || '',
+      weight: patient.weight || undefined,
+      height: patient.height || undefined,
+      privacyLevel: patient.privacyLevel,
+      consentGiven: patient.consentGiven,
+    });
+    
+    // Notify parent component that a patient was selected for editing
+    onPatientSelected?.(patient);
+  };
 
   return (
     <Box>
@@ -41,19 +72,9 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
         Personal Information
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Please provide the patient's basic personal information.
+        Please provide the patient's basic personal information. The system will automatically check for existing patients using the National ID 
+        and prevent duplicate patient creation across all hospitals.
       </Typography>
-
-      {/* Duplicate Alert - only show when not editing */}
-      {!isEditing && (
-        <DuplicateAlert
-          duplicates={duplicates}
-          loading={loading}
-          error={error}
-          onViewPatient={onViewDuplicate}
-          severity={hasDuplicates ? 'warning' : 'info'}
-        />
-      )}
 
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6}>
@@ -124,22 +145,13 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
           </FormControl>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="National ID"
+          <NationalIdInput
             value={formData.nationalId || ''}
-            onChange={(e) => handleChange('nationalId', e.target.value)}
-            InputProps={{
-              endAdornment: !isEditing && loading && formData.nationalId ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Checking...
-                  </Typography>
-                </Box>
-              ) : undefined,
-            }}
-            helperText={!isEditing && hasDuplicates && formData.nationalId ? 'Potential duplicates found' : ''}
-            error={!!(!isEditing && hasDuplicates && formData.nationalId)}
+            onChange={(value) => handleChange('nationalId', value)}
+            onPatientSelect={handlePatientSelect}
+            label="National ID"
+            required
+            portalType="patient"
           />
         </Grid>
         <Grid item xs={12} sm={6}>

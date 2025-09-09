@@ -48,6 +48,8 @@ const PatientMedicalRecordsTab: React.FC<PatientMedicalRecordsTabProps> = ({
   onMedicalRecordUpdated,
   onMedicalRecordDeleted
 }) => {
+  console.log('PatientMedicalRecordsTab - medicalRecords:', medicalRecords);
+  console.log('PatientMedicalRecordsTab - patientId:', patientId);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

@@ -18,6 +18,7 @@ interface NationalIdInputProps {
   required?: boolean;
   error?: boolean;
   helperText?: string;
+  portalType?: 'stroke' | 'trauma' | 'stemi' | 'patient';
 }
 
 const NationalIdInput: React.FC<NationalIdInputProps> = ({
@@ -28,10 +29,29 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   required = false,
   error = false,
   helperText,
+  portalType = 'patient',
 }) => {
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const getPortalColor = () => {
+    switch (portalType) {
+      case 'stroke': return '#1976d2';
+      case 'trauma': return '#d32f2f';
+      case 'stemi': return '#388e3c';
+      default: return '#1976d2';
+    }
+  };
+
+  const getPortalIcon = () => {
+    switch (portalType) {
+      case 'stroke': return '🧠';
+      case 'trauma': return '🚑';
+      case 'stemi': return '❤️';
+      default: return '🏥';
+    }
+  };
 
   // Debounced search function
   const searchPatients = useCallback(async (nationalId: string) => {
@@ -99,6 +119,20 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     return parts.join(' • ');
   };
 
+  const getPortalCaseCount = (patient: Patient): number => {
+    switch (portalType) {
+      case 'stroke': return patient.strokeCasesCount || 0;
+      case 'trauma': return patient.traumaCasesCount || 0;
+      case 'stemi': return patient.stemiCasesCount || 0;
+      default: return (patient.strokeCasesCount || 0) + (patient.traumaCasesCount || 0) + (patient.stemiCasesCount || 0);
+    }
+  };
+
+  const getPortalCaseLabel = (count: number): string => {
+    const portalName = portalType === 'stemi' ? 'STEMI' : portalType.toUpperCase();
+    return `${count} ${portalName.toLowerCase()} case${count > 1 ? 's' : ''}`;
+  };
+
   return (
     <Box>
       <Autocomplete
@@ -139,12 +173,24 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
                 </>
               ),
             }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: getPortalColor(),
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: getPortalColor(),
+                },
+              },
+            }}
           />
         )}
-        renderOption={(props, option) => (
-          <Box component="li" {...props}>
+        renderOption={(props, option) => {
+          const { key, ...otherProps } = props;
+          return (
+            <Box component="li" key={key} {...otherProps}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-              <PersonIcon color="primary" />
+              <PersonIcon sx={{ color: getPortalColor() }} />
               <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                 <Typography variant="body1" fontWeight="medium">
                   {getPatientDisplayName(option)}
@@ -154,16 +200,28 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                   <Chip 
-                    label={`${option.strokeCasesCount || 0} stroke case${(option.strokeCasesCount || 0) > 1 ? 's' : ''}`} 
+                    label={getPortalCaseLabel(getPortalCaseCount(option))}
                     size="small" 
-                    color="primary" 
+                    sx={{ 
+                      color: getPortalColor(),
+                      borderColor: getPortalColor(),
+                    }}
                     variant="outlined"
+                  />
+                  <Chip 
+                    label={`${getPortalIcon()} ${portalType.toUpperCase()}`}
+                    size="small" 
+                    sx={{ 
+                      backgroundColor: getPortalColor(),
+                      color: 'white',
+                    }}
                   />
                 </Box>
               </Box>
             </Box>
           </Box>
-        )}
+          );
+        }}
         open={showSuggestions && suggestions.length > 0}
         onClose={() => setShowSuggestions(false)}
         onOpen={() => {

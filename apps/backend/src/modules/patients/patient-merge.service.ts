@@ -12,7 +12,7 @@ export class PatientMergeService {
    * Find and merge duplicate patients based on National ID
    * Returns the primary patient ID to use
    */
-  async findAndMergeDuplicatesByNationalId(nationalId: string): Promise<string> {
+  async findAndMergeDuplicatesByNationalId(nationalId: string): Promise<string | null> {
     if (!nationalId || nationalId.trim().length === 0) {
       throw new Error('National ID is required for duplicate checking');
     }
@@ -125,7 +125,8 @@ export class PatientMergeService {
 
     } catch (error) {
       this.logger.error(`Error merging duplicate patients:`, error);
-      throw new Error(`Failed to merge duplicate patients: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to merge duplicate patients: ${errorMessage}`);
     }
   }
 
@@ -136,7 +137,7 @@ export class PatientMergeService {
     const mergedData: Partial<Patient> = {};
 
     // Helper function to get the most complete value
-    const getMostComplete = (field: string, defaultValue: any = null) => {
+    const getMostComplete = (field: keyof Patient, defaultValue: any = null) => {
       const values = [primaryPatient[field], ...duplicatePatients.map(p => p[field])];
       return values.find(v => v !== null && v !== undefined && v !== '') || defaultValue;
     };

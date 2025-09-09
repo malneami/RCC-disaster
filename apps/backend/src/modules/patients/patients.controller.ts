@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
-import { UpdatePatientDto } from './dto/patient.dto';
+import { CreatePatientDto, UpdatePatientDto } from './dto/patient.dto';
 
 @ApiTags('Patients')
 @ApiBearerAuth('JWT-auth')
@@ -74,8 +74,16 @@ export class PatientsController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR, UserRole.CATH_LAB_USER)
   @ApiOperation({ summary: 'Create a new patient' })
-  async create(@Body() createPatientDto: any, @Request() req: any) {
-    return this.patientsService.create(createPatientDto, req.user.id);
+  async create(@Body() createPatientDto: CreatePatientDto, @Request() req: any) {
+    try {
+      console.log('Creating patient with data:', createPatientDto);
+      const result = await this.patientsService.create(createPatientDto, req.user.id);
+      console.log('Patient created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating patient:', error);
+      throw error;
+    }
   }
 
   @Get(':id')

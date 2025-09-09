@@ -225,21 +225,32 @@ export class PatientsService {
   }
 
   async create(createPatientDto: any, userId: string) {
-    return this.prisma.patient.create({
-      data: {
-        ...createPatientDto,
-        createdById: userId,
-      },
-      include: {
-        createdBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
+    try {
+      console.log('Service: Creating patient with data:', createPatientDto);
+      console.log('Service: User ID:', userId);
+      
+      const result = await this.prisma.patient.create({
+        data: {
+          ...createPatientDto,
+          createdById: userId,
+        },
+        include: {
+          createdBy: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      });
+      
+      console.log('Service: Patient created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Service: Error creating patient:', error);
+      throw error;
+    }
   }
 
   async update(id: string, updatePatientDto: any, userId: string) {
