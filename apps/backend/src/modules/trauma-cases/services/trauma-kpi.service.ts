@@ -104,9 +104,6 @@ export class TraumaKpiService {
       c.createdAt && new Date(c.createdAt) >= startOfWeek
     ).length;
 
-    // Calculate average length of stay (placeholder - would need discharge data)
-    const averageLengthOfStay = 0; // TODO: Implement when discharge data is available
-
     return {
       totalCases,
       criticalCases,
@@ -116,7 +113,6 @@ export class TraumaKpiService {
       mortalityRate: Math.round(mortalityRate * 10) / 10, // Round to 1 decimal
       criticalCaseRate: Math.round(criticalCaseRate * 10) / 10, // Round to 1 decimal
       transferRate: Math.round(transferRate * 10) / 10, // Round to 1 decimal
-      averageLengthOfStay,
       casesThisMonth,
       casesThisWeek,
     };
