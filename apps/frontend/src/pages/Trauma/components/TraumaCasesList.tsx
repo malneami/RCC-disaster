@@ -229,7 +229,11 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     try {
       setLoading(true);
       setError(null);
-      await onUpdateCase(id, data);
+      const updatedCase = await onUpdateCase(id, data);
+      // Update the selected case with the new data so the dialog shows updated values
+      if (selectedCase && selectedCase.id === id) {
+        setSelectedCase(updatedCase);
+      }
       setEditDialogOpen(false);
     } catch (err) {
       setError('Failed to update trauma case');

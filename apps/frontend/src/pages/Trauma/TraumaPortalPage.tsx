@@ -182,6 +182,7 @@ const TraumaPortalPage: React.FC = () => {
       // Refresh KPI data
       const updatedKpi = await TraumaService.getKPISummary();
       setKpiSummary(updatedKpi);
+      return updatedCase; // Return the updated case so the dialog can update its state
     } catch (err) {
       console.error('Error updating trauma case:', err);
       throw err;
