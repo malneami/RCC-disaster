@@ -223,6 +223,10 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   const handleEditCase = (case_: TraumaCase) => {
     // Find the latest case data from the cases array to ensure we have the most up-to-date data
     const latestCase = cases.find(c => c.id === case_.id) || case_;
+    console.log('TraumaCasesList: Opening edit dialog with case:', latestCase);
+    console.log('TraumaCasesList: Patient data:', latestCase.patient);
+    console.log('TraumaCasesList: Vital signs:', latestCase.vitalSigns);
+    console.log('TraumaCasesList: Disposition:', latestCase.disposition);
     setSelectedCase(latestCase);
     setEditDialogOpen(true);
   };
