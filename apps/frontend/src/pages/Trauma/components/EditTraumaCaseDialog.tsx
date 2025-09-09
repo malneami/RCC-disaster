@@ -234,9 +234,10 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         disposition: formData.disposition.disposition,
       };
 
-      // Add patient info for admins only
+      // Add patient info for admins only (exclude hospital IDs as they're already at top level)
       if (isAdmin) {
-        submitData.patientInfo = formData.patientInfo;
+        const { originHospitalId, destinationHospitalId, ...patientInfoOnly } = formData.patientInfo;
+        submitData.patientInfo = patientInfoOnly;
       }
 
       await onSubmit(traumaCase.id, submitData);
