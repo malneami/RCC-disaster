@@ -107,6 +107,38 @@ enum CriticalCaseStatus {
   TRANSFERRED
 }
 
+enum TraumaModeOfArrival {
+  AMBULANCE
+  PRIVATE_VEHICLE
+  AIR_TRANSPORT
+  WALK_IN
+  POLICE
+  TRANSFERRED_FROM_HOSPITAL
+  OTHER
+}
+
+enum TraumaMechanismOfInjury {
+  PENETRATING
+  BLUNT
+  BURN
+  FALL
+  MOTOR_VEHICLE_ACCIDENT
+  OTHER
+}
+
+enum TraumaDispositionType {
+  ICU_ADMISSION
+  SURGICAL_WARD_ADMISSION
+  MEDICAL_WARD_ADMISSION
+  DISCHARGE
+  OPERATING_THEATRE
+  TRANSFER_TO_HIGHER_CENTER
+  DEATH
+  DISCHARGE_AGAINST_MEDICAL_ADVICE
+  OTHER
+}
+
+
 enum HospitalTicketType {
   TRANSFER
   CONSULTATION
@@ -392,6 +424,9 @@ model User {
   strokeRehabilitationTherapist StrokeRehabilitation[] @relation("StrokeRehabilitationTherapist")
   createdStrokeRehabilitation StrokeRehabilitation[] @relation("StrokeRehabilitationCreator")
   
+  // Trauma Relations
+  createdTraumaCases TraumaCase[] @relation("TraumaCaseCreator")
+  
   // EMS Relations
   ambulanceDriver     Ambulance?         @relation("AmbulanceDriver")
   driverSchedules     DriverSchedule[]   @relation("DriverScheduleDriver")
@@ -507,6 +542,10 @@ model Hospital {
   strokeKpiSummaries StrokeKpiSummary[]
   strokeRehabilitationCenters StrokeRehabilitation[] @relation("StrokeRehabilitationCenter")
   
+  // Trauma Relations
+  traumaOriginCases TraumaCase[]  @relation("TraumaOriginHospital")
+  traumaDestinationCases TraumaCase[] @relation("TraumaDestinationHospital")
+  
   @@map("hospitals")
   @@index([status])
   @@index([cluster])
@@ -596,6 +635,9 @@ model Patient {
   strokeCases     StrokeCase[]
   strokeAssessmentScores StrokeAssessmentScore[]
   strokeRehabilitation StrokeRehabilitation[]
+  
+  // Trauma Relations
+  traumaCases     TraumaCase[]
   
   @@map("patients")
   @@index([mrn])
@@ -732,6 +774,9 @@ model Ticket {
   // Stroke Relations
   strokeCases         StrokeCase[]
   strokeTimeline      StrokeTimeline[]
+  
+  // Trauma Relations
+  traumaCases         TraumaCase[]
   
   // EMS Relations
   emsAssignments      EMSAssignment[]    @relation("EMSAssignmentTicket")
@@ -1687,5 +1732,81 @@ model StrokeRehabilitation {
   @@index([rehabilitationType])
   @@index([startDate])
   @@index([createdAt])
+}
+
+
+// trauma-cases.prisma
+// Trauma Cases model for comprehensive trauma care coordination
+model TraumaCase {
+  id                      String      @id @default(uuid())
+  ticketId                String      @map("ticket_id")
+  patientId               String      @map("patient_id")
+  originHospitalId        String      @map("origin_hospital_id")
+  destinationHospitalId   String?     @map("destination_hospital_id")
+  
+  // Date and Time Information
+  arrivalDateTime         DateTime    @map("arrival_date_time")
+  incidentDateTime        DateTime?   @map("incident_date_time")
+  modeOfArrival           TraumaModeOfArrival @map("mode_of_arrival")
+  transferRequestDateTime DateTime?   @map("transfer_request_date_time")
+  transferArrivalDateTime DateTime?   @map("transfer_arrival_date_time")
+  transferDurationMinutes Int?        @map("transfer_duration_minutes")
+  
+  // Chief Complaint and Mechanism
+  chiefComplaint          String?     @map("chief_complaint")
+  mechanismOfInjury       TraumaMechanismOfInjury @map("mechanism_of_injury")
+  
+  // Vital Signs
+  vitalSigns              String?     @map("vital_signs") // JSON
+  glasgowComaScale        Int?        @map("glasgow_coma_scale")
+  systolicBloodPressure   Int?        @map("systolic_blood_pressure")
+  respiratoryRate         Int?        @map("respiratory_rate")
+  additionalVitalSigns    String?     @map("additional_vital_signs")
+  
+  // Injury Information - Body Regions
+  headAndNeckInjury       String?     @map("head_and_neck_injury")
+  faceInjury              String?     @map("face_injury")
+  chestInjury             String?     @map("chest_injury")
+  abdomenInjury           String?     @map("abdomen_injury")
+  extremitiesInjury       String?     @map("extremities_injury")
+  externalInjury          String?     @map("external_injury")
+  
+  // Assessment and Disposition
+  primarySurveyFindings   String?     @map("primary_survey_findings")
+  edDisposition           TraumaDispositionType? @map("ed_disposition")
+  additionalNotes         String?     @map("additional_notes")
+  disposition             String?     // JSON
+  
+  // KPI Tracking
+  responseTimeMinutes     Int?        @map("response_time_minutes")
+  criticalCase            Boolean     @default(false) @map("critical_case")
+  transferCase            Boolean     @default(false) @map("transfer_case")
+  
+  // Audit Fields
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+  deletedAt               DateTime?   @map("deleted_at")
+  createdById             String      @map("created_by_id")
+  
+  // Relations
+  ticket                  Ticket      @relation(fields: [ticketId], references: [id])
+  patient                 Patient     @relation(fields: [patientId], references: [id])
+  originHospital          Hospital    @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital     Hospital?   @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id])
+  createdBy               User        @relation("TraumaCaseCreator", fields: [createdById], references: [id])
+  
+  @@map("trauma_cases")
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([arrivalDateTime])
+  @@index([incidentDateTime])
+  @@index([modeOfArrival])
+  @@index([mechanismOfInjury])
+  @@index([criticalCase])
+  @@index([transferCase])
+  @@index([createdAt])
+  @@index([deletedAt])
 }
 

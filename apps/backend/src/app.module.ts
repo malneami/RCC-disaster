@@ -16,6 +16,7 @@ import { MedicalRecordsModule } from './modules/medical-records/medical-records.
 import { HealthModule } from './modules/health/health.module';
 import { StrokeCasesModule } from './modules/stroke-cases/stroke-cases.module';
 import { StrokeTimelineModule } from './modules/stroke-timeline/stroke-timeline.module';
+import { TraumaCasesModule } from './modules/trauma-cases/trauma-cases.module';
 
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -39,17 +40,17 @@ import { TimelineEventsModule } from './modules/timeline-events/timeline-events.
       {
         name: 'short',
         ttl: 1000,
-        limit: 3,
+        limit: 100, // Increased from 3 to 100 for development
       },
       {
         name: 'medium',
         ttl: 10000,
-        limit: 20,
+        limit: 500, // Increased from 20 to 500 for development
       },
       {
         name: 'long',
         ttl: 60000,
-        limit: 100,
+        limit: 1000, // Increased from 100 to 1000 for development
       },
     ]),
     DatabaseModule,
@@ -76,6 +77,7 @@ import { TimelineEventsModule } from './modules/timeline-events/timeline-events.
     HealthModule,
     StrokeCasesModule,
     StrokeTimelineModule,
+    TraumaCasesModule,
   ],
   providers: [
     {
