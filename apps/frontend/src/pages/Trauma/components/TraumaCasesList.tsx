@@ -242,10 +242,15 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     try {
       setLoading(true);
       setError(null);
-      const updatedCase = await onUpdateCase(id, data);
-      // Update the selected case with the new data so the dialog shows updated values
+      await onUpdateCase(id, data);
+      // Refresh the selected case by fetching it again from the API
       if (selectedCase && selectedCase.id === id) {
-        setSelectedCase(updatedCase);
+        try {
+          const refreshedCase = await TraumaService.getTraumaCaseById(id);
+          setSelectedCase(refreshedCase);
+        } catch (refreshErr) {
+          console.error('Error refreshing selected case:', refreshErr);
+        }
       }
       setEditDialogOpen(false);
     } catch (err) {

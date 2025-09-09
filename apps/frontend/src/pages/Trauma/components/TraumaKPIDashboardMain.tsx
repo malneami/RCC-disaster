@@ -28,10 +28,10 @@ import {
   Refresh,
 } from '@mui/icons-material';
 
-import { TraumaKPISummary } from '../../../services/traumaService';
+import { TraumaKPIsResponse } from '../types/traumaTypes';
 
 interface TraumaKPIDashboardMainProps {
-  kpiSummary: TraumaKPISummary | null;
+  kpiSummary: TraumaKPIsResponse | null;
 }
 
 interface KPICardProps {
