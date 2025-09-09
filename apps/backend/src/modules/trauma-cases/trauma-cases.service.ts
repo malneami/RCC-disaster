@@ -282,6 +282,14 @@ export class TraumaCasesService {
       updateData.transferArrivalDateTime = new Date(updateData.transferArrivalDateTime);
     }
 
+    // Stringify JSON fields before saving to database
+    if (updateData.vitalSigns && typeof updateData.vitalSigns === 'object') {
+      updateData.vitalSigns = JSON.stringify(updateData.vitalSigns);
+    }
+    if (updateData.disposition && typeof updateData.disposition === 'object') {
+      updateData.disposition = JSON.stringify(updateData.disposition);
+    }
+
     const updatedCase = await this.prisma.traumaCase.update({
       where: { id },
       data: updateData,
