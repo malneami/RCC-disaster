@@ -20,6 +20,14 @@ import { StrokeTimelineModule } from './modules/stroke-timeline/stroke-timeline.
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
+import { AmbulancesModule } from './modules/ambulances/ambulances.module';
+import { EmsAssignmentsModule } from './modules/ems-assignments/ems-assignments.module';
+import { DriverSchedulesModule } from './modules/driver-schedules/driver-schedules.module';
+import { DriversModule } from './modules/drivers/drivers.module';
+import { EmsDashboardModule } from './modules/ems-dashboard/ems-dashboard.module';
+import { EmsGatewayModule } from './modules/ems-gateway/ems-gateway.module';
+import { GpsTrackingModule } from './modules/gps-tracking/gps-tracking.module';
+import { TimelineEventsModule } from './modules/timeline-events/timeline-events.module';
 
 @Module({
   imports: [
@@ -45,6 +53,17 @@ import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
       },
     ]),
     DatabaseModule,
+    
+    // EMS Modules
+    AmbulancesModule,
+    EmsAssignmentsModule,
+    DriverSchedulesModule,
+    DriversModule,
+    EmsDashboardModule,
+    EmsGatewayModule,
+    GpsTrackingModule,
+    TimelineEventsModule,
+    
     AuthModule,
     UsersModule,
     HospitalsModule,
