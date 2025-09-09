@@ -219,6 +219,9 @@ export interface TraumaKPIsResponse {
   mortalityRate: number;
   criticalCaseRate: number;
   transferRate: number;
+  averageLengthOfStay: number;
+  casesThisMonth: number;
+  casesThisWeek: number;
 }
 
 // Error types

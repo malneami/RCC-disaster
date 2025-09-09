@@ -340,7 +340,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
                 Cases This Month
               </Typography>
               <Typography variant="h4" color="primary">
-                0
+                {kpiSummary.casesThisMonth || 0}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Current month
@@ -355,7 +355,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
                 Cases This Week
               </Typography>
               <Typography variant="h4" color="primary">
-                0
+                {kpiSummary.casesThisWeek || 0}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Current week
