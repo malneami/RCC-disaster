@@ -68,6 +68,9 @@ model Ticket {
   strokeCases         StrokeCase[]
   strokeTimeline      StrokeTimeline[]
   
+  // STEMI Relations
+  stemiCases          StemiCase[]
+  
   // EMS Relations
   emsAssignments      EMSAssignment[]    @relation("EMSAssignmentTicket")
   timelineEvents      TimelineEvent[]    @relation("TimelineEventTicket")

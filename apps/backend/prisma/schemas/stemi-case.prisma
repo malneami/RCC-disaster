@@ -1,0 +1,72 @@
+// STEMI Case model for comprehensive STEMI care management
+model StemiCase {
+  id                              String      @id @default(uuid())
+  ticketId                        String      @map("ticket_id")
+  patientId                       String      @map("patient_id")
+  originHospitalId                String      @map("origin_hospital_id")
+  destinationHospitalId           String?     @map("destination_hospital_id")
+  
+  // Clinical Assessment
+  heartScore                      Int?        @map("heart_score") // TIMI Risk Score
+  clinicalRiskLevel               String?     @map("clinical_risk_level") // Low, Intermediate, High, Very High
+  presentingSymptoms              String?     @map("presenting_symptoms")
+  symptomOnset                    DateTime?   @map("symptom_onset")
+  symptomDuration                 Int?        @map("symptom_duration") // in minutes
+  
+  // Pathway Execution
+  currentStatus                   String      @map("current_status") // SUSPECTED, ECG_PENDING, STEMI_CONFIRMED, etc.
+  selectedTreatment               String?     @map("selected_treatment") // PRIMARY_PCI, RESCUE_PCI, FIBRINOLYSIS, etc.
+  pathwayStarted                  DateTime?   @map("pathway_started")
+  pathwayCompleted                DateTime?   @map("pathway_completed")
+  rccActivated                    Boolean     @default(false) @map("rcc_activated")
+  rccUnit                         String?     @map("rcc_unit")
+  
+  // Critical Timestamps
+  triageTime                      DateTime?   @map("triage_time")
+  firstEcgTime                    DateTime?   @map("first_ecg_time")
+  
+  // Interventions and Treatments
+  eligibleForPrimaryPci           Boolean?    @map("eligible_for_primary_pci")
+  pciLocation                     String?     @map("pci_location")
+  doorOutTime                     DateTime?   @map("door_out_time")
+  balloonInflationTime            DateTime?   @map("balloon_inflation_time")
+  thrombolyticGiven               Boolean?    @map("thrombolytic_given")
+  thrombolyticAdminTime           DateTime?   @map("thrombolytic_admin_time")
+  
+  // Outcomes
+  successful                      Boolean?    @map("successful")
+  complications                   String?     @map("complications")
+  dischargeDate                   DateTime?   @map("discharge_date")
+  thirtyDayReadmission            Boolean     @default(false) @map("thirty_day_readmission")
+  followUpCallCompleted           Boolean     @default(false) @map("follow_up_call_completed")
+  followUpCallDate                DateTime?   @map("follow_up_call_date")
+  
+  // Quality Metrics (calculated in minutes)
+  doorToEcgMinutes                Int?        @map("door_to_ecg_minutes")
+  rccActivationToDoorOutMinutes   Int?        @map("rcc_activation_to_door_out_minutes")
+  doorInDoorOutMinutes            Int?        @map("door_in_door_out_minutes")
+  doorToNeedleMinutes             Int?        @map("door_to_needle_minutes")
+  doorToBalloonMinutes            Int?        @map("door_to_balloon_minutes")
+  
+  // KPI Achievement Flags
+  metKpi1                         Boolean?    @map("met_kpi_1") // Door to ECG ≤10min
+  metKpi2                         Boolean?    @map("met_kpi_2") // Door to Balloon ≤90min
+  metKpi3                         Boolean?    @map("met_kpi_3") // Door to Needle ≤30min
+  metKpi4                         Boolean?    @map("met_kpi_4") // RCC Activation ≤15min
+  metKpi5                         Boolean?    @map("met_kpi_5") // Door In Door Out ≤30min
+  metKpi6                         Boolean?    @map("met_kpi_6") // Primary PCI Success ≥95%
+  
+  // Audit Fields
+  createdAt                       DateTime    @default(now()) @map("created_at")
+  updatedAt                       DateTime    @updatedAt @map("updated_at")
+  createdById                     String      @map("created_by_id")
+  
+  // Relations
+  ticket                          Ticket      @relation(fields: [ticketId], references: [id])
+  patient                         Patient     @relation(fields: [patientId], references: [id])
+  originHospital                  Hospital    @relation("StemiOriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital             Hospital?   @relation("StemiDestinationHospital", fields: [destinationHospitalId], references: [id])
+  createdBy                       User        @relation(fields: [createdById], references: [id])
+  
+  @@map("stemi_cases")
+}

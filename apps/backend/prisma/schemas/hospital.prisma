@@ -92,6 +92,10 @@ model Hospital {
   strokeKpiSummaries StrokeKpiSummary[]
   strokeRehabilitationCenters StrokeRehabilitation[] @relation("StrokeRehabilitationCenter")
   
+  // STEMI Relations
+  stemiOriginCases StemiCase[]  @relation("StemiOriginHospital")
+  stemiDestinationCases StemiCase[] @relation("StemiDestinationHospital")
+  
   @@map("hospitals")
   @@index([status])
   @@index([cluster])

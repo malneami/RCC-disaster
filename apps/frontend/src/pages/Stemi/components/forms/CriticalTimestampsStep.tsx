@@ -38,7 +38,7 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
             fullWidth
             label="Triage Time"
             type="datetime-local"
-            value={data.triageTime || StemiDatetimeService.getCurrentLocalDateTime()}
+            value={data.triageTime}
             onChange={handleChange('triageTime')}
             InputLabelProps={{ shrink: true }}
             helperText="When the patient was triaged at the facility"
@@ -50,7 +50,7 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
             fullWidth
             label="First ECG Time"
             type="datetime-local"
-            value={data.firstEcgTime || StemiDatetimeService.getCurrentLocalDateTime()}
+            value={data.firstEcgTime}
             onChange={handleChange('firstEcgTime')}
             InputLabelProps={{ shrink: true }}
             helperText="When the first ECG was performed"

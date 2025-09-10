@@ -25,6 +25,7 @@ import ReviewStep from './forms/ReviewStep';
 
 // Types and services
 import { StemiCase, UpdateStemiCaseData, PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment } from '../services/stemiService';
+import { StemiDatetimeService } from '../services/stemiDatetimeService';
 import { useAuth } from '../../../contexts/AuthContext';
 
 interface EditStemiCaseDialogProps {
@@ -106,10 +107,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
     currentStatus: 'SUSPECTED' as const,
     selectedTreatment: undefined as any,
     ecgResult: undefined as any,
-    ecgFindings: '',
-    isTroponinPositive: false,
     troponinValue: undefined as number | undefined,
-    additionalNotes: '',
   });
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
@@ -139,29 +137,29 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
       });
 
       setAdmissionDetails({
-        admissionTime: stemiCase.pathwayStarted ? new Date(stemiCase.pathwayStarted).toISOString().slice(0, 16) : '',
+        admissionTime: stemiCase.pathwayStarted ? StemiDatetimeService.formatForLocal(stemiCase.pathwayStarted) : '',
         modeOfArrival: 'AMBULANCE', // Default since STEMI doesn't have mode of arrival
       });
 
       setCriticalTimestamps({
-        triageTime: stemiCase.triageTime ? new Date(stemiCase.triageTime).toISOString().slice(0, 16) : '',
-        firstEcgTime: stemiCase.firstEcgTime ? new Date(stemiCase.firstEcgTime).toISOString().slice(0, 16) : '',
+        triageTime: stemiCase.triageTime ? StemiDatetimeService.formatForLocal(stemiCase.triageTime) : '',
+        firstEcgTime: stemiCase.firstEcgTime ? StemiDatetimeService.formatForLocal(stemiCase.firstEcgTime) : '',
       });
 
       setInterventionsAndTreatments({
         eligibleForPrimaryPci: stemiCase.eligibleForPrimaryPci || false,
         pciLocation: stemiCase.pciLocation || '',
-        doorOutTime: stemiCase.doorOutTime ? new Date(stemiCase.doorOutTime).toISOString().slice(0, 16) : '',
-        balloonInflationTime: stemiCase.balloonInflationTime ? new Date(stemiCase.balloonInflationTime).toISOString().slice(0, 16) : '',
+        doorOutTime: stemiCase.doorOutTime ? StemiDatetimeService.formatForLocal(stemiCase.doorOutTime) : '',
+        balloonInflationTime: stemiCase.balloonInflationTime ? StemiDatetimeService.formatForLocal(stemiCase.balloonInflationTime) : '',
         thrombolyticGiven: stemiCase.thrombolyticGiven || false,
-        thrombolyticAdminTime: stemiCase.thrombolyticAdminTime ? new Date(stemiCase.thrombolyticAdminTime).toISOString().slice(0, 16) : '',
+        thrombolyticAdminTime: stemiCase.thrombolyticAdminTime ? StemiDatetimeService.formatForLocal(stemiCase.thrombolyticAdminTime) : '',
       });
 
       setClinicalAssessment({
         heartScore: stemiCase.heartScore || undefined,
         clinicalRiskLevel: stemiCase.clinicalRiskLevel || '',
         presentingSymptoms: stemiCase.presentingSymptoms || '',
-        symptomOnset: stemiCase.symptomOnset ? new Date(stemiCase.symptomOnset).toISOString().slice(0, 16) : '',
+        symptomOnset: stemiCase.symptomOnset ? StemiDatetimeService.formatForLocal(stemiCase.symptomOnset) : '',
         symptomDuration: stemiCase.symptomDuration || undefined,
       });
 
@@ -169,10 +167,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         currentStatus: stemiCase.currentStatus as any || 'SUSPECTED',
         selectedTreatment: stemiCase.selectedTreatment || undefined,
         ecgResult: stemiCase.ticket?.ecgResult || undefined,
-        ecgFindings: stemiCase.ticket?.ecgFindings || '',
-        isTroponinPositive: stemiCase.ticket?.isTroponinPositive || false,
         troponinValue: stemiCase.ticket?.troponinValue || undefined,
-        additionalNotes: '', // STEMI doesn't have additional notes field
       });
     }
   }, [stemiCase, open]);
@@ -196,33 +191,29 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
 
       // Prepare data for submission (matching UpdateStemiCaseData interface)
       const submitData: UpdateStemiCaseData = {
-        admissionTime: admissionDetails.admissionTime,
+        admissionTime: StemiDatetimeService.formatForUTC(admissionDetails.admissionTime),
         modeOfArrival: admissionDetails.modeOfArrival,
         criticalTimestamps: {
-          triageTime: criticalTimestamps.triageTime || undefined,
-          firstEcgTime: criticalTimestamps.firstEcgTime || undefined,
+          triageTime: criticalTimestamps.triageTime ? StemiDatetimeService.formatForUTC(criticalTimestamps.triageTime) : undefined,
+          firstEcgTime: criticalTimestamps.firstEcgTime ? StemiDatetimeService.formatForUTC(criticalTimestamps.firstEcgTime) : undefined,
         },
         interventionsAndTreatments: {
           eligibleForPrimaryPci: interventionsAndTreatments.eligibleForPrimaryPci,
           pciLocation: interventionsAndTreatments.pciLocation || undefined,
-          doorOutTime: interventionsAndTreatments.doorOutTime || undefined,
-          balloonInflationTime: interventionsAndTreatments.balloonInflationTime || undefined,
+          doorOutTime: interventionsAndTreatments.doorOutTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.doorOutTime) : undefined,
+          balloonInflationTime: interventionsAndTreatments.balloonInflationTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.balloonInflationTime) : undefined,
           thrombolyticGiven: interventionsAndTreatments.thrombolyticGiven,
-          thrombolyticAdminTime: interventionsAndTreatments.thrombolyticAdminTime || undefined,
+          thrombolyticAdminTime: interventionsAndTreatments.thrombolyticAdminTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.thrombolyticAdminTime) : undefined,
         },
         clinicalAssessment: {
           heartScore: clinicalAssessment.heartScore || undefined,
           clinicalRiskLevel: clinicalAssessment.clinicalRiskLevel || undefined,
           presentingSymptoms: clinicalAssessment.presentingSymptoms || undefined,
-          symptomOnset: clinicalAssessment.symptomOnset || undefined,
+          symptomOnset: clinicalAssessment.symptomOnset ? StemiDatetimeService.formatForUTC(clinicalAssessment.symptomOnset) : undefined,
           symptomDuration: clinicalAssessment.symptomDuration || undefined,
         },
         currentStatus: additionalData.currentStatus,
         selectedTreatment: additionalData.selectedTreatment,
-        ecgResult: additionalData.ecgResult,
-        ecgFindings: additionalData.ecgFindings || undefined,
-        isTroponinPositive: additionalData.isTroponinPositive,
-        troponinValue: additionalData.troponinValue || undefined,
       };
 
       // Add patient info for admins only

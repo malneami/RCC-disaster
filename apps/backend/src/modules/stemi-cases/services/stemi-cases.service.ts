@@ -15,12 +15,14 @@ export class StemiCasesService {
     private readonly stemiKpiService: StemiKpiService,
   ) {}
 
-  async createStemiCase(createStemiCaseDto: CreateStemiCaseDto, userId: string) {
+  async createStemiCase(createStemiCaseDto: any, userId: string) {
     const { patientInfo, admissionTime, modeOfArrival, criticalTimestamps, interventionsAndTreatments, clinicalAssessment, ...stemiData } = createStemiCaseDto;
 
     try {
       // Create or update patient
+      console.log('Creating patient with data:', JSON.stringify(patientInfo, null, 2));
       const patient = await this.stemiPatientService.createOrUpdatePatient(patientInfo, userId);
+      console.log('Patient created successfully:', patient.id);
 
       // Create ticket first
       const ticket = await this.prisma.ticket.create({
@@ -40,15 +42,7 @@ export class StemiCasesService {
           notes: `STEMI case: ${clinicalAssessment.presentingSymptoms}`,
           createdById: userId,
           
-          // STEMI-specific ticket fields
-          stemiStatus: stemiData.currentStatus || 'SUSPECTED',
-          stemiTreatmentPlan: stemiData.selectedTreatment,
-          ecgResult: stemiData.ecgResult,
-          ecgTime: criticalTimestamps.firstEcgTime ? new Date(criticalTimestamps.firstEcgTime) : null,
-          ecgFindings: stemiData.ecgFindings,
-          isTroponinPositive: stemiData.isTroponinPositive,
-          troponinValue: stemiData.troponinValue,
-          firstMedicalContact: new Date(admissionTime),
+          // Basic ticket fields only
         }
       });
 
@@ -70,7 +64,7 @@ export class StemiCasesService {
           // Pathway Execution
           currentStatus: stemiData.currentStatus || 'SUSPECTED',
           selectedTreatment: stemiData.selectedTreatment,
-          pathwayStarted: new Date(),
+          pathwayStarted: admissionTime ? new Date(admissionTime) : new Date(),
           
           // Critical Timestamps
           triageTime: criticalTimestamps.triageTime ? new Date(criticalTimestamps.triageTime) : null,
@@ -84,29 +78,22 @@ export class StemiCasesService {
           thrombolyticGiven: interventionsAndTreatments.thrombolyticGiven,
           thrombolyticAdminTime: interventionsAndTreatments.thrombolyticAdminTime ? new Date(interventionsAndTreatments.thrombolyticAdminTime) : null,
           
+          // Additional STEMI-specific fields (removed non-existent fields)
+          
           createdById: userId,
         }
       });
 
-      // Create initial timeline event
-      await this.prisma.stemiTimeline.create({
-        data: {
-          stemiCaseId: stemiCase.id,
-          ticketId: ticket.id,
-          fromStatus: 'SUSPECTED',
-          toStatus: stemiData.currentStatus || 'SUSPECTED',
-          eventTimestamp: new Date(),
-          eventDescription: 'STEMI case created',
-          eventLocation: 'Emergency Department',
-          triggeredBy: userId,
-          createdById: userId,
-        }
-      });
+      // Timeline events will be handled separately if needed
 
       return await this.getStemiCaseById(stemiCase.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating STEMI case:', error);
-      throw new BadRequestException('Failed to create STEMI case');
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Error code:', error.code);
+      console.error('Error meta:', error.meta);
+      throw new BadRequestException(`Failed to create STEMI case: ${error.message}`);
     }
   }
 
@@ -135,10 +122,6 @@ export class StemiCasesService {
             email: true,
           }
         },
-        timeline: {
-          orderBy: { eventTimestamp: 'desc' },
-          take: 10,
-        },
       },
     });
 
@@ -164,12 +147,7 @@ export class StemiCasesService {
       await this.prisma.ticket.update({
         where: { id: existingCase.ticketId },
         data: {
-          stemiStatus: stemiData.currentStatus,
-          stemiTreatmentPlan: stemiData.selectedTreatment,
-          ecgResult: stemiData.ecgResult,
-          ecgFindings: stemiData.ecgFindings,
-          isTroponinPositive: stemiData.isTroponinPositive,
-          troponinValue: stemiData.troponinValue,
+          // Update basic ticket fields only
         }
       });
 

@@ -14,6 +14,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { CreateStemiCaseData, PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment } from '../services/stemiService';
+import { StemiDatetimeService } from '../services/stemiDatetimeService';
 import PatientInfoStep from './forms/PatientInfoStep';
 import AdmissionDetailsStep from './forms/AdmissionDetailsStep';
 import CriticalTimestampsStep from './forms/CriticalTimestampsStep';
@@ -67,7 +68,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     admissionTime: string;
     modeOfArrival: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
   }>({
-    admissionTime: '',
+    admissionTime: StemiDatetimeService.getCurrentLocalDateTime(),
     modeOfArrival: 'AMBULANCE',
   });
 
@@ -120,18 +121,24 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
 
       const formData: CreateStemiCaseData = {
         patientInfo,
-        admissionTime: admissionDetails.admissionTime,
+        admissionTime: StemiDatetimeService.formatForUTC(admissionDetails.admissionTime),
         modeOfArrival: admissionDetails.modeOfArrival,
-        criticalTimestamps,
-        interventionsAndTreatments,
-        clinicalAssessment,
+        criticalTimestamps: {
+          triageTime: criticalTimestamps.triageTime ? StemiDatetimeService.formatForUTC(criticalTimestamps.triageTime) : undefined,
+          firstEcgTime: criticalTimestamps.firstEcgTime ? StemiDatetimeService.formatForUTC(criticalTimestamps.firstEcgTime) : undefined,
+        },
+        interventionsAndTreatments: {
+          ...interventionsAndTreatments,
+          doorOutTime: interventionsAndTreatments.doorOutTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.doorOutTime) : undefined,
+          balloonInflationTime: interventionsAndTreatments.balloonInflationTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.balloonInflationTime) : undefined,
+          thrombolyticAdminTime: interventionsAndTreatments.thrombolyticAdminTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.thrombolyticAdminTime) : undefined,
+        },
+        clinicalAssessment: {
+          ...clinicalAssessment,
+          symptomOnset: clinicalAssessment.symptomOnset ? StemiDatetimeService.formatForUTC(clinicalAssessment.symptomOnset) : undefined,
+        },
         currentStatus: additionalData.currentStatus,
         selectedTreatment: additionalData.selectedTreatment,
-        ecgResult: additionalData.ecgResult,
-        ecgFindings: additionalData.ecgFindings,
-        isTroponinPositive: additionalData.isTroponinPositive,
-        troponinValue: additionalData.troponinValue,
-        additionalNotes: additionalData.additionalNotes,
       };
 
       await onSubmit(formData);

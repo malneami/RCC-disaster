@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsEnum, IsBoolean, IsDateString, IsNumber } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { STEMIStatus, STEMITreatment, ECGInterpretation } from '@prisma/client';
+// Note: Using string literals instead of enums for flexibility
 
 export class StemiFilterDto {
   @IsOptional()
@@ -20,16 +20,16 @@ export class StemiFilterDto {
   modeOfArrival?: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
 
   @IsOptional()
-  @IsEnum(STEMIStatus)
-  currentStatus?: STEMIStatus;
+  @IsString()
+  currentStatus?: string;
 
   @IsOptional()
-  @IsEnum(STEMITreatment)
-  selectedTreatment?: STEMITreatment;
+  @IsString()
+  selectedTreatment?: string;
 
   @IsOptional()
-  @IsEnum(ECGInterpretation)
-  ecgResult?: ECGInterpretation;
+  @IsString()
+  ecgResult?: string;
 
   @IsOptional()
   @IsBoolean()

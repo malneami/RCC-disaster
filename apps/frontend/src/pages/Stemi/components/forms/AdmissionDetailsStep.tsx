@@ -46,7 +46,7 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
             fullWidth
             label="Admission Time"
             type="datetime-local"
-            value={data.admissionTime || StemiDatetimeService.getCurrentLocalDateTime()}
+            value={data.admissionTime}
             onChange={handleChange('admissionTime')}
             InputLabelProps={{ shrink: true }}
             required

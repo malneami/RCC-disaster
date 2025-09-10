@@ -107,7 +107,7 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
           <Favorite color="primary" />
           <Typography variant="h6">
             STEMI Case Details - {stemiCase.patient?.firstName} {stemiCase.patient?.lastName}
-          </Typography>
+        </Typography>
           {stemiCase.rccActivated && (
             <Chip
               icon={<Warning />}

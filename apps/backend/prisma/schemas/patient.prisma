@@ -78,6 +78,9 @@ model Patient {
   strokeAssessmentScores StrokeAssessmentScore[]
   strokeRehabilitation StrokeRehabilitation[]
   
+  // STEMI Relations
+  stemiCases      StemiCase[]
+  
   @@map("patients")
   @@index([mrn])
   @@index([nationalId])

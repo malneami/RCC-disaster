@@ -22,10 +22,7 @@ interface ReviewStepProps {
     currentStatus: string;
     selectedTreatment?: string;
     ecgResult?: string;
-    ecgFindings: string;
-    isTroponinPositive: boolean;
     troponinValue?: number;
-    additionalNotes: string;
   };
 }
 
@@ -228,21 +225,10 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                 </Typography>
               )}
               <Typography variant="body2">
-                <strong>Troponin Positive:</strong> {additionalData.isTroponinPositive ? 'Yes' : 'No'}
               </Typography>
               {additionalData.troponinValue && (
                 <Typography variant="body2">
                   <strong>Troponin Value:</strong> {additionalData.troponinValue}
-                </Typography>
-              )}
-              {additionalData.ecgFindings && (
-                <Typography variant="body2">
-                  <strong>ECG Findings:</strong> {additionalData.ecgFindings}
-                </Typography>
-              )}
-              {additionalData.additionalNotes && (
-                <Typography variant="body2">
-                  <strong>Additional Notes:</strong> {additionalData.additionalNotes}
                 </Typography>
               )}
             </CardContent>

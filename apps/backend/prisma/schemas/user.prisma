@@ -53,6 +53,9 @@ model User {
   strokeRehabilitationTherapist StrokeRehabilitation[] @relation("StrokeRehabilitationTherapist")
   createdStrokeRehabilitation StrokeRehabilitation[] @relation("StrokeRehabilitationCreator")
   
+  // STEMI Relations
+  createdStemiCases StemiCase[] @relation("StemiCaseCreator")
+  
   // EMS Relations
   ambulanceDriver     Ambulance?         @relation("AmbulanceDriver")
   driverSchedules     DriverSchedule[]   @relation("DriverScheduleDriver")

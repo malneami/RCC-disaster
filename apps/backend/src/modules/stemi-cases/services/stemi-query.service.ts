@@ -109,14 +109,6 @@ export class StemiQueryService {
             priority: true,
             status: true,
             pathway: true,
-            stemiStatus: true,
-            stemiTreatmentPlan: true,
-            ecgResult: true,
-            ecgTime: true,
-            ecgFindings: true,
-            isTroponinPositive: true,
-            troponinValue: true,
-            firstMedicalContact: true,
             createdAt: true,
             updatedAt: true,
           }
@@ -143,11 +135,6 @@ export class StemiQueryService {
             id: true,
             name: true,
             cluster: true,
-            hasPrimaryPci: true,
-            pciLab24x7: true,
-            hasFibrinolytics: true,
-            ccuBeds: true,
-            ccuBedsAvailable: true,
           }
         },
         destinationHospital: {
@@ -155,11 +142,6 @@ export class StemiQueryService {
             id: true,
             name: true,
             cluster: true,
-            hasPrimaryPci: true,
-            pciLab24x7: true,
-            hasFibrinolytics: true,
-            ccuBeds: true,
-            ccuBedsAvailable: true,
           }
         },
         createdBy: {
