@@ -8,10 +8,9 @@ import {
   ButtonGroup,
   Grid,
   Stack,
-  alpha,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartLine, faArrowUp } from '@fortawesome/free-solid-svg-icons';
+import { faChartLine } from '@fortawesome/free-solid-svg-icons';
 
 import { usePerformanceComparison } from './hooks';
 import DailySummary from './DailySummary';

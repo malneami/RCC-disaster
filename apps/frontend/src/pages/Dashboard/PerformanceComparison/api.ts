@@ -41,7 +41,6 @@ export const performanceComparisonApi = {
 
   getMockData(period: 'daily' | 'weekly' | 'monthly'): PerformanceComparisonData {
     // Generate mock data based on period
-    const baseMultiplier = period === 'daily' ? 1 : period === 'weekly' ? 7 : 30;
     
     return {
       globalMetrics: {

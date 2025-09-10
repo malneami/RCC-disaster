@@ -18,7 +18,6 @@ import {
   IconButton,
   Tooltip,
   Menu,
-  ListItemIcon,
   ListItemText,
 } from '@mui/material';
 import {
@@ -36,7 +35,6 @@ import { HospitalTicket } from '../../../services/hospitalService';
 interface RelatedTicketsManagerProps {
   hospitalTickets: HospitalTicket[];
   transferTickets: Ticket[];
-  hospitalId: string;
   onRefresh?: () => void;
   onViewTicket?: (ticket: UnifiedTicket) => void;
   onEditTicket?: (ticket: UnifiedTicket) => void;
@@ -46,7 +44,6 @@ interface RelatedTicketsManagerProps {
 const RelatedTicketsManager: React.FC<RelatedTicketsManagerProps> = ({
   hospitalTickets,
   transferTickets,
-  hospitalId,
   onRefresh,
   onViewTicket,
   onEditTicket,

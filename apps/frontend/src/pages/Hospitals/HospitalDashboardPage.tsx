@@ -26,10 +26,7 @@ import {
   LocalHospital as HospitalIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
-  CheckCircle as CheckCircleIcon,
-  Assignment as TicketIcon,
   Person as PatientIcon,
-  Timeline as TimelineIcon,
   Refresh as RefreshIcon,
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
@@ -108,21 +105,6 @@ const HospitalDashboardPage: React.FC = () => {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return 'error';
-      case 'HIGH':
-        return 'warning';
-      case 'MEDIUM':
-        return 'info';
-      case 'LOW':
-        return 'success';
-      default:
-        return 'default';
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
@@ -148,21 +130,6 @@ const HospitalDashboardPage: React.FC = () => {
         return <HospitalIcon color="primary" />;
       default:
         return <PatientIcon />;
-    }
-  };
-
-  const getTicketTypeIcon = (type: string) => {
-    switch (type) {
-      case 'TRANSFER':
-        return <TimelineIcon />;
-      case 'CONSULTATION':
-        return <PatientIcon />;
-      case 'RESOURCE':
-        return <HospitalIcon />;
-      case 'SYSTEM':
-        return <CheckCircleIcon />;
-      default:
-        return <TicketIcon />;
     }
   };
 
@@ -417,9 +384,7 @@ const HospitalDashboardPage: React.FC = () => {
             <Box sx={{ p: 3 }}>
               <RelatedTicketsManager
                 hospitalTickets={relatedTickets}
-                transferTickets={transferTickets}
-                hospitalId={hospitalId!}
-                onRefresh={loadHospitalData}
+                transferTickets={transferTickets}                onRefresh={loadHospitalData}
                 onViewTicket={handleViewTicket}
                 onEditTicket={handleEditTicket}
                 isLoading={loading}
