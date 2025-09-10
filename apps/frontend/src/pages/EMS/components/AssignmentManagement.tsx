@@ -25,6 +25,7 @@ import AssignmentGrid from './AssignmentGrid';
 import GenericPageHeader from '../../../components/Common/GenericPageHeader';
 import EmptyState from '../../../components/Common/EmptyState';
 import { ticketService } from '../../../services/ticketService';
+import { emsTicketSyncService } from '../../../services/emsTicketSyncService';
 import { useState, useEffect } from 'react';
 
 interface TabPanelProps {
@@ -165,8 +166,36 @@ const AssignmentManagement: React.FC = () => {
 
       if (editingAssignment) {
         await updateAssignment({ id: editingAssignment.id, data: assignmentData });
+        
+        // Sync ticket status when EMS assignment status changes
+        if (formData.ticketId && formData.status) {
+          try {
+            await emsTicketSyncService.syncTicketStatusFromEMS(
+              formData.ticketId,
+              formData.status as any,
+              `EMS assignment status updated to ${formData.status}`
+            );
+          } catch (syncError) {
+            console.error('Error syncing ticket status:', syncError);
+            // Don't fail the entire operation if sync fails
+          }
+        }
       } else {
         await createAssignment(assignmentData);
+        
+        // Sync ticket status for new assignment
+        if (formData.ticketId && formData.status) {
+          try {
+            await emsTicketSyncService.syncTicketStatusFromEMS(
+              formData.ticketId,
+              formData.status as any,
+              `New EMS assignment created with status ${formData.status}`
+            );
+          } catch (syncError) {
+            console.error('Error syncing ticket status:', syncError);
+            // Don't fail the entire operation if sync fails
+          }
+        }
       }
       handleCloseDialog();
     } catch (error) {
@@ -189,6 +218,19 @@ const AssignmentManagement: React.FC = () => {
 
   const handleFormDataChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Wrapper functions to match AssignmentGrid interface
+  const handleStartAssignment = async (id: string): Promise<void> => {
+    await startAssignment(id);
+  };
+
+  const handleMarkArrived = async (id: string): Promise<void> => {
+    await markArrived(id);
+  };
+
+  const handleCompleteAssignment = async (id: string): Promise<void> => {
+    await completeAssignment(id);
   };
 
   const assignedAssignments = assignments?.filter(a => a.status === 'EMS_CONTACT') || [];
@@ -284,10 +326,10 @@ const AssignmentManagement: React.FC = () => {
               assignments={assignedAssignments}
               onEdit={handleOpenDialog}
               onDelete={deleteAssignment}
-              onStartAssignment={startAssignment}
-              onMarkArrived={markArrived}
+              onStartAssignment={handleStartAssignment}
+              onMarkArrived={handleMarkArrived}
               onLoadPatient={loadPatient}
-              onCompleteAssignment={completeAssignment}
+              onCompleteAssignment={handleCompleteAssignment}
               onAssignAmbulance={handleAssignAmbulance}
               getStatusColor={getStatusColor}
             />
@@ -298,10 +340,10 @@ const AssignmentManagement: React.FC = () => {
               assignments={activeAssignments}
               onEdit={handleOpenDialog}
               onDelete={deleteAssignment}
-              onStartAssignment={startAssignment}
-              onMarkArrived={markArrived}
+              onStartAssignment={handleStartAssignment}
+              onMarkArrived={handleMarkArrived}
               onLoadPatient={loadPatient}
-              onCompleteAssignment={completeAssignment}
+              onCompleteAssignment={handleCompleteAssignment}
               onAssignAmbulance={handleAssignAmbulance}
               getStatusColor={getStatusColor}
             />
@@ -312,10 +354,10 @@ const AssignmentManagement: React.FC = () => {
               assignments={completedAssignments}
               onEdit={handleOpenDialog}
               onDelete={deleteAssignment}
-              onStartAssignment={startAssignment}
-              onMarkArrived={markArrived}
+              onStartAssignment={handleStartAssignment}
+              onMarkArrived={handleMarkArrived}
               onLoadPatient={loadPatient}
-              onCompleteAssignment={completeAssignment}
+              onCompleteAssignment={handleCompleteAssignment}
               onAssignAmbulance={handleAssignAmbulance}
               getStatusColor={getStatusColor}
             />

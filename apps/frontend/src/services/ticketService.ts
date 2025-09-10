@@ -209,6 +209,11 @@ class TicketService {
     return response.data;
   }
 
+  async getTicketById(id: string): Promise<Ticket> {
+    const response = await apiClient.get(`/tickets/${id}`);
+    return response.data;
+  }
+
   async updateTicket(id: string, data: UpdateTicketData): Promise<Ticket> {
     const response = await apiClient.put(`/tickets/${id}`, data);
     return response.data;

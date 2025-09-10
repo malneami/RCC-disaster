@@ -5,21 +5,12 @@ import {
   CardContent,
   Typography,
   Chip,
-  Button,
   IconButton,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Tooltip,
   Skeleton,
   Alert,
 } from '@mui/material';
 import {
-  MoreVert as MoreVertIcon,
   Assignment as AssignmentIcon,
   LocalHospital as HospitalIcon,
   Person as PersonIcon,
@@ -27,15 +18,18 @@ import {
   Warning as EmergencyIcon,
   DirectionsCar as TransportIcon,
   CheckCircle as CompletedIcon,
+  Visibility as ViewIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { Ticket } from '../../../services/ticketService';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import UpdateStatusModal from './UpdateStatusModal';
 
 interface TicketListProps {
   tickets: Ticket[];
   loading: boolean;
   onStatusUpdate: (ticketId: string, status: string, notes?: string) => void;
-  onAssign: (ticketId: string, assignedToId: string, notes?: string) => void;
   userRole?: string;
 }
 
@@ -43,43 +37,28 @@ const TicketList: React.FC<TicketListProps> = ({
   tickets,
   loading,
   onStatusUpdate,
-  onAssign,
   userRole,
 }) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const navigate = useNavigate();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [statusNotes, setStatusNotes] = useState('');
-  const [assignNotes, setAssignNotes] = useState('');
+  const [currentStatus, setCurrentStatus] = useState<string>('');
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, ticket: Ticket) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedTicket(ticket);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedTicket(null);
-  };
-
-  const handleStatusUpdate = () => {
+  const handleStatusUpdate = (status: string, notes?: string) => {
     if (selectedTicket) {
-      onStatusUpdate(selectedTicket.id, selectedTicket.status, statusNotes);
+      onStatusUpdate(selectedTicket.id, status, notes);
       setStatusDialogOpen(false);
-      setStatusNotes('');
-      handleMenuClose();
     }
   };
 
-  const handleAssign = () => {
-    if (selectedTicket) {
-      // For now, we'll use a mock assignedToId - in a real app, you'd have a user selection
-      onAssign(selectedTicket.id, 'mock-user-id', assignNotes);
-      setAssignDialogOpen(false);
-      setAssignNotes('');
-      handleMenuClose();
-    }
+  const handleViewDetails = (ticket: Ticket) => {
+    navigate(`/tickets/${ticket.id}`);
+  };
+
+  const handleUpdateStatusClick = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setStatusDialogOpen(true);
+    setCurrentStatus(ticket.status);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -138,10 +117,6 @@ const TicketList: React.FC<TicketListProps> = ({
     if (userRole === 'EMS' && ticket.assignedToId) return true;
     if (userRole === 'CATH_LAB_USER' && ticket.pathway === 'STEMI') return true;
     return false;
-  };
-
-  const canAssign = (_ticket: Ticket) => {
-    return userRole === 'ADMIN' || userRole === 'RCC';
   };
 
   if (loading) {
@@ -262,13 +237,24 @@ const TicketList: React.FC<TicketListProps> = ({
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {(canUpdateStatus(ticket) || canAssign(ticket)) && (
-                  <Tooltip title="Actions">
+                <Tooltip title="View Details">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleViewDetails(ticket)}
+                    color="primary"
+                  >
+                    <ViewIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                {canUpdateStatus(ticket) && (
+                  <Tooltip title="Update Status">
                     <IconButton
                       size="small"
-                      onClick={(e) => handleMenuClick(e, ticket)}
+                      onClick={() => handleUpdateStatusClick(ticket)}
+                      color="secondary"
                     >
-                      <MoreVertIcon />
+                      <EditIcon />
                     </IconButton>
                   </Tooltip>
                 )}
@@ -277,70 +263,7 @@ const TicketList: React.FC<TicketListProps> = ({
           </CardContent>
         </Card>
       ))}
-
-      {/* Status Update Dialog */}
-      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)}>
-        <DialogTitle>Update Ticket Status</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Notes (optional)"
-            fullWidth
-            multiline
-            rows={3}
-            value={statusNotes}
-            onChange={(e) => setStatusNotes(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStatusDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleStatusUpdate} variant="contained">
-            Update Status
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Assign Dialog */}
-      <Dialog open={assignDialogOpen} onClose={() => setAssignDialogOpen(false)}>
-        <DialogTitle>Assign Ticket</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Notes (optional)"
-            fullWidth
-            multiline
-            rows={3}
-            value={assignNotes}
-            onChange={(e) => setAssignNotes(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAssign} variant="contained">
-            Assign
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Action Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        {selectedTicket && canUpdateStatus(selectedTicket) && (
-          <MenuItem onClick={() => setStatusDialogOpen(true)}>
-            Update Status
-          </MenuItem>
-        )}
-        {selectedTicket && canAssign(selectedTicket) && (
-          <MenuItem onClick={() => setAssignDialogOpen(true)}>
-            Assign Ticket
-          </MenuItem>
-        )}
-      </Menu>
+    <UpdateStatusModal currentStatus={currentStatus} open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)} onSubmit={handleStatusUpdate} />
     </Box>
   );
 };

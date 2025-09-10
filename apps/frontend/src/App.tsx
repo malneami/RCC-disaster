@@ -6,6 +6,7 @@ import Layout from './components/Layout/Layout';
 import LoginPage from './pages/Auth/LoginPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import TicketsPage from './pages/Tickets/TicketsPage';
+import TicketViewPage from './pages/Tickets/TicketViewPage';
 import PatientsPage from './pages/Patients/PatientsPage';
 import PatientDetailsPage from './pages/Patients/PatientDetailsPage';
 import HospitalsPage from './pages/Hospitals/HospitalsPage';
@@ -38,6 +39,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/tickets" element={<TicketsPage />} />
+          <Route path="/tickets/:ticketId" element={<TicketViewPage />} />
           <Route path="/patients" element={<PatientsPage />} />
           <Route path="/patients/:id" element={<PatientDetailsPage />} />
           <Route path="/hospitals" element={<HospitalsPage />} />

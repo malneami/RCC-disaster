@@ -164,17 +164,6 @@ const TicketsPage: React.FC = () => {
     }
   };
 
-  const handleAssignTicket = async (ticketId: string, assignedToId: string, notes?: string) => {
-    try {
-      await ticketService.assignTicket(ticketId, assignedToId, notes);
-      setNotification({ message: 'Ticket assigned successfully', type: 'success' });
-      loadData(); // Refresh the list
-    } catch (error) {
-      console.error('Error assigning ticket:', error);
-      setNotification({ message: 'Failed to assign ticket', type: 'error' });
-    }
-  };
-
   const getFilteredTickets = () => {
     if (tabValue === 0) return tickets; // All tickets
     if (tabValue === 1) return tickets.filter(t => t.status === 'PENDING');
@@ -284,7 +273,6 @@ const TicketsPage: React.FC = () => {
               tickets={getFilteredTickets()}
               loading={loading}
               onStatusUpdate={handleStatusUpdate}
-              onAssign={handleAssignTicket}
               userRole={user?.role}
             />
           </TabPanel>
@@ -294,7 +282,6 @@ const TicketsPage: React.FC = () => {
               tickets={getFilteredTickets()}
               loading={loading}
               onStatusUpdate={handleStatusUpdate}
-              onAssign={handleAssignTicket}
               userRole={user?.role}
             />
           </TabPanel>
@@ -304,7 +291,6 @@ const TicketsPage: React.FC = () => {
               tickets={getFilteredTickets()}
               loading={loading}
               onStatusUpdate={handleStatusUpdate}
-              onAssign={handleAssignTicket}
               userRole={user?.role}
             />
           </TabPanel>
@@ -314,7 +300,6 @@ const TicketsPage: React.FC = () => {
               tickets={getFilteredTickets()}
               loading={loading}
               onStatusUpdate={handleStatusUpdate}
-              onAssign={handleAssignTicket}
               userRole={user?.role}
             />
           </TabPanel>
@@ -324,7 +309,6 @@ const TicketsPage: React.FC = () => {
               tickets={getFilteredTickets()}
               loading={loading}
               onStatusUpdate={handleStatusUpdate}
-              onAssign={handleAssignTicket}
               userRole={user?.role}
             />
           </TabPanel>
