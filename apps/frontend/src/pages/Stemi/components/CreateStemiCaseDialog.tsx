@@ -95,7 +95,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   });
 
   const [additionalData, setAdditionalData] = useState({
-    currentStatus: 'SUSPECTED' as const,
+    currentStatus: 'SUSPECTED' as string,
     selectedTreatment: undefined as any,
     ecgResult: undefined as any,
     ecgFindings: '',
@@ -137,7 +137,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           ...clinicalAssessment,
           symptomOnset: clinicalAssessment.symptomOnset ? StemiDatetimeService.formatForUTC(clinicalAssessment.symptomOnset) : undefined,
         },
-        currentStatus: additionalData.currentStatus,
+        currentStatus: additionalData.currentStatus as any,
         selectedTreatment: additionalData.selectedTreatment,
       };
 
@@ -270,6 +270,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           <ClinicalAssessmentStep
             data={clinicalAssessment}
             onChange={setClinicalAssessment}
+            additionalData={additionalData}
+            onAdditionalDataChange={setAdditionalData}
           />
         );
       case 5:

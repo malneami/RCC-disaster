@@ -15,11 +15,31 @@ import { StemiDatetimeService } from '../../services/stemiDatetimeService';
 interface ClinicalAssessmentStepProps {
   data: ClinicalAssessment;
   onChange: (data: ClinicalAssessment) => void;
+  additionalData: {
+    currentStatus: string;
+    selectedTreatment: any;
+    ecgResult: any;
+    ecgFindings: string;
+    isTroponinPositive: boolean;
+    troponinValue: number | undefined;
+    additionalNotes: string;
+  };
+  onAdditionalDataChange: (data: {
+    currentStatus: string;
+    selectedTreatment: any;
+    ecgResult: any;
+    ecgFindings: string;
+    isTroponinPositive: boolean;
+    troponinValue: number | undefined;
+    additionalNotes: string;
+  }) => void;
 }
 
 const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
   data,
   onChange,
+  additionalData,
+  onAdditionalDataChange,
 }) => {
   const handleChange = (field: keyof ClinicalAssessment) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -107,6 +127,122 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
             onChange={handleChange('symptomDuration')}
             inputProps={{ min: 0 }}
             helperText="Duration of symptoms in minutes"
+          />
+        </Grid>
+
+        {/* Additional Clinical Data */}
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+            Additional Clinical Data
+          </Typography>
+        </Grid>
+
+        {/* Current Status */}
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Current Status</InputLabel>
+            <Select
+              value={additionalData.currentStatus || ''}
+              onChange={(e) => onAdditionalDataChange({ ...additionalData, currentStatus: e.target.value })}
+              label="Current Status"
+            >
+              <MenuItem value="SUSPECTED">Suspected</MenuItem>
+              <MenuItem value="ECG_PENDING">ECG Pending</MenuItem>
+              <MenuItem value="STEMI_CONFIRMED">STEMI Confirmed</MenuItem>
+              <MenuItem value="NSTEMI_CONFIRMED">NSTEMI Confirmed</MenuItem>
+              <MenuItem value="UNSTABLE_ANGINA">Unstable Angina</MenuItem>
+              <MenuItem value="RCC_ACTIVATED">RCC Activated</MenuItem>
+              <MenuItem value="IN_TRANSIT">In Transit</MenuItem>
+              <MenuItem value="PCI_READY">PCI Ready</MenuItem>
+              <MenuItem value="BALLOON_INFLATED">Balloon Inflated</MenuItem>
+              <MenuItem value="CCU_ADMITTED">CCU Admitted</MenuItem>
+              <MenuItem value="DISCHARGED">Discharged</MenuItem>
+              <MenuItem value="EXPIRED">Expired</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {/* Selected Treatment */}
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Selected Treatment</InputLabel>
+            <Select
+              value={additionalData.selectedTreatment || ''}
+              onChange={(e) => onAdditionalDataChange({ ...additionalData, selectedTreatment: e.target.value })}
+              label="Selected Treatment"
+            >
+              <MenuItem value="">Select Treatment</MenuItem>
+              <MenuItem value="PRIMARY_PCI">Primary PCI</MenuItem>
+              <MenuItem value="RESCUE_PCI">Rescue PCI</MenuItem>
+              <MenuItem value="FIBRINOLYSIS">Fibrinolysis</MenuItem>
+              <MenuItem value="TRANSFER_FOR_PRIMARY_PCI">Transfer for Primary PCI</MenuItem>
+              <MenuItem value="MEDICAL_MANAGEMENT">Medical Management</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {/* ECG Result */}
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>ECG Result</InputLabel>
+            <Select
+              value={additionalData.ecgResult || ''}
+              onChange={(e) => onAdditionalDataChange({ ...additionalData, ecgResult: e.target.value })}
+              label="ECG Result"
+            >
+              <MenuItem value="">Select ECG Result</MenuItem>
+              <MenuItem value="PENDING">Pending</MenuItem>
+              <MenuItem value="NORMAL">Normal</MenuItem>
+              <MenuItem value="STEMI_ANTERIOR">STEMI Anterior</MenuItem>
+              <MenuItem value="STEMI_INFERIOR">STEMI Inferior</MenuItem>
+              <MenuItem value="STEMI_LATERAL">STEMI Lateral</MenuItem>
+              <MenuItem value="STEMI_POSTERIOR">STEMI Posterior</MenuItem>
+              <MenuItem value="NSTEMI_CHANGES">NSTEMI Changes</MenuItem>
+              <MenuItem value="UNSTABLE_PATTERN">Unstable Pattern</MenuItem>
+              <MenuItem value="TECHNICAL_ISSUE">Technical Issue</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {/* Troponin Value */}
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Troponin Value"
+            type="number"
+            value={additionalData.troponinValue || ''}
+            onChange={(e) => onAdditionalDataChange({ 
+              ...additionalData, 
+              troponinValue: e.target.value === '' ? undefined : Number(e.target.value) 
+            })}
+            inputProps={{ min: 0, step: 0.01 }}
+            helperText="Troponin level (ng/mL)"
+          />
+        </Grid>
+
+        {/* ECG Findings */}
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="ECG Findings"
+            value={additionalData.ecgFindings || ''}
+            onChange={(e) => onAdditionalDataChange({ ...additionalData, ecgFindings: e.target.value })}
+            multiline
+            rows={3}
+            helperText="Detailed ECG findings and interpretation"
+          />
+        </Grid>
+
+        {/* Additional Notes */}
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Additional Notes"
+            value={additionalData.additionalNotes || ''}
+            onChange={(e) => onAdditionalDataChange({ ...additionalData, additionalNotes: e.target.value })}
+            multiline
+            rows={3}
+            helperText="Any additional clinical notes or observations"
           />
         </Grid>
       </Grid>

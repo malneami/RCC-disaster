@@ -104,10 +104,13 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
   });
 
   const [additionalData, setAdditionalData] = useState({
-    currentStatus: 'SUSPECTED' as const,
+    currentStatus: 'SUSPECTED' as string,
     selectedTreatment: undefined as any,
     ecgResult: undefined as any,
+    ecgFindings: '',
+    isTroponinPositive: false,
     troponinValue: undefined as number | undefined,
+    additionalNotes: '',
   });
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
@@ -166,8 +169,11 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
       setAdditionalData({
         currentStatus: stemiCase.currentStatus as any || 'SUSPECTED',
         selectedTreatment: stemiCase.selectedTreatment || undefined,
-        ecgResult: stemiCase.ticket?.ecgResult || undefined,
-        troponinValue: stemiCase.ticket?.troponinValue || undefined,
+        ecgResult: stemiCase.ecgResult || undefined,
+        ecgFindings: stemiCase.ecgFindings || '',
+        isTroponinPositive: false, // This field doesn't exist in the schema
+        troponinValue: undefined, // This field doesn't exist in the schema
+        additionalNotes: '', // This field doesn't exist in the schema
       });
     }
   }, [stemiCase, open]);
@@ -212,8 +218,10 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           symptomOnset: clinicalAssessment.symptomOnset ? StemiDatetimeService.formatForUTC(clinicalAssessment.symptomOnset) : undefined,
           symptomDuration: clinicalAssessment.symptomDuration || undefined,
         },
-        currentStatus: additionalData.currentStatus,
+        currentStatus: additionalData.currentStatus as any,
         selectedTreatment: additionalData.selectedTreatment,
+        ecgResult: additionalData.ecgResult,
+        ecgFindings: additionalData.ecgFindings || undefined,
       };
 
       // Add patient info for admins only
@@ -300,6 +308,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           <ClinicalAssessmentStep
             data={clinicalAssessment}
             onChange={setClinicalAssessment}
+            additionalData={additionalData}
+            onAdditionalDataChange={setAdditionalData}
           />
         );
       case 5:

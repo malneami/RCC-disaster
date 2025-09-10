@@ -102,6 +102,7 @@ export class StemiCasesController {
     @Body() updateStemiCaseDto: UpdateStemiCaseDto,
     @Request() req: any,
   ) {
+    console.log('Controller update called with:', JSON.stringify({ id, updateStemiCaseDto }, null, 2));
     return await this.stemiCasesService.updateStemiCase(id, updateStemiCaseDto, req.user?.id || '4600ecc0-c41b-4d99-8ddd-78ef909182cb');
   }
 
