@@ -18,6 +18,7 @@ model StemiCase {
   selectedTreatment               String?     @map("selected_treatment") // PRIMARY_PCI, RESCUE_PCI, FIBRINOLYSIS, etc.
   pathwayStarted                  DateTime?   @map("pathway_started")
   pathwayCompleted                DateTime?   @map("pathway_completed")
+  modeOfArrival                   String?     @map("mode_of_arrival") // AMBULANCE, PRIVATE_VEHICLE, AIR_TRANSPORT, etc.
   rccActivated                    Boolean     @default(false) @map("rcc_activated")
   rccUnit                         String?     @map("rcc_unit")
   

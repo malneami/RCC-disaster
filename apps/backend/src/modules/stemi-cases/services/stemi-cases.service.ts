@@ -65,6 +65,7 @@ export class StemiCasesService {
           currentStatus: stemiData.currentStatus || 'SUSPECTED',
           selectedTreatment: stemiData.selectedTreatment,
           pathwayStarted: admissionTime ? new Date(admissionTime) : new Date(),
+          modeOfArrival: modeOfArrival,
           
           // Critical Timestamps
           triageTime: criticalTimestamps.triageTime ? new Date(criticalTimestamps.triageTime) : null,

@@ -69,7 +69,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     modeOfArrival: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
   }>({
     admissionTime: StemiDatetimeService.getCurrentLocalDateTime(),
-    modeOfArrival: 'AMBULANCE',
+    modeOfArrival: '' as any,
   });
 
   const [criticalTimestamps, setCriticalTimestamps] = useState<CriticalTimestamps>({
@@ -163,7 +163,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
       });
       setAdmissionDetails({
         admissionTime: '',
-        modeOfArrival: 'AMBULANCE',
+        modeOfArrival: '' as any,
       });
       setCriticalTimestamps({
         triageTime: '',

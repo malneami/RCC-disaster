@@ -22,6 +22,8 @@ import {
   TableContainer,
   TableRow,
   Paper,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Person,
@@ -34,6 +36,7 @@ import {
 } from '@mui/icons-material';
 
 import { StemiCase } from '../services/stemiService';
+import StemiTimelineView from './StemiTimelineView';
 
 interface ViewStemiCaseDialogProps {
   open: boolean;
@@ -46,6 +49,8 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
   onClose,
   stemiCase,
 }) => {
+  const [activeTab, setActiveTab] = React.useState(0);
+
   if (!stemiCase) return null;
 
   const getStatusColor = (status: string): string => {
@@ -128,7 +133,15 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
       </DialogTitle>
 
       <DialogContent>
-        <Grid container spacing={3}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+            <Tab label="Case Details" />
+            <Tab label="Timeline" />
+          </Tabs>
+        </Box>
+
+        {activeTab === 0 && (
+          <Grid container spacing={3}>
           {/* Patient Information */}
           <Grid item xs={12} md={6}>
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
@@ -369,6 +382,11 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
             </Card>
           </Grid>
         </Grid>
+        )}
+
+        {activeTab === 1 && (
+          <StemiTimelineView stemiCase={stemiCase} />
+        )}
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>
