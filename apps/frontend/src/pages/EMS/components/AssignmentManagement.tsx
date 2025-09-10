@@ -157,8 +157,17 @@ const AssignmentManagement: React.FC = () => {
       const assignmentData = {
         ...formData,
         assignedAt: new Date(formData.assignedAt).toISOString(),
-        estimatedArrivalTime: formData.estimatedArrivalTime 
+        estimatedArrivalTime: formData.estimatedArrivalTime && formData.estimatedArrivalTime.trim() !== ''
           ? new Date(formData.estimatedArrivalTime).toISOString()
+          : undefined,
+        journeyStartTime: formData.journeyStartTime && formData.journeyStartTime.trim() !== ''
+          ? new Date(formData.journeyStartTime).toISOString()
+          : undefined,
+        actualArrivalTime: formData.actualArrivalTime && formData.actualArrivalTime.trim() !== ''
+          ? new Date(formData.actualArrivalTime).toISOString()
+          : undefined,
+        journeyEndTime: formData.journeyEndTime && formData.journeyEndTime.trim() !== ''
+          ? new Date(formData.journeyEndTime).toISOString()
           : undefined,
         priority: 'MEDIUM' as const,
         status: formData.status as 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED',
