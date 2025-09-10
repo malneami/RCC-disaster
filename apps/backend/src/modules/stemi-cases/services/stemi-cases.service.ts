@@ -111,10 +111,50 @@ export class StemiCasesService {
     const stemiCase = await this.prisma.stemiCase.findUnique({
       where: { id },
       include: {
-        ticket: true,
-        patient: true,
-        originHospital: true,
-        destinationHospital: true,
+        ticket: {
+          select: {
+            id: true,
+            ticketNumber: true,
+            priority: true,
+            status: true,
+            pathway: true,
+            createdAt: true,
+            updatedAt: true,
+          }
+        },
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            emergencyContact: true,
+            emergencyPhone: true,
+            medicalHistory: true,
+            allergies: true,
+            medications: true,
+          }
+        },
+        originHospital: {
+          select: {
+            id: true,
+            name: true,
+            cluster: true,
+            hasCardiologyCenter: true,
+          }
+        },
+        destinationHospital: {
+          select: {
+            id: true,
+            name: true,
+            cluster: true,
+            hasCardiologyCenter: true,
+          }
+        },
         createdBy: {
           select: {
             id: true,
@@ -130,7 +170,30 @@ export class StemiCasesService {
       throw new NotFoundException('STEMI case not found');
     }
 
-    return stemiCase;
+    // Transform the data to match the expected frontend format
+    return {
+      ...stemiCase,
+      patientInfo: stemiCase.patient,
+      clinicalAssessment: {
+        heartScore: stemiCase.heartScore,
+        clinicalRiskLevel: stemiCase.clinicalRiskLevel,
+        presentingSymptoms: stemiCase.presentingSymptoms,
+        symptomOnset: stemiCase.symptomOnset,
+        symptomDuration: stemiCase.symptomDuration,
+      },
+      criticalTimestamps: {
+        triageTime: stemiCase.triageTime,
+        firstEcgTime: stemiCase.firstEcgTime,
+      },
+      interventionsAndTreatments: {
+        eligibleForPrimaryPci: stemiCase.eligibleForPrimaryPci,
+        pciLocation: stemiCase.pciLocation,
+        doorOutTime: stemiCase.doorOutTime,
+        balloonInflationTime: stemiCase.balloonInflationTime,
+        thrombolyticGiven: stemiCase.thrombolyticGiven,
+        thrombolyticAdminTime: stemiCase.thrombolyticAdminTime,
+      },
+    };
   }
 
   async updateStemiCase(id: string, updateStemiCaseDto: UpdateStemiCaseDto, userId: string) {

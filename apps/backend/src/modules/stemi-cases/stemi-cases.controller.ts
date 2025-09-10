@@ -29,7 +29,7 @@ export class StemiCasesController {
   @HttpCode(HttpStatus.CREATED)
   async testCreate() {
     try {
-      const userId = '56db377f-cbbc-49af-a0d3-c2c5bc7a2545';
+      const userId = '433dc4e4-9b03-4d76-b513-840db55029a2'; // Admin user from seeded data
       const testData = {
         patientInfo: {
           firstName: 'Test',
@@ -37,8 +37,8 @@ export class StemiCasesController {
           nationalId: '12345678941',
           dateOfBirth: '1990-01-01',
           gender: 'MALE',
-          originHospitalId: 'b7c4c778-ab54-448b-ba21-ba8becbb6ad4',
-          destinationHospitalId: '6801fc7c-e74f-4012-8639-c8686f7263c4'
+          originHospitalId: '1',
+          destinationHospitalId: '2'
         },
         admissionTime: '2025-09-10T12:03:00.000Z',
         modeOfArrival: 'AIR_TRANSPORT',
@@ -62,7 +62,7 @@ export class StemiCasesController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createStemiCaseDto: any, @Request() req: any) {
     try {
-      const userId = req.user?.id || '56db377f-cbbc-49af-a0d3-c2c5bc7a2545'; // Use admin user ID
+      const userId = req.user?.id || '433dc4e4-9b03-4d76-b513-840db55029a2'; // Use admin user ID from seeded data
       console.log('Controller received data:', JSON.stringify(createStemiCaseDto, null, 2));
       return await this.stemiCasesService.createStemiCase(createStemiCaseDto, userId);
     } catch (error: any) {

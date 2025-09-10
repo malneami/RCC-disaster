@@ -7,9 +7,1077 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                            String                  @id @default(uuid())
+  email                         String                  @unique
+  firstName                     String                  @map("first_name")
+  lastName                      String                  @map("last_name")
+  phoneNumber                   String?                 @map("phone_number")
+  role                          UserRole
+  status                        UserStatus              @default(ACTIVE)
+  isEmailVerified               Boolean                 @default(false) @map("is_email_verified")
+  passwordHash                  String                  @map("password_hash")
+  lastLogin                     DateTime?               @map("last_login")
+  loginAttempts                 Int                     @default(0) @map("login_attempts")
+  lockedUntil                   DateTime?               @map("locked_until")
+  passwordResetToken            String?                 @map("password_reset_token")
+  passwordResetExpiry           DateTime?               @map("password_reset_expiry")
+  refreshToken                  String?                 @map("refresh_token")
+  sessionExpiry                 DateTime?               @map("session_expiry")
+  hospitalId                    String?                 @map("hospital_id")
+  createdAt                     DateTime                @default(now()) @map("created_at")
+  updatedAt                     DateTime                @updatedAt @map("updated_at")
+  deletedAt                     DateTime?               @map("deleted_at")
+  activities                    Activity[]
+  ambulanceDriver               Ambulance?              @relation("AmbulanceDriver")
+  createdCriticalCases          CriticalCase[]          @relation("CriticalCaseCreator")
+  driverSchedules               DriverSchedule[]        @relation("DriverScheduleDriver")
+  acknowledgedEMSAlerts         EMSAlert[]              @relation("EMSAlertAcknowledgedBy")
+  emsAlertDriver                EMSAlert[]              @relation("EMSAlertDriver")
+  createdEMSAssignments         EMSAssignment[]         @relation("EMSAssignmentCreator")
+  emsAssignmentDriver           EMSAssignment[]         @relation("EMSAssignmentDriver")
+  assignedHospitalTickets       HospitalTicket[]        @relation("HospitalTicketAssignee")
+  createdHospitalTickets        HospitalTicket[]        @relation("HospitalTicketCreator")
+  createdMaintenanceRecords     MaintenanceRecord[]     @relation("MaintenanceRecordCreator")
+  createdMedicalRecords         MedicalRecord[]         @relation("MedicalRecordCreator")
+  patientAccessLogs             PatientAccessLog[]
+  createdPatients               Patient[]               @relation("PatientCreator")
+  accessedPatients              Patient[]               @relation("PatientAccessor")
+  createdStemiCases             StemiCase[]             @relation("StemiCaseCreator")
+  createdStrokeAssessments      StrokeAssessmentScore[] @relation("StrokeAssessmentCreator")
+  createdStrokeCases            StrokeCase[]            @relation("StrokeCaseCreator")
+  createdStrokeRehabilitation   StrokeRehabilitation[]  @relation("StrokeRehabilitationCreator")
+  strokeRehabilitationTherapist StrokeRehabilitation[]  @relation("StrokeRehabilitationTherapist")
+  createdStrokeTimeline         StrokeTimeline[]        @relation("StrokeTimelineCreator")
+  triggeredStrokeTimeline       StrokeTimeline[]        @relation("StrokeTimelineTriggeredBy")
+  assignedTickets               Ticket[]                @relation("TicketAssignee")
+  completedTickets              Ticket[]                @relation("TicketCompleter")
+  createdTickets                Ticket[]                @relation("TicketCreator")
+  createdTimelineEvents         TimelineEvent[]         @relation("TimelineEventCreator")
+  timelineEventDriver           TimelineEvent[]         @relation("TimelineEventDriver")
+  triggeredTimelineEvents       TimelineEvent[]         @relation("TimelineEventTriggeredBy")
+  createdTraumaCases            TraumaCase[]            @relation("TraumaCaseCreator")
+  hospital                      Hospital?               @relation(fields: [hospitalId], references: [id])
 
-// enums.prisma
-// Core enums for the application
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([hospitalId])
+  @@map("users")
+}
+
+model Hospital {
+  id                          String                 @id @default(uuid())
+  name                        String
+  address                     String?
+  latitude                    Float?
+  longitude                   Float?
+  icuBeds                     Int                    @default(0) @map("icu_beds")
+  icuBedsAvailable            Int                    @default(0) @map("icu_beds_available")
+  picuBeds                    Int                    @default(0) @map("picu_beds")
+  picuBedsAvailable           Int                    @default(0) @map("picu_beds_available")
+  maleBeds                    Int                    @default(0) @map("male_beds")
+  maleBedsAvailable           Int                    @default(0) @map("male_beds_available")
+  femaleBeds                  Int                    @default(0) @map("female_beds")
+  femaleBedsAvailable         Int                    @default(0) @map("female_beds_available")
+  pediatricBeds               Int                    @default(0) @map("pediatric_beds")
+  pediatricBedsAvailable      Int                    @default(0) @map("pediatric_beds_available")
+  standardBeds                Int                    @default(0) @map("standard_beds")
+  standardBedsAvailable       Int                    @default(0) @map("standard_beds_available")
+  ventilators                 Int                    @default(0)
+  ventilatorsAvailable        Int                    @default(0) @map("ventilators_available")
+  hasStemiService             Boolean                @default(false) @map("has_stemi_service")
+  hasStrokeService            Boolean                @default(false) @map("has_stroke_service")
+  hasTraumaService            Boolean                @default(false) @map("has_trauma_service")
+  cluster                     String                 @default("Jazan")
+  status                      HospitalStatus         @default(AVAILABLE)
+  contactPhone                String?                @map("contact_phone")
+  contactEmail                String?                @map("contact_email")
+  updateToken                 String?                @map("update_token")
+  updateTokenExpiry           DateTime?              @map("update_token_expiry")
+  emergencyDeptStatus         String                 @default("available") @map("emergency_dept_status")
+  nicuBeds                    Int                    @default(0) @map("nicu_beds")
+  nicuBedsAvailable           Int                    @default(0) @map("nicu_beds_available")
+  hasStrokeUnit               Boolean                @default(false) @map("has_stroke_unit")
+  traumaLevel                 TraumaLevel            @default(NONE) @map("trauma_level")
+  hasCardiologyCenter         Boolean                @default(false) @map("has_cardiology_center")
+  createdAt                   DateTime               @default(now()) @map("created_at")
+  updatedAt                   DateTime               @updatedAt @map("updated_at")
+  deletedAt                   DateTime?              @map("deleted_at")
+  avgDoorToGroinMinutes       Int?                   @map("avg_door_to_groin_minutes")
+  avgDoorToImagingMinutes     Int?                   @map("avg_door_to_imaging_minutes")
+  avgDoorToNeedleMinutes      Int?                   @map("avg_door_to_needle_minutes")
+  hasThrombectomy             Boolean                @default(false) @map("has_thrombectomy")
+  hasThrombolysis             Boolean                @default(false) @map("has_thrombolysis")
+  lastStrokeCase              DateTime?              @map("last_stroke_case")
+  stroke24x7Service           Boolean                @default(false) @map("stroke_24x7_service")
+  strokeCasesCurrentYear      Int                    @default(0) @map("stroke_cases_current_year")
+  strokeCasesPerMonth         Int                    @default(0) @map("stroke_cases_per_month")
+  strokeCertificationLevel    String?                @map("stroke_certification_level")
+  strokeSuccessRate           Float?                 @map("stroke_success_rate")
+  strokeUnitBeds              Int                    @default(0) @map("stroke_unit_beds")
+  strokeUnitBedsAvailable     Int                    @default(0) @map("stroke_unit_beds_available")
+  criticalCases               CriticalCase[]
+  hospitalTickets             HospitalTicket[]
+  stemiDestinationCases       StemiCase[]            @relation("StemiDestinationHospital")
+  stemiOriginCases            StemiCase[]            @relation("StemiOriginHospital")
+  strokeDestinationCases      StrokeCase[]           @relation("StrokeDestinationHospital")
+  strokeOriginCases           StrokeCase[]           @relation("StrokeOriginHospital")
+  strokeKpiSummaries          StrokeKpiSummary[]
+  strokeRehabilitationCenters StrokeRehabilitation[] @relation("StrokeRehabilitationCenter")
+  destinationTickets          Ticket[]               @relation("DestinationHospital")
+  originTickets               Ticket[]               @relation("OriginHospital")
+  traumaDestinationCases      TraumaCase[]           @relation("TraumaDestinationHospital")
+  traumaOriginCases           TraumaCase[]           @relation("TraumaOriginHospital")
+  users                       User[]
+
+  @@index([status])
+  @@index([cluster])
+  @@index([hasStemiService])
+  @@index([hasStrokeService])
+  @@index([hasTraumaService])
+  @@map("hospitals")
+}
+
+model Patient {
+  id                     String                  @id @default(uuid())
+  mrn                    String?                 @unique @map("medical_record_number")
+  nationalId             String?                 @unique @map("national_id")
+  firstName              String                  @map("first_name")
+  lastName               String                  @map("last_name")
+  middleName             String?                 @map("middle_name")
+  dateOfBirth            DateTime                @map("date_of_birth")
+  gender                 PatientGender
+  maritalStatus          MaritalStatus?          @map("marital_status")
+  phoneNumber            String?                 @map("phone_number")
+  email                  String?
+  address                String?
+  city                   String?
+  state                  String?
+  zipCode                String?                 @map("zip_code")
+  country                String?                 @default("Saudi Arabia")
+  emergencyContact       String?                 @map("emergency_contact")
+  emergencyPhone         String?                 @map("emergency_phone")
+  emergencyEmail         String?                 @map("emergency_email")
+  emergencyRelationship  String?                 @map("emergency_relationship")
+  insuranceProvider      String?                 @map("insurance_provider")
+  insuranceNumber        String?                 @map("insurance_number")
+  insuranceGroup         String?                 @map("insurance_group")
+  insuranceExpiry        DateTime?               @map("insurance_expiry")
+  bloodType              String?                 @map("blood_type")
+  rhFactor               String?                 @map("rh_factor")
+  allergies              String?
+  medications            String?
+  medicalHistory         String?                 @map("medical_history")
+  riskFactors            String?                 @map("risk_factors")
+  chronicConditions      String?                 @map("chronic_conditions")
+  weight                 Float?
+  height                 Float?
+  bmi                    Float?
+  dataEncryptionKey      String?                 @map("data_encryption_key")
+  privacyLevel           PrivacyLevel            @default(PRIVATE) @map("privacy_level")
+  consentGiven           Boolean                 @default(false) @map("consent_given")
+  consentDate            DateTime?               @map("consent_date")
+  dataRetentionPolicy    String?                 @map("data_retention_policy")
+  duplicateGroupId       String?                 @map("duplicate_group_id")
+  isPrimaryRecord        Boolean                 @default(true) @map("is_primary_record")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
+  deletedAt              DateTime?               @map("deleted_at")
+  createdById            String                  @map("created_by_id")
+  lastAccessedAt         DateTime?               @map("last_accessed_at")
+  lastAccessedBy         String?                 @map("last_accessed_by")
+  medicalRecords         MedicalRecord[]
+  accessLogs             PatientAccessLog[]
+  createdBy              User                    @relation("PatientCreator", fields: [createdById], references: [id])
+  lastAccessedByUser     User?                   @relation("PatientAccessor", fields: [lastAccessedBy], references: [id])
+  stemiCases             StemiCase[]
+  strokeAssessmentScores StrokeAssessmentScore[]
+  strokeCases            StrokeCase[]
+  strokeRehabilitation   StrokeRehabilitation[]
+  tickets                Ticket[]
+  traumaCases            TraumaCase[]
+
+  @@index([mrn])
+  @@index([nationalId])
+  @@index([lastName, firstName])
+  @@index([dateOfBirth])
+  @@index([duplicateGroupId])
+  @@index([createdAt])
+  @@index([lastAccessedAt])
+  @@map("patients")
+}
+
+model MedicalRecord {
+  id          String            @id @default(uuid())
+  patientId   String            @map("patient_id")
+  recordType  MedicalRecordType @map("record_type")
+  title       String
+  description String?
+  diagnosis   String?
+  treatment   String?
+  medications String?
+  testResults String?
+  attachments String?
+  recordDate  DateTime          @map("record_date")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  deletedAt   DateTime?         @map("deleted_at")
+  createdById String            @map("created_by_id")
+  createdBy   User              @relation("MedicalRecordCreator", fields: [createdById], references: [id])
+  patient     Patient           @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@index([recordType])
+  @@index([recordDate])
+  @@index([createdAt])
+  @@map("medical_records")
+}
+
+model PatientAccessLog {
+  id           String     @id @default(uuid())
+  patientId    String     @map("patient_id")
+  userId       String     @map("user_id")
+  accessType   AccessType
+  accessMethod String     @map("access_method")
+  ipAddress    String?    @map("ip_address")
+  userAgent    String?    @map("user_agent")
+  reason       String?
+  timestamp    DateTime   @default(now())
+  patient      Patient    @relation(fields: [patientId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+
+  @@index([patientId])
+  @@index([userId])
+  @@index([accessType])
+  @@index([timestamp])
+  @@map("patient_access_logs")
+}
+
+model Ticket {
+  id                    String           @id @default(uuid())
+  ticketNumber          String           @unique @map("ticket_number")
+  patientId             String           @map("patient_id")
+  originHospitalId      String           @map("origin_hospital_id")
+  destinationHospitalId String?          @map("destination_hospital_id")
+  priority              TicketPriority
+  status                TicketStatus     @default(PENDING)
+  pathway               TicketPathway    @default(GENERAL)
+  chiefComplaint        String           @map("chief_complaint")
+  symptoms              String?
+  vitals                String?
+  diagnostics           String?
+  treatmentPlan         String?          @map("treatment_plan")
+  estimatedArrival      DateTime?        @map("estimated_arrival")
+  actualArrival         DateTime?        @map("actual_arrival")
+  transportMode         String?          @map("transport_mode")
+  emsUnit               String?          @map("ems_unit")
+  transportNotes        String?          @map("transport_notes")
+  requiresBlood         Boolean          @default(false) @map("requires_blood")
+  requiresSpecialist    Boolean          @default(false) @map("requires_specialist")
+  requiresICU           Boolean          @default(false) @map("requires_icu")
+  requiresVentilator    Boolean          @default(false) @map("requires_ventilator")
+  requiredResources     String?          @map("required_resources")
+  isEmergency           Boolean          @default(false) @map("is_emergency")
+  emergencyType         String?          @map("emergency_type")
+  emergencySeverity     String?          @map("emergency_severity")
+  notes                 String?
+  internalNotes         String?          @map("internal_notes")
+  externalNotes         String?          @map("external_notes")
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+  deletedAt             DateTime?        @map("deleted_at")
+  createdById           String           @map("created_by_id")
+  assignedToId          String?          @map("assigned_to_id")
+  completedById         String?          @map("completed_by_id")
+  completedAt           DateTime?        @map("completed_at")
+  activities            Activity[]
+  emsAssignments        EMSAssignment[]  @relation("EMSAssignmentTicket")
+  stemiCases            StemiCase[]
+  strokeCases           StrokeCase[]
+  strokeTimeline        StrokeTimeline[]
+  assignedTo            User?            @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  completedBy           User?            @relation("TicketCompleter", fields: [completedById], references: [id])
+  createdBy             User             @relation("TicketCreator", fields: [createdById], references: [id])
+  destinationHospital   Hospital?        @relation("DestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital        Hospital         @relation("OriginHospital", fields: [originHospitalId], references: [id])
+  patient               Patient          @relation(fields: [patientId], references: [id])
+  timelineEvents        TimelineEvent[]  @relation("TimelineEventTicket")
+  traumaCases           TraumaCase[]
+
+  @@index([ticketNumber])
+  @@index([status])
+  @@index([priority])
+  @@index([pathway])
+  @@index([patientId])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([createdAt])
+  @@index([assignedToId])
+  @@index([isEmergency])
+  @@map("tickets")
+}
+
+model CriticalCase {
+  id          String               @id @default(uuid())
+  patientName String               @map("patient_name")
+  caseType    CriticalCaseType     @map("case_type")
+  severity    CriticalCaseSeverity
+  status      CriticalCaseStatus   @default(ACTIVE)
+  startTime   DateTime             @map("start_time")
+  lastUpdate  DateTime             @updatedAt @map("last_update")
+  description String
+  hospitalId  String               @map("hospital_id")
+  createdById String               @map("created_by_id")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  deletedAt   DateTime?            @map("deleted_at")
+  createdBy   User                 @relation("CriticalCaseCreator", fields: [createdById], references: [id])
+  hospital    Hospital             @relation(fields: [hospitalId], references: [id])
+
+  @@index([hospitalId])
+  @@index([caseType])
+  @@index([severity])
+  @@index([status])
+  @@index([startTime])
+  @@map("critical_cases")
+}
+
+model HospitalTicket {
+  id           String               @id @default(uuid())
+  title        String
+  description  String
+  type         HospitalTicketType
+  priority     TicketPriority
+  status       HospitalTicketStatus @default(OPEN)
+  hospitalId   String               @map("hospital_id")
+  createdById  String               @map("created_by_id")
+  assignedToId String?              @map("assigned_to_id")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  deletedAt    DateTime?            @map("deleted_at")
+  assignedTo   User?                @relation("HospitalTicketAssignee", fields: [assignedToId], references: [id])
+  createdBy    User                 @relation("HospitalTicketCreator", fields: [createdById], references: [id])
+  hospital     Hospital             @relation(fields: [hospitalId], references: [id])
+
+  @@index([hospitalId])
+  @@index([type])
+  @@index([priority])
+  @@index([status])
+  @@index([createdAt])
+  @@map("hospital_tickets")
+}
+
+model Activity {
+  id          String       @id @default(uuid())
+  type        ActivityType
+  description String
+  userId      String       @map("user_id")
+  ticketId    String?      @map("ticket_id")
+  metadata    String?
+  ipAddress   String?      @map("ip_address")
+  userAgent   String?      @map("user_agent")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  ticket      Ticket?      @relation(fields: [ticketId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([ticketId])
+  @@map("activities")
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  isEncrypted Boolean  @default(false) @map("is_encrypted")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}
+
+model StrokeCase {
+  id                            String                  @id @default(uuid())
+  ticketId                      String                  @map("ticket_id")
+  patientId                     String                  @map("patient_id")
+  originHospitalId              String                  @map("origin_hospital_id")
+  destinationHospitalId         String?                 @map("destination_hospital_id")
+  strokeType                    StrokeType
+  strokeSubtype                 String?                 @map("stroke_subtype")
+  strokeSeverity                StrokeSeverity?
+  nihssBaseline                 Int?                    @map("nihss_baseline")
+  nihss24hr                     Int?                    @map("nihss_24hr")
+  nihssDischarge                Int?                    @map("nihss_discharge")
+  mrsBaseline                   Int?                    @map("mrs_baseline")
+  mrs90day                      Int?                    @map("mrs_90day")
+  barthelBaseline               Int?                    @map("barthel_baseline")
+  barthelDischarge              Int?                    @map("barthel_discharge")
+  aspectsScore                  Int?                    @map("aspects_score")
+  gcsBaseline                   Int?                    @map("gcs_baseline")
+  presentingSymptoms            String?                 @map("presenting_symptoms")
+  symptomOnset                  DateTime?               @map("symptom_onset")
+  symptomToHospitalMinutes      Int?                    @map("symptom_to_hospital_minutes")
+  lastKnownWell                 DateTime?               @map("last_known_well")
+  wakeUpStroke                  Boolean                 @default(false) @map("wake_up_stroke")
+  currentStatus                 StrokeStatus            @map("current_status")
+  selectedTreatment             StrokeTreatment?        @map("selected_treatment")
+  eligibleForThrombolysis       Boolean?                @map("eligible_for_thrombolysis")
+  thrombolysisContraindications String?                 @map("thrombolysis_contraindications")
+  eligibleForThrombectomy       Boolean?                @map("eligible_for_thrombectomy")
+  thrombectomyContraindications String?                 @map("thrombectomy_contraindications")
+  pathwayStarted                DateTime?               @map("pathway_started")
+  pathwayCompleted              DateTime?               @map("pathway_completed")
+  strokeUnitAdmissionTime       DateTime?               @map("stroke_unit_admission_time")
+  doorToImagingMinutes          Int?                    @map("door_to_imaging_minutes")
+  doorToNeedleMinutes           Int?                    @map("door_to_needle_minutes")
+  doorToGroinMinutes            Int?                    @map("door_to_groin_minutes")
+  symptomNeedleMinutes          Int?                    @map("symptom_needle_minutes")
+  symptomGroinMinutes           Int?                    @map("symptom_groin_minutes")
+  imagingToNeedleMinutes        Int?                    @map("imaging_to_needle_minutes")
+  imagingToGroinMinutes         Int?                    @map("imaging_to_groin_minutes")
+  dysphagiaScreeningMinutes     Int?                    @map("dysphagia_screening_minutes")
+  earlyMobilizationHours        Int?                    @map("early_mobilization_hours")
+  speechTherapyHours            Int?                    @map("speech_therapy_hours")
+  physiotherapyHours            Int?                    @map("physiotherapy_hours")
+  occupationalTherapyHours      Int?                    @map("occupational_therapy_hours")
+  ctResults                     String?                 @map("ct_results")
+  ctaResults                    String?                 @map("cta_results")
+  ctpResults                    String?                 @map("ctp_results")
+  mriResults                    String?                 @map("mri_results")
+  mraResults                    String?                 @map("mra_results")
+  echocardiogram                String?
+  carotidUcsDoppler             String?                 @map("carotid_ucs_doppler")
+  successful                    Boolean?
+  recanalizationGrade           String?                 @map("recanalization_grade")
+  complications                 String?
+  secondaryPrevention           String?                 @map("secondary_prevention")
+  dischargeDestination          String?                 @map("discharge_destination")
+  dischargeDate                 DateTime?               @map("discharge_date")
+  lengthOfStayDays              Int?                    @map("length_of_stay_days")
+  thirtyDayReadmission          Boolean?                @map("thirty_day_readmission")
+  ninetyDayMortality            Boolean?                @map("ninety_day_mortality")
+  followUpCallCompleted         Boolean?                @map("follow_up_call_completed")
+  followUpCallDate              DateTime?               @map("follow_up_call_date")
+  metKpi1                       Boolean?                @map("met_kpi1")
+  metKpi2                       Boolean?                @map("met_kpi2")
+  metKpi3                       Boolean?                @map("met_kpi3")
+  metKpi4                       Boolean?                @map("met_kpi4")
+  metKpi5                       Boolean?                @map("met_kpi5")
+  metKpi6                       Boolean?                @map("met_kpi6")
+  metKpi7                       Boolean?                @map("met_kpi7")
+  metKpi8                       Boolean?                @map("met_kpi8")
+  createdAt                     DateTime                @default(now()) @map("created_at")
+  updatedAt                     DateTime                @updatedAt @map("updated_at")
+  deletedAt                     DateTime?               @map("deleted_at")
+  createdById                   String                  @map("created_by_id")
+  assessmentScores              StrokeAssessmentScore[]
+  createdBy                     User                    @relation("StrokeCaseCreator", fields: [createdById], references: [id])
+  destinationHospital           Hospital?               @relation("StrokeDestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital                Hospital                @relation("StrokeOriginHospital", fields: [originHospitalId], references: [id])
+  patient                       Patient                 @relation(fields: [patientId], references: [id])
+  ticket                        Ticket                  @relation(fields: [ticketId], references: [id])
+  rehabilitation                StrokeRehabilitation[]
+  timeline                      StrokeTimeline[]
+  timelineEvents                TimelineEvent[]         @relation("TimelineEventStrokeCase")
+
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([strokeType])
+  @@index([strokeSeverity])
+  @@index([currentStatus])
+  @@index([createdAt])
+  @@index([createdById])
+  @@map("stroke_cases")
+}
+
+model StemiCase {
+  id                            String    @id @default(uuid())
+  ticketId                      String    @map("ticket_id")
+  patientId                     String    @map("patient_id")
+  originHospitalId              String    @map("origin_hospital_id")
+  destinationHospitalId         String?   @map("destination_hospital_id")
+  heartScore                    Int?      @map("heart_score")
+  clinicalRiskLevel             String?   @map("clinical_risk_level")
+  presentingSymptoms            String?   @map("presenting_symptoms")
+  symptomOnset                  DateTime? @map("symptom_onset")
+  symptomDuration               Int?      @map("symptom_duration")
+  currentStatus                 String    @map("current_status")
+  selectedTreatment             String?   @map("selected_treatment")
+  pathwayStarted                DateTime? @map("pathway_started")
+  pathwayCompleted              DateTime? @map("pathway_completed")
+  modeOfArrival                 String?   @map("mode_of_arrival") // AMBULANCE, PRIVATE_VEHICLE, AIR_TRANSPORT, etc.
+  rccActivated                  Boolean   @default(false) @map("rcc_activated")
+  rccUnit                       String?   @map("rcc_unit")
+  triageTime                    DateTime? @map("triage_time")
+  firstEcgTime                  DateTime? @map("first_ecg_time")
+  eligibleForPrimaryPci         Boolean?  @map("eligible_for_primary_pci")
+  pciLocation                   String?   @map("pci_location")
+  doorOutTime                   DateTime? @map("door_out_time")
+  balloonInflationTime          DateTime? @map("balloon_inflation_time")
+  thrombolyticGiven             Boolean?  @map("thrombolytic_given")
+  thrombolyticAdminTime         DateTime? @map("thrombolytic_admin_time")
+  successful                    Boolean?  @map("successful")
+  complications                 String?   @map("complications")
+  dischargeDate                 DateTime? @map("discharge_date")
+  thirtyDayReadmission          Boolean   @default(false) @map("thirty_day_readmission")
+  followUpCallCompleted         Boolean   @default(false) @map("follow_up_call_completed")
+  followUpCallDate              DateTime? @map("follow_up_call_date")
+  doorToEcgMinutes              Int?      @map("door_to_ecg_minutes")
+  rccActivationToDoorOutMinutes Int?      @map("rcc_activation_to_door_out_minutes")
+  doorInDoorOutMinutes          Int?      @map("door_in_door_out_minutes")
+  doorToNeedleMinutes           Int?      @map("door_to_needle_minutes")
+  doorToBalloonMinutes          Int?      @map("door_to_balloon_minutes")
+  metKpi1                       Boolean?  @map("met_kpi_1")
+  metKpi2                       Boolean?  @map("met_kpi_2")
+  metKpi3                       Boolean?  @map("met_kpi_3")
+  metKpi4                       Boolean?  @map("met_kpi_4")
+  metKpi5                       Boolean?  @map("met_kpi_5")
+  metKpi6                       Boolean?  @map("met_kpi_6")
+  createdAt                     DateTime  @default(now()) @map("created_at")
+  updatedAt                     DateTime  @updatedAt @map("updated_at")
+  createdById                   String    @map("created_by_id")
+  createdBy                     User      @relation("StemiCaseCreator", fields: [createdById], references: [id])
+  destinationHospital           Hospital? @relation("StemiDestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital                Hospital  @relation("StemiOriginHospital", fields: [originHospitalId], references: [id])
+  patient                       Patient   @relation(fields: [patientId], references: [id])
+  ticket                        Ticket    @relation(fields: [ticketId], references: [id])
+
+  @@map("stemi_cases")
+}
+
+model StrokeTimeline {
+  id                   String          @id @default(uuid())
+  strokeCaseId         String          @map("stroke_case_id")
+  ticketId             String          @map("ticket_id")
+  fromStatus           StrokeStatus?   @map("from_status")
+  toStatus             StrokeStatus    @map("to_status")
+  eventTimestamp       DateTime        @map("event_timestamp")
+  eventDescription     String          @map("event_description")
+  eventLocation        String?         @map("event_location")
+  eventType            StrokeEventType @map("event_type")
+  triggeredBy          String          @map("triggered_by")
+  minutesFromSymptom   Int?            @map("minutes_from_symptom")
+  minutesFromAdmission Int?            @map("minutes_from_admission")
+  withinTarget         Boolean?        @map("within_target")
+  targetMinutes        Int?            @map("target_minutes")
+  nihssAtSession       Int?            @map("nihss_at_session")
+  clinicalNotes        String?         @map("clinical_notes")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  createdById          String          @map("created_by_id")
+  createdBy            User            @relation("StrokeTimelineCreator", fields: [createdById], references: [id])
+  strokeCase           StrokeCase      @relation(fields: [strokeCaseId], references: [id])
+  ticket               Ticket          @relation(fields: [ticketId], references: [id])
+  triggeredByUser      User            @relation("StrokeTimelineTriggeredBy", fields: [triggeredBy], references: [id])
+
+  @@index([strokeCaseId])
+  @@index([ticketId])
+  @@index([eventTimestamp])
+  @@index([eventType])
+  @@index([toStatus])
+  @@index([createdAt])
+  @@map("stroke_timeline")
+}
+
+model Ambulance {
+  id                     String                 @id @default(uuid())
+  vehicleId              String                 @unique @map("vehicle_id")
+  callSign               String                 @unique @map("call_sign")
+  plateNumber            String                 @unique @map("plate_number")
+  model                  String
+  year                   Int
+  type                   AmbulanceType
+  manufacturer           String?
+  vin                    String?                @unique
+  baseStation            String                 @map("base_station")
+  status                 AmbulanceStatus        @default(AVAILABLE)
+  currentLocationLat     Float?                 @map("current_location_lat")
+  currentLocationLng     Float?                 @map("current_location_lng")
+  currentLocationAddress String?                @map("current_location_address")
+  lastUpdated            DateTime?              @map("last_updated")
+  driverName             String?                @map("driver_name")
+  driverPhone            String?                @map("driver_phone")
+  driverId               String?                @unique @map("driver_id")
+  equipmentStatus        EquipmentStatus        @default(OPERATIONAL) @map("equipment_status")
+  fuelLevel              Float?                 @map("fuel_level")
+  mileage                Float?
+  lastMaintenanceDate    DateTime?              @map("last_maintenance_date")
+  nextMaintenanceDue     DateTime?              @map("next_maintenance_due")
+  isActive               Boolean                @default(true) @map("is_active")
+  createdAt              DateTime               @default(now()) @map("created_at")
+  updatedAt              DateTime               @updatedAt @map("updated_at")
+  deletedAt              DateTime?              @map("deleted_at")
+  driver                 User?                  @relation("AmbulanceDriver", fields: [driverId], references: [id])
+  driverSchedules        DriverSchedule[]
+  alerts                 EMSAlert[]
+  assignments            EMSAssignment[]
+  performanceMetrics     EMSPerformanceMetric[]
+  equipmentInventory     EquipmentInventory[]
+  gpsTrackingLogs        GPSTrackingLog[]
+  maintenanceRecords     MaintenanceRecord[]
+  timelineEvents         TimelineEvent[]
+
+  @@index([status])
+  @@index([baseStation])
+  @@index([isActive])
+  @@index([vehicleId])
+  @@index([plateNumber])
+  @@index([callSign])
+  @@index([driverId])
+  @@index([nextMaintenanceDue])
+  @@map("ambulances")
+}
+
+model DriverSchedule {
+  id            String         @id @default(uuid())
+  driverId      String         @map("driver_id")
+  ambulanceId   String         @map("ambulance_id")
+  shiftStart    DateTime       @map("shift_start")
+  shiftEnd      DateTime       @map("shift_end")
+  shiftType     ShiftType      @map("shift_type")
+  status        ScheduleStatus @default(SCHEDULED)
+  breakStart    DateTime?      @map("break_start")
+  breakEnd      DateTime?      @map("break_end")
+  overtimeHours Float?         @map("overtime_hours")
+  notes         String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  deletedAt     DateTime?      @map("deleted_at")
+  ambulance     Ambulance      @relation(fields: [ambulanceId], references: [id])
+  driver        User           @relation("DriverScheduleDriver", fields: [driverId], references: [id])
+
+  @@index([driverId])
+  @@index([ambulanceId])
+  @@index([shiftStart])
+  @@index([shiftEnd])
+  @@index([status])
+  @@index([shiftType])
+  @@index([createdAt])
+  @@map("driver_schedules")
+}
+
+model EMSAssignment {
+  id                   String           @id @default(uuid())
+  ticketId             String           @map("ticket_id")
+  ambulanceId          String           @map("ambulance_id")
+  driverId             String           @map("driver_id")
+  assignedAt           DateTime         @map("assigned_at")
+  status               AssignmentStatus @default(EMS_CONTACT)
+  estimatedArrivalTime DateTime?        @map("estimated_arrival_time")
+  actualArrivalTime    DateTime?        @map("actual_arrival_time")
+  journeyStartTime     DateTime?        @map("journey_start_time")
+  journeyEndTime       DateTime?        @map("journey_end_time")
+  distanceKm           Float?           @map("distance_km")
+  notes                String?
+  createdBy            String           @map("created_by")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+  deletedAt            DateTime?        @map("deleted_at")
+  ambulance            Ambulance        @relation(fields: [ambulanceId], references: [id])
+  createdByUser        User             @relation("EMSAssignmentCreator", fields: [createdBy], references: [id])
+  driver               User             @relation("EMSAssignmentDriver", fields: [driverId], references: [id])
+  ticket               Ticket           @relation("EMSAssignmentTicket", fields: [ticketId], references: [id])
+
+  @@index([ticketId])
+  @@index([ambulanceId])
+  @@index([driverId])
+  @@index([status])
+  @@index([assignedAt])
+  @@index([createdAt])
+  @@map("ems_assignments")
+}
+
+model EMSAlert {
+  id                 String              @id @default(uuid())
+  type               AlertType
+  priority           AlertPriority
+  message            String
+  ambulanceId        String?             @map("ambulance_id")
+  driverId           String?             @map("driver_id")
+  equipmentId        String?             @map("equipment_id")
+  status             AlertStatus         @default(ACTIVE)
+  acknowledgedBy     String?             @map("acknowledged_by")
+  acknowledgedAt     DateTime?           @map("acknowledged_at")
+  resolvedAt         DateTime?           @map("resolved_at")
+  metadata           String?
+  escalationLevel    Int?                @map("escalation_level")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  acknowledgedByUser User?               @relation("EMSAlertAcknowledgedBy", fields: [acknowledgedBy], references: [id])
+  ambulance          Ambulance?          @relation(fields: [ambulanceId], references: [id])
+  driver             User?               @relation("EMSAlertDriver", fields: [driverId], references: [id])
+  equipment          EquipmentInventory? @relation(fields: [equipmentId], references: [id])
+
+  @@index([type])
+  @@index([priority])
+  @@index([status])
+  @@index([ambulanceId])
+  @@index([driverId])
+  @@index([createdAt])
+  @@index([acknowledgedAt])
+  @@map("ems_alerts")
+}
+
+model EMSPerformanceMetric {
+  id                       String    @id @default(uuid())
+  ambulanceId              String    @map("ambulance_id")
+  date                     DateTime
+  totalTransfers           Int       @map("total_transfers")
+  averageResponseTime      Float?    @map("average_response_time")
+  averageTransferTime      Float?    @map("average_transfer_time")
+  totalDistanceKm          Float?    @map("total_distance_km")
+  fuelConsumptionLiters    Float?    @map("fuel_consumption_liters")
+  maintenanceHours         Float?    @map("maintenance_hours")
+  driverRating             Float?    @map("driver_rating")
+  patientSatisfactionScore Float?    @map("patient_satisfaction_score")
+  onTimeArrivals           Int?      @map("on_time_arrivals")
+  delayedArrivals          Int?      @map("delayed_arrivals")
+  cancelledTransfers       Int?      @map("cancelled_transfers")
+  equipmentFailures        Int?      @map("equipment_failures")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+  ambulance                Ambulance @relation(fields: [ambulanceId], references: [id])
+
+  @@unique([ambulanceId, date])
+  @@index([ambulanceId])
+  @@index([date])
+  @@index([createdAt])
+  @@map("ems_performance_metrics")
+}
+
+model EquipmentInventory {
+  id                 String              @id @default(uuid())
+  ambulanceId        String              @map("ambulance_id")
+  equipmentType      String              @map("equipment_type")
+  serialNumber       String?             @map("serial_number")
+  manufacturer       String?
+  model              String?
+  status             EquipmentStatus     @default(OPERATIONAL)
+  lastInspectionDate DateTime?           @map("last_inspection_date")
+  nextInspectionDue  DateTime?           @map("next_inspection_due")
+  maintenanceNotes   String?             @map("maintenance_notes")
+  purchaseDate       DateTime?           @map("purchase_date")
+  warrantyExpiry     DateTime?           @map("warranty_expiry")
+  location           String?
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  deletedAt          DateTime?           @map("deleted_at")
+  alerts             EMSAlert[]
+  ambulance          Ambulance           @relation(fields: [ambulanceId], references: [id])
+  maintenanceRecords MaintenanceRecord[]
+
+  @@index([ambulanceId])
+  @@index([equipmentType])
+  @@index([status])
+  @@index([serialNumber])
+  @@index([nextInspectionDue])
+  @@index([createdAt])
+  @@map("equipment_inventory")
+}
+
+model GPSTrackingLog {
+  id              String    @id @default(uuid())
+  ambulanceId     String    @map("ambulance_id")
+  latitude        Float
+  longitude       Float
+  speed           Float?
+  direction       Float?
+  timestamp       DateTime
+  fuelLevel       Float?    @map("fuel_level")
+  engineStatus    Boolean?  @map("engine_status")
+  locationAddress String?   @map("location_address")
+  accuracy        Float?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  ambulance       Ambulance @relation(fields: [ambulanceId], references: [id])
+
+  @@index([ambulanceId])
+  @@index([timestamp])
+  @@index([latitude, longitude])
+  @@index([createdAt])
+  @@map("gps_tracking_logs")
+}
+
+model MaintenanceRecord {
+  id               String              @id @default(uuid())
+  ambulanceId      String?             @map("ambulance_id")
+  equipmentId      String?             @map("equipment_id")
+  type             MaintenanceType
+  status           MaintenanceStatus   @default(SCHEDULED)
+  description      String
+  workPerformed    String?             @map("work_performed")
+  scheduledDate    DateTime?           @map("scheduled_date")
+  startDate        DateTime?           @map("start_date")
+  completionDate   DateTime?           @map("completion_date")
+  cost             Float?
+  laborHours       Float?              @map("labor_hours")
+  partsUsed        String?             @map("parts_used")
+  technicianName   String?             @map("technician_name")
+  mileageAtService Float?              @map("mileage_at_service")
+  nextServiceDue   DateTime?           @map("next_service_due")
+  warrantyWork     Boolean             @default(false) @map("warranty_work")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+  createdBy        String              @map("created_by")
+  ambulance        Ambulance?          @relation(fields: [ambulanceId], references: [id])
+  createdByUser    User                @relation("MaintenanceRecordCreator", fields: [createdBy], references: [id])
+  equipment        EquipmentInventory? @relation(fields: [equipmentId], references: [id])
+
+  @@index([ambulanceId])
+  @@index([equipmentId])
+  @@index([type])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([completionDate])
+  @@index([nextServiceDue])
+  @@index([createdAt])
+  @@map("maintenance_records")
+}
+
+model TimelineEvent {
+  id                   String      @id @default(uuid())
+  eventType            String      @map("event_type")
+  eventCategory        String      @map("event_category")
+  ticketId             String?     @map("ticket_id")
+  strokeCaseId         String?     @map("stroke_case_id")
+  ambulanceId          String?     @map("ambulance_id")
+  driverId             String?     @map("driver_id")
+  eventTimestamp       DateTime    @map("event_timestamp")
+  eventDescription     String      @map("event_description")
+  eventLocation        String?     @map("event_location")
+  gpsCoordinates       String?     @map("gps_coordinates")
+  distanceKm           Float?      @map("distance_km")
+  speed                Float?
+  fuelLevel            Float?      @map("fuel_level")
+  fromStatus           String?     @map("from_status")
+  toStatus             String?     @map("to_status")
+  minutesFromSymptom   Int?        @map("minutes_from_symptom")
+  minutesFromAdmission Int?        @map("minutes_from_admission")
+  withinTarget         Boolean?    @map("within_target")
+  targetMinutes        Int?        @map("target_minutes")
+  nihssAtSession       Int?        @map("nihss_at_session")
+  clinicalNotes        String?     @map("clinical_notes")
+  triggeredBy          String      @map("triggered_by")
+  metadata             String?
+  createdAt            DateTime    @default(now()) @map("created_at")
+  createdById          String      @map("created_by_id")
+  ambulance            Ambulance?  @relation(fields: [ambulanceId], references: [id])
+  createdBy            User        @relation("TimelineEventCreator", fields: [createdById], references: [id])
+  driver               User?       @relation("TimelineEventDriver", fields: [driverId], references: [id])
+  strokeCase           StrokeCase? @relation("TimelineEventStrokeCase", fields: [strokeCaseId], references: [id])
+  ticket               Ticket?     @relation("TimelineEventTicket", fields: [ticketId], references: [id])
+  triggeredByUser      User        @relation("TimelineEventTriggeredBy", fields: [triggeredBy], references: [id])
+
+  @@index([eventType])
+  @@index([eventCategory])
+  @@index([ticketId])
+  @@index([strokeCaseId])
+  @@index([ambulanceId])
+  @@index([driverId])
+  @@index([eventTimestamp])
+  @@index([createdAt])
+  @@map("timeline_events")
+}
+
+model StrokeKpiSummary {
+  id                            String   @id @default(uuid())
+  hospitalId                    String   @map("hospital_id")
+  cluster                       String
+  year                          Int
+  month                         Int
+  totalStrokeVolume             Int      @default(0) @map("total_stroke_volume")
+  ischemicStrokeVolume          Int      @default(0) @map("ischemic_stroke_volume")
+  hemorrhagicStrokeVolume       Int      @default(0) @map("hemorrhagic_stroke_volume")
+  tiaVolume                     Int      @default(0) @map("tia_volume")
+  lvoStrokeVolume               Int      @default(0) @map("lvo_stroke_volume")
+  thrombolysisCases             Int      @default(0) @map("thrombolysis_cases")
+  thrombectomyCases             Int      @default(0) @map("thrombectomy_cases")
+  avgDoorToImagingMinutes       Float?   @map("avg_door_to_imaging_minutes")
+  avgDoorToNeedleMinutes        Float?   @map("avg_door_to_needle_minutes")
+  avgDoorToGroinMinutes         Float?   @map("avg_door_to_groin_minutes")
+  avgStrokeUnitAdmissionMinutes Float?   @map("avg_stroke_unit_admission_minutes")
+  medianDoorToImagingMinutes    Int?     @map("median_door_to_imaging_minutes")
+  medianDoorToNeedleMinutes     Int?     @map("median_door_to_needle_minutes")
+  medianDoorToGroinMinutes      Int?     @map("median_door_to_groin_minutes")
+  bestDoorToImagingMinutes      Int?     @map("best_door_to_imaging_minutes")
+  worstDoorToImagingMinutes     Int?     @map("worst_door_to_imaging_minutes")
+  bestDoorToNeedleMinutes       Int?     @map("best_door_to_needle_minutes")
+  worstDoorToNeedleMinutes      Int?     @map("worst_door_to_needle_minutes")
+  performanceTrendImaging       Float?   @map("performance_trend_imaging")
+  performanceTrendThrombolysis  Float?   @map("performance_trend_thrombolysis")
+  performanceTrendThrombectomy  Float?   @map("performance_trend_thrombectomy")
+  volumeTrend                   Float?   @map("volume_trend")
+  complicationRate              Float?   @map("complication_rate")
+  mortalityRateInhospital       Float?   @map("mortality_rate_inhospital")
+  mortalityRate30day            Float?   @map("mortality_rate_30day")
+  mortalityRate90day            Float?   @map("mortality_rate_90day")
+  readmissionRate30day          Float?   @map("readmission_rate_30day")
+  averageLengthOfStayDays       Int?     @map("average_length_of_stay_days")
+  independentDischargeRate      Float?   @map("independent_discharge_rate")
+  kpi1TotalCases                Int?     @map("kpi1_total_cases")
+  kpi1Within25min               Int?     @map("kpi1_within_25min")
+  kpi1Percentage                Float?   @map("kpi1_percentage")
+  kpi1Status                    String?  @map("kpi1_status")
+  kpi2TotalCases                Int?     @map("kpi2_total_cases")
+  kpi2Within60min               Int?     @map("kpi2_within_60min")
+  kpi2Percentage                Float?   @map("kpi2_percentage")
+  kpi2Status                    String?  @map("kpi2_status")
+  kpi3TotalCases                Int?     @map("kpi3_total_cases")
+  kpi3Within90min               Int?     @map("kpi3_within_90min")
+  kpi3Percentage                Float?   @map("kpi3_percentage")
+  kpi3Status                    String?  @map("kpi3_status")
+  kpi4TotalCases                Int?     @map("kpi4_total_cases")
+  kpi4Within4hr                 Int?     @map("kpi4_within_4hr")
+  kpi4Percentage                Float?   @map("kpi4_percentage")
+  kpi4Status                    String?  @map("kpi4_status")
+  kpi5TotalCases                Int?     @map("kpi5_total_cases")
+  kpi5Within4hr                 Int?     @map("kpi5_within_4hr")
+  kpi5Percentage                Float?   @map("kpi5_percentage")
+  kpi5Status                    String?  @map("kpi5_status")
+  kpi6TotalCases                Int?     @map("kpi6_total_cases")
+  kpi6Within24hr                Int?     @map("kpi6_within_24hr")
+  kpi6Percentage                Float?   @map("kpi6_percentage")
+  kpi6Status                    String?  @map("kpi6_status")
+  kpi7TotalCases                Int?     @map("kpi7_total_cases")
+  kpi7Prescribed                Int?     @map("kpi7_prescribed")
+  kpi7Percentage                Float?   @map("kpi7_percentage")
+  kpi7Status                    String?  @map("kpi7_status")
+  kpi8TotalCases                Int?     @map("kpi8_total_cases")
+  kpi8Referred                  Int?     @map("kpi8_referred")
+  kpi8Percentage                Float?   @map("kpi8_percentage")
+  kpi8Status                    String?  @map("kpi8_status")
+  createdAt                     DateTime @default(now()) @map("created_at")
+  updatedAt                     DateTime @updatedAt @map("updated_at")
+  hospital                      Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@unique([hospitalId, year, month])
+  @@index([hospitalId])
+  @@index([cluster])
+  @@index([year, month])
+  @@map("stroke_kpi_summary")
+}
+
+model StrokeAssessmentScore {
+  id                    String     @id @default(uuid())
+  strokeCaseId          String     @map("stroke_case_id")
+  patientId             String     @map("patient_id")
+  assessmentType        String     @map("assessment_type")
+  assessmentTiming      String     @map("assessment_timing")
+  totalScore            Int?
+  subScores             String?    @map("sub_scores")
+  assessorName          String?    @map("assessor_name")
+  assessorQualification String?    @map("assessor_qualification")
+  assessmentDateTime    DateTime   @map("assessment_date_time")
+  assessmentNotes       String?    @map("assessment_notes")
+  createdAt             DateTime   @default(now()) @map("created_at")
+  createdById           String     @map("created_by_id")
+  createdBy             User       @relation("StrokeAssessmentCreator", fields: [createdById], references: [id])
+  patient               Patient    @relation(fields: [patientId], references: [id])
+  strokeCase            StrokeCase @relation(fields: [strokeCaseId], references: [id])
+
+  @@index([strokeCaseId])
+  @@index([patientId])
+  @@index([assessmentType])
+  @@index([assessmentTiming])
+  @@index([assessmentDateTime])
+  @@index([createdAt])
+  @@map("stroke_assessment_scores")
+}
+
+model StrokeRehabilitation {
+  id                       String     @id @default(uuid())
+  strokeCaseId             String     @map("stroke_case_id")
+  patientId                String     @map("patient_id")
+  rehabilitationType       String     @map("rehabilitation_type")
+  startDate                DateTime?
+  endDate                  DateTime?
+  frequency                String?
+  durationMinutes          Int?       @map("duration_minutes")
+  initialGoals             String?    @map("initial_goals")
+  progressNotes            String?    @map("progress_notes")
+  dischargeRecommendations String?    @map("discharge_recommendations")
+  functionalImprovement    Boolean?   @map("functional_improvement")
+  goalsMeet                Boolean?   @map("goals_meet")
+  therapistId              String?    @map("therapist_id")
+  rehabilitationCenterId   String?    @map("rehabilitation_center_id")
+  createdAt                DateTime   @default(now()) @map("created_at")
+  updatedAt                DateTime   @updatedAt @map("updated_at")
+  createdById              String     @map("created_by_id")
+  createdBy                User       @relation("StrokeRehabilitationCreator", fields: [createdById], references: [id])
+  patient                  Patient    @relation(fields: [patientId], references: [id])
+  rehabilitationCenter     Hospital?  @relation("StrokeRehabilitationCenter", fields: [rehabilitationCenterId], references: [id])
+  strokeCase               StrokeCase @relation(fields: [strokeCaseId], references: [id])
+  therapist                User?      @relation("StrokeRehabilitationTherapist", fields: [therapistId], references: [id])
+
+  @@index([strokeCaseId])
+  @@index([patientId])
+  @@index([rehabilitationType])
+  @@index([startDate])
+  @@index([createdAt])
+  @@map("stroke_rehabilitation")
+}
+
+model TraumaCase {
+  id                      String                  @id @default(uuid())
+  ticketId                String                  @map("ticket_id")
+  patientId               String                  @map("patient_id")
+  originHospitalId        String                  @map("origin_hospital_id")
+  destinationHospitalId   String?                 @map("destination_hospital_id")
+  arrivalDateTime         DateTime                @map("arrival_date_time")
+  incidentDateTime        DateTime?               @map("incident_date_time")
+  modeOfArrival           TraumaModeOfArrival     @map("mode_of_arrival")
+  transferRequestDateTime DateTime?               @map("transfer_request_date_time")
+  transferArrivalDateTime DateTime?               @map("transfer_arrival_date_time")
+  transferDurationMinutes Int?                    @map("transfer_duration_minutes")
+  chiefComplaint          String?                 @map("chief_complaint")
+  mechanismOfInjury       TraumaMechanismOfInjury @map("mechanism_of_injury")
+  vitalSigns              String?                 @map("vital_signs")
+  glasgowComaScale        Int?                    @map("glasgow_coma_scale")
+  systolicBloodPressure   Int?                    @map("systolic_blood_pressure")
+  respiratoryRate         Int?                    @map("respiratory_rate")
+  additionalVitalSigns    String?                 @map("additional_vital_signs")
+  primarySurveyFindings   String?                 @map("primary_survey_findings")
+  edDisposition           TraumaDispositionType?  @map("ed_disposition")
+  additionalNotes         String?                 @map("additional_notes")
+  disposition             String?
+  responseTimeMinutes     Int?                    @map("response_time_minutes")
+  criticalCase            Boolean                 @default(false) @map("critical_case")
+  transferCase            Boolean                 @default(false) @map("transfer_case")
+  createdAt               DateTime                @default(now()) @map("created_at")
+  updatedAt               DateTime                @updatedAt @map("updated_at")
+  deletedAt               DateTime?               @map("deleted_at")
+  createdById             String                  @map("created_by_id")
+  headAndNeckInjury       String?                 @map("head_and_neck_injury")
+  faceInjury              String?                 @map("face_injury")
+  chestInjury             String?                 @map("chest_injury")
+  abdomenInjury           String?                 @map("abdomen_injury")
+  extremitiesInjury       String?                 @map("extremities_injury")
+  externalInjury          String?                 @map("external_injury")
+  createdBy               User                    @relation("TraumaCaseCreator", fields: [createdById], references: [id])
+  destinationHospital     Hospital?               @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital          Hospital                @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id])
+  patient                 Patient                 @relation(fields: [patientId], references: [id])
+  ticket                  Ticket                  @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([arrivalDateTime])
+  @@index([incidentDateTime])
+  @@index([modeOfArrival])
+  @@index([mechanismOfInjury])
+  @@index([criticalCase])
+  @@index([transferCase])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("trauma_cases")
+}
+
 enum UserRole {
   ADMIN
   RCC
@@ -138,7 +1206,6 @@ enum TraumaDispositionType {
   OTHER
 }
 
-
 enum HospitalTicketType {
   TRANSFER
   CONSULTATION
@@ -202,7 +1269,6 @@ enum ActivityType {
   STROKE_TIMELINE_UPDATED
 }
 
-// Stroke-specific enums
 enum StrokeType {
   ISCHEMIC
   HEMORRHAGIC
@@ -254,10 +1320,6 @@ enum StrokeEventType {
   COMPLICATION
   FOLLOWUP
 }
-
-
-// ems-enums.prisma
-// EMS-specific enums for Emergency Medical Services
 
 enum AmbulanceStatus {
   AVAILABLE
@@ -364,1537 +1426,3 @@ enum MaintenanceStatus {
   COMPLETED
   CANCELLED
 }
-
-
-
-
-// user.prisma
-// User model with comprehensive role management
-model User {
-  id                String      @id @default(uuid())
-  email             String      @unique
-  firstName         String      @map("first_name")
-  lastName          String      @map("last_name")
-  phoneNumber       String?     @map("phone_number")
-  role              UserRole
-  status            UserStatus  @default(ACTIVE)
-  isEmailVerified   Boolean     @default(false) @map("is_email_verified")
-  passwordHash      String      @map("password_hash")
-  lastLogin         DateTime?   @map("last_login")
-  loginAttempts     Int         @default(0) @map("login_attempts")
-  lockedUntil       DateTime?   @map("locked_until")
-  passwordResetToken String?    @map("password_reset_token")
-  passwordResetExpiry DateTime? @map("password_reset_expiry")
-  refreshToken      String?     @map("refresh_token")
-  sessionExpiry     DateTime?   @map("session_expiry")
-  hospitalId        String?     @map("hospital_id")
-  
-  // Audit Fields
-  createdAt         DateTime    @default(now()) @map("created_at")
-  updatedAt         DateTime    @updatedAt @map("updated_at")
-  deletedAt         DateTime?   @map("deleted_at")
-  
-  // Relations
-  hospital          Hospital?   @relation(fields: [hospitalId], references: [id])
-  
-  // Ticket Relations
-  createdTickets    Ticket[]    @relation("TicketCreator")
-  assignedTickets   Ticket[]    @relation("TicketAssignee")
-  completedTickets  Ticket[]    @relation("TicketCompleter")
-  
-  // Patient Relations
-  createdPatients   Patient[]   @relation("PatientCreator")
-  accessedPatients  Patient[]   @relation("PatientAccessor")
-  createdMedicalRecords MedicalRecord[] @relation("MedicalRecordCreator")
-  patientAccessLogs PatientAccessLog[]
-  
-  // Hospital Relations
-  createdCriticalCases CriticalCase[] @relation("CriticalCaseCreator")
-  createdHospitalTickets HospitalTicket[] @relation("HospitalTicketCreator")
-  assignedHospitalTickets HospitalTicket[] @relation("HospitalTicketAssignee")
-  
-  // Activity Relations
-  activities        Activity[]
-  
-  // Stroke Relations
-  createdStrokeCases StrokeCase[] @relation("StrokeCaseCreator")
-  triggeredStrokeTimeline StrokeTimeline[] @relation("StrokeTimelineTriggeredBy")
-  createdStrokeTimeline StrokeTimeline[] @relation("StrokeTimelineCreator")
-  createdStrokeAssessments StrokeAssessmentScore[] @relation("StrokeAssessmentCreator")
-  strokeRehabilitationTherapist StrokeRehabilitation[] @relation("StrokeRehabilitationTherapist")
-  createdStrokeRehabilitation StrokeRehabilitation[] @relation("StrokeRehabilitationCreator")
-  
-  // Trauma Relations
-  createdTraumaCases TraumaCase[] @relation("TraumaCaseCreator")
-  
-  // STEMI Relations
-  createdStemiCases StemiCase[] @relation("StemiCaseCreator")
-  
-  // EMS Relations
-  ambulanceDriver     Ambulance?         @relation("AmbulanceDriver")
-  driverSchedules     DriverSchedule[]   @relation("DriverScheduleDriver")
-  emsAssignmentDriver EMSAssignment[]    @relation("EMSAssignmentDriver")
-  createdEMSAssignments EMSAssignment[]  @relation("EMSAssignmentCreator")
-  emsAlertDriver      EMSAlert[]         @relation("EMSAlertDriver")
-  acknowledgedEMSAlerts EMSAlert[]       @relation("EMSAlertAcknowledgedBy")
-  createdMaintenanceRecords MaintenanceRecord[] @relation("MaintenanceRecordCreator")
-  timelineEventDriver TimelineEvent[]    @relation("TimelineEventDriver")
-  triggeredTimelineEvents TimelineEvent[] @relation("TimelineEventTriggeredBy")
-  createdTimelineEvents TimelineEvent[]  @relation("TimelineEventCreator")
-  
-  @@map("users")
-  @@index([email])
-  @@index([role])
-  @@index([status])
-  @@index([hospitalId])
-}
-
-
-// hospital.prisma
-// Hospital model based on CSV data structure
-model Hospital {
-  id                String        @id @default(uuid())
-  name              String
-  address           String?
-  latitude          Float?
-  longitude         Float?
-  
-  // Bed Capacity - ICU
-  icuBeds           Int           @default(0) @map("icu_beds")
-  icuBedsAvailable  Int           @default(0) @map("icu_beds_available")
-  
-  // Bed Capacity - PICU
-  picuBeds          Int           @default(0) @map("picu_beds")
-  picuBedsAvailable Int           @default(0) @map("picu_beds_available")
-  
-  // Bed Capacity - Male/Female
-  maleBeds          Int           @default(0) @map("male_beds")
-  maleBedsAvailable Int           @default(0) @map("male_beds_available")
-  femaleBeds        Int           @default(0) @map("female_beds")
-  femaleBedsAvailable Int        @default(0) @map("female_beds_available")
-  
-  // Bed Capacity - Pediatric
-  pediatricBeds     Int           @default(0) @map("pediatric_beds")
-  pediatricBedsAvailable Int      @default(0) @map("pediatric_beds_available")
-  
-  // Bed Capacity - Standard
-  standardBeds     Int           @default(0) @map("standard_beds")
-  standardBedsAvailable Int      @default(0) @map("standard_beds_available")
-  
-  // Equipment
-  ventilators       Int           @default(0)
-  ventilatorsAvailable Int       @default(0) @map("ventilators_available")
-  
-  // Services
-  hasStemiService   Boolean       @default(false) @map("has_stemi_service")
-  hasStrokeService  Boolean       @default(false) @map("has_stroke_service")
-  hasTraumaService  Boolean       @default(false) @map("has_trauma_service")
-  
-  // Hospital Info
-  cluster           String        @default("Jazan")
-  status            HospitalStatus @default(AVAILABLE)
-  contactPhone      String?       @map("contact_phone")
-  contactEmail      String?       @map("contact_email")
-  
-  // Update tokens
-  updateToken       String?       @map("update_token")
-  updateTokenExpiry DateTime?     @map("update_token_expiry")
-  
-  // Emergency Department
-  emergencyDeptStatus String      @default("available") @map("emergency_dept_status")
-  
-  // NICU
-  nicuBeds          Int           @default(0) @map("nicu_beds")
-  nicuBedsAvailable Int           @default(0) @map("nicu_beds_available")
-  
-  // Specialized Services
-  hasStrokeUnit     Boolean       @default(false) @map("has_stroke_unit")
-  traumaLevel       TraumaLevel   @default(NONE) @map("trauma_level")
-  hasCardiologyCenter Boolean     @default(false) @map("has_cardiology_center")
-  
-  // Stroke-specific capabilities
-  strokeUnitBeds    Int           @default(0) @map("stroke_unit_beds")
-  strokeUnitBedsAvailable Int     @default(0) @map("stroke_unit_beds_available")
-  hasThrombolysis   Boolean       @default(false) @map("has_thrombolysis")
-  hasThrombectomy   Boolean       @default(false) @map("has_thrombectomy")
-  stroke24x7Service Boolean       @default(false) @map("stroke_24x7_service")
-  avgDoorToImagingMinutes Int?    @map("avg_door_to_imaging_minutes")
-  avgDoorToNeedleMinutes Int?     @map("avg_door_to_needle_minutes")
-  avgDoorToGroinMinutes Int?      @map("avg_door_to_groin_minutes")
-  lastStrokeCase    DateTime?     @map("last_stroke_case")
-  strokeCasesPerMonth Int         @default(0) @map("stroke_cases_per_month")
-  strokeCasesCurrentYear Int      @default(0) @map("stroke_cases_current_year")
-  strokeSuccessRate Float?       @map("stroke_success_rate")
-  strokeCertificationLevel String? @map("stroke_certification_level") // PRIMARY, COMPREHENSIVE, etc.
-  
-  // Audit fields
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
-  deletedAt         DateTime?     @map("deleted_at")
-  
-  // Relations
-  users             User[]
-  originTickets     Ticket[]      @relation("OriginHospital")
-  destinationTickets Ticket[]     @relation("DestinationHospital")
-  criticalCases     CriticalCase[]
-  hospitalTickets   HospitalTicket[]
-  
-  // Stroke Relations
-  strokeOriginCases StrokeCase[]  @relation("StrokeOriginHospital")
-  strokeDestinationCases StrokeCase[] @relation("StrokeDestinationHospital")
-  strokeKpiSummaries StrokeKpiSummary[]
-  strokeRehabilitationCenters StrokeRehabilitation[] @relation("StrokeRehabilitationCenter")
-  
-  // Trauma Relations
-  traumaOriginCases TraumaCase[]  @relation("TraumaOriginHospital")
-  traumaDestinationCases TraumaCase[] @relation("TraumaDestinationHospital")
-  
-  // STEMI Relations
-  stemiOriginCases StemiCase[]  @relation("StemiOriginHospital")
-  stemiDestinationCases StemiCase[] @relation("StemiDestinationHospital")
-  
-  @@map("hospitals")
-  @@index([status])
-  @@index([cluster])
-  @@index([hasStemiService])
-  @@index([hasStrokeService])
-  @@index([hasTraumaService])
-}
-
-
-// patient.prisma
-// Enhanced Patient model with comprehensive healthcare data management
-model Patient {
-  id              String         @id @default(uuid())
-  
-  // Basic Demographics
-  mrn             String?        @unique @map("medical_record_number")
-  nationalId      String?        @unique @map("national_id")
-  firstName       String         @map("first_name")
-  lastName        String         @map("last_name")
-  middleName      String?        @map("middle_name")
-  dateOfBirth     DateTime       @map("date_of_birth")
-  gender          PatientGender
-  maritalStatus   MaritalStatus? @map("marital_status")
-  
-  // Contact Information
-  phoneNumber     String?        @map("phone_number")
-  email           String?
-  address         String?
-  city            String?
-  state           String?
-  zipCode         String?        @map("zip_code")
-  country         String?        @default("Saudi Arabia")
-  
-  // Emergency Contacts
-  emergencyContact String?       @map("emergency_contact")
-  emergencyPhone  String?        @map("emergency_phone")
-  emergencyEmail  String?        @map("emergency_email")
-  emergencyRelationship String?  @map("emergency_relationship")
-  
-  // Insurance Information
-  insuranceProvider String?      @map("insurance_provider")
-  insuranceNumber   String?      @map("insurance_number")
-  insuranceGroup    String?      @map("insurance_group")
-  insuranceExpiry   DateTime?    @map("insurance_expiry")
-  
-  // Medical Information
-  bloodType       String?        @map("blood_type")
-  rhFactor        String?        @map("rh_factor")
-  allergies       String?        // JSON string of allergies
-  medications     String?        // JSON string of current medications
-  medicalHistory  String?        @map("medical_history")
-  riskFactors     String?        @map("risk_factors") // JSON string
-  chronicConditions String?      @map("chronic_conditions") // JSON string
-  
-  // Physical Measurements
-  weight          Float?         // in kg
-  height          Float?         // in cm
-  bmi             Float?         // Calculated BMI
-  
-  // HIPAA Compliance
-  dataEncryptionKey String?      @map("data_encryption_key")
-  privacyLevel    PrivacyLevel  @default(PRIVATE) @map("privacy_level")
-  consentGiven    Boolean        @default(false) @map("consent_given")
-  consentDate     DateTime?      @map("consent_date")
-  dataRetentionPolicy String?    @map("data_retention_policy")
-  
-  // Duplicate Detection
-  duplicateGroupId String?       @map("duplicate_group_id")
-  isPrimaryRecord Boolean        @default(true) @map("is_primary_record")
-  
-  // Audit Fields
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
-  deletedAt       DateTime?      @map("deleted_at")
-  createdById     String         @map("created_by_id")
-  lastAccessedAt  DateTime?      @map("last_accessed_at")
-  lastAccessedBy  String?        @map("last_accessed_by")
-  
-  // Relations
-  createdBy       User           @relation("PatientCreator", fields: [createdById], references: [id])
-  lastAccessedByUser User?       @relation("PatientAccessor", fields: [lastAccessedBy], references: [id])
-  tickets         Ticket[]
-  medicalRecords  MedicalRecord[]
-  accessLogs      PatientAccessLog[]
-  
-  // Stroke Relations
-  strokeCases     StrokeCase[]
-  strokeAssessmentScores StrokeAssessmentScore[]
-  strokeRehabilitation StrokeRehabilitation[]
-  
-  // Trauma Relations
-  traumaCases     TraumaCase[]
-  
-  // STEMI Relations
-  stemiCases      StemiCase[]
-  
-  @@map("patients")
-  @@index([mrn])
-  @@index([nationalId])
-  @@index([lastName, firstName])
-  @@index([dateOfBirth])
-  @@index([duplicateGroupId])
-  @@index([createdAt])
-  @@index([lastAccessedAt])
-}
-
-// Medical Record model for detailed medical history
-model MedicalRecord {
-  id              String            @id @default(uuid())
-  patientId       String            @map("patient_id")
-  recordType      MedicalRecordType @map("record_type")
-  title           String
-  description     String?
-  diagnosis       String?
-  treatment       String?
-  medications     String?           // JSON string
-  testResults     String?           // JSON string
-  attachments     String?           // JSON string of file paths
-  
-  // Dates
-  recordDate      DateTime          @map("record_date")
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @updatedAt @map("updated_at")
-  deletedAt        DateTime?         @map("deleted_at")
-  createdById     String            @map("created_by_id")
-  
-  // Relations
-  patient         Patient           @relation(fields: [patientId], references: [id])
-  createdBy       User              @relation("MedicalRecordCreator", fields: [createdById], references: [id])
-  
-  @@map("medical_records")
-  @@index([patientId])
-  @@index([recordType])
-  @@index([recordDate])
-  @@index([createdAt])
-}
-
-// Patient Access Log for HIPAA compliance
-model PatientAccessLog {
-  id              String      @id @default(uuid())
-  patientId       String      @map("patient_id")
-  userId          String      @map("user_id")
-  accessType       AccessType
-  accessMethod     String      @map("access_method") // API, WEB, MOBILE
-  ipAddress       String?     @map("ip_address")
-  userAgent       String?     @map("user_agent")
-  reason          String?     // Reason for access
-  timestamp       DateTime    @default(now())
-  
-  // Relations
-  patient         Patient     @relation(fields: [patientId], references: [id])
-  user            User        @relation(fields: [userId], references: [id])
-  
-  @@map("patient_access_logs")
-  @@index([patientId])
-  @@index([userId])
-  @@index([accessType])
-  @@index([timestamp])
-}
-
-
-// ticket.prisma
-// Enhanced Ticket model for comprehensive patient transfer management
-model Ticket {
-  id                  String          @id @default(uuid())
-  ticketNumber        String          @unique @map("ticket_number")
-  
-  // Patient Information
-  patientId           String          @map("patient_id")
-  
-  // Hospital Information
-  originHospitalId    String          @map("origin_hospital_id")
-  destinationHospitalId String?       @map("destination_hospital_id")
-  
-  // Ticket Classification
-  priority            TicketPriority
-  status              TicketStatus    @default(PENDING)
-  pathway             TicketPathway  @default(GENERAL)
-  
-  // Medical Details
-  chiefComplaint      String          @map("chief_complaint")
-  symptoms            String?         // JSON string of symptoms
-  vitals              String?         // JSON string of vital signs
-  diagnostics         String?         // JSON string of diagnostic results
-  treatmentPlan       String?         @map("treatment_plan")
-  
-  // Transport Details
-  estimatedArrival    DateTime?       @map("estimated_arrival")
-  actualArrival       DateTime?       @map("actual_arrival")
-  transportMode       String?         @map("transport_mode")
-  emsUnit             String?         @map("ems_unit")
-  transportNotes      String?         @map("transport_notes")
-  
-  // Resource Requirements
-  requiresBlood       Boolean         @default(false) @map("requires_blood")
-  requiresSpecialist  Boolean         @default(false) @map("requires_specialist")
-  requiresICU         Boolean         @default(false) @map("requires_icu")
-  requiresVentilator  Boolean         @default(false) @map("requires_ventilator")
-  requiredResources   String?         @map("required_resources") // JSON string
-  
-  // Emergency Information
-  isEmergency         Boolean         @default(false) @map("is_emergency")
-  emergencyType       String?         @map("emergency_type") // STEMI, STROKE, TRAUMA
-  emergencySeverity   String?         @map("emergency_severity") // CRITICAL, URGENT, STABLE
-  
-  // Additional Information
-  notes               String?
-  internalNotes       String?         @map("internal_notes")
-  externalNotes       String?         @map("external_notes")
-  
-  // Audit Fields
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
-  deletedAt           DateTime?       @map("deleted_at")
-  createdById         String          @map("created_by_id")
-  assignedToId        String?         @map("assigned_to_id")
-  completedById       String?         @map("completed_by_id")
-  completedAt         DateTime?       @map("completed_at")
-  
-  // Relations
-  patient             Patient         @relation(fields: [patientId], references: [id])
-  originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id])
-  createdBy           User            @relation("TicketCreator", fields: [createdById], references: [id])
-  assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
-  completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
-  activities          Activity[]
-  
-  // Stroke Relations
-  strokeCases         StrokeCase[]
-  strokeTimeline      StrokeTimeline[]
-  
-  // Trauma Relations
-  traumaCases         TraumaCase[]
-  
-  // STEMI Relations
-  stemiCases          StemiCase[]
-  
-  // EMS Relations
-  emsAssignments      EMSAssignment[]    @relation("EMSAssignmentTicket")
-  timelineEvents      TimelineEvent[]    @relation("TimelineEventTicket")
-  
-  @@map("tickets")
-  @@index([ticketNumber])
-  @@index([status])
-  @@index([priority])
-  @@index([pathway])
-  @@index([patientId])
-  @@index([originHospitalId])
-  @@index([destinationHospitalId])
-  @@index([createdAt])
-  @@index([assignedToId])
-  @@index([isEmergency])
-}
-
-
-// critical-case.prisma
-// Critical Case model for tracking emergency cases
-model CriticalCase {
-  id              String              @id @default(uuid())
-  patientName     String              @map("patient_name")
-  caseType        CriticalCaseType    @map("case_type")
-  severity        CriticalCaseSeverity
-  status          CriticalCaseStatus  @default(ACTIVE)
-  startTime       DateTime            @map("start_time")
-  lastUpdate      DateTime            @updatedAt @map("last_update")
-  description     String
-  hospitalId      String              @map("hospital_id")
-  createdById     String              @map("created_by_id")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  deletedAt       DateTime?           @map("deleted_at")
-  
-  // Relations
-  hospital        Hospital            @relation(fields: [hospitalId], references: [id])
-  createdBy       User                @relation("CriticalCaseCreator", fields: [createdById], references: [id])
-  
-  @@map("critical_cases")
-  @@index([hospitalId])
-  @@index([caseType])
-  @@index([severity])
-  @@index([status])
-  @@index([startTime])
-}
-
-
-
-// hospital-ticket.prisma
-// Hospital Ticket model for managing hospital-related requests
-model HospitalTicket {
-  id              String                @id @default(uuid())
-  title           String
-  description     String
-  type            HospitalTicketType
-  priority        TicketPriority
-  status          HospitalTicketStatus  @default(OPEN)
-  hospitalId      String                @map("hospital_id")
-  createdById     String                @map("created_by_id")
-  assignedToId    String?               @map("assigned_to_id")
-  createdAt       DateTime              @default(now()) @map("created_at")
-  updatedAt       DateTime              @updatedAt @map("updated_at")
-  deletedAt       DateTime?             @map("deleted_at")
-  
-  // Relations
-  hospital        Hospital              @relation(fields: [hospitalId], references: [id])
-  createdBy       User                  @relation("HospitalTicketCreator", fields: [createdById], references: [id])
-  assignedTo      User?                 @relation("HospitalTicketAssignee", fields: [assignedToId], references: [id])
-  
-  @@map("hospital_tickets")
-  @@index([hospitalId])
-  @@index([type])
-  @@index([priority])
-  @@index([status])
-  @@index([createdAt])
-}
-
-
-
-// activity.prisma
-// Activity model
-model Activity {
-  id          String      @id @default(uuid())
-  type        ActivityType
-  description String
-  userId      String      @map("user_id")
-  ticketId    String?     @map("ticket_id")
-  metadata    String?     // JSON string for additional data
-  ipAddress   String?     @map("ip_address")
-  userAgent   String?     @map("user_agent")
-  
-  // Audit fields
-  createdAt   DateTime    @default(now()) @map("created_at")
-  
-  // Relations
-  user        User        @relation(fields: [userId], references: [id])
-  ticket      Ticket?     @relation(fields: [ticketId], references: [id])
-  
-  @@map("activities")
-  @@index([userId])
-  @@index([type])
-  @@index([createdAt])
-  @@index([ticketId])
-}
-
-
-// system.prisma
-// System Configuration model
-model SystemConfig {
-  id          String    @id @default(uuid())
-  key         String    @unique
-  value       String
-  description String?
-  isEncrypted Boolean   @default(false) @map("is_encrypted")
-  
-  // Audit fields
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  
-  @@map("system_config")
-}
-
-
-// stroke-case.prisma
-// Stroke Case model for comprehensive stroke care management
-model StrokeCase {
-  id                              String      @id @default(uuid())
-  ticketId                        String      @map("ticket_id")
-  patientId                       String      @map("patient_id")
-  originHospitalId                String      @map("origin_hospital_id")
-  destinationHospitalId           String?     @map("destination_hospital_id")
-  
-  // Stroke Classification
-  strokeType                      StrokeType
-  strokeSubtype                   String?     @map("stroke_subtype") // LARGE_VESSEL, SMALL_VESSEL, CARDIOEMBOLIC, etc.
-  strokeSeverity                  StrokeSeverity?
-  
-  // Clinical Assessments
-  nihssBaseline                   Int?        @map("nihss_baseline") // 0-42 scale
-  nihss24hr                       Int?        @map("nihss_24hr")
-  nihssDischarge                  Int?        @map("nihss_discharge")
-  mrsBaseline                     Int?        @map("mrs_baseline") // 0-6 scale  
-  mrs90day                        Int?        @map("mrs_90day")
-  barthelBaseline                 Int?        @map("barthel_baseline") // 0-100 scale
-  barthelDischarge                Int?        @map("barthel_discharge")
-  aspectsScore                    Int?        @map("aspects_score") // 0-10 scale
-  gcsBaseline                     Int?        @map("gcs_baseline") // 3-15 scale
-  
-  // Symptom & Presentation
-  presentingSymptoms              String?     @map("presenting_symptoms")
-  symptomOnset                    DateTime?   @map("symptom_onset")
-  symptomToHospitalMinutes        Int?        @map("symptom_to_hospital_minutes")
-  lastKnownWell                   DateTime?   @map("last_known_well")
-  wakeUpStroke                    Boolean     @default(false) @map("wake_up_stroke")
-  
-  // Treatment Details  
-  currentStatus                   StrokeStatus @map("current_status")
-  selectedTreatment               StrokeTreatment? @map("selected_treatment")
-  eligibleForThrombolysis         Boolean?    @map("eligible_for_thrombolysis")
-  thrombolysisContraindications   String?     @map("thrombolysis_contraindications")
-  eligibleForThrombectomy         Boolean?    @map("eligible_for_thrombectomy")
-  thrombectomyContraindications   String?     @map("thrombectomy_contraindications")
-  
-  // Pathway Timings
-  pathwayStarted                  DateTime?   @map("pathway_started")
-  pathwayCompleted                DateTime?   @map("pathway_completed")
-  strokeUnitAdmissionTime         DateTime?   @map("stroke_unit_admission_time")
-  
-  // Key Performance Timings (minutes)
-  doorToImagingMinutes            Int?        @map("door_to_imaging_minutes")
-  doorToNeedleMinutes             Int?        @map("door_to_needle_minutes") // For thrombolysis
-  doorToGroinMinutes              Int?        @map("door_to_groin_minutes") // For thrombectomy  
-  symptomNeedleMinutes            Int?        @map("symptom_needle_minutes")
-  symptomGroinMinutes             Int?        @map("symptom_groin_minutes")
-  imagingToNeedleMinutes          Int?        @map("imaging_to_needle_minutes")
-  imagingToGroinMinutes           Int?        @map("imaging_to_groin_minutes")
-  
-  // Clinical Assessments Timeline  
-  dysphagiaScreeningMinutes       Int?        @map("dysphagia_screening_minutes") // From admission
-  earlyMobilizationHours          Int?        @map("early_mobilization_hours") // From admission
-  speechTherapyHours              Int?        @map("speech_therapy_hours")
-  physiotherapyHours              Int?        @map("physiotherapy_hours")
-  occupationalTherapyHours        Int?        @map("occupational_therapy_hours")
-  
-  // Imaging Results
-  ctResults                       String?     @map("ct_results")
-  ctaResults                      String?     @map("cta_results")
-  ctpResults                      String?     @map("ctp_results")
-  mriResults                      String?     @map("mri_results")
-  mraResults                      String?     @map("mra_results")
-  echocardiogram                  String?
-  carotidUcsDoppler               String?     @map("carotid_ucs_doppler")
-  
-  // Treatment Outcomes
-  successful                      Boolean?
-  recanalizationGrade             String?     @map("recanalization_grade") // mTICI 0, 1, 2a, 2b, 3
-  complications                   String?
-  secondaryPrevention             String?     @map("secondary_prevention")
-  
-  // Discharge & Follow-up
-  dischargeDestination            String?     @map("discharge_destination") // HOME, REHABILITATION, NURSING_HOME, etc.
-  dischargeDate                   DateTime?   @map("discharge_date")
-  lengthOfStayDays                Int?        @map("length_of_stay_days")
-  thirtyDayReadmission            Boolean?    @map("thirty_day_readmission")
-  ninetyDayMortality              Boolean?    @map("ninety_day_mortality")
-  followUpCallCompleted           Boolean?    @map("follow_up_call_completed")
-  followUpCallDate                DateTime?   @map("follow_up_call_date")
-  
-  // KPI Tracking
-  metKpi1                         Boolean?    @map("met_kpi1") // Door to imaging ≤25min
-  metKpi2                         Boolean?    @map("met_kpi2") // Door to needle ≤60min  
-  metKpi3                         Boolean?    @map("met_kpi3") // Door to groin ≤90min
-  metKpi4                         Boolean?    @map("met_kpi4") // Stroke unit admission ≤4hr
-  metKpi5                         Boolean?    @map("met_kpi5") // Dysphagia screening ≤4hr
-  metKpi6                         Boolean?    @map("met_kpi6") // Early mobilization ≤24hr
-  metKpi7                         Boolean?    @map("met_kpi7") // Secondary prevention prescribed
-  metKpi8                         Boolean?    @map("met_kpi8") // Appropriate rehabilitation referral
-  
-  // Audit Fields
-  createdAt                       DateTime    @default(now()) @map("created_at")
-  updatedAt                       DateTime    @updatedAt @map("updated_at")
-  deletedAt                       DateTime?   @map("deleted_at")
-  createdById                     String      @map("created_by_id")
-  
-  // Relations
-  ticket                          Ticket      @relation(fields: [ticketId], references: [id])
-  patient                         Patient     @relation(fields: [patientId], references: [id])
-  originHospital                  Hospital    @relation("StrokeOriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital             Hospital?   @relation("StrokeDestinationHospital", fields: [destinationHospitalId], references: [id])
-  createdBy                       User        @relation("StrokeCaseCreator", fields: [createdById], references: [id])
-  
-  // Related Models
-  timeline                        StrokeTimeline[]
-  timelineEvents                  TimelineEvent[] @relation("TimelineEventStrokeCase")
-  assessmentScores                StrokeAssessmentScore[]
-  rehabilitation                  StrokeRehabilitation[]
-  
-  @@map("stroke_cases")
-  @@index([ticketId])
-  @@index([patientId])
-  @@index([originHospitalId])
-  @@index([destinationHospitalId])
-  @@index([strokeType])
-  @@index([strokeSeverity])
-  @@index([currentStatus])
-  @@index([createdAt])
-  @@index([createdById])
-}
-
-
-// stemi-case.prisma
-// STEMI Case model for comprehensive STEMI care management
-model StemiCase {
-  id                              String      @id @default(uuid())
-  ticketId                        String      @map("ticket_id")
-  patientId                       String      @map("patient_id")
-  originHospitalId                String      @map("origin_hospital_id")
-  destinationHospitalId           String?     @map("destination_hospital_id")
-  
-  // Clinical Assessment
-  heartScore                      Int?        @map("heart_score") // TIMI Risk Score
-  clinicalRiskLevel               String?     @map("clinical_risk_level") // Low, Intermediate, High, Very High
-  presentingSymptoms              String?     @map("presenting_symptoms")
-  symptomOnset                    DateTime?   @map("symptom_onset")
-  symptomDuration                 Int?        @map("symptom_duration") // in minutes
-  
-  // Pathway Execution
-  currentStatus                   String      @map("current_status") // SUSPECTED, ECG_PENDING, STEMI_CONFIRMED, etc.
-  selectedTreatment               String?     @map("selected_treatment") // PRIMARY_PCI, RESCUE_PCI, FIBRINOLYSIS, etc.
-  pathwayStarted                  DateTime?   @map("pathway_started")
-  pathwayCompleted                DateTime?   @map("pathway_completed")
-  rccActivated                    Boolean     @default(false) @map("rcc_activated")
-  rccUnit                         String?     @map("rcc_unit")
-  
-  // Critical Timestamps
-  triageTime                      DateTime?   @map("triage_time")
-  firstEcgTime                    DateTime?   @map("first_ecg_time")
-  
-  // Interventions and Treatments
-  eligibleForPrimaryPci           Boolean?    @map("eligible_for_primary_pci")
-  pciLocation                     String?     @map("pci_location")
-  doorOutTime                     DateTime?   @map("door_out_time")
-  balloonInflationTime            DateTime?   @map("balloon_inflation_time")
-  thrombolyticGiven               Boolean?    @map("thrombolytic_given")
-  thrombolyticAdminTime           DateTime?   @map("thrombolytic_admin_time")
-  
-  // Outcomes
-  successful                      Boolean?    @map("successful")
-  complications                   String?     @map("complications")
-  dischargeDate                   DateTime?   @map("discharge_date")
-  thirtyDayReadmission            Boolean     @default(false) @map("thirty_day_readmission")
-  followUpCallCompleted           Boolean     @default(false) @map("follow_up_call_completed")
-  followUpCallDate                DateTime?   @map("follow_up_call_date")
-  
-  // Quality Metrics (calculated in minutes)
-  doorToEcgMinutes                Int?        @map("door_to_ecg_minutes")
-  rccActivationToDoorOutMinutes   Int?        @map("rcc_activation_to_door_out_minutes")
-  doorInDoorOutMinutes            Int?        @map("door_in_door_out_minutes")
-  doorToNeedleMinutes             Int?        @map("door_to_needle_minutes")
-  doorToBalloonMinutes            Int?        @map("door_to_balloon_minutes")
-  
-  // KPI Achievement Flags
-  metKpi1                         Boolean?    @map("met_kpi_1") // Door to ECG ≤10min
-  metKpi2                         Boolean?    @map("met_kpi_2") // Door to Balloon ≤90min
-  metKpi3                         Boolean?    @map("met_kpi_3") // Door to Needle ≤30min
-  metKpi4                         Boolean?    @map("met_kpi_4") // RCC Activation ≤15min
-  metKpi5                         Boolean?    @map("met_kpi_5") // Door In Door Out ≤30min
-  metKpi6                         Boolean?    @map("met_kpi_6") // Primary PCI Success ≥95%
-  
-  // Audit Fields
-  createdAt                       DateTime    @default(now()) @map("created_at")
-  updatedAt                       DateTime    @updatedAt @map("updated_at")
-  createdById                     String      @map("created_by_id")
-  
-  // Relations
-  ticket                          Ticket      @relation(fields: [ticketId], references: [id])
-  patient                         Patient     @relation(fields: [patientId], references: [id])
-  originHospital                  Hospital    @relation("StemiOriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital             Hospital?   @relation("StemiDestinationHospital", fields: [destinationHospitalId], references: [id])
-  createdBy                       User        @relation("StemiCaseCreator", fields: [createdById], references: [id])
-  
-  @@map("stemi_cases")
-}
-
-
-// stroke-timeline.prisma
-// Stroke Timeline model for tracking stroke care events
-model StrokeTimeline {
-  id                      String          @id @default(uuid())
-  strokeCaseId            String          @map("stroke_case_id")
-  ticketId                String          @map("ticket_id")
-  
-  // Status Tracking
-  fromStatus              StrokeStatus?   @map("from_status")
-  toStatus                StrokeStatus    @map("to_status")
-  
-  // Event Details
-  eventTimestamp          DateTime        @map("event_timestamp")
-  eventDescription        String          @map("event_description")
-  eventLocation           String?         @map("event_location") // ED, CT_SUITE, ANGIO_SUITE, STROKE_UNIT
-  eventType               StrokeEventType @map("event_type")
-  triggeredBy             String          @map("triggered_by")
-  
-  // Timing Metrics
-  minutesFromSymptom      Int?            @map("minutes_from_symptom")
-  minutesFromAdmission    Int?            @map("minutes_from_admission")
-  withinTarget            Boolean?        @map("within_target")
-  targetMinutes           Int?            @map("target_minutes")
-  
-  // Clinical Context
-  nihssAtSession          Int?            @map("nihss_at_session")
-  clinicalNotes           String?         @map("clinical_notes")
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  createdById             String          @map("created_by_id")
-  
-  // Relations
-  strokeCase              StrokeCase      @relation(fields: [strokeCaseId], references: [id])
-  ticket                  Ticket          @relation(fields: [ticketId], references: [id])
-  triggeredByUser         User            @relation("StrokeTimelineTriggeredBy", fields: [triggeredBy], references: [id])
-  createdBy               User            @relation("StrokeTimelineCreator", fields: [createdById], references: [id])
-  
-  @@map("stroke_timeline")
-  @@index([strokeCaseId])
-  @@index([ticketId])
-  @@index([eventTimestamp])
-  @@index([eventType])
-  @@index([toStatus])
-  @@index([createdAt])
-}
-
-
-// ambulance.prisma
-// Ambulance model for fleet management with GPS tracking
-model Ambulance {
-  id                      String          @id @default(uuid())
-  
-  // Vehicle Identification
-  vehicleId               String          @unique @map("vehicle_id") // GPS tracking ID
-  callSign                String          @unique @map("call_sign") // Radio call sign
-  plateNumber             String          @unique @map("plate_number") // License plate
-  
-  // Vehicle Specifications
-  model                   String
-  year                    Int
-  type                    AmbulanceType
-  manufacturer            String?
-  vin                     String?         @unique // Vehicle Identification Number
-  
-  // Location & Status
-  baseStation             String          @map("base_station") // Home location/station
-  status                  AmbulanceStatus @default(AVAILABLE)
-  currentLocationLat      Float?          @map("current_location_lat")
-  currentLocationLng      Float?          @map("current_location_lng")
-  currentLocationAddress  String?         @map("current_location_address")
-  lastUpdated             DateTime?        @map("last_updated")
-  
-  // Driver Information
-  driverName              String?         @map("driver_name")
-  driverPhone             String?         @map("driver_phone")
-  driverId                String?         @unique @map("driver_id")
-  
-  // Equipment & Maintenance
-  equipmentStatus         EquipmentStatus @default(OPERATIONAL) @map("equipment_status")
-  fuelLevel               Float?          @map("fuel_level") // Percentage
-  mileage                 Float?          // Odometer reading in km
-  lastMaintenanceDate     DateTime?       @map("last_maintenance_date")
-  nextMaintenanceDue      DateTime?       @map("next_maintenance_due")
-  
-  // Operational Status
-  isActive                Boolean         @default(true) @map("is_active")
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  updatedAt               DateTime        @updatedAt @map("updated_at")
-  deletedAt               DateTime?       @map("deleted_at")
-  
-  // Relations
-  driver                  User?           @relation("AmbulanceDriver", fields: [driverId], references: [id])
-  assignments             EMSAssignment[]
-  gpsTrackingLogs         GPSTrackingLog[]
-  driverSchedules         DriverSchedule[]
-  equipmentInventory      EquipmentInventory[]
-  performanceMetrics      EMSPerformanceMetric[]
-  alerts                  EMSAlert[]
-  timelineEvents          TimelineEvent[]
-  maintenanceRecords      MaintenanceRecord[]
-  
-  @@map("ambulances")
-  @@index([status])
-  @@index([baseStation])
-  @@index([isActive])
-  @@index([vehicleId])
-  @@index([plateNumber])
-  @@index([callSign])
-  @@index([driverId])
-  @@index([nextMaintenanceDue])
-}
-
-
-
-
-// driver-schedule.prisma
-// Driver Schedule model for managing driver shifts and assignments
-model DriverSchedule {
-  id                      String          @id @default(uuid())
-  
-  // Schedule Details
-  driverId                String          @map("driver_id")
-  ambulanceId             String          @map("ambulance_id")
-  
-  // Shift Information
-  shiftStart              DateTime        @map("shift_start")
-  shiftEnd                DateTime        @map("shift_end")
-  shiftType               ShiftType       @map("shift_type")
-  status                  ScheduleStatus  @default(SCHEDULED)
-  
-  // Break Tracking
-  breakStart              DateTime?       @map("break_start")
-  breakEnd                DateTime?       @map("break_end")
-  overtimeHours           Float?         @map("overtime_hours")
-  
-  // Additional Information
-  notes                   String?
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  updatedAt               DateTime        @updatedAt @map("updated_at")
-  deletedAt               DateTime?       @map("deleted_at")
-  
-  // Relations
-  driver                  User            @relation("DriverScheduleDriver", fields: [driverId], references: [id])
-  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
-  
-  @@map("driver_schedules")
-  @@index([driverId])
-  @@index([ambulanceId])
-  @@index([shiftStart])
-  @@index([shiftEnd])
-  @@index([status])
-  @@index([shiftType])
-  @@index([createdAt])
-}
-
-
-
-
-// ems-assignment.prisma
-// EMS Assignment model for managing ambulance and driver assignments
-model EMSAssignment {
-  id                      String          @id @default(uuid())
-  
-  // Assignment Details
-  ticketId                String          @map("ticket_id")
-  ambulanceId             String          @map("ambulance_id")
-  driverId                String          @map("driver_id")
-  
-  // Timing Information
-  assignedAt              DateTime        @map("assigned_at")
-  status                  AssignmentStatus @default(EMS_CONTACT)
-  estimatedArrivalTime    DateTime?       @map("estimated_arrival_time")
-  actualArrivalTime       DateTime?       @map("actual_arrival_time")
-  journeyStartTime        DateTime?       @map("journey_start_time")
-  journeyEndTime          DateTime?       @map("journey_end_time")
-  
-  // Journey Details
-  distanceKm              Float?          @map("distance_km")
-  notes                   String?
-  
-  // Assignment Management
-  createdBy               String          @map("created_by")
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  updatedAt               DateTime        @updatedAt @map("updated_at")
-  deletedAt               DateTime?       @map("deleted_at")
-  
-  // Relations
-  ticket                  Ticket          @relation("EMSAssignmentTicket", fields: [ticketId], references: [id])
-  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
-  driver                  User            @relation("EMSAssignmentDriver", fields: [driverId], references: [id])
-  createdByUser           User            @relation("EMSAssignmentCreator", fields: [createdBy], references: [id])
-  
-  @@map("ems_assignments")
-  @@index([ticketId])
-  @@index([ambulanceId])
-  @@index([driverId])
-  @@index([status])
-  @@index([assignedAt])
-  @@index([createdAt])
-}
-
-
-
-
-// ems-alerts.prisma
-// EMS Alerts model for system notifications and alerts
-model EMSAlert {
-  id                      String          @id @default(uuid())
-  
-  // Alert Details
-  type                    AlertType
-  priority                AlertPriority
-  message                 String
-  
-  // References (nullable for system-wide alerts)
-  ambulanceId             String?         @map("ambulance_id")
-  driverId                String?         @map("driver_id")
-  equipmentId             String?         @map("equipment_id")
-  
-  // Alert Status
-  status                  AlertStatus     @default(ACTIVE)
-  acknowledgedBy          String?         @map("acknowledged_by")
-  acknowledgedAt          DateTime?       @map("acknowledged_at")
-  resolvedAt              DateTime?       @map("resolved_at")
-  
-  // Additional Information
-  metadata                String?         // JSON string for additional data
-  escalationLevel         Int?            @map("escalation_level")
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  updatedAt               DateTime        @updatedAt @map("updated_at")
-  
-  // Relations
-  ambulance               Ambulance?      @relation(fields: [ambulanceId], references: [id])
-  driver                  User?           @relation("EMSAlertDriver", fields: [driverId], references: [id])
-  acknowledgedByUser      User?           @relation("EMSAlertAcknowledgedBy", fields: [acknowledgedBy], references: [id])
-  equipment               EquipmentInventory? @relation(fields: [equipmentId], references: [id])
-  
-  @@map("ems_alerts")
-  @@index([type])
-  @@index([priority])
-  @@index([status])
-  @@index([ambulanceId])
-  @@index([driverId])
-  @@index([createdAt])
-  @@index([acknowledgedAt])
-}
-
-
-
-
-// ems-performance.prisma
-// EMS Performance Metrics model for KPI tracking and analytics
-model EMSPerformanceMetric {
-  id                      String          @id @default(uuid())
-  
-  // Reference Information
-  ambulanceId             String          @map("ambulance_id")
-  date                   DateTime        // Date of metrics
-  
-  // Transfer Metrics
-  totalTransfers         Int             @map("total_transfers")
-  averageResponseTime    Float?          @map("average_response_time") // minutes
-  averageTransferTime    Float?          @map("average_transfer_time") // minutes
-  
-  // Distance & Fuel
-  totalDistanceKm        Float?          @map("total_distance_km")
-  fuelConsumptionLiters  Float?          @map("fuel_consumption_liters")
-  
-  // Maintenance
-  maintenanceHours       Float?          @map("maintenance_hours")
-  
-  // Quality Metrics
-  driverRating           Float?          @map("driver_rating") // 1-5 scale
-  patientSatisfactionScore Float?       @map("patient_satisfaction_score") // 1-10 scale
-  
-  // Additional KPIs
-  onTimeArrivals         Int?            @map("on_time_arrivals")
-  delayedArrivals        Int?            @map("delayed_arrivals")
-  cancelledTransfers     Int?            @map("cancelled_transfers")
-  equipmentFailures      Int?            @map("equipment_failures")
-  
-  // Audit Fields
-  createdAt              DateTime        @default(now()) @map("created_at")
-  updatedAt              DateTime        @updatedAt @map("updated_at")
-  
-  // Relations
-  ambulance              Ambulance       @relation(fields: [ambulanceId], references: [id])
-  
-  @@map("ems_performance_metrics")
-  @@index([ambulanceId])
-  @@index([date])
-  @@index([createdAt])
-  @@unique([ambulanceId, date])
-}
-
-
-
-
-// equipment-inventory.prisma
-// Equipment Inventory model for tracking ambulance equipment
-model EquipmentInventory {
-  id                      String          @id @default(uuid())
-  
-  // Equipment Details
-  ambulanceId             String          @map("ambulance_id")
-  equipmentType           String          @map("equipment_type") // defibrillator, oxygen, stretcher, etc.
-  serialNumber            String?         @map("serial_number")
-  manufacturer            String?
-  model                   String?
-  
-  // Status & Maintenance
-  status                  EquipmentStatus @default(OPERATIONAL)
-  lastInspectionDate      DateTime?       @map("last_inspection_date")
-  nextInspectionDue       DateTime?       @map("next_inspection_due")
-  maintenanceNotes        String?         @map("maintenance_notes")
-  
-  // Additional Information
-  purchaseDate            DateTime?       @map("purchase_date")
-  warrantyExpiry          DateTime?       @map("warranty_expiry")
-  location                String?         // Where in the ambulance
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  updatedAt               DateTime        @updatedAt @map("updated_at")
-  deletedAt               DateTime?       @map("deleted_at")
-  
-  // Relations
-  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
-  maintenanceRecords      MaintenanceRecord[]
-  alerts                  EMSAlert[]
-  
-  @@map("equipment_inventory")
-  @@index([ambulanceId])
-  @@index([equipmentType])
-  @@index([status])
-  @@index([serialNumber])
-  @@index([nextInspectionDue])
-  @@index([createdAt])
-}
-
-
-// gps-tracking.prisma
-// GPS Tracking Log model for real-time location monitoring
-model GPSTrackingLog {
-  id                      String          @id @default(uuid())
-  
-  // Vehicle Reference
-  ambulanceId             String          @map("ambulance_id")
-  
-  // GPS Data
-  latitude                Float
-  longitude               Float
-  speed                   Float?          // km/h
-  direction               Float?         // degrees (0-360)
-  timestamp               DateTime        // When GPS data was recorded
-  
-  // Vehicle Status
-  fuelLevel               Float?          @map("fuel_level") // Percentage if available
-  engineStatus            Boolean?        @map("engine_status") // on/off
-  
-  // Location Details
-  locationAddress         String?         @map("location_address") // Reverse geocoded
-  accuracy                Float?         // GPS accuracy in meters
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  
-  // Relations
-  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
-  
-  @@map("gps_tracking_logs")
-  @@index([ambulanceId])
-  @@index([timestamp])
-  @@index([latitude, longitude])
-  @@index([createdAt])
-}
-
-
-
-
-// maintenance-record.prisma
-// Maintenance Record model for tracking vehicle and equipment maintenance
-model MaintenanceRecord {
-  id                      String          @id @default(uuid())
-  
-  // Reference Information
-  ambulanceId             String?         @map("ambulance_id")
-  equipmentId             String?         @map("equipment_id")
-  
-  // Maintenance Details
-  type                    MaintenanceType
-  status                  MaintenanceStatus @default(SCHEDULED)
-  description             String
-  workPerformed           String?         @map("work_performed")
-  
-  // Scheduling
-  scheduledDate           DateTime?       @map("scheduled_date")
-  startDate               DateTime?       @map("start_date")
-  completionDate          DateTime?       @map("completion_date")
-  
-  // Cost & Resources
-  cost                    Float?
-  laborHours             Float?          @map("labor_hours")
-  partsUsed               String?         @map("parts_used") // JSON string
-  technicianName          String?         @map("technician_name")
-  
-  // Additional Information
-  mileageAtService        Float?          @map("mileage_at_service")
-  nextServiceDue          DateTime?       @map("next_service_due")
-  warrantyWork            Boolean         @default(false) @map("warranty_work")
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  updatedAt               DateTime        @updatedAt @map("updated_at")
-  createdBy               String          @map("created_by")
-  
-  // Relations
-  ambulance               Ambulance?      @relation(fields: [ambulanceId], references: [id])
-  equipment               EquipmentInventory? @relation(fields: [equipmentId], references: [id])
-  createdByUser           User            @relation("MaintenanceRecordCreator", fields: [createdBy], references: [id])
-  
-  @@map("maintenance_records")
-  @@index([ambulanceId])
-  @@index([equipmentId])
-  @@index([type])
-  @@index([status])
-  @@index([scheduledDate])
-  @@index([completionDate])
-  @@index([nextServiceDue])
-  @@index([createdAt])
-}
-
-
-
-
-// timeline-events.prisma
-// Enhanced Timeline Events model for tracking all system events including EMS
-model TimelineEvent {
-  id                      String          @id @default(uuid())
-  
-  // Event Classification
-  eventType               String          @map("event_type") // Can be StrokeEventType or EMSEventType
-  eventCategory           String          @map("event_category") // STROKE, EMS, GENERAL
-  
-  // References (optional based on event type)
-  ticketId                String?         @map("ticket_id")
-  strokeCaseId            String?         @map("stroke_case_id")
-  ambulanceId             String?         @map("ambulance_id")
-  driverId                String?         @map("driver_id")
-  
-  // Event Details
-  eventTimestamp          DateTime        @map("event_timestamp")
-  eventDescription        String          @map("event_description")
-  eventLocation           String?         @map("event_location")
-  
-  // EMS-specific fields
-  gpsCoordinates          String?         @map("gps_coordinates") // JSON: {lat, lng}
-  distanceKm              Float?          @map("distance_km")
-  speed                   Float?          // km/h
-  fuelLevel               Float?          @map("fuel_level")
-  
-  // Stroke-specific fields
-  fromStatus              String?         @map("from_status") // StrokeStatus
-  toStatus                String?         @map("to_status") // StrokeStatus
-  minutesFromSymptom      Int?            @map("minutes_from_symptom")
-  minutesFromAdmission    Int?            @map("minutes_from_admission")
-  withinTarget            Boolean?        @map("within_target")
-  targetMinutes           Int?            @map("target_minutes")
-  nihssAtSession          Int?            @map("nihss_at_session")
-  clinicalNotes           String?         @map("clinical_notes")
-  
-  // General fields
-  triggeredBy             String          @map("triggered_by")
-  metadata                String?         // JSON string for additional data
-  
-  // Audit Fields
-  createdAt               DateTime        @default(now()) @map("created_at")
-  createdById             String          @map("created_by_id")
-  
-  // Relations
-  ticket                  Ticket?         @relation("TimelineEventTicket", fields: [ticketId], references: [id])
-  strokeCase              StrokeCase?     @relation("TimelineEventStrokeCase", fields: [strokeCaseId], references: [id])
-  ambulance               Ambulance?      @relation(fields: [ambulanceId], references: [id])
-  driver                  User?           @relation("TimelineEventDriver", fields: [driverId], references: [id])
-  triggeredByUser         User            @relation("TimelineEventTriggeredBy", fields: [triggeredBy], references: [id])
-  createdBy               User            @relation("TimelineEventCreator", fields: [createdById], references: [id])
-  
-  @@map("timeline_events")
-  @@index([eventType])
-  @@index([eventCategory])
-  @@index([ticketId])
-  @@index([strokeCaseId])
-  @@index([ambulanceId])
-  @@index([driverId])
-  @@index([eventTimestamp])
-  @@index([createdAt])
-}
-
-
-
-
-// stroke-kpi-summary.prisma
-// Stroke KPI Summary model for performance metrics and reporting
-model StrokeKpiSummary {
-  id                              String      @id @default(uuid())
-  hospitalId                      String      @map("hospital_id")
-  cluster                         String
-  year                           Int
-  month                          Int
-  
-  // Volume Metrics
-  totalStrokeVolume              Int         @default(0) @map("total_stroke_volume")
-  ischemicStrokeVolume           Int         @default(0) @map("ischemic_stroke_volume")
-  hemorrhagicStrokeVolume        Int         @default(0) @map("hemorrhagic_stroke_volume")
-  tiaVolume                      Int         @default(0) @map("tia_volume")
-  lvoStrokeVolume                Int         @default(0) @map("lvo_stroke_volume")
-  
-  // Treatment Volumes
-  thrombolysisCases              Int         @default(0) @map("thrombolysis_cases")
-  thrombectomyCases              Int         @default(0) @map("thrombectomy_cases")
-  
-  // Average Performance Timings  
-  avgDoorToImagingMinutes        Float?      @map("avg_door_to_imaging_minutes")
-  avgDoorToNeedleMinutes         Float?      @map("avg_door_to_needle_minutes")
-  avgDoorToGroinMinutes          Float?      @map("avg_door_to_groin_minutes")
-  avgStrokeUnitAdmissionMinutes  Float?      @map("avg_stroke_unit_admission_minutes")
-  
-  // Median Performance Timings
-  medianDoorToImagingMinutes     Int?        @map("median_door_to_imaging_minutes")
-  medianDoorToNeedleMinutes      Int?        @map("median_door_to_needle_minutes")
-  medianDoorToGroinMinutes       Int?        @map("median_door_to_groin_minutes")
-  
-  // Best/Worst Performance
-  bestDoorToImagingMinutes       Int?        @map("best_door_to_imaging_minutes")
-  worstDoorToImagingMinutes      Int?        @map("worst_door_to_imaging_minutes")
-  bestDoorToNeedleMinutes        Int?        @map("best_door_to_needle_minutes")
-  worstDoorToNeedleMinutes       Int?        @map("worst_door_to_needle_minutes")
-  
-  // Performance Trends
-  performanceTrendImaging        Float?      @map("performance_trend_imaging") // Month over month change
-  performanceTrendThrombolysis   Float?      @map("performance_trend_thrombolysis")
-  performanceTrendThrombectomy    Float?      @map("performance_trend_thrombectomy")
-  volumeTrend                    Float?      @map("volume_trend")
-  
-  // Clinical Outcomes
-  complicationRate               Float?      @map("complication_rate") // Percentage
-  mortalityRateInhospital         Float?      @map("mortality_rate_inhospital")
-  mortalityRate30day             Float?      @map("mortality_rate_30day")
-  mortalityRate90day             Float?      @map("mortality_rate_90day")
-  readmissionRate30day           Float?      @map("readmission_rate_30day")
-  averageLengthOfStayDays        Int?        @map("average_length_of_stay_days")
-  independentDischargeRate       Float?      @map("independent_discharge_rate") // mRS 0-2 at discharge
-  
-  // KPI Performance Metrics
-  kpi1TotalCases                 Int?        @map("kpi1_total_cases") // Door to imaging ≤25min
-  kpi1Within25min                Int?        @map("kpi1_within_25min")
-  kpi1Percentage                 Float?      @map("kpi1_percentage")
-  kpi1Status                     String?     @map("kpi1_status") // ABOVE_TARGET, AT_TARGET, BELOW_TARGET
-  
-  kpi2TotalCases                 Int?        @map("kpi2_total_cases") // Door to needle ≤60min
-  kpi2Within60min                Int?        @map("kpi2_within_60min")
-  kpi2Percentage                 Float?      @map("kpi2_percentage")
-  kpi2Status                     String?     @map("kpi2_status")
-  
-  kpi3TotalCases                 Int?        @map("kpi3_total_cases") // Door to groin ≤90min
-  kpi3Within90min                Int?        @map("kpi3_within_90min")
-  kpi3Percentage                 Float?      @map("kpi3_percentage")
-  kpi3Status                     String?     @map("kpi3_status")
-  
-  kpi4TotalCases                 Int?        @map("kpi4_total_cases") // Stroke unit admission ≤4hr
-  kpi4Within4hr                  Int?        @map("kpi4_within_4hr")
-  kpi4Percentage                 Float?      @map("kpi4_percentage")
-  kpi4Status                     String?     @map("kpi4_status")
-  
-  kpi5TotalCases                 Int?        @map("kpi5_total_cases") // Dysphagia screening ≤4hr
-  kpi5Within4hr                  Int?        @map("kpi5_within_4hr")
-  kpi5Percentage                 Float?      @map("kpi5_percentage")
-  kpi5Status                     String?     @map("kpi5_status")
-  
-  kpi6TotalCases                 Int?        @map("kpi6_total_cases") // Early mobilization ≤24hr
-  kpi6Within24hr                 Int?        @map("kpi6_within_24hr")
-  kpi6Percentage                 Float?      @map("kpi6_percentage")
-  kpi6Status                     String?     @map("kpi6_status")
-  
-  kpi7TotalCases                 Int?        @map("kpi7_total_cases") // Secondary prevention prescribed
-  kpi7Prescribed                 Int?        @map("kpi7_prescribed")
-  kpi7Percentage                 Float?      @map("kpi7_percentage")
-  kpi7Status                     String?     @map("kpi7_status")
-  
-  kpi8TotalCases                 Int?        @map("kpi8_total_cases") // Appropriate rehabilitation referral
-  kpi8Referred                   Int?        @map("kpi8_referred")
-  kpi8Percentage                 Float?      @map("kpi8_percentage")
-  kpi8Status                     String?     @map("kpi8_status")
-  
-  // Audit Fields
-  createdAt                      DateTime    @default(now()) @map("created_at")
-  updatedAt                      DateTime    @updatedAt @map("updated_at")
-  
-  // Relations
-  hospital                       Hospital    @relation(fields: [hospitalId], references: [id])
-  
-  @@map("stroke_kpi_summary")
-  @@index([hospitalId])
-  @@index([cluster])
-  @@index([year, month])
-  @@unique([hospitalId, year, month])
-}
-
-
-// stroke-assessment-score.prisma
-// Stroke Assessment Scores model for detailed clinical assessments
-model StrokeAssessmentScore {
-  id                      String      @id @default(uuid())
-  strokeCaseId            String      @map("stroke_case_id")
-  patientId               String      @map("patient_id")
-  
-  // Assessment Type
-  assessmentType          String      @map("assessment_type") // NIHSS, MRS, BARTHEL, ASPECTS, GCS
-  assessmentTiming        String      @map("assessment_timing") // BASELINE, 24HR, DISCHARGE, 90DAY
-  
-  // Score Values
-  totalScore              Int?
-  subScores               String?     @map("sub_scores") // JSON for detailed breakdown
-  assessorName             String?     @map("assessor_name")
-  assessorQualification    String?     @map("assessor_qualification")
-  
-  // Context
-  assessmentDateTime      DateTime    @map("assessment_date_time")
-  assessmentNotes         String?     @map("assessment_notes")
-  
-  // Audit Fields
-  createdAt               DateTime    @default(now()) @map("created_at")
-  createdById             String      @map("created_by_id")
-  
-  // Relations
-  strokeCase              StrokeCase  @relation(fields: [strokeCaseId], references: [id])
-  patient                 Patient     @relation(fields: [patientId], references: [id])
-  createdBy               User        @relation("StrokeAssessmentCreator", fields: [createdById], references: [id])
-  
-  @@map("stroke_assessment_scores")
-  @@index([strokeCaseId])
-  @@index([patientId])
-  @@index([assessmentType])
-  @@index([assessmentTiming])
-  @@index([assessmentDateTime])
-  @@index([createdAt])
-}
-
-
-// stroke-rehabilitation.prisma
-// Stroke Rehabilitation model for tracking rehabilitation services
-model StrokeRehabilitation {
-  id                      String      @id @default(uuid())
-  strokeCaseId            String      @map("stroke_case_id")
-  patientId               String      @map("patient_id")
-  
-  // Rehabilitation Details
-  rehabilitationType      String      @map("rehabilitation_type") // PHYSIOTHERAPY, SPEECH, OCCUPATIONAL
-  startDate               DateTime?
-  endDate                 DateTime?
-  frequency               String?     // DAILY, BID, TID, etc.
-  durationMinutes         Int?        @map("duration_minutes")
-  
-  // Goals & Progress
-  initialGoals            String?     @map("initial_goals")
-  progressNotes           String?     @map("progress_notes")
-  dischargeRecommendations String?    @map("discharge_recommendations")
-  
-  // Outcomes
-  functionalImprovement   Boolean?    @map("functional_improvement")
-  goalsMeet               Boolean?    @map("goals_meet")
-  
-  // Provider Details  
-  therapistId             String?     @map("therapist_id")
-  rehabilitationCenterId  String?     @map("rehabilitation_center_id")
-  
-  // Audit Fields
-  createdAt               DateTime    @default(now()) @map("created_at")
-  updatedAt               DateTime    @updatedAt @map("updated_at")
-  createdById             String      @map("created_by_id")
-  
-  // Relations
-  strokeCase              StrokeCase  @relation(fields: [strokeCaseId], references: [id])
-  patient                 Patient     @relation(fields: [patientId], references: [id])
-  therapist               User?       @relation("StrokeRehabilitationTherapist", fields: [therapistId], references: [id])
-  rehabilitationCenter    Hospital?   @relation("StrokeRehabilitationCenter", fields: [rehabilitationCenterId], references: [id])
-  createdBy               User        @relation("StrokeRehabilitationCreator", fields: [createdById], references: [id])
-  
-  @@map("stroke_rehabilitation")
-  @@index([strokeCaseId])
-  @@index([patientId])
-  @@index([rehabilitationType])
-  @@index([startDate])
-  @@index([createdAt])
-}
-
-
-// trauma-cases.prisma
-// Trauma Cases model for comprehensive trauma care coordination
-model TraumaCase {
-  id                      String      @id @default(uuid())
-  ticketId                String      @map("ticket_id")
-  patientId               String      @map("patient_id")
-  originHospitalId        String      @map("origin_hospital_id")
-  destinationHospitalId   String?     @map("destination_hospital_id")
-  
-  // Date and Time Information
-  arrivalDateTime         DateTime    @map("arrival_date_time")
-  incidentDateTime        DateTime?   @map("incident_date_time")
-  modeOfArrival           TraumaModeOfArrival @map("mode_of_arrival")
-  transferRequestDateTime DateTime?   @map("transfer_request_date_time")
-  transferArrivalDateTime DateTime?   @map("transfer_arrival_date_time")
-  transferDurationMinutes Int?        @map("transfer_duration_minutes")
-  
-  // Chief Complaint and Mechanism
-  chiefComplaint          String?     @map("chief_complaint")
-  mechanismOfInjury       TraumaMechanismOfInjury @map("mechanism_of_injury")
-  
-  // Vital Signs
-  vitalSigns              String?     @map("vital_signs") // JSON
-  glasgowComaScale        Int?        @map("glasgow_coma_scale")
-  systolicBloodPressure   Int?        @map("systolic_blood_pressure")
-  respiratoryRate         Int?        @map("respiratory_rate")
-  additionalVitalSigns    String?     @map("additional_vital_signs")
-  
-  // Injury Information - Body Regions
-  headAndNeckInjury       String?     @map("head_and_neck_injury")
-  faceInjury              String?     @map("face_injury")
-  chestInjury             String?     @map("chest_injury")
-  abdomenInjury           String?     @map("abdomen_injury")
-  extremitiesInjury       String?     @map("extremities_injury")
-  externalInjury          String?     @map("external_injury")
-  
-  // Assessment and Disposition
-  primarySurveyFindings   String?     @map("primary_survey_findings")
-  edDisposition           TraumaDispositionType? @map("ed_disposition")
-  additionalNotes         String?     @map("additional_notes")
-  disposition             String?     // JSON
-  
-  // KPI Tracking
-  responseTimeMinutes     Int?        @map("response_time_minutes")
-  criticalCase            Boolean     @default(false) @map("critical_case")
-  transferCase            Boolean     @default(false) @map("transfer_case")
-  
-  // Audit Fields
-  createdAt               DateTime    @default(now()) @map("created_at")
-  updatedAt               DateTime    @updatedAt @map("updated_at")
-  deletedAt               DateTime?   @map("deleted_at")
-  createdById             String      @map("created_by_id")
-  
-  // Relations
-  ticket                  Ticket      @relation(fields: [ticketId], references: [id])
-  patient                 Patient     @relation(fields: [patientId], references: [id])
-  originHospital          Hospital    @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital     Hospital?   @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id])
-  createdBy               User        @relation("TraumaCaseCreator", fields: [createdById], references: [id])
-  
-  @@map("trauma_cases")
-  @@index([ticketId])
-  @@index([patientId])
-  @@index([originHospitalId])
-  @@index([destinationHospitalId])
-  @@index([arrivalDateTime])
-  @@index([incidentDateTime])
-  @@index([modeOfArrival])
-  @@index([mechanismOfInjury])
-  @@index([criticalCase])
-  @@index([transferCase])
-  @@index([createdAt])
-  @@index([deletedAt])
-}
-

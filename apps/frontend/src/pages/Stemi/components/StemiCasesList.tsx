@@ -176,23 +176,6 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
     }
   };
 
-  const getTreatmentColor = (treatment?: string) => {
-    switch (treatment) {
-      case 'PRIMARY_PCI':
-        return 'success';
-      case 'RESCUE_PCI':
-        return 'warning';
-      case 'FIBRINOLYSIS':
-        return 'info';
-      case 'TRANSFER_FOR_PRIMARY_PCI':
-        return 'info';
-      case 'MEDICAL_MANAGEMENT':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -357,8 +340,8 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                   </TableSortLabel>
                 </TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell>Treatment</TableCell>
                 <TableCell>Origin Hospital</TableCell>
+                <TableCell>Destination Hospital</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -406,24 +389,19 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                       />
                     </TableCell>
                     <TableCell>
-                      {case_.selectedTreatment ? (
-                        <Chip
-                          label={case_.selectedTreatment.replace(/_/g, ' ')}
-                          color={getTreatmentColor(case_.selectedTreatment) as any}
-                          size="small"
-                        />
-                      ) : (
-                        <Typography variant="body2" color="textSecondary">
-                          Not specified
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
                       <Typography variant="body2">
                         {case_.originHospital.name}
                       </Typography>
                       <Typography variant="caption" color="textSecondary">
                         {case_.originHospital.cluster}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {case_.destinationHospital?.name || 'N/A'}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {case_.destinationHospital?.cluster || ''}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
