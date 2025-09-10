@@ -46,7 +46,7 @@ const StemiPortalPage: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
-  const [filters, setFilters] = useState<StemiFilterParams>({});
+  const [filters] = useState<StemiFilterParams>({});
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
 
   // const isAdmin = user?.role === 'ADMIN';
@@ -60,7 +60,7 @@ const StemiPortalPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [filters]);
+  }, []);
 
   useEffect(() => {
     if (stemiCases.length > 0) {
@@ -511,8 +511,6 @@ const StemiPortalPage: React.FC = () => {
             onViewCase={handleViewCase}
             onDeleteCase={handleDeleteCase}
             onCreateCase={() => setCreateDialogOpen(true)}
-            filters={filters}
-            onFiltersChange={setFilters}
           />
         </TabPanel>
 
