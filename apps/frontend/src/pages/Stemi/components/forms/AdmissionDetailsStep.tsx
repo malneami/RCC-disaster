@@ -9,7 +9,6 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material';
-import { StemiDatetimeService } from '../../services/stemiDatetimeService';
 
 interface AdmissionDetails {
   admissionTime: string;

@@ -6,7 +6,6 @@ import {
   Typography,
 } from '@mui/material';
 import { CriticalTimestamps } from '../../services/stemiService';
-import { StemiDatetimeService } from '../../services/stemiDatetimeService';
 
 interface CriticalTimestampsStepProps {
   data: CriticalTimestamps;

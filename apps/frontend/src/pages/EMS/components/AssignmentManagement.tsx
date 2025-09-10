@@ -48,11 +48,24 @@ const AssignmentManagement: React.FC = () => {
     createAssignment,
     updateAssignment,
     deleteAssignment,
-    startAssignment,
-    markArrived,
+    startAssignment: startAssignmentMutation,
+    markArrived: markArrivedMutation,
     loadPatient,
-    completeAssignment,
+    completeAssignment: completeAssignmentMutation,
   } = useEMSAssignments();
+
+  // Wrap mutation functions to return void
+  const startAssignment = async (id: string) => {
+    await startAssignmentMutation(id);
+  };
+
+  const markArrived = async (id: string) => {
+    await markArrivedMutation(id);
+  };
+
+  const completeAssignment = async (id: string) => {
+    await completeAssignmentMutation(id);
+  };
 
   const { ambulances } = useAmbulances();
   const { drivers } = useEMSDrivers();
