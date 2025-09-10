@@ -134,7 +134,7 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
 
       <DialogContent>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+          <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
             <Tab label="Case Details" />
             <Tab label="Timeline" />
           </Tabs>

@@ -46,6 +46,7 @@ export interface StemiCase {
   patientId: string;
   originHospitalId: string;
   destinationHospitalId?: string;
+  modeOfArrival?: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
   
   // Clinical Assessment
   heartScore?: number;

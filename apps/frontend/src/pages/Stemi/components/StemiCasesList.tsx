@@ -35,8 +35,8 @@ import {
   Visibility as ViewIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  Refresh as RefreshIcon,
   FilterList as FilterIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { StemiCase, StemiFilterParams } from '../services/stemiService';
 
@@ -46,7 +46,7 @@ interface StemiCasesListProps {
   onEditCase: (case_: StemiCase) => void;
   onViewCase: (case_: StemiCase) => void;
   onDeleteCase: (id: string) => void;
-  onRefresh: () => void;
+  onCreateCase: () => void;
   filters: StemiFilterParams;
   onFiltersChange: (filters: StemiFilterParams) => void;
 }
@@ -57,7 +57,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   onEditCase,
   onViewCase,
   onDeleteCase,
-  onRefresh,
+  onCreateCase,
   filters,
   onFiltersChange,
 }) => {
@@ -220,11 +220,11 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
           Filters
         </Button>
         <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={onRefresh}
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={onCreateCase}
         >
-          Refresh
+          Create Case
         </Button>
       </Box>
 

@@ -9,6 +9,7 @@ import CreateStemiCaseDialog from './components/CreateStemiCaseDialog';
 import EditStemiCaseDialog from './components/EditStemiCaseDialog';
 import ViewStemiCaseDialog from './components/ViewStemiCaseDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
+import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { StemiService, StemiCase, StemiKpiResponse, StemiFilterParams } from './services/stemiService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -46,12 +47,51 @@ const StemiPortalPage: React.FC = () => {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
   const [filters, setFilters] = useState<StemiFilterParams>({});
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
 
   // const isAdmin = user?.role === 'ADMIN';
 
+  // Define portal steps
+  const portalSteps: PortalStep[] = [
+    { label: 'Cases', description: 'View and manage STEMI cases', icon: <Assessment /> },
+    { label: 'KPI Dashboard', description: 'Monitor performance metrics', icon: <Dashboard /> },
+    { label: 'Timeline View', description: 'Track case progression', icon: <Timeline /> },
+  ];
+
   useEffect(() => {
     loadData();
+    loadTimelineEvents();
   }, [filters]);
+
+  const loadTimelineEvents = async () => {
+    try {
+      // For now, we'll create mock timeline events
+      // In a real implementation, this would fetch from the API
+      const mockEvents: TimelineEvent[] = stemiCases.map((case_) => ({
+        id: `stemi-${case_.id}`,
+        timestamp: case_.createdAt,
+        title: `STEMI Case Created`,
+        description: `Case ${case_.id} created for patient ${case_.patientId}`,
+        type: 'arrival' as const,
+        status: 'completed' as const,
+        user: {
+          name: 'System',
+          role: 'ADMIN',
+        },
+        hospital: case_.originHospital ? {
+          name: case_.originHospital.name,
+          id: case_.originHospital.id,
+        } : undefined,
+        details: {
+          caseId: case_.id,
+          status: case_.currentStatus,
+        },
+      }));
+      setTimelineEvents(mockEvents);
+    } catch (err) {
+      console.error('Error loading timeline events:', err);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -189,19 +229,6 @@ const StemiPortalPage: React.FC = () => {
     },
   ];
 
-  // Portal steps
-  const portalSteps: PortalStep[] = [
-    {
-      label: 'Cases',
-      description: 'Manage STEMI cases',
-      icon: <Assessment />,
-    },
-    {
-      label: 'KPI Dashboard',
-      description: 'Monitor performance metrics',
-      icon: <Dashboard />,
-    },
-  ];
 
   return (
     <>
@@ -245,6 +272,15 @@ const StemiPortalPage: React.FC = () => {
                 px: 3
               }} 
             />
+            <Tab 
+              label="Timeline View" 
+              sx={{ 
+                fontSize: '1rem', 
+                fontWeight: activeTab === 2 ? 'bold' : 'normal',
+                py: 2,
+                px: 3
+              }} 
+            />
           </Tabs>
         </Box>
 
@@ -256,7 +292,7 @@ const StemiPortalPage: React.FC = () => {
             onEditCase={handleEditCase}
             onViewCase={handleViewCase}
             onDeleteCase={handleDeleteCase}
-            onRefresh={loadData}
+            onCreateCase={() => setCreateDialogOpen(true)}
             filters={filters}
             onFiltersChange={setFilters}
           />
@@ -264,6 +300,14 @@ const StemiPortalPage: React.FC = () => {
 
         <TabPanel value={activeTab} index={1}>
           <StemiKPIDashboard kpiSummary={kpiSummary} />
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={2}>
+          <TimelineView
+            events={timelineEvents}
+            title="STEMI Cases Timeline"
+            portalType="stemi"
+          />
         </TabPanel>
       </PortalSkeleton>
 
