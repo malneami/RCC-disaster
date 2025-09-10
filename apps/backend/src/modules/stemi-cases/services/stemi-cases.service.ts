@@ -197,9 +197,13 @@ export class StemiCasesService {
   }
 
   async updateStemiCase(id: string, updateStemiCaseDto: UpdateStemiCaseDto, userId: string) {
+    console.log('updateStemiCase called with:', JSON.stringify({ id, updateStemiCaseDto, userId }, null, 2));
+    
     const existingCase = await this.getStemiCaseById(id);
     
     const { patientInfo, ...stemiData } = updateStemiCaseDto;
+    
+    console.log('Extracted data:', JSON.stringify({ patientInfo, stemiData }, null, 2));
 
     try {
       // Update patient if patientInfo provided
@@ -211,16 +215,54 @@ export class StemiCasesService {
       await this.prisma.ticket.update({
         where: { id: existingCase.ticketId },
         data: {
-          // Update basic ticket fields only
+          // Update hospital fields if provided
+          ...(patientInfo?.originHospitalId && {
+            originHospitalId: patientInfo.originHospitalId,
+          }),
+          ...(patientInfo?.destinationHospitalId && {
+            destinationHospitalId: patientInfo.destinationHospitalId,
+          }),
         }
       });
+
+      // Build update data dynamically - use proper existence checks instead of truthiness
+      const updateData: any = {};
+      
+      // Always update these fields if they exist in the payload
+      if (stemiData.currentStatus !== undefined) {
+        updateData.currentStatus = stemiData.currentStatus;
+      }
+      if (stemiData.selectedTreatment !== undefined) {
+        updateData.selectedTreatment = stemiData.selectedTreatment;
+      }
+      if (stemiData.ecgResult !== undefined) {
+        updateData.ecgResult = stemiData.ecgResult;
+      }
+      if (stemiData.ecgFindings !== undefined) {
+        updateData.ecgFindings = stemiData.ecgFindings;
+      }
+      
+      // Add admission details if provided (check for existence, not truthiness)
+      if (stemiData.admissionTime !== undefined && stemiData.admissionTime !== null && stemiData.admissionTime !== '') {
+        updateData.pathwayStarted = new Date(stemiData.admissionTime);
+      }
+      if (stemiData.modeOfArrival !== undefined && stemiData.modeOfArrival !== null) {
+        updateData.modeOfArrival = stemiData.modeOfArrival;
+      }
+      
+      // Add hospital fields if provided (check for existence, not truthiness)
+      if (patientInfo?.originHospitalId !== undefined && patientInfo?.originHospitalId !== null && patientInfo?.originHospitalId !== '') {
+        updateData.originHospitalId = patientInfo.originHospitalId;
+      }
+      if (patientInfo?.destinationHospitalId !== undefined && patientInfo?.destinationHospitalId !== null && patientInfo?.destinationHospitalId !== '') {
+        updateData.destinationHospitalId = patientInfo.destinationHospitalId;
+      }
 
       // Update STEMI case
       const updatedCase = await this.prisma.stemiCase.update({
         where: { id },
         data: {
-          currentStatus: stemiData.currentStatus,
-          selectedTreatment: stemiData.selectedTreatment,
+          ...updateData,
           
           // Update clinical assessment if provided
           ...(stemiData.clinicalAssessment && {
