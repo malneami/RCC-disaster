@@ -20,6 +20,8 @@ const SCHEMA_ORDER = [
   'system.prisma',
   'stroke-case.prisma',
   'stroke-timeline.prisma',
+  'stemi-case.prisma',
+  'trauma-case.prisma',
   // EMS related schemas
   'ambulance.prisma',
   'driver-schedule.prisma',
@@ -102,6 +104,8 @@ function validateMergedSchema(content) {
     { name: 'HospitalTicket model', pattern: /model HospitalTicket/, required: true },
     { name: 'StrokeCase model', pattern: /model StrokeCase/, required: false },
     { name: 'StrokeTimeline model', pattern: /model StrokeTimeline/, required: false },
+    { name: 'StemiCase model', pattern: /model StemiCase/, required: false },
+    { name: 'TraumaCase model', pattern: /model TraumaCase/, required: false },
     // EMS model validations
     { name: 'Ambulance model', pattern: /model Ambulance/, required: true },
     { name: 'DriverSchedule model', pattern: /model DriverSchedule/, required: true },

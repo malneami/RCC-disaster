@@ -20,6 +20,7 @@ import {
   Edit as EditIcon,
 } from '@mui/icons-material';
 import { UnifiedTicket } from '../types/tickets';
+import { getEMSStatusInfo, getEMSStatusColor } from '../../../utils/emsStatusUtils';
 
 interface TicketCardProps {
   ticket: UnifiedTicket;
@@ -159,6 +160,17 @@ const TicketCard: React.FC<TicketCardProps> = ({
             size="small"
             color={getStatusColor(ticket.status) as any}
           />
+          {ticket.emsAssignmentStatus && (
+            <Chip
+              label={getEMSStatusInfo(ticket.emsAssignmentStatus).displayName}
+              size="small"
+              sx={{
+                backgroundColor: getEMSStatusColor(ticket.emsAssignmentStatus),
+                color: 'white',
+                fontWeight: 500,
+              }}
+            />
+          )}
           <Chip
             label={ticket.type}
             size="small"

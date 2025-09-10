@@ -81,6 +81,9 @@ model Patient {
   // STEMI Relations
   stemiCases      StemiCase[]
   
+  // Trauma Relations
+  traumaCases     TraumaCase[]
+  
   @@map("patients")
   @@index([mrn])
   @@index([nationalId])

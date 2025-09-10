@@ -30,6 +30,7 @@ model User {
   createdTickets    Ticket[]    @relation("TicketCreator")
   assignedTickets   Ticket[]    @relation("TicketAssignee")
   completedTickets  Ticket[]    @relation("TicketCompleter")
+  emsStatusUpdatedTickets Ticket[] @relation("TicketEMSStatusUpdater")
   
   // Patient Relations
   createdPatients   Patient[]   @relation("PatientCreator")
@@ -55,6 +56,9 @@ model User {
   
   // STEMI Relations
   createdStemiCases StemiCase[] @relation("StemiCaseCreator")
+  
+  // Trauma Relations
+  createdTraumaCases TraumaCase[] @relation("TraumaCaseCreator")
   
   // EMS Relations
   ambulanceDriver     Ambulance?         @relation("AmbulanceDriver")

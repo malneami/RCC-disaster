@@ -34,6 +34,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { hospitalService, Hospital, CriticalCase, HospitalTicket } from '../../services/hospitalService';
 import RelatedTicketsManager from './components/RelatedTicketsManager';
+import HospitalCriticalCaseTracker from './components/HospitalCriticalCaseTracker';
 import { UnifiedTicket } from './types/tickets';
 
 const HospitalDashboardPage: React.FC = () => {
@@ -50,6 +51,17 @@ const HospitalDashboardPage: React.FC = () => {
   useEffect(() => {
     if (hospitalId) {
       loadHospitalData();
+    }
+  }, [hospitalId]);
+
+  // Auto-refresh data every 30 seconds
+  useEffect(() => {
+    if (hospitalId) {
+      const interval = setInterval(() => {
+        loadHospitalData();
+      }, 30000); // Refresh every 30 seconds
+
+      return () => clearInterval(interval);
     }
   }, [hospitalId]);
 
@@ -72,6 +84,14 @@ const HospitalDashboardPage: React.FC = () => {
       setCriticalCases(criticalCasesData);
       setRelatedTickets(hospitalTicketsData);
       setTransferTickets(Array.isArray(transferTicketsData) ? transferTicketsData : []);
+      
+      // Debug logging
+      console.log('Hospital Dashboard Data Loaded:', {
+        criticalCases: criticalCasesData?.length || 0,
+        hospitalTickets: hospitalTicketsData?.length || 0,
+        transferTickets: transferTicketsData?.length || 0,
+        hospital: hospitalData?.name,
+      });
     } catch (err) {
       setError('Failed to load hospital data');
       console.error('Error loading hospital data:', err);
@@ -247,7 +267,24 @@ const HospitalDashboardPage: React.FC = () => {
                   Critical Cases
                 </Typography>
                 <Typography variant="h4" color="error.main">
-                  {criticalCases?.filter(c => c.severity === 'CRITICAL').length}
+                  {loading ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    (() => {
+                      // Count critical cases from both sources
+                      const criticalCasesCount = criticalCases?.filter(c => 
+                        c.severity === 'CRITICAL' || c.severity === 'URGENT'
+                      ).length || 0;
+                      
+                      // Count STEMI/Stroke cases from transfer tickets
+                      const stemiStrokeCount = transferTickets?.filter(t => 
+                        (t.pathway === 'STEMI' || t.pathway === 'STROKE') && 
+                        (t.status === 'PENDING' || t.status === 'ASSIGNED' || t.status === 'IN_TRANSPORT')
+                      ).length || 0;
+                      
+                      return criticalCasesCount + stemiStrokeCount;
+                    })()
+                  )}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Active critical cases
@@ -262,13 +299,23 @@ const HospitalDashboardPage: React.FC = () => {
                   Open Tickets
                 </Typography>
                 <Typography variant="h4" color="warning.main">
-                  {relatedTickets?.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS')
-                    .length +
-                    (Array.isArray(transferTickets)
-                      ? transferTickets.filter(
-                          t => t.status === 'OPEN' || t.status === 'IN_PROGRESS'
-                        ).length
-                      : 0)}
+                  {loading ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    (() => {
+                      // Count open hospital tickets
+                      const openHospitalTickets = relatedTickets?.filter(t => 
+                        t.status === 'OPEN' || t.status === 'IN_PROGRESS'
+                      ).length || 0;
+                      
+                      // Count open transfer tickets
+                      const openTransferTickets = transferTickets?.filter(t => 
+                        t.status === 'PENDING' || t.status === 'ASSIGNED' || t.status === 'IN_TRANSPORT'
+                      ).length || 0;
+                      
+                      return openHospitalTickets + openTransferTickets;
+                    })()
+                  )}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Pending resolution
@@ -283,7 +330,11 @@ const HospitalDashboardPage: React.FC = () => {
                   Bed Availability
                 </Typography>
                 <Typography variant="h4" color="primary.main">
-                  {getAvailabilityPercentage(hospital)}%
+                  {loading ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    hospital ? getAvailabilityPercentage(hospital) : 0
+                  )}%
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Current capacity
@@ -298,13 +349,19 @@ const HospitalDashboardPage: React.FC = () => {
                   Services
                 </Typography>
                 <Typography variant="h4" color="success.main">
-                  {
-                    [
+                  {loading ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    hospital ? [
                       hospital.hasStemiService,
                       hospital.hasStrokeService,
                       hospital.hasTraumaService,
-                    ].filter(Boolean).length
-                  }
+                      hospital.hasThrombolysis,
+                      hospital.hasThrombectomy,
+                      hospital.hasStrokeUnit,
+                      hospital.hasCardiologyCenter,
+                    ].filter(Boolean).length : 0
+                  )}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Specialized services
@@ -325,8 +382,14 @@ const HospitalDashboardPage: React.FC = () => {
           {/* Critical Cases Tab */}
           {tabValue === 0 && (
             <Box sx={{ p: 3 }}>
+              {/* Real-Time Critical Case Tracker */}
+              <Box sx={{ mb: 4 }}>
+                <HospitalCriticalCaseTracker hospitalId={hospitalId!} />
+              </Box>
+
+              {/* Traditional Critical Cases List */}
               <Typography variant="h6" gutterBottom>
-                Real-Time Critical Cases ({criticalCases.length})
+                All Critical Cases ({criticalCases.length})
               </Typography>
 
               {criticalCases.length === 0 ? (

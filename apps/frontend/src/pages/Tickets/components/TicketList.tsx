@@ -25,6 +25,7 @@ import { Ticket } from '../../../services/ticketService';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import UpdateStatusModal from './UpdateStatusModal';
+import { getEMSStatusInfo, getEMSStatusColor } from '../../../utils/emsStatusUtils';
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -178,6 +179,17 @@ const TicketList: React.FC<TicketListProps> = ({
                     icon={getStatusIcon(ticket.status)}
                     size="small"
                   />
+                  {ticket.emsAssignmentStatus && (
+                    <Chip
+                      label={getEMSStatusInfo(ticket.emsAssignmentStatus).displayName}
+                      size="small"
+                      sx={{
+                        backgroundColor: getEMSStatusColor(ticket.emsAssignmentStatus),
+                        color: 'white',
+                        fontWeight: 500,
+                      }}
+                    />
+                  )}
                   {ticket.isEmergency && (
                     <Chip
                       label="EMERGENCY"

@@ -1,18 +1,19 @@
 import { TraumaService, CreateTraumaCaseData } from './traumaService';
 import { StrokeService, CreateStrokeCaseData } from './strokeService';
+import { StemiService, CreateStemiCaseData } from '../pages/Stemi/services/stemiService';
 import { Ticket } from './ticketService';
 import { Patient } from './patientService';
 
 export interface AutoCaseCreationResult {
   success: boolean;
   caseId?: string;
-  caseType?: 'trauma' | 'stroke';
+  caseType?: 'trauma' | 'stroke' | 'stemi';
   error?: string;
 }
 
 class AutoCaseCreationService {
   /**
-   * Automatically creates trauma or stroke cases based on ticket pathway
+   * Automatically creates trauma, stroke, or STEMI cases based on ticket pathway
    */
   async createCaseFromTicket(
     ticket: Ticket,
@@ -26,6 +27,8 @@ class AutoCaseCreationService {
           return await this.createTraumaCase(ticket, patient);
         case 'STROKE':
           return await this.createStrokeCase(ticket, patient);
+        case 'STEMI':
+          return await this.createStemiCase(ticket, patient);
         default:
           return {
             success: false,
@@ -146,6 +149,75 @@ class AutoCaseCreationService {
   }
 
   /**
+   * Creates a STEMI case from ticket data
+   */
+  private async createStemiCase(
+    ticket: Ticket,
+    patient: Patient
+  ): Promise<AutoCaseCreationResult> {
+    try {
+      const stemiData: CreateStemiCaseData = {
+        patientInfo: {
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          nationalId: patient.nationalId || '',
+          dateOfBirth: patient.dateOfBirth,
+          gender: patient.gender as 'MALE' | 'FEMALE' | 'OTHER',
+          phoneNumber: patient.phoneNumber,
+          address: patient.address,
+          emergencyContact: patient.emergencyContact,
+          emergencyPhone: patient.emergencyPhone,
+          medicalHistory: patient.medicalHistory,
+          allergies: patient.allergies,
+          medications: patient.medications,
+          originHospitalId: ticket.originHospitalId,
+          destinationHospitalId: ticket.destinationHospitalId,
+        },
+        
+        // Required fields with defaults
+        admissionTime: new Date().toISOString(),
+        modeOfArrival: 'AMBULANCE', // Default, can be updated later
+        
+        // Critical timestamps - will be filled as pathway progresses
+        criticalTimestamps: {
+          triageTime: new Date().toISOString(),
+        },
+        
+        // Interventions and treatments - will be filled as pathway progresses
+        interventionsAndTreatments: {
+          eligibleForPrimaryPci: true, // Default assumption for STEMI
+        },
+        
+        // Clinical assessment - will be filled as pathway progresses
+        clinicalAssessment: {
+          presentingSymptoms: ticket.chiefComplaint,
+          symptomOnset: new Date().toISOString(), // Default to now, can be updated
+        },
+        
+        // Initial status
+        currentStatus: 'SUSPECTED',
+        
+        // ECG results - will be filled as pathway progresses
+        ecgResult: 'PENDING',
+      };
+
+      const stemiCase = await StemiService.createStemiCase(stemiData);
+      
+      return {
+        success: true,
+        caseId: stemiCase.id,
+        caseType: 'stemi'
+      };
+    } catch (error) {
+      console.error('Error creating STEMI case:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create STEMI case'
+      };
+    }
+  }
+
+  /**
    * Maps ticket priority to stroke severity
    */
   private mapPriorityToStrokeSeverity(priority: string): 'MILD' | 'MODERATE' | 'SEVERE' | 'CRITICAL' {
@@ -168,7 +240,7 @@ class AutoCaseCreationService {
    * Checks if a pathway supports automatic case creation
    */
   supportsAutoCaseCreation(pathway: string): boolean {
-    const supportedPathways = ['TRAUMA', 'STROKE'];
+    const supportedPathways = ['TRAUMA', 'STROKE', 'STEMI'];
     return supportedPathways.includes(pathway.toUpperCase());
   }
 
@@ -177,7 +249,18 @@ class AutoCaseCreationService {
    */
   getCaseCreationMessage(result: AutoCaseCreationResult): string {
     if (result.success) {
-      const caseType = result.caseType === 'trauma' ? 'Trauma' : 'Stroke';
+      let caseType = 'Case';
+      switch (result.caseType) {
+        case 'trauma':
+          caseType = 'Trauma';
+          break;
+        case 'stroke':
+          caseType = 'Stroke';
+          break;
+        case 'stemi':
+          caseType = 'STEMI';
+          break;
+      }
       return `${caseType} case created successfully`;
     } else {
       return `Failed to create case: ${result.error}`;

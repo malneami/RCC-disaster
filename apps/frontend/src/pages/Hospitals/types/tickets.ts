@@ -23,6 +23,9 @@ export interface UnifiedTicket {
   actualArrival?: string;
   transportMode?: string;
   emsUnit?: string;
+  emsAssignmentStatus?: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
+  emsStatusUpdatedAt?: string;
+  emsStatusUpdatedBy?: string;
   isEmergency?: boolean;
   requiresBlood?: boolean;
   requiresSpecialist?: boolean;
@@ -111,6 +114,9 @@ export const convertToUnifiedTicket = (ticket: Ticket | HospitalTicket): Unified
       actualArrival: ticket.actualArrival,
       transportMode: ticket.transportMode,
       emsUnit: ticket.emsUnit,
+      emsAssignmentStatus: ticket.emsAssignmentStatus,
+      emsStatusUpdatedAt: ticket.emsStatusUpdatedAt,
+      emsStatusUpdatedBy: ticket.emsStatusUpdatedBy,
       isEmergency: ticket.isEmergency,
       requiresBlood: ticket.requiresBlood,
       requiresSpecialist: ticket.requiresSpecialist,

@@ -7,6 +7,7 @@ import { TicketFilterDto } from './dto/ticket-filter.dto';
 import { TicketsGateway } from './tickets.gateway';
 import { EmsAssignmentsService } from '../ems-assignments/ems-assignments.service';
 import { AmbulancesService } from '../ambulances/ambulances.service';
+import { StatusMappingService } from '../../common/services/status-mapping.service';
 
 @Injectable()
 export class TicketsService {
@@ -351,6 +352,14 @@ export class TicketsService {
               role: true,
             },
           },
+          emsStatusUpdatedByUser: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+            },
+          },
         },
         orderBy: [
           { priority: 'desc' },
@@ -385,6 +394,14 @@ export class TicketsService {
           },
         },
         assignedTo: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        emsStatusUpdatedByUser: {
           select: {
             firstName: true,
             lastName: true,
@@ -611,6 +628,100 @@ export class TicketsService {
 
     // Emit WebSocket notification
     this.ticketsGateway.emitTicketAssigned(updatedTicket, assignedUser);
+
+    return updatedTicket;
+  }
+
+  // Update EMS assignment status with immediate ticket status synchronization
+  async updateEMSStatus(
+    id: string, 
+    emsStatus: AssignmentStatus, 
+    userId: string, 
+    userRole: UserRole,
+    notes?: string
+  ) {
+    const ticket = await this.findById(id);
+
+    // Validate EMS permissions
+    if (userRole !== UserRole.EMS && userRole !== UserRole.ADMIN && userRole !== UserRole.RCC) {
+      throw new ForbiddenException('Only EMS, ADMIN, or RCC can update EMS status');
+    }
+
+    // Validate EMS status transition
+    if (!StatusMappingService.isValidEMSStatusTransition(ticket.emsAssignmentStatus, emsStatus)) {
+      throw new BadRequestException(
+        `Invalid EMS status transition from ${ticket.emsAssignmentStatus} to ${emsStatus}`
+      );
+    }
+
+    // Map EMS status to ticket status
+    const newTicketStatus = StatusMappingService.mapEMSToTicket(emsStatus);
+
+    // Update both EMS status and ticket status simultaneously
+    const updatedTicket = await this.prisma.ticket.update({
+      where: { id },
+      data: {
+        emsAssignmentStatus: emsStatus,
+        status: newTicketStatus,
+        emsStatusUpdatedAt: new Date(),
+        emsStatusUpdatedBy: userId,
+        // Set actual arrival time when EMS arrives at destination
+        ...(emsStatus === AssignmentStatus.ARRIVED && { actualArrival: new Date() }),
+      },
+      include: {
+        patient: true,
+        originHospital: true,
+        destinationHospital: true,
+        createdBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        emsStatusUpdatedByUser: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    // Create activity log for EMS status change
+    await this.prisma.activity.create({
+      data: {
+        type: ActivityType.TICKET_UPDATED,
+        description: `Ticket ${ticket.ticketNumber} EMS status changed from ${ticket.emsAssignmentStatus || 'NONE'} to ${emsStatus}`,
+        userId,
+        ticketId: ticket.id,
+        metadata: JSON.stringify({
+          previousEMSStatus: ticket.emsAssignmentStatus,
+          newEMSStatus: emsStatus,
+          previousTicketStatus: ticket.status,
+          newTicketStatus: newTicketStatus,
+          notes,
+        }),
+      },
+    });
+
+    // Emit WebSocket notification for both EMS and ticket status changes
+    this.ticketsGateway.emitTicketStatusChanged(updatedTicket, ticket.status);
+
+    this.logger.log(
+      `Ticket ${ticket.ticketNumber} EMS status updated: ${ticket.emsAssignmentStatus} -> ${emsStatus}, Ticket status: ${ticket.status} -> ${newTicketStatus}`
+    );
 
     return updatedTicket;
   }

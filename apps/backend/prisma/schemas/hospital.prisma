@@ -96,6 +96,10 @@ model Hospital {
   stemiOriginCases StemiCase[]  @relation("StemiOriginHospital")
   stemiDestinationCases StemiCase[] @relation("StemiDestinationHospital")
   
+  // Trauma Relations
+  traumaOriginCases TraumaCase[]  @relation("TraumaOriginHospital")
+  traumaDestinationCases TraumaCase[] @relation("TraumaDestinationHospital")
+  
   @@map("hospitals")
   @@index([status])
   @@index([cluster])

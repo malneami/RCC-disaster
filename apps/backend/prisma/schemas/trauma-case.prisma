@@ -1,0 +1,89 @@
+// Trauma Case model for comprehensive trauma care management
+model TraumaCase {
+  id                      String                  @id @default(uuid())
+  ticketId                String                  @map("ticket_id")
+  patientId               String                  @map("patient_id")
+  originHospitalId        String                  @map("origin_hospital_id")
+  destinationHospitalId   String?                 @map("destination_hospital_id")
+  arrivalDateTime         DateTime                @map("arrival_date_time")
+  incidentDateTime        DateTime?               @map("incident_date_time")
+  modeOfArrival           TraumaModeOfArrival     @map("mode_of_arrival")
+  transferRequestDateTime DateTime?               @map("transfer_request_date_time")
+  transferArrivalDateTime DateTime?               @map("transfer_arrival_date_time")
+  transferDurationMinutes Int?                    @map("transfer_duration_minutes")
+  chiefComplaint          String?                 @map("chief_complaint")
+  mechanismOfInjury       TraumaMechanismOfInjury @map("mechanism_of_injury")
+  vitalSigns              String?                 @map("vital_signs")
+  glasgowComaScale        Int?                    @map("glasgow_coma_scale")
+  systolicBloodPressure   Int?                    @map("systolic_blood_pressure")
+  respiratoryRate         Int?                    @map("respiratory_rate")
+  additionalVitalSigns    String?                 @map("additional_vital_signs")
+  primarySurveyFindings   String?                 @map("primary_survey_findings")
+  edDisposition           TraumaDispositionType?  @map("ed_disposition")
+  additionalNotes         String?                 @map("additional_notes")
+  disposition             String?
+  responseTimeMinutes     Int?                    @map("response_time_minutes")
+  criticalCase            Boolean                 @default(false) @map("critical_case")
+  transferCase            Boolean                 @default(false) @map("transfer_case")
+  createdAt               DateTime                @default(now()) @map("created_at")
+  updatedAt               DateTime                @updatedAt @map("updated_at")
+  deletedAt               DateTime?               @map("deleted_at")
+  createdById             String                  @map("created_by_id")
+  headAndNeckInjury       String?                 @map("head_and_neck_injury")
+  faceInjury              String?                 @map("face_injury")
+  chestInjury             String?                 @map("chest_injury")
+  abdomenInjury           String?                 @map("abdomen_injury")
+  extremitiesInjury       String?                 @map("extremities_injury")
+  externalInjury          String?                 @map("external_injury")
+  createdBy               User                    @relation("TraumaCaseCreator", fields: [createdById], references: [id])
+  destinationHospital     Hospital?               @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital          Hospital                @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id])
+  patient                 Patient                 @relation(fields: [patientId], references: [id])
+  ticket                  Ticket                  @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([arrivalDateTime])
+  @@index([incidentDateTime])
+  @@index([modeOfArrival])
+  @@index([mechanismOfInjury])
+  @@index([criticalCase])
+  @@index([transferCase])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("trauma_cases")
+}
+
+// Trauma-specific enums
+enum TraumaModeOfArrival {
+  AMBULANCE
+  PRIVATE_VEHICLE
+  AIR_TRANSPORT
+  WALK_IN
+  POLICE
+  TRANSFERRED_FROM_HOSPITAL
+  OTHER
+}
+
+enum TraumaMechanismOfInjury {
+  PENETRATING
+  BLUNT
+  BURN
+  FALL
+  MOTOR_VEHICLE_ACCIDENT
+  OTHER
+}
+
+enum TraumaDispositionType {
+  ICU_ADMISSION
+  SURGICAL_WARD_ADMISSION
+  MEDICAL_WARD_ADMISSION
+  DISCHARGE
+  OPERATING_THEATRE
+  TRANSFER_TO_HIGHER_CENTER
+  DEATH
+  DISCHARGE_AGAINST_MEDICAL_ADVICE
+  OTHER
+}

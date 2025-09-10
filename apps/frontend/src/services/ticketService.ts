@@ -85,6 +85,8 @@ export interface TicketFilter {
   startDate?: string;
   endDate?: string;
   search?: string;
+  sortBy?: 'createdAt' | 'updatedAt' | 'priority' | 'status';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface Ticket {
@@ -106,6 +108,9 @@ export interface Ticket {
   transportMode?: string;
   emsUnit?: string;
   notes?: string;
+  emsAssignmentStatus?: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
+  emsStatusUpdatedAt?: string;
+  emsStatusUpdatedBy?: string;
   isEmergency: boolean;
   requiresBlood: boolean;
   requiresSpecialist: boolean;
@@ -136,6 +141,12 @@ export interface Ticket {
     role: string;
   };
   assignedTo?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
+  emsStatusUpdatedByUser?: {
     firstName: string;
     lastName: string;
     email: string;
@@ -278,6 +289,19 @@ class TicketService {
 
   async getTicketsByPathway(): Promise<TicketPathwayStats[]> {
     const response = await apiClient.get('/tickets/statistics/pathway');
+    return response.data;
+  }
+
+  // Update EMS status for a ticket
+  async updateEMSStatus(
+    ticketId: string, 
+    emsStatus: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED',
+    notes?: string
+  ): Promise<Ticket> {
+    const response = await apiClient.put(`/tickets/${ticketId}/ems-status`, {
+      emsStatus,
+      notes,
+    });
     return response.data;
   }
 }

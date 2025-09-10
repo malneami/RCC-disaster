@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Requ
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto, UpdateTicketStatusDto, AssignTicketDto } from './dto/update-ticket.dto';
+import { UpdateEMSStatusDto } from './dto/update-ems-status.dto';
 import { TicketFilterDto } from './dto/ticket-filter.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -106,5 +107,21 @@ export class TicketsController {
     @Request() req: any
   ) {
     return this.ticketsService.assign(id, assignTicketDto, req.user.id, req.user.role);
+  }
+
+  @Put(':id/ems-status')
+  @Roles(UserRole.EMS, UserRole.ADMIN, UserRole.RCC)
+  async updateEMSStatus(
+    @Param('id') id: string,
+    @Body() updateEMSStatusDto: UpdateEMSStatusDto,
+    @Request() req: any
+  ) {
+    return this.ticketsService.updateEMSStatus(
+      id, 
+      updateEMSStatusDto.emsStatus, 
+      req.user.id, 
+      req.user.role,
+      updateEMSStatusDto.notes
+    );
   }
 }

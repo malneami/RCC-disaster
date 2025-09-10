@@ -27,6 +27,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import PerformanceComparison from './PerformanceComparison';
 import LivePerformanceMetrics from './LivePerformanceMetrics';
 import PeakAnalysisDashboard from './PeakAnalysisDashboard';
+import EMSStatusDemo from './EMSStatusDemo';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -213,6 +214,11 @@ const DashboardPage: React.FC = () => {
           {/* Performance Comparison */}
           <Grid item xs={12}>
             <PerformanceComparison />
+          </Grid>
+
+          {/* EMS Status Update Demo */}
+          <Grid item xs={12}>
+            <EMSStatusDemo />
           </Grid>
 
           {/* Critical Performance Metrics */}

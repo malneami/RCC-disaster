@@ -265,8 +265,14 @@ class HospitalService {
 
   // Hospital Tickets API
   async getHospitalTickets(hospitalId?: string): Promise<HospitalTicket[]> {
-    const params = hospitalId ? `?hospitalId=${hospitalId}` : '';
-    const response = await apiClient.get(`/hospital-tickets${params}`);
+    const params = new URLSearchParams();
+    if (hospitalId) {
+      params.append('hospitalId', hospitalId);
+    }
+    params.append('sortBy', 'createdAt');
+    params.append('sortOrder', 'desc');
+    
+    const response = await apiClient.get(`/hospital-tickets?${params}`);
     // Handle paginated response
     return response.data?.data || response.data || [];
   }
@@ -274,7 +280,12 @@ class HospitalService {
   // Get transfer tickets for a hospital (as destination)
   async getTransferTicketsForHospital(hospitalId?: string): Promise<any[]> {
     if (!hospitalId) return [];
-    const response = await apiClient.get(`/tickets?destinationHospitalId=${hospitalId}`);
+    const params = new URLSearchParams({
+      destinationHospitalId: hospitalId,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    });
+    const response = await apiClient.get(`/tickets?${params}`);
     // Handle paginated response
     return response.data?.data || response.data || [];
   }
@@ -290,6 +301,22 @@ class HospitalService {
     const params = hospitalId ? `?hospitalId=${hospitalId}` : '';
     const response = await apiClient.get(`/hospital-tickets/stats${params}`);
     return response.data;
+  }
+
+  // Get critical cases (STEMI/Stroke) for a hospital
+  async getCriticalCasesForHospital(hospitalId: string): Promise<any[]> {
+    try {
+      const params = new URLSearchParams({
+        hospitalId: hospitalId,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
+      const response = await apiClient.get(`/tickets/critical-cases?${params}`);
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error('Error fetching critical cases for hospital:', error);
+      return [];
+    }
   }
 }
 

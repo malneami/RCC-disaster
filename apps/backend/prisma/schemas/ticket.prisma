@@ -29,6 +29,11 @@ model Ticket {
   emsUnit             String?         @map("ems_unit")
   transportNotes      String?         @map("transport_notes")
   
+  // EMS Status Tracking
+  emsAssignmentStatus AssignmentStatus? @map("ems_assignment_status")
+  emsStatusUpdatedAt  DateTime?       @map("ems_status_updated_at")
+  emsStatusUpdatedBy  String?         @map("ems_status_updated_by")
+  
   // Resource Requirements
   requiresBlood       Boolean         @default(false) @map("requires_blood")
   requiresSpecialist  Boolean         @default(false) @map("requires_specialist")
@@ -62,6 +67,7 @@ model Ticket {
   createdBy           User            @relation("TicketCreator", fields: [createdById], references: [id])
   assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
   completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
+  emsStatusUpdatedByUser User?        @relation("TicketEMSStatusUpdater", fields: [emsStatusUpdatedBy], references: [id])
   activities          Activity[]
   
   // Stroke Relations
@@ -70,6 +76,9 @@ model Ticket {
   
   // STEMI Relations
   stemiCases          StemiCase[]
+  
+  // Trauma Relations
+  traumaCases         TraumaCase[]
   
   // EMS Relations
   emsAssignments      EMSAssignment[]    @relation("EMSAssignmentTicket")

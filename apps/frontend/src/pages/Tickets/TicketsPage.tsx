@@ -55,7 +55,10 @@ const TicketsPage: React.FC = () => {
   const [statistics, setStatistics] = useState<TicketStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
-  const [filters, setFilters] = useState<TicketFilter>({});
+  const [filters, setFilters] = useState<TicketFilter>({
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [emergencyTicket, setEmergencyTicket] = useState<Ticket | null>(null);
