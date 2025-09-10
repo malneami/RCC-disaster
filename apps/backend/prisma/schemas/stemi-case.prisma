@@ -26,6 +26,10 @@ model StemiCase {
   triageTime                      DateTime?   @map("triage_time")
   firstEcgTime                    DateTime?   @map("first_ecg_time")
   
+  // ECG Results
+  ecgResult                       String?     @map("ecg_result") // PENDING, NORMAL, STEMI_ANTERIOR, etc.
+  ecgFindings                     String?     @map("ecg_findings")
+  
   // Interventions and Treatments
   eligibleForPrimaryPci           Boolean?    @map("eligible_for_primary_pci")
   pciLocation                     String?     @map("pci_location")

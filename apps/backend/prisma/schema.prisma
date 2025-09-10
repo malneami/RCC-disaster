@@ -516,6 +516,11 @@ model StemiCase {
   rccUnit                       String?   @map("rcc_unit")
   triageTime                    DateTime? @map("triage_time")
   firstEcgTime                  DateTime? @map("first_ecg_time")
+  
+  // ECG Results
+  ecgResult                     String?   @map("ecg_result") // PENDING, NORMAL, STEMI_ANTERIOR, etc.
+  ecgFindings                   String?   @map("ecg_findings")
+  
   eligibleForPrimaryPci         Boolean?  @map("eligible_for_primary_pci")
   pciLocation                   String?   @map("pci_location")
   doorOutTime                   DateTime? @map("door_out_time")
