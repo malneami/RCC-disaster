@@ -187,6 +187,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   };
 
   const formatPatientName = (patient: StemiCase['patient']) => {
+    if (!patient) return 'Unknown Patient';
     return `${patient.firstName} ${patient.lastName}`;
   };
 
@@ -364,14 +365,14 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={2}>
                         <Avatar sx={{ bgcolor: 'primary.main' }}>
-                          {case_.patient.firstName?.[0] || 'P'}
+                          {case_.patient?.firstName?.[0] || 'P'}
                         </Avatar>
                         <Box>
                           <Typography variant="subtitle2">
                             {formatPatientName(case_.patient)}
                           </Typography>
                           <Typography variant="caption" color="textSecondary" fontFamily="monospace">
-                            {formatNationalId(case_.patient.nationalId)}
+                            {case_.patient?.nationalId ? formatNationalId(case_.patient.nationalId) : 'N/A'}
                           </Typography>
                         </Box>
                       </Box>

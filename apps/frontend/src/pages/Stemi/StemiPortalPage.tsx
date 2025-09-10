@@ -60,34 +60,252 @@ const StemiPortalPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    loadTimelineEvents();
   }, [filters]);
+
+  useEffect(() => {
+    if (stemiCases.length > 0) {
+      loadTimelineEvents();
+    }
+  }, [stemiCases]);
+
+  const convertStemiCasesToTimelineEvents = (cases: StemiCase[]): TimelineEvent[] => {
+    const events: TimelineEvent[] = [];
+    
+    cases.forEach(case_ => {
+      // Patient arrival
+      if (case_.createdAt) {
+        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
+        const nationalId = case_.patient?.nationalId || 'N/A';
+        
+        events.push({
+          id: `${case_.id}-arrival`,
+          timestamp: case_.createdAt,
+          title: `Patient Arrival - ${patientName}`,
+          description: `Patient ${patientName} (ID: ${nationalId}) arrived at ${case_.originHospital?.name || 'hospital'} via ${getModeOfArrivalLabel(case_.modeOfArrival)}`,
+          type: 'arrival',
+          status: 'completed',
+          user: {
+            name: 'System',
+            role: 'Data Collector',
+          },
+          hospital: case_.originHospital ? {
+            name: case_.originHospital.name,
+            id: case_.originHospital.id,
+          } : undefined,
+          details: {
+            modeOfArrival: case_.modeOfArrival,
+            patientId: case_.patientId,
+            patientName: patientName,
+            patientNationalId: nationalId,
+            ticketId: case_.ticketId,
+            currentStatus: case_.currentStatus,
+          },
+        });
+      }
+
+      // ECG Assessment
+      if (case_.firstEcgTime) {
+        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
+        const nationalId = case_.patient?.nationalId || 'N/A';
+        
+        events.push({
+          id: `${case_.id}-ecg`,
+          timestamp: case_.firstEcgTime,
+          title: `ECG Assessment - ${patientName}`,
+          description: `ECG completed for ${patientName} (ID: ${nationalId}) - ${getEcgResultLabel(case_.ecgResult)}${case_.ecgFindings ? `: ${case_.ecgFindings}` : ''}`,
+          type: 'assessment',
+          status: 'completed',
+          user: {
+            name: 'Medical Staff',
+            role: 'EMS',
+          },
+          hospital: case_.originHospital ? {
+            name: case_.originHospital.name,
+            id: case_.originHospital.id,
+          } : undefined,
+          details: {
+            ecgResult: case_.ecgResult,
+            ecgFindings: case_.ecgFindings,
+            patientId: case_.patientId,
+            patientName: patientName,
+            patientNationalId: nationalId,
+            currentStatus: case_.currentStatus,
+          },
+        });
+      }
+
+      // RCC Activation
+      if (case_.rccActivated) {
+        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
+        const nationalId = case_.patient?.nationalId || 'N/A';
+        
+        events.push({
+          id: `${case_.id}-rcc-activation`,
+          timestamp: case_.pathwayStarted || case_.createdAt,
+          title: `RCC Activated - ${patientName}`,
+          description: `Regional Cardiac Center activated for ${patientName} (ID: ${nationalId}) transfer to ${case_.destinationHospital?.name || 'destination hospital'}`,
+          type: 'treatment',
+          status: 'completed',
+          user: {
+            name: 'RCC Coordinator',
+            role: 'RCC',
+          },
+          hospital: case_.destinationHospital ? {
+            name: case_.destinationHospital.name,
+            id: case_.destinationHospital.id,
+          } : undefined,
+          details: {
+            rccUnit: case_.rccUnit,
+            destinationHospital: case_.destinationHospital?.name,
+            patientId: case_.patientId,
+            patientName: patientName,
+            patientNationalId: nationalId,
+            currentStatus: case_.currentStatus,
+          },
+        });
+      }
+
+      // Treatment Selection
+      if (case_.selectedTreatment) {
+        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
+        const nationalId = case_.patient?.nationalId || 'N/A';
+        
+        events.push({
+          id: `${case_.id}-treatment`,
+          timestamp: case_.pathwayStarted || case_.createdAt,
+          title: `Treatment Selected - ${patientName}`,
+          description: `${getTreatmentLabel(case_.selectedTreatment)} pathway initiated for ${patientName} (ID: ${nationalId})`,
+          type: 'treatment',
+          status: 'completed',
+          user: {
+            name: 'Cardiologist',
+            role: 'CATH_LAB_USER',
+          },
+          hospital: case_.destinationHospital ? {
+            name: case_.destinationHospital.name,
+            id: case_.destinationHospital.id,
+          } : undefined,
+          details: {
+            selectedTreatment: case_.selectedTreatment,
+            pciLocation: case_.pciLocation,
+            eligibleForPrimaryPci: case_.eligibleForPrimaryPci,
+            patientId: case_.patientId,
+            patientName: patientName,
+            patientNationalId: nationalId,
+            currentStatus: case_.currentStatus,
+          },
+        });
+      }
+
+      // Door Out Time (Transfer)
+      if (case_.doorOutTime) {
+        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
+        const nationalId = case_.patient?.nationalId || 'N/A';
+        
+        events.push({
+          id: `${case_.id}-transfer`,
+          timestamp: case_.doorOutTime,
+          title: `Patient Transfer - ${patientName}`,
+          description: `${patientName} (ID: ${nationalId}) transferred from ${case_.originHospital?.name} to ${case_.destinationHospital?.name || 'destination hospital'}`,
+          type: 'treatment',
+          status: 'completed',
+          user: {
+            name: 'Transfer Team',
+            role: 'EMS',
+          },
+          hospital: case_.originHospital ? {
+            name: case_.originHospital.name,
+            id: case_.originHospital.id,
+          } : undefined,
+          details: {
+            doorOutTime: case_.doorOutTime,
+            originHospital: case_.originHospital?.name,
+            destinationHospital: case_.destinationHospital?.name,
+            patientId: case_.patientId,
+            patientName: patientName,
+            patientNationalId: nationalId,
+            currentStatus: case_.currentStatus,
+          },
+        });
+      }
+
+      // Pathway Completion
+      if (case_.pathwayCompleted) {
+        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
+        const nationalId = case_.patient?.nationalId || 'N/A';
+        
+        events.push({
+          id: `${case_.id}-completion`,
+          timestamp: case_.pathwayCompleted,
+          title: `Treatment Completed - ${patientName}`,
+          description: `STEMI treatment pathway successfully completed for ${patientName} (ID: ${nationalId})`,
+          type: 'treatment',
+          status: 'completed',
+          user: {
+            name: 'Medical Team',
+            role: 'CATH_LAB_USER',
+          },
+          hospital: case_.destinationHospital ? {
+            name: case_.destinationHospital.name,
+            id: case_.destinationHospital.id,
+          } : undefined,
+          details: {
+            pathwayCompleted: case_.pathwayCompleted,
+            currentStatus: case_.currentStatus,
+            patientId: case_.patientId,
+            patientName: patientName,
+            patientNationalId: nationalId,
+          },
+        });
+      }
+    });
+
+    return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  };
+
+  const getModeOfArrivalLabel = (mode?: string) => {
+    switch (mode) {
+      case 'AMBULANCE': return 'Ambulance';
+      case 'PRIVATE_VEHICLE': return 'Private Vehicle';
+      case 'AIR_TRANSPORT': return 'Air Transport';
+      case 'WALK_IN': return 'Walk-in';
+      case 'POLICE': return 'Police Transport';
+      case 'TRANSFERRED_FROM_HOSPITAL': return 'Hospital Transfer';
+      case 'OTHER': return 'Other';
+      default: return 'Unknown';
+    }
+  };
+
+  const getEcgResultLabel = (result?: string) => {
+    switch (result) {
+      case 'STEMI_ANTERIOR': return 'STEMI Anterior';
+      case 'STEMI_INFERIOR': return 'STEMI Inferior';
+      case 'STEMI_LATERAL': return 'STEMI Lateral';
+      case 'STEMI_POSTERIOR': return 'STEMI Posterior';
+      case 'NSTEMI_CHANGES': return 'NSTEMI Changes';
+      case 'UNSTABLE_PATTERN': return 'Unstable Pattern';
+      case 'NORMAL': return 'Normal';
+      case 'PENDING': return 'Pending';
+      case 'TECHNICAL_ISSUE': return 'Technical Issue';
+      default: return 'Unknown';
+    }
+  };
+
+  const getTreatmentLabel = (treatment?: string) => {
+    switch (treatment) {
+      case 'PRIMARY_PCI': return 'Primary PCI';
+      case 'RESCUE_PCI': return 'Rescue PCI';
+      case 'FIBRINOLYSIS': return 'Fibrinolysis';
+      case 'TRANSFER_FOR_PRIMARY_PCI': return 'Transfer for Primary PCI';
+      case 'MEDICAL_MANAGEMENT': return 'Medical Management';
+      default: return 'Unknown';
+    }
+  };
 
   const loadTimelineEvents = async () => {
     try {
-      // For now, we'll create mock timeline events
-      // In a real implementation, this would fetch from the API
-      const mockEvents: TimelineEvent[] = stemiCases.map((case_) => ({
-        id: `stemi-${case_.id}`,
-        timestamp: case_.createdAt,
-        title: `STEMI Case Created`,
-        description: `Case ${case_.id} created for patient ${case_.patientId}`,
-        type: 'arrival' as const,
-        status: 'completed' as const,
-        user: {
-          name: 'System',
-          role: 'ADMIN',
-        },
-        hospital: case_.originHospital ? {
-          name: case_.originHospital.name,
-          id: case_.originHospital.id,
-        } : undefined,
-        details: {
-          caseId: case_.id,
-          status: case_.currentStatus,
-        },
-      }));
-      setTimelineEvents(mockEvents);
+      const timelineEvents = convertStemiCasesToTimelineEvents(stemiCases);
+      setTimelineEvents(timelineEvents);
     } catch (err) {
       console.error('Error loading timeline events:', err);
     }

@@ -48,6 +48,23 @@ export interface StemiCase {
   destinationHospitalId?: string;
   modeOfArrival?: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
   
+  // Patient Information
+  patient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    nationalId: string;
+    dateOfBirth: string;
+    gender: 'MALE' | 'FEMALE' | 'OTHER';
+    phoneNumber?: string;
+    address?: string;
+    emergencyContact?: string;
+    emergencyPhone?: string;
+    medicalHistory?: string;
+    allergies?: string;
+    medications?: string;
+  };
+  
   // Clinical Assessment
   heartScore?: number;
   clinicalRiskLevel?: string;
@@ -66,6 +83,10 @@ export interface StemiCase {
   // Critical Timestamps
   triageTime?: string;
   firstEcgTime?: string;
+  
+  // ECG Results
+  ecgResult?: 'PENDING' | 'NORMAL' | 'STEMI_ANTERIOR' | 'STEMI_INFERIOR' | 'STEMI_LATERAL' | 'STEMI_POSTERIOR' | 'NSTEMI_CHANGES' | 'UNSTABLE_PATTERN' | 'TECHNICAL_ISSUE';
+  ecgFindings?: string;
   
   // Interventions and Treatments
   eligibleForPrimaryPci?: boolean;
@@ -113,21 +134,6 @@ export interface StemiCase {
     firstMedicalContact?: string;
     createdAt: string;
     updatedAt: string;
-  };
-  patient: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    nationalId: string;
-    dateOfBirth: string;
-    gender: string;
-    phoneNumber?: string;
-    address?: string;
-    emergencyContact?: string;
-    emergencyPhone?: string;
-    medicalHistory?: string;
-    allergies?: string;
-    medications?: string;
   };
   originHospital: {
     id: string;
