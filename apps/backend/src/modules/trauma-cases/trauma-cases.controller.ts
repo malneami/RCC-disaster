@@ -20,6 +20,7 @@ import { Public } from '../../auth/decorators/public.decorator';
 import { TraumaModeOfArrival, TraumaMechanismOfInjury } from '@prisma/client';
 
 @Controller('trauma-cases')
+@UseGuards(JwtAuthGuard)
 export class TraumaCasesController {
   constructor(private readonly traumaCasesService: TraumaCasesService) {}
 
