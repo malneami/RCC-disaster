@@ -1,4 +1,6 @@
 import { apiClient } from './apiClient';
+import { autoCaseCreationService } from './autoCaseCreationService';
+import { patientService } from './patientService';
 
 export interface Vitals {
   bloodPressure?: number;
@@ -186,7 +188,32 @@ export interface TicketsResponse {
 class TicketService {
   async createTicket(data: CreateTicketData): Promise<Ticket> {
     const response = await apiClient.post('/tickets', data);
-    return response.data;
+    const ticket = response.data;
+    
+    // Automatically create trauma or stroke case if pathway supports it
+    try {
+      if (autoCaseCreationService.supportsAutoCaseCreation(ticket.pathway)) {
+        // Get patient data for case creation
+        const patient = await patientService.getPatientById(ticket.patientId);
+        
+        // Create the appropriate case
+        const caseResult = await autoCaseCreationService.createCaseFromTicket(
+          ticket,
+          patient
+        );
+        
+        if (caseResult.success) {
+          console.log(`✅ Auto-created ${caseResult.caseType} case: ${caseResult.caseId}`);
+        } else {
+          console.warn(`⚠️ Failed to auto-create case: ${caseResult.error}`);
+        }
+      }
+    } catch (error) {
+      // Don't fail ticket creation if case creation fails
+      console.error('Error in automatic case creation:', error);
+    }
+    
+    return ticket;
   }
 
   async getTickets(
