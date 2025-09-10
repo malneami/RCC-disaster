@@ -36,6 +36,8 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { hospitalService, Hospital, CriticalCase, HospitalTicket } from '../../services/hospitalService';
+import RelatedTicketsManager from './components/RelatedTicketsManager';
+import { UnifiedTicket } from './types/tickets';
 
 const HospitalDashboardPage: React.FC = () => {
   const { hospitalId } = useParams<{ hospitalId: string }>();
@@ -161,6 +163,24 @@ const HospitalDashboardPage: React.FC = () => {
         return <CheckCircleIcon />;
       default:
         return <TicketIcon />;
+    }
+  };
+
+  const handleViewTicket = (ticket: UnifiedTicket) => {
+    if (ticket.type === 'TRANSFER') {
+      navigate(`/tickets/${ticket.id}`);
+    } else {
+      // For hospital tickets, you might want to create a different view
+      console.log('View hospital ticket:', ticket.id);
+    }
+  };
+
+  const handleEditTicket = (ticket: UnifiedTicket) => {
+    if (ticket.type === 'TRANSFER') {
+      navigate(`/tickets/${ticket.id}/edit`);
+    } else {
+      // For hospital tickets, you might want to create a different edit flow
+      console.log('Edit hospital ticket:', ticket.id);
     }
   };
 
@@ -395,132 +415,15 @@ const HospitalDashboardPage: React.FC = () => {
           {/* Related Tickets Tab */}
           {tabValue === 1 && (
             <Box sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Related Tickets (
-                {relatedTickets.length +
-                  (Array.isArray(transferTickets) ? transferTickets.length : 0)}
-                )
-              </Typography>
-
-              {/* Hospital Tickets */}
-              {relatedTickets.length > 0 && (
-                <>
-                  <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 1 }}>
-                    Internal Hospital Tickets ({relatedTickets.length})
-                  </Typography>
-                  <List>
-                    {relatedTickets?.map((ticket, index) => (
-                      <React.Fragment key={ticket.id}>
-                        <ListItem>
-                          <ListItemIcon>{getTicketTypeIcon(ticket.type)}</ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Box
-                                display="flex"
-                                justifyContent="space-between"
-                                alignItems="center"
-                              >
-                                <Typography variant="subtitle1">{ticket.title}</Typography>
-                                <Box display="flex" gap={1}>
-                                  <Chip label={ticket.type} size="small" variant="outlined" />
-                                  <Chip
-                                    label={ticket.priority}
-                                    size="small"
-                                    color={getPriorityColor(ticket.priority) as any}
-                                  />
-                                  <Chip
-                                    label={ticket.status}
-                                    size="small"
-                                    color={getStatusColor(ticket.status) as any}
-                                  />
-                                </Box>
-                              </Box>
-                            }
-                            secondary={
-                              <Box mt={1}>
-                                <Typography variant="body2" color="text.secondary">
-                                  {ticket.description}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" mt={1}>
-                                  Created: {new Date(ticket.createdAt).toLocaleString()} | Updated:{' '}
-                                  {new Date(ticket.updatedAt).toLocaleString()}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        {index < relatedTickets.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </>
-              )}
-
-              {/* Transfer Tickets */}
-              {Array.isArray(transferTickets) && transferTickets.length > 0 && (
-                <>
-                  <Typography variant="subtitle1" gutterBottom sx={{ mt: 3, mb: 1 }}>
-                    Incoming Transfer Tickets ({transferTickets.length})
-                  </Typography>
-                  <List>
-                    {transferTickets.map((ticket, index) => (
-                      <React.Fragment key={ticket.id}>
-                        <ListItem>
-                          <ListItemIcon>
-                            <TicketIcon color="primary" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Box
-                                display="flex"
-                                justifyContent="space-between"
-                                alignItems="center"
-                              >
-                                <Typography variant="subtitle1">
-                                  Transfer: {ticket.patient?.firstName} {ticket.patient?.lastName}
-                                </Typography>
-                                <Box display="flex" gap={1}>
-                                  <Chip label={ticket.pathway} size="small" variant="outlined" />
-                                  <Chip
-                                    label={ticket.priority}
-                                    size="small"
-                                    color={getPriorityColor(ticket.priority) as any}
-                                  />
-                                  <Chip
-                                    label={ticket.status}
-                                    size="small"
-                                    color={getStatusColor(ticket.status) as any}
-                                  />
-                                </Box>
-                              </Box>
-                            }
-                            secondary={
-                              <Box mt={1}>
-                                <Typography variant="body2" color="text.secondary">
-                                  From: {ticket.originHospital?.name} | Chief Complaint:{' '}
-                                  {ticket.chiefComplaint}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" mt={1}>
-                                  Created: {new Date(ticket.createdAt).toLocaleString()} | ETA:{' '}
-                                  {ticket.estimatedArrival
-                                    ? new Date(ticket.estimatedArrival).toLocaleString()
-                                    : 'Not set'}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        {index < transferTickets.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </>
-              )}
-
-              {relatedTickets.length === 0 &&
-                (Array.isArray(transferTickets) ? transferTickets.length : 0) === 0 && (
-                  <Alert severity="info">No related tickets found.</Alert>
-                )}
+              <RelatedTicketsManager
+                hospitalTickets={relatedTickets}
+                transferTickets={transferTickets}
+                hospitalId={hospitalId!}
+                onRefresh={loadHospitalData}
+                onViewTicket={handleViewTicket}
+                onEditTicket={handleEditTicket}
+                isLoading={loading}
+              />
             </Box>
           )}
 

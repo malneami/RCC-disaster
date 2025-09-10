@@ -24,6 +24,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../contexts/AuthContext';
+import PerformanceComparison from './PerformanceComparison';
+import LivePerformanceMetrics from './LivePerformanceMetrics';
+import PeakAnalysisDashboard from './PeakAnalysisDashboard';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -198,6 +201,19 @@ const DashboardPage: React.FC = () => {
               </Card>
             </Grid>
           ))}
+
+          {/* Live Performance Metrics and Peak Analysis */}
+          <Grid item xs={12} md={6}>
+            <LivePerformanceMetrics />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <PeakAnalysisDashboard />
+          </Grid>
+
+          {/* Performance Comparison */}
+          <Grid item xs={12}>
+            <PerformanceComparison />
+          </Grid>
 
           {/* Critical Performance Metrics */}
           <Grid item xs={12}>
