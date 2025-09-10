@@ -139,6 +139,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         },
         currentStatus: additionalData.currentStatus as any,
         selectedTreatment: additionalData.selectedTreatment,
+        ecgResult: additionalData.ecgResult,
+        ecgFindings: additionalData.ecgFindings || undefined,
       };
 
       await onSubmit(formData);

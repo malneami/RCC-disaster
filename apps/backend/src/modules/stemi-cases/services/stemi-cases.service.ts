@@ -67,6 +67,10 @@ export class StemiCasesService {
           pathwayStarted: admissionTime ? new Date(admissionTime) : new Date(),
           modeOfArrival: modeOfArrival,
           
+          // ECG Results
+          ecgResult: stemiData.ecgResult,
+          ecgFindings: stemiData.ecgFindings,
+          
           // Critical Timestamps
           triageTime: criticalTimestamps.triageTime ? new Date(criticalTimestamps.triageTime) : null,
           firstEcgTime: criticalTimestamps.firstEcgTime ? new Date(criticalTimestamps.firstEcgTime) : null,
