@@ -17,7 +17,7 @@ const initializeFormData = (patient?: Patient | null): CreatePatientData => {
       firstName: patient.firstName,
       lastName: patient.lastName,
       middleName: patient.middleName || '',
-      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+      age: patient.age || undefined,
       gender: patient.gender,
       maritalStatus: patient.maritalStatus || 'UNKNOWN',
       phoneNumber: patient.phoneNumber || '',
@@ -53,7 +53,7 @@ const initializeFormData = (patient?: Patient | null): CreatePatientData => {
   return {
     firstName: '',
     lastName: '',
-    dateOfBirth: '',
+    age: undefined,
     gender: 'UNKNOWN',
     privacyLevel: 'PRIVATE',
     consentGiven: false,
@@ -64,7 +64,7 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
   const [formData, setFormData] = useState<CreatePatientData>({
     firstName: '',
     lastName: '',
-    dateOfBirth: '',
+    age: undefined,
     gender: 'UNKNOWN',
     privacyLevel: 'PRIVATE',
     consentGiven: false,
@@ -95,14 +95,13 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
       setLoading(true);
       setError(null);
 
-      if (!formData.firstName || !formData.lastName || !formData.dateOfBirth) {
-        setError('First name, last name, and date of birth are required.');
+      if (!formData.firstName || !formData.lastName || !formData.age) {
+        setError('First name, last name, and age are required.');
         return;
       }
 
       const submitData = {
         ...formData,
-        dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
         insuranceExpiry: formData.insuranceExpiry ? new Date(formData.insuranceExpiry).toISOString() : undefined,
       };
 

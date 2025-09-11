@@ -94,6 +94,7 @@ export class StrokeCasesService {
         const patientData: any = {
           firstName: createStrokeCaseDto.patientInfo.firstName.trim(),
           lastName: createStrokeCaseDto.patientInfo.lastName.trim(),
+          age: createStrokeCaseDto.patientInfo.age || null,
           nationalId: createStrokeCaseDto.patientInfo.nationalId?.trim() || null,
           mrn: createStrokeCaseDto.patientInfo.mrn?.trim() || null,
           phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber?.trim() || null,
@@ -101,10 +102,23 @@ export class StrokeCasesService {
           createdById: validUserId,
         };
         
-        // Handle required fields with defaults if not provided
-        if (createStrokeCaseDto.patientInfo.dateOfBirth) {
-          patientData.dateOfBirth = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
+        // Handle age field (preferred over dateOfBirth)
+        if (createStrokeCaseDto.patientInfo.age !== undefined && createStrokeCaseDto.patientInfo.age !== null) {
+          patientData.age = createStrokeCaseDto.patientInfo.age;
+        } else if (createStrokeCaseDto.patientInfo.dateOfBirth) {
+          // Calculate age from dateOfBirth if age not provided
+          const today = new Date();
+          const birthDate = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          patientData.age = age;
+          patientData.dateOfBirth = birthDate;
         } else {
+          // Default values if neither provided
+          patientData.age = 0; // Default age
           patientData.dateOfBirth = new Date('1900-01-01'); // Default date
         }
         
@@ -268,7 +282,7 @@ export class StrokeCasesService {
             lastName: true,
             nationalId: true,
             mrn: true,
-            dateOfBirth: true,
+            age: true,
             gender: true,
           },
         },
@@ -382,7 +396,7 @@ export class StrokeCasesService {
             lastName: true,
             nationalId: true,
             mrn: true,
-            dateOfBirth: true,
+            age: true,
             gender: true,
           },
         },
@@ -435,7 +449,7 @@ export class StrokeCasesService {
             lastName: true,
             nationalId: true,
             mrn: true,
-            dateOfBirth: true,
+            age: true,
             gender: true,
             phoneNumber: true,
             medicalHistory: true,
@@ -547,8 +561,20 @@ export class StrokeCasesService {
       if (updateStrokeCaseDto.patientInfo.email) {
         patientUpdateData.email = updateStrokeCaseDto.patientInfo.email.trim();
       }
-      if (updateStrokeCaseDto.patientInfo.dateOfBirth) {
-        patientUpdateData.dateOfBirth = new Date(updateStrokeCaseDto.patientInfo.dateOfBirth);
+      // Handle age field (preferred over dateOfBirth)
+      if (updateStrokeCaseDto.patientInfo.age !== undefined && updateStrokeCaseDto.patientInfo.age !== null) {
+        patientUpdateData.age = updateStrokeCaseDto.patientInfo.age;
+      } else if (updateStrokeCaseDto.patientInfo.dateOfBirth) {
+        // Calculate age from dateOfBirth if age not provided
+        const today = new Date();
+        const birthDate = new Date(updateStrokeCaseDto.patientInfo.dateOfBirth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        patientUpdateData.age = age;
+        patientUpdateData.dateOfBirth = birthDate;
       }
       if (updateStrokeCaseDto.patientInfo.gender) {
         patientUpdateData.gender = updateStrokeCaseDto.patientInfo.gender;

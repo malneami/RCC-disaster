@@ -542,7 +542,8 @@ model Patient {
   firstName       String         @map("first_name")
   lastName        String         @map("last_name")
   middleName      String?        @map("middle_name")
-  dateOfBirth     DateTime       @map("date_of_birth")
+  dateOfBirth     DateTime?      @map("date_of_birth") // Will be removed after migration
+  age             Int?           // Age in years
   gender          PatientGender
   maritalStatus   MaritalStatus? @map("marital_status")
   
@@ -622,7 +623,7 @@ model Patient {
   @@index([mrn])
   @@index([nationalId])
   @@index([lastName, firstName])
-  @@index([dateOfBirth])
+  @@index([age])
   @@index([duplicateGroupId])
   @@index([createdAt])
   @@index([lastAccessedAt])

@@ -12,8 +12,13 @@ export class PatientInfoDto {
   @IsString()
   nationalId!: string;
 
+  @IsOptional()
   @IsDateString()
-  dateOfBirth!: string;
+  dateOfBirth?: string; // Will be removed after migration
+
+  @IsOptional()
+  @IsNumber()
+  age?: number; // Age in years
 
   @IsEnum(['MALE', 'FEMALE', 'OTHER'])
   gender!: 'MALE' | 'FEMALE' | 'OTHER';

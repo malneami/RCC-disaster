@@ -134,8 +134,8 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                         <TableCell>{traumaCase.patient?.mrn || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell><strong>Date of Birth</strong></TableCell>
-                        <TableCell>{traumaCase.patient?.dateOfBirth ? TraumaService.formatDate(traumaCase.patient.dateOfBirth) : 'N/A'}</TableCell>
+                        <TableCell><strong>Age</strong></TableCell>
+                        <TableCell>{traumaCase.patient?.age ? `${traumaCase.patient.age} years` : 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell><strong>Gender</strong></TableCell>

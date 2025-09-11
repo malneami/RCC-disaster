@@ -48,7 +48,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       lastName: '',
       nationalId: '',
       mrn: '',
-      dateOfBirth: '',
+      age: undefined,
     },
   });
 
@@ -63,7 +63,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
         lastName: '',
         nationalId: '',
         mrn: '',
-        dateOfBirth: '',
+        age: undefined,
       },
     });
     setError(null);
@@ -111,7 +111,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           formData.patientInfo?.firstName && 
           formData.patientInfo?.lastName && 
           formData.patientInfo?.nationalId && 
-          formData.patientInfo?.dateOfBirth && 
+          formData.patientInfo?.age && 
           formData.originHospitalId && 
           formData.strokeType
         );

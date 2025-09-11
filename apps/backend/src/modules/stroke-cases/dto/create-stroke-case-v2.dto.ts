@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsNumber, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { StrokeType, StrokeStatus, StrokeSeverity, StrokeTreatment } from '@prisma/client';
 
@@ -19,7 +19,11 @@ export class PatientInfoV2Dto {
 
   @IsOptional()
   @IsString()
-  dateOfBirth?: string;
+  dateOfBirth?: string; // Will be removed after migration
+
+  @IsOptional()
+  @IsNumber()
+  age?: number; // Age in years
 
   @IsOptional()
   @IsString()

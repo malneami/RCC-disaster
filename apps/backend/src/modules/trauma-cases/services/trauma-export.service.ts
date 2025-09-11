@@ -17,7 +17,7 @@ export class TraumaExportService {
               firstName: true,
               lastName: true,
               nationalId: true,
-              dateOfBirth: true,
+              age: true,
               gender: true,
               phoneNumber: true,
               email: true,
@@ -55,10 +55,8 @@ export class TraumaExportService {
         const originHospital = case_.originHospital;
         const destinationHospital = case_.destinationHospital;
 
-        // Calculate patient age
-        const age = patient.dateOfBirth 
-          ? Math.floor((new Date().getTime() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-          : null;
+        // Get patient age
+        const age = patient.age;
 
         // Parse vital signs if available
         let vitalSigns = null;

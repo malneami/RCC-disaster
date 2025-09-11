@@ -38,7 +38,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
   const [formData, setFormData] = useState<CreatePatientData>({
     firstName: '',
     lastName: '',
-    dateOfBirth: '',
+    age: undefined,
     gender: 'UNKNOWN',
     privacyLevel: 'PRIVATE',
     consentGiven: false,
@@ -55,7 +55,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
         firstName: patient.firstName,
         lastName: patient.lastName,
         middleName: patient.middleName || '',
-        dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+        age: patient.age || undefined,
         gender: patient.gender,
         maritalStatus: patient.maritalStatus || 'UNKNOWN',
         phoneNumber: patient.phoneNumber || '',
@@ -110,8 +110,8 @@ const PatientForm: React.FC<PatientFormProps> = ({
       setError('Last name is required');
       return false;
     }
-    if (!formData.dateOfBirth) {
-      setError('Date of birth is required');
+    if (!formData.age || formData.age < 0 || formData.age > 150) {
+      setError('Age is required and must be between 0 and 150');
       return false;
     }
     return true;
@@ -126,10 +126,9 @@ const PatientForm: React.FC<PatientFormProps> = ({
       setLoading(true);
       setError(null);
 
-      // Convert dateOfBirth to ISO format for Prisma
+      // Prepare form data for submission
       const formDataForSubmission = {
         ...formData,
-        dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
         insuranceExpiry: formData.insuranceExpiry ? new Date(formData.insuranceExpiry).toISOString() : undefined,
       };
 
@@ -184,11 +183,11 @@ const PatientForm: React.FC<PatientFormProps> = ({
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Date of Birth *"
-              type="date"
-              value={formData.dateOfBirth}
-              onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-              InputLabelProps={{ shrink: true }}
+              label="Age *"
+              type="number"
+              value={formData.age || ''}
+              onChange={(e) => handleInputChange('age', parseInt(e.target.value) || undefined)}
+              inputProps={{ min: 0, max: 150 }}
               required
             />
           </Grid>

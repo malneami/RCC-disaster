@@ -44,9 +44,15 @@ export class CreatePatientDto {
   @IsString()
   middleName?: string;
 
-  @ApiProperty({ description: 'Date of Birth' })
+  @ApiPropertyOptional({ description: 'Date of Birth (will be replaced by age)' })
+  @IsOptional()
   @IsDateString()
-  dateOfBirth!: string;
+  dateOfBirth?: string;
+
+  @ApiPropertyOptional({ description: 'Age in years' })
+  @IsOptional()
+  @IsNumber()
+  age?: number;
 
   @ApiProperty({ enum: PatientGender, description: 'Gender' })
   @IsEnum(PatientGender)
@@ -225,10 +231,15 @@ export class UpdatePatientDto {
   @IsString()
   middleName?: string;
 
-  @ApiPropertyOptional({ description: 'Date of Birth' })
+  @ApiPropertyOptional({ description: 'Date of Birth (will be replaced by age)' })
   @IsOptional()
   @IsDateString()
   dateOfBirth?: string;
+
+  @ApiPropertyOptional({ description: 'Age in years' })
+  @IsOptional()
+  @IsNumber()
+  age?: number;
 
   @ApiPropertyOptional({ enum: PatientGender, description: 'Gender' })
   @IsOptional()
@@ -416,15 +427,15 @@ export class PatientSearchDto {
   @IsEnum(PatientGender)
   gender?: PatientGender;
 
-  @ApiPropertyOptional({ description: 'Date of Birth (start)' })
+  @ApiPropertyOptional({ description: 'Age (minimum)' })
   @IsOptional()
-  @IsDateString()
-  dateOfBirthStart?: string;
+  @IsNumber()
+  ageMin?: number;
 
-  @ApiPropertyOptional({ description: 'Date of Birth (end)' })
+  @ApiPropertyOptional({ description: 'Age (maximum)' })
   @IsOptional()
-  @IsDateString()
-  dateOfBirthEnd?: string;
+  @IsNumber()
+  ageMax?: number;
 
   @ApiPropertyOptional({ enum: PrivacyLevel, description: 'Privacy Level' })
   @IsOptional()

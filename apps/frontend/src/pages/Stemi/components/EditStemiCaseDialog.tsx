@@ -60,7 +60,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
     firstName: '',
     lastName: '',
     nationalId: '',
-    dateOfBirth: '',
+    age: undefined,
     gender: 'MALE',
     phoneNumber: '',
     address: '',
@@ -126,7 +126,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         firstName: stemiCase.patient?.firstName || '',
         lastName: stemiCase.patient?.lastName || '',
         nationalId: stemiCase.patient?.nationalId || '',
-        dateOfBirth: stemiCase.patient?.dateOfBirth ? new Date(stemiCase.patient.dateOfBirth).toISOString().split('T')[0] : '',
+        age: stemiCase.patient?.age || undefined,
         gender: (stemiCase.patient?.gender as 'MALE' | 'FEMALE' | 'OTHER') || 'MALE',
         phoneNumber: stemiCase.patient?.phoneNumber || '',
         address: (stemiCase.patient as any)?.address || '',
@@ -254,7 +254,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           patientInfo.firstName &&
           patientInfo.lastName &&
           patientInfo.nationalId &&
-          patientInfo.dateOfBirth &&
+          patientInfo.age &&
           patientInfo.gender &&
           patientInfo.originHospitalId
         );

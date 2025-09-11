@@ -7,7 +7,6 @@ import {
   Grid,
 } from '@mui/material';
 import { Person } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { PatientWithDetails } from '../../../../services/patientService';
 
 interface PatientDemographicsCardProps {
@@ -15,9 +14,6 @@ interface PatientDemographicsCardProps {
 }
 
 const PatientDemographicsCard: React.FC<PatientDemographicsCardProps> = ({ patient }) => {
-  const calculateAge = (dateOfBirth: string) => {
-    return Math.floor((Date.now() - new Date(dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25));
-  };
 
   return (
     <Card>
@@ -25,15 +21,9 @@ const PatientDemographicsCard: React.FC<PatientDemographicsCardProps> = ({ patie
       <CardContent>
         <Grid container spacing={2}>
           <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">Date of Birth</Typography>
-            <Typography variant="body1">
-              {patient.dateOfBirth ? format(new Date(patient.dateOfBirth), 'PPP') : 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
             <Typography variant="body2" color="text.secondary">Age</Typography>
             <Typography variant="body1">
-              {patient.dateOfBirth ? `${calculateAge(patient.dateOfBirth)} years` : 'N/A'}
+              {patient.age ? `${patient.age} years` : 'N/A'}
             </Typography>
           </Grid>
           <Grid item xs={6}>

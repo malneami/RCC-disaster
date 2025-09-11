@@ -33,8 +33,7 @@ const PatientInformationCard: React.FC<PatientInformationCardProps> = ({
               {strokeCase.patient?.firstName} {strokeCase.patient?.lastName}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              DOB: {strokeCase.patient?.dateOfBirth ? 
-                new Date(strokeCase.patient.dateOfBirth).toLocaleDateString() : 'N/A'}
+              Age: {strokeCase.patient?.age ? `${strokeCase.patient.age} years` : 'N/A'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Gender: {strokeCase.patient?.gender || 'N/A'}

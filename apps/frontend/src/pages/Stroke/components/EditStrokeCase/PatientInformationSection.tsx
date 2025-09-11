@@ -82,13 +82,13 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
-          label="Date of Birth"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={formData.patientInfo?.dateOfBirth ? formData.patientInfo.dateOfBirth.split('T')[0] : ''}
+          label="Age"
+          type="number"
+          inputProps={{ min: 0, max: 150 }}
+          value={formData.patientInfo?.age || ''}
           onChange={(e) => handleInputChange('patientInfo', {
             ...formData.patientInfo,
-            dateOfBirth: e.target.value
+            age: parseInt(e.target.value) || undefined
           })}
         />
       </Grid>

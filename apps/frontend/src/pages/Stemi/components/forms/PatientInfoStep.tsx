@@ -81,7 +81,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
                 firstName: patient.firstName,
                 lastName: patient.lastName,
                 nationalId: patient.nationalId || '',
-                dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+                age: patient.age || undefined,
                 gender: patient.gender as 'MALE' | 'FEMALE' | 'OTHER',
                 phoneNumber: patient.phoneNumber || '',
                 address: patient.address || '',
@@ -101,11 +101,11 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
-            label="Date of Birth"
-            type="date"
-            value={data.dateOfBirth}
-            onChange={handleChange('dateOfBirth')}
-            InputLabelProps={{ shrink: true }}
+            label="Age"
+            type="number"
+            value={data.age || ''}
+            onChange={(e) => onChange({ ...data, age: parseInt(e.target.value) || undefined })}
+            inputProps={{ min: 0, max: 150 }}
             required
           />
         </Grid>

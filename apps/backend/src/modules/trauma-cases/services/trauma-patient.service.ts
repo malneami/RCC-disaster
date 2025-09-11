@@ -10,7 +10,8 @@ export interface PatientInfo {
   mrn?: string;
   phoneNumber?: string;
   email?: string;
-  dateOfBirth?: string;
+  dateOfBirth?: string; // Will be removed after migration
+  age?: number; // Age in years
   gender?: string;
   address?: string;
   emergencyContact?: string;
@@ -81,10 +82,23 @@ export class TraumaPatientService {
         createdById: userId,
       };
       
-      // Handle required fields with defaults if not provided
-      if (patientInfo.dateOfBirth) {
-        patientData.dateOfBirth = new Date(patientInfo.dateOfBirth);
+      // Handle age field (preferred over dateOfBirth)
+      if (patientInfo.age !== undefined && patientInfo.age !== null) {
+        patientData.age = patientInfo.age;
+      } else if (patientInfo.dateOfBirth) {
+        // Calculate age from dateOfBirth if age not provided
+        const today = new Date();
+        const birthDate = new Date(patientInfo.dateOfBirth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        patientData.age = age;
+        patientData.dateOfBirth = birthDate;
       } else {
+        // Default values if neither provided
+        patientData.age = 0; // Default age
         patientData.dateOfBirth = new Date('1900-01-01'); // Default date
       }
       

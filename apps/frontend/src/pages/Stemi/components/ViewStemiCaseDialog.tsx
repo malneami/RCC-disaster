@@ -162,8 +162,8 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
                         <TableCell sx={{ fontFamily: 'monospace' }}>{formatNationalId(stemiCase.patient?.nationalId || '')}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell><strong>Date of Birth</strong></TableCell>
-                        <TableCell>{formatDate(stemiCase.patient?.dateOfBirth || '')}</TableCell>
+                        <TableCell><strong>Age</strong></TableCell>
+                        <TableCell>{stemiCase.patient?.age ? `${stemiCase.patient.age} years` : 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell><strong>Gender</strong></TableCell>

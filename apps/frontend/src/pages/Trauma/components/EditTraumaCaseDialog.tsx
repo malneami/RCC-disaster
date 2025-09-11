@@ -50,7 +50,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       firstName: '',
       lastName: '',
       nationalId: '',
-      dateOfBirth: '',
+      age: undefined as number | undefined,
       gender: 'MALE' as 'MALE' | 'FEMALE' | 'OTHER',
       phoneNumber: '',
       address: '',
@@ -122,7 +122,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
           firstName: traumaCase.patient?.firstName || '',
           lastName: traumaCase.patient?.lastName || '',
           nationalId: traumaCase.patient?.nationalId || '',
-          dateOfBirth: traumaCase.patient?.dateOfBirth ? new Date(traumaCase.patient.dateOfBirth).toISOString().split('T')[0] : '',
+          age: traumaCase.patient?.age || undefined,
           gender: (traumaCase.patient?.gender as 'MALE' | 'FEMALE' | 'OTHER') || ('MALE' as 'MALE' | 'FEMALE' | 'OTHER'),
           phoneNumber: traumaCase.patient?.phoneNumber || '',
           address: (traumaCase.patient as any)?.address || '',
@@ -254,7 +254,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
     switch (stepIndex) {
       case 0: // Patient Info
         return !!(formData.patientInfo.firstName && formData.patientInfo.lastName && 
-                 formData.patientInfo.nationalId && formData.patientInfo.dateOfBirth &&
+                 formData.patientInfo.nationalId && formData.patientInfo.age &&
                  formData.patientInfo.originHospitalId);
       case 1: // Incident Details
         return !!(formData.incidentDetails.arrivalDateTime && 

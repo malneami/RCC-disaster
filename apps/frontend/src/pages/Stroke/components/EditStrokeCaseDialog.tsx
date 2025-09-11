@@ -91,7 +91,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           lastName: strokeCase.patient?.lastName || '',
           nationalId: strokeCase.patient?.nationalId || '',
           mrn: strokeCase.patient?.mrn || '',
-          dateOfBirth: strokeCase.patient?.dateOfBirth || '',
+          age: strokeCase.patient?.age || undefined,
           gender: strokeCase.patient?.gender || '',
           phoneNumber: strokeCase.patient?.phoneNumber || '',
           email: strokeCase.patient?.email || '',

@@ -212,7 +212,7 @@ const OutcomeFormDashboard: React.FC = () => {
                       {stats.completenessDistribution.low}
                     </Typography>
                     <Typography color="textSecondary">
-                      Low (<50%)
+                      {'Low (<50%)'}
                     </Typography>
                     <Chip
                       label="Low Completeness"
@@ -235,7 +235,7 @@ const OutcomeFormDashboard: React.FC = () => {
               while {stats.incompleteForms} forms still need completion. 
               {stats.completenessDistribution.high} cases have high completeness (≥80%), 
               {stats.completenessDistribution.medium} have medium completeness (50-79%), 
-              and {stats.completenessDistribution.low} have low completeness (<50%).
+              and {stats.completenessDistribution.low} have low completeness {"(<50%)"}.
             </Typography>
           </Alert>
         </Grid>

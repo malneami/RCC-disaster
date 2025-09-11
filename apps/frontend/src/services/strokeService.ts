@@ -14,7 +14,8 @@ export interface PatientInfo {
   firstName: string;
   lastName: string;
   middleName?: string;
-  dateOfBirth?: string;
+  dateOfBirth?: string; // Will be removed after migration
+  age?: number; // Age in years
   gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
   phoneNumber?: string;
   email?: string;
@@ -128,7 +129,8 @@ export interface StrokeCase {
     lastName: string;
     nationalId?: string;
     mrn?: string;
-    dateOfBirth: string;
+    dateOfBirth?: string; // Will be removed after migration
+    age?: number; // Age in years
     gender: string;
     phoneNumber?: string;
     email?: string;
@@ -391,7 +393,7 @@ export class StrokeService {
         lastName: data.patientInfo.lastName,
         nationalId: data.patientInfo.nationalId,
         mrn: data.patientInfo.mrn,
-        dateOfBirth: data.patientInfo.dateOfBirth,
+        age: data.patientInfo.age,
         gender: data.patientInfo.gender,
         phoneNumber: data.patientInfo.phoneNumber,
         email: data.patientInfo.email

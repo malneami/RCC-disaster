@@ -32,7 +32,7 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
       lastName: patient.lastName,
       nationalId: patient.nationalId,
       mrn: patient.mrn,
-      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+      age: patient.age || undefined,
       gender: patient.gender,
       phoneNumber: patient.phoneNumber || '',
       email: patient.email || '',
@@ -106,12 +106,12 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
-            label="Date of Birth"
-            type="date"
-            value={formData.dateOfBirth || ''}
-            onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+            label="Age"
+            type="number"
+            value={formData.age || ''}
+            onChange={(e) => handleChange('age', parseInt(e.target.value) || undefined)}
+            inputProps={{ min: 0, max: 150 }}
             required
-            InputLabelProps={{ shrink: true }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>

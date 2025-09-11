@@ -51,7 +51,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     firstName: '',
     lastName: '',
     nationalId: '',
-    dateOfBirth: '',
+    age: undefined,
     gender: 'MALE',
     phoneNumber: '',
     address: '',
@@ -151,7 +151,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         firstName: '',
         lastName: '',
         nationalId: '',
-        dateOfBirth: '',
+        age: undefined,
         gender: 'MALE',
         phoneNumber: '',
         address: '',
@@ -218,7 +218,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           patientInfo.firstName &&
           patientInfo.lastName &&
           patientInfo.nationalId &&
-          patientInfo.dateOfBirth &&
+          patientInfo.age &&
           patientInfo.gender &&
           patientInfo.originHospitalId
         );

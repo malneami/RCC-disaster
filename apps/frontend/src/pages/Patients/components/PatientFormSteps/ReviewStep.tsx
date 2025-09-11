@@ -8,7 +8,6 @@ import {
   Chip,
   Divider,
 } from '@mui/material';
-import { format } from 'date-fns';
 import { CreatePatientData } from '../../../../services/patientService';
 
 interface ReviewStepProps {
@@ -16,14 +15,6 @@ interface ReviewStepProps {
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'Not provided';
-    try {
-      return format(new Date(dateString), 'PPP');
-    } catch {
-      return dateString;
-    }
-  };
 
   return (
     <Box>
@@ -49,8 +40,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                 </Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Date of Birth</Typography>
-                <Typography variant="body1">{formatDate(formData.dateOfBirth)}</Typography>
+                <Typography variant="body2" color="text.secondary">Age</Typography>
+                <Typography variant="body1">{formData.age ? `${formData.age} years` : 'N/A'}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="text.secondary">Gender</Typography>

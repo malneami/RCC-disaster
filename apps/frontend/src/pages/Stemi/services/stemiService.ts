@@ -5,7 +5,8 @@ export interface PatientInfo {
   firstName: string;
   lastName: string;
   nationalId: string;
-  dateOfBirth: string;
+  dateOfBirth?: string; // Will be removed after migration
+  age?: number; // Age in years
   gender: 'MALE' | 'FEMALE' | 'OTHER';
   phoneNumber?: string;
   address?: string;
@@ -54,7 +55,8 @@ export interface StemiCase {
     firstName: string;
     lastName: string;
     nationalId: string;
-    dateOfBirth: string;
+    dateOfBirth?: string; // Will be removed after migration
+    age?: number; // Age in years
     gender: 'MALE' | 'FEMALE' | 'OTHER';
     phoneNumber?: string;
     address?: string;

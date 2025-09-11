@@ -8,7 +8,8 @@ export interface Patient {
   firstName: string;
   lastName: string;
   middleName?: string;
-  dateOfBirth: string;
+  dateOfBirth?: string; // Will be removed after migration
+  age?: number; // Age in years
   gender: 'MALE' | 'FEMALE' | 'OTHER' | 'UNKNOWN';
   maritalStatus?: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'SEPARATED' | 'UNKNOWN';
   phoneNumber?: string;
@@ -65,7 +66,8 @@ export interface CreatePatientData {
   firstName: string;
   lastName: string;
   middleName?: string;
-  dateOfBirth: string;
+  dateOfBirth?: string; // Will be removed after migration
+  age?: number; // Age in years
   gender: 'MALE' | 'FEMALE' | 'OTHER' | 'UNKNOWN';
   maritalStatus?: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'SEPARATED' | 'UNKNOWN';
   phoneNumber?: string;

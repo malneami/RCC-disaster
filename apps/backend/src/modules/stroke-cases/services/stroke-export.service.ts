@@ -18,7 +18,7 @@ export class StrokeExportService {
               lastName: true,
               nationalId: true,
               mrn: true,
-              dateOfBirth: true,
+              age: true,
               gender: true,
               phoneNumber: true,
               email: true,
@@ -76,10 +76,8 @@ export class StrokeExportService {
         const destinationHospital = case_.destinationHospital;
         const ticket = case_.ticket;
 
-        // Calculate patient age
-        const age = patient.dateOfBirth 
-          ? Math.floor((new Date().getTime() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-          : null;
+        // Get patient age
+        const age = patient.age;
 
         // Calculate time metrics
         const symptomOnsetTime = case_.symptomOnset ? new Date(case_.symptomOnset) : null;

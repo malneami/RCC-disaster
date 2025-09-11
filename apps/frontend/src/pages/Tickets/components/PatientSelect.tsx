@@ -21,7 +21,6 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { Patient, CreatePatientData, patientService } from '../../../services/patientService';
-import { format } from 'date-fns';
 
 interface PatientSelectProps {
   value: string | null;
@@ -109,8 +108,8 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
       setCreateError(null);
 
       // Validate required fields
-      if (!newPatient.firstName || !newPatient.lastName || !newPatient.dateOfBirth) {
-        setCreateError('First name, last name, and date of birth are required');
+      if (!newPatient.firstName || !newPatient.lastName || !newPatient.age) {
+        setCreateError('First name, last name, and age are required');
         return;
       }
 
@@ -145,16 +144,12 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
   };
 
   const getPatientDisplayName = (patient: Patient) => {
-    const age = patient.dateOfBirth 
-      ? Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-      : null;
-    
     const fullName = `${patient.firstName} ${patient.lastName}`;
     const identifiers = [];
     
     if (patient.nationalId) identifiers.push(`ID: ${patient.nationalId}`);
     if (patient.mrn) identifiers.push(`MRN: ${patient.mrn}`);
-    if (age) identifiers.push(`${age}y`);
+    if (patient.age) identifiers.push(`${patient.age}y`);
     
     return `${fullName}${identifiers.length > 0 ? ` (${identifiers.join(', ')})` : ''}`;
   };
@@ -162,7 +157,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
   const getPatientSubtitle = (patient: Patient) => {
     const parts = [];
     if (patient.gender !== 'UNKNOWN') parts.push(patient.gender);
-    if (patient.dateOfBirth) parts.push(format(new Date(patient.dateOfBirth), 'MMM dd, yyyy'));
+    if (patient.age) parts.push(`${patient.age} years old`);
     if (patient.phoneNumber) parts.push(patient.phoneNumber);
     return parts.join(' • ');
   };

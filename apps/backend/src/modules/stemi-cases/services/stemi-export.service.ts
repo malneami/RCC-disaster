@@ -16,7 +16,7 @@ export class StemiExportService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            dateOfBirth: true,
+            age: true,
             gender: true,
           }
         },
@@ -122,8 +122,8 @@ export class StemiExportService {
     const originHospital = case_.originHospital;
     const destinationHospital = case_.destinationHospital;
 
-    // Calculate age
-    const age = this.calculateAge(patient.dateOfBirth);
+    // Get patient age
+    const age = patient.age;
 
     // Mode of arrival calculations
     const modeOfArrival = case_.modeOfArrival || '';
@@ -216,19 +216,6 @@ export class StemiExportService {
     };
   }
 
-  private calculateAge(dateOfBirth: Date): number {
-    if (!dateOfBirth) return 0;
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    
-    return age;
-  }
 
   private calculateTimeDifference(startTime: Date, endTime: Date): number | null {
     if (!startTime || !endTime) return null;

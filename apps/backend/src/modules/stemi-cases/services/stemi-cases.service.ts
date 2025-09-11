@@ -163,7 +163,7 @@ export class StemiCasesService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            dateOfBirth: true,
+            age: true,
             gender: true,
             phoneNumber: true,
             address: true,

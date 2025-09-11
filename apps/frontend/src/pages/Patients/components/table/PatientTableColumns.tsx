@@ -24,17 +24,6 @@ export const usePatientTableColumns = ({
   onEditPatient,
   onExportPatient,
 }: PatientTableColumnsProps): TableColumn<Patient>[] => {
-  // Calculate age helper
-  const calculateAge = (dateOfBirth: string) => {
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   // Get privacy level color helper
   const getPrivacyLevelColor = (privacyLevel: string) => {
@@ -60,7 +49,6 @@ export const usePatientTableColumns = ({
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {patient.middleName && `${patient.middleName} `}
-              {format(new Date(patient.dateOfBirth), 'MMM dd, yyyy')}
             </Typography>
           </Box>
         </Box>
@@ -102,7 +90,7 @@ export const usePatientTableColumns = ({
       render: (patient: Patient) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2">
-            {calculateAge(patient.dateOfBirth)}y
+            {patient.age || 'N/A'}y
           </Typography>
         </Box>
       ),

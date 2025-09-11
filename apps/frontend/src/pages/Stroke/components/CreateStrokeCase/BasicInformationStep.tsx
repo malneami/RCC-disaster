@@ -61,7 +61,7 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
       lastName: patient.lastName,
       nationalId: patient.nationalId,
       mrn: patient.mrn,
-      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '',
+      age: patient.age || undefined,
       gender: patient.gender,
       phoneNumber: patient.phoneNumber || '',
       email: patient.email || '',
@@ -77,7 +77,7 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
       lastName: updatedPatient.lastName,
       nationalId: updatedPatient.nationalId,
       mrn: updatedPatient.mrn,
-      dateOfBirth: updatedPatient.dateOfBirth ? new Date(updatedPatient.dateOfBirth).toISOString().split('T')[0] : '',
+      age: updatedPatient.age || undefined,
       gender: updatedPatient.gender,
       phoneNumber: updatedPatient.phoneNumber || '',
       email: updatedPatient.email || '',
@@ -177,13 +177,13 @@ const BasicInformationStep: React.FC<BasicInformationStepProps> = ({
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
-          label="Birth Date"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={formData.patientInfo?.dateOfBirth || ''}
+          label="Age"
+          type="number"
+          inputProps={{ min: 0, max: 150 }}
+          value={formData.patientInfo?.age || ''}
           onChange={(e) => updateFormData('patientInfo', { 
             ...formData.patientInfo, 
-            dateOfBirth: e.target.value 
+            age: parseInt(e.target.value) || undefined 
           })}
           required
         />

@@ -51,7 +51,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       firstName: '',
       lastName: '',
       nationalId: '',
-      dateOfBirth: '',
+      age: undefined,
       gender: 'MALE' as const,
       phoneNumber: '',
       address: '',
@@ -184,7 +184,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
     switch (stepIndex) {
       case 0: // Patient Info
         return !!(formData.patientInfo.firstName && formData.patientInfo.lastName && 
-                 formData.patientInfo.nationalId && formData.patientInfo.dateOfBirth &&
+                 formData.patientInfo.nationalId && formData.patientInfo.age &&
                  formData.patientInfo.originHospitalId);
       case 1: // Incident Details
         return !!(formData.incidentDetails.arrivalDateTime && 

@@ -69,7 +69,11 @@ export class PatientInfoDto {
 
   @IsOptional()
   @IsDateString()
-  dateOfBirth?: string;
+  dateOfBirth?: string; // Will be removed after migration
+
+  @IsOptional()
+  @IsNumber()
+  age?: number; // Age in years
 
   @IsOptional()
   @IsString()

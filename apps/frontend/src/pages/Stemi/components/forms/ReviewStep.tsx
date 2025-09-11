@@ -45,15 +45,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
     });
   };
 
-  const formatDate = (date: string) => {
-    if (!date) return 'Not specified';
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -78,7 +69,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                 <strong>National ID:</strong> {patientInfo.nationalId}
               </Typography>
               <Typography variant="body2">
-                <strong>Date of Birth:</strong> {formatDate(patientInfo.dateOfBirth)}
+                <strong>Age:</strong> {patientInfo.age ? `${patientInfo.age} years` : 'N/A'}
               </Typography>
               <Typography variant="body2">
                 <strong>Gender:</strong> {patientInfo.gender}
