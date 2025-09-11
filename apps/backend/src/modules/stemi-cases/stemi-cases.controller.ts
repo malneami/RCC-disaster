@@ -12,9 +12,12 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { StemiCasesService } from './services/stemi-cases.service';
+import { StemiExportService } from './services/stemi-export.service';
 import { CreateStemiCaseDto, UpdateStemiCaseDto } from './dto/create-stemi-case.dto';
 import { StemiFilterDto } from './dto/stemi-filter.dto';
 import { Public } from '../../auth/decorators/public.decorator';
@@ -22,7 +25,10 @@ import { Public } from '../../auth/decorators/public.decorator';
 @Controller('stemi-cases')
 @UseGuards(JwtAuthGuard)
 export class StemiCasesController {
-  constructor(private readonly stemiCasesService: StemiCasesService) {}
+  constructor(
+    private readonly stemiCasesService: StemiCasesService,
+    private readonly stemiExportService: StemiExportService,
+  ) {}
 
   @Post('test')
   @Public()
@@ -87,6 +93,21 @@ export class StemiCasesController {
     @Query('endDate') endDate?: string,
   ) {
     return await this.stemiCasesService.getKpiSummary(hospitalId, startDate, endDate);
+  }
+
+  @Get('export')
+  @Public()
+  async exportToExcel(@Res() res: Response) {
+    try {
+      const exportResult = await this.stemiExportService.exportStemiCasesToExcel();
+      
+      res.setHeader('Content-Type', exportResult.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
+      res.send(exportResult.buffer);
+    } catch (error) {
+      console.error('Export error:', error);
+      throw new BadRequestException('Failed to export STEMI cases');
+    }
   }
 
   @Get(':id')

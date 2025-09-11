@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab, Button } from '@mui/material';
-import { Add, Assessment, Timeline, Dashboard, Warning, Schedule } from '@mui/icons-material';
+import { Box, Tabs, Tab, CircularProgress, Fab, Button, Tooltip } from '@mui/material';
+import { Add, Assessment, Timeline, Dashboard, Warning, Schedule, FileDownload } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import StemiCasesList from './components/StemiCasesList';
@@ -11,6 +11,7 @@ import ViewStemiCaseDialog from './components/ViewStemiCaseDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { StemiService, StemiCase, StemiKpiResponse, StemiFilterParams } from './services/stemiService';
+import { StemiExportService } from './services/stemiExportService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface TabPanelProps {
@@ -48,6 +49,7 @@ const StemiPortalPage: React.FC = () => {
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
   const [filters] = useState<StemiFilterParams>({});
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [exportLoading, setExportLoading] = useState(false);
 
   // const isAdmin = user?.role === 'ADMIN';
 
@@ -377,6 +379,18 @@ const StemiPortalPage: React.FC = () => {
     setViewDialogOpen(true);
   };
 
+  const handleExportToExcel = async () => {
+    try {
+      setExportLoading(true);
+      await StemiExportService.exportToExcel();
+    } catch (error) {
+      console.error('Export failed:', error);
+      setError('Failed to export STEMI cases to Excel');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -527,20 +541,49 @@ const StemiPortalPage: React.FC = () => {
         </TabPanel>
       </PortalSkeleton>
 
-      {/* Floating Action Button */}
-      <Fab
-        color="primary"
-        aria-label="create stemi case"
-        onClick={() => setCreateDialogOpen(true)}
+      {/* Floating Action Buttons */}
+      <Box
         sx={{
           position: 'fixed',
           bottom: 16,
           right: 16,
           zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
         }}
       >
-        <Add />
-      </Fab>
+        {/* Export Button */}
+        <Tooltip title="Export to Excel" placement="left">
+          <Fab
+            color="secondary"
+            aria-label="export to excel"
+            onClick={handleExportToExcel}
+            disabled={exportLoading}
+            sx={{
+              width: 56,
+              height: 56,
+            }}
+          >
+            {exportLoading ? <CircularProgress size={24} color="inherit" /> : <FileDownload />}
+          </Fab>
+        </Tooltip>
+
+        {/* Create Button */}
+        <Tooltip title="Create STEMI Case" placement="left">
+          <Fab
+            color="primary"
+            aria-label="create stemi case"
+            onClick={() => setCreateDialogOpen(true)}
+            sx={{
+              width: 56,
+              height: 56,
+            }}
+          >
+            <Add />
+          </Fab>
+        </Tooltip>
+      </Box>
 
       {/* Dialogs */}
       <CreateStemiCaseDialog
