@@ -359,7 +359,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
               color: 'text.secondary',
               fontWeight: 'medium'
             }}>
-              Ticket: {stemiCase.ticket.ticketNumber}
+              Ticket: {stemiCase.ticket?.ticketNumber || 'None'}
             </Box>
           </Box>
         </DialogTitle>

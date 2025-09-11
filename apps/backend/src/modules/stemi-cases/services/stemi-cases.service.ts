@@ -24,35 +24,63 @@ export class StemiCasesService {
       const patient = await this.stemiPatientService.createOrUpdatePatient(patientInfo, userId);
       console.log('Patient created successfully:', patient.id);
 
-      // Create ticket first
-      const ticket = await this.prisma.ticket.create({
-        data: {
-          ticketNumber: `STEMI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          patientId: patient.id,
-          originHospitalId: patientInfo.originHospitalId,
-          destinationHospitalId: patientInfo.destinationHospitalId,
-          priority: 'CRITICAL',
-          status: 'PENDING',
-          pathway: 'STEMI',
-          chiefComplaint: clinicalAssessment.presentingSymptoms || 'Chest pain - suspected STEMI',
-          vitals: JSON.stringify({}), // Will be populated later
-          isEmergency: true,
-          emergencyType: 'STEMI',
-          emergencySeverity: 'CRITICAL',
-          notes: `STEMI case: ${clinicalAssessment.presentingSymptoms}`,
-          createdById: userId,
-          
-          // Basic ticket fields only
-        }
+      // Create ticket only if there's a destination hospital (transfer case)
+      let ticket = null;
+      if (patientInfo.destinationHospitalId) {
+        console.log('Creating transfer ticket for STEMI case with destination hospital:', patientInfo.destinationHospitalId);
+        ticket = await this.prisma.ticket.create({
+          data: {
+            ticketNumber: `STEMI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            patientId: patient.id,
+            originHospitalId: patientInfo.originHospitalId,
+            destinationHospitalId: patientInfo.destinationHospitalId,
+            priority: 'CRITICAL',
+            status: 'PENDING',
+            pathway: 'STEMI',
+            chiefComplaint: clinicalAssessment.presentingSymptoms || 'Chest pain - suspected STEMI',
+            vitals: JSON.stringify({}), // Will be populated later
+            isEmergency: true,
+            emergencyType: 'STEMI',
+            emergencySeverity: 'CRITICAL',
+            notes: `STEMI case: ${clinicalAssessment.presentingSymptoms}`,
+            createdById: userId,
+            
+            // Basic ticket fields only
+          }
+        });
+        console.log('Transfer ticket created successfully:', ticket.id);
+      } else {
+        console.log('No destination hospital specified - creating standalone STEMI case without transfer ticket');
+      }
+
+      // Validate hospital IDs before creating STEMI case
+      const originHospital = await this.prisma.hospital.findUnique({
+        where: { id: patientInfo.originHospitalId }
       });
+      
+      if (!originHospital) {
+        throw new BadRequestException(`Origin hospital with ID ${patientInfo.originHospitalId} not found`);
+      }
+
+      let destinationHospital = null;
+      if (patientInfo.destinationHospitalId) {
+        destinationHospital = await this.prisma.hospital.findUnique({
+          where: { id: patientInfo.destinationHospitalId }
+        });
+        
+        if (!destinationHospital) {
+          console.warn(`Destination hospital with ID ${patientInfo.destinationHospitalId} not found - creating standalone case`);
+          // Don't throw error, just create standalone case
+        }
+      }
 
       // Create STEMI case
       const stemiCase = await this.prisma.stemiCase.create({
         data: {
-          ticketId: ticket.id,
+          ticketId: ticket?.id, // Can be null for standalone cases
           patientId: patient.id,
           originHospitalId: patientInfo.originHospitalId,
-          destinationHospitalId: patientInfo.destinationHospitalId,
+          destinationHospitalId: destinationHospital ? patientInfo.destinationHospitalId : null, // Use validated hospital or null
           
           // Clinical Assessment
           heartScore: clinicalAssessment.heartScore,
@@ -215,19 +243,21 @@ export class StemiCasesService {
         await this.stemiPatientService.updatePatient(existingCase.patientId, patientInfo);
       }
 
-      // Update ticket
-      await this.prisma.ticket.update({
-        where: { id: existingCase.ticketId },
-        data: {
-          // Update hospital fields if provided
-          ...(patientInfo?.originHospitalId && {
-            originHospitalId: patientInfo.originHospitalId,
-          }),
-          ...(patientInfo?.destinationHospitalId && {
-            destinationHospitalId: patientInfo.destinationHospitalId,
-          }),
-        }
-      });
+      // Update ticket only if it exists
+      if (existingCase.ticketId) {
+        await this.prisma.ticket.update({
+          where: { id: existingCase.ticketId },
+          data: {
+            // Update hospital fields if provided
+            ...(patientInfo?.originHospitalId && {
+              originHospitalId: patientInfo.originHospitalId,
+            }),
+            ...(patientInfo?.destinationHospitalId && {
+              destinationHospitalId: patientInfo.destinationHospitalId,
+            }),
+          }
+        });
+      }
 
       // Build update data dynamically - use proper existence checks instead of truthiness
       const updateData: any = {};
@@ -311,10 +341,12 @@ export class StemiCasesService {
         where: { id }
       });
 
-      // Delete associated ticket
-      await this.prisma.ticket.delete({
-        where: { id: existingCase.ticketId }
-      });
+      // Delete associated ticket only if it exists
+      if (existingCase.ticketId) {
+        await this.prisma.ticket.delete({
+          where: { id: existingCase.ticketId }
+        });
+      }
 
       return { message: 'STEMI case deleted successfully' };
     } catch (error) {

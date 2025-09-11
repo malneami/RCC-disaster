@@ -158,13 +158,13 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
     return StemiDatetimeService.calculateTimeDifference(startTime, endTime);
   };
 
-  const getKpiStatus = (minutes: number, target: number): { status: 'GREEN' | 'YELLOW' | 'RED'; color: string } => {
+  const getKpiStatus = (minutes: number, target: number): { status: 'success' | 'warning' | 'error'; color: string } => {
     if (minutes <= target) {
-      return { status: 'GREEN', color: '#4caf50' };
+      return { status: 'success', color: '#4caf50' };
     } else if (minutes <= target * 1.2) {
-      return { status: 'YELLOW', color: '#ff9800' };
+      return { status: 'warning', color: '#ff9800' };
     } else {
-      return { status: 'RED', color: '#f44336' };
+      return { status: 'error', color: '#f44336' };
     }
   };
 
@@ -193,7 +193,7 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
                 <Chip
                   label="≤10 min"
                   size="small"
-                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.firstEcgTime), 10).status.toLowerCase() as any}
+                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.firstEcgTime), 10).status}
                 />
               </Box>
             </CardContent>
@@ -214,7 +214,7 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
                 <Chip
                   label="≤90 min"
                   size="small"
-                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.balloonInflationTime), 90).status.toLowerCase() as any}
+                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.balloonInflationTime), 90).status}
                 />
               </Box>
             </CardContent>
@@ -235,7 +235,7 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
                 <Chip
                   label="≤30 min"
                   size="small"
-                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.thrombolyticAdminTime), 30).status.toLowerCase() as any}
+                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.thrombolyticAdminTime), 30).status}
                 />
               </Box>
             </CardContent>

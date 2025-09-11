@@ -19,21 +19,25 @@ export const theme = createTheme({
       main: '#D32F2F',
       light: '#EF5350',
       dark: '#C62828',
+      contrastText: '#ffffff',
     },
     warning: {
       main: '#F57C00',
       light: '#FF9800',
       dark: '#E65100',
+      contrastText: '#ffffff',
     },
     info: {
       main: '#0288D1',
       light: '#03DAC6',
       dark: '#0277BD',
+      contrastText: '#ffffff',
     },
     success: {
       main: '#388E3C',
       light: '#4CAF50',
       dark: '#2E7D32',
+      contrastText: '#ffffff',
     },
     grey: {
       50: '#FAFAFA',

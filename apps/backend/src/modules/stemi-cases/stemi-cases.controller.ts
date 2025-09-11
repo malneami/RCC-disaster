@@ -64,12 +64,15 @@ export class StemiCasesController {
   }
 
   @Post()
-  @Public()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createStemiCaseDto: any, @Request() req: any) {
     try {
-      const userId = req.user?.id || '433dc4e4-9b03-4d76-b513-840db55029a2'; // Use admin user ID from seeded data
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new BadRequestException('User ID not found in request');
+      }
       console.log('Controller received data:', JSON.stringify(createStemiCaseDto, null, 2));
+      console.log('User ID from request:', userId);
       return await this.stemiCasesService.createStemiCase(createStemiCaseDto, userId);
     } catch (error: any) {
       console.error('Controller error:', error);

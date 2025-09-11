@@ -201,7 +201,7 @@ class TicketService {
     const response = await apiClient.post('/tickets', data);
     const ticket = response.data;
     
-    // Automatically create trauma or stroke case if pathway supports it
+    // Automatically create trauma, stroke, or STEMI case if pathway supports it
     try {
       if (autoCaseCreationService.supportsAutoCaseCreation(ticket.pathway)) {
         // Get patient data for case creation

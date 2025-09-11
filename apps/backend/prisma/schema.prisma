@@ -1069,7 +1069,7 @@ model StrokeTimeline {
 // STEMI Case model for comprehensive STEMI care management
 model StemiCase {
   id                              String      @id @default(uuid())
-  ticketId                        String      @map("ticket_id")
+  ticketId                        String?     @map("ticket_id")
   patientId                       String      @map("patient_id")
   originHospitalId                String      @map("origin_hospital_id")
   destinationHospitalId           String?     @map("destination_hospital_id")
@@ -1135,7 +1135,7 @@ model StemiCase {
   createdById                     String      @map("created_by_id")
   
   // Relations
-  ticket                          Ticket      @relation(fields: [ticketId], references: [id])
+  ticket                          Ticket?     @relation(fields: [ticketId], references: [id])
   patient                         Patient     @relation(fields: [patientId], references: [id])
   originHospital                  Hospital    @relation("StemiOriginHospital", fields: [originHospitalId], references: [id])
   destinationHospital             Hospital?   @relation("StemiDestinationHospital", fields: [destinationHospitalId], references: [id])
