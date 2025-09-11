@@ -102,6 +102,9 @@ export interface StrokeCase {
   followUpCallCompleted?: boolean;
   followUpCallDate?: string;
   
+  // Outcome Form Fields
+  outcomePercentageCompleteness?: number;
+  
   // KPI Tracking
   metKpi1?: boolean;
   metKpi2?: boolean;

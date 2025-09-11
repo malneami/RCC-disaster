@@ -23,6 +23,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } 
 import { StrokeCase } from '../../../services/strokeService';
 import StrokeCaseDetailsDialog from './StrokeCaseDetailsDialog';
 import EditStrokeCaseDialog from './EditStrokeCaseDialog';
+import StrokeOutcomeForm from './StrokeOutcomeForm';
 import StrokeCasesFilters from './StrokeCasesList/StrokeCasesFilters';
 import StrokeCaseTableRow from './StrokeCasesList/StrokeCaseTableRow';
 import StrokeCasesTableHeader from './StrokeCasesList/StrokeCasesTableHeader';
@@ -45,6 +46,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   const [selectedCase, setSelectedCase] = useState<StrokeCase | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [outcomeFormDialogOpen, setOutcomeFormDialogOpen] = useState(false);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<StrokeCase | null>(null);
@@ -105,6 +107,11 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
     setEditDialogOpen(true);
   };
 
+  const handleOpenOutcomeForm = (case_: StrokeCase) => {
+    setSelectedCase(case_);
+    setOutcomeFormDialogOpen(true);
+  };
+
   const handleDeleteCase = (case_: StrokeCase) => {
     setCaseToDelete(case_);
     setDeleteDialogOpen(true);
@@ -151,6 +158,18 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
 
   const handleCloseEditDialog = () => {
     setEditDialogOpen(false);
+    setSelectedCase(null);
+  };
+
+  const handleCloseOutcomeFormDialog = () => {
+    setOutcomeFormDialogOpen(false);
+    setSelectedCase(null);
+  };
+
+  const handleOutcomeFormSuccess = () => {
+    // Refresh the cases list or update the specific case
+    // This could trigger a parent component refresh
+    setOutcomeFormDialogOpen(false);
     setSelectedCase(null);
   };
 
@@ -261,6 +280,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
                 onViewDetails={handleViewDetails}
                 onEditCase={handleEditCase}
                 onDeleteCase={handleDeleteCase}
+                onOpenOutcomeForm={handleOpenOutcomeForm}
                 isAdmin={isAdmin}
               />
             ))}
@@ -290,6 +310,14 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
         onClose={handleCloseEditDialog}
         strokeCase={selectedCase}
         onUpdate={onUpdateCase}
+      />
+
+      <StrokeOutcomeForm
+        open={outcomeFormDialogOpen}
+        onClose={handleCloseOutcomeFormDialog}
+        strokeCaseId={selectedCase?.id || ''}
+        strokeCaseData={selectedCase}
+        onSuccess={handleOutcomeFormSuccess}
       />
 
       {/* Delete Confirmation Dialog */}

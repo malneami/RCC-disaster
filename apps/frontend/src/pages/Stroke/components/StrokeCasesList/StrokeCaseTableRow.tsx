@@ -11,17 +11,20 @@ import {
   Edit as EditIcon,
   Visibility as ViewIcon,
   Delete as DeleteIcon,
+  Assignment as OutcomeFormIcon,
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faUser, faHospital } from '@fortawesome/free-solid-svg-icons';
 
 import { StrokeCase, StrokeService, StrokeStatus, StrokeSeverity } from '../../../../services/strokeService';
+import OutcomeFormCompleteness from '../OutcomeFormCompleteness';
 
 interface StrokeCaseTableRowProps {
   strokeCase: StrokeCase;
   onViewDetails: (case_: StrokeCase) => void;
   onEditCase: (case_: StrokeCase) => void;
   onDeleteCase?: (case_: StrokeCase) => void;
+  onOpenOutcomeForm?: (case_: StrokeCase) => void;
   isAdmin?: boolean;
 }
 
@@ -30,6 +33,7 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
   onViewDetails,
   onEditCase,
   onDeleteCase,
+  onOpenOutcomeForm,
   isAdmin = false,
 }) => {
   const getStatusColor = (status: StrokeStatus): string => {
@@ -142,6 +146,23 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
       
       <TableCell>
         {formatDuration(strokeCase.doorToNeedleMinutes)}
+      </TableCell>
+      
+      <TableCell>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <OutcomeFormCompleteness strokeCase={strokeCase} />
+          {onOpenOutcomeForm && (
+            <Tooltip title="Open Outcome Form">
+              <IconButton
+                size="small"
+                onClick={() => onOpenOutcomeForm(strokeCase)}
+                color="primary"
+              >
+                <OutcomeFormIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
       </TableCell>
       
       <TableCell>

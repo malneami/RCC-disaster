@@ -82,6 +82,20 @@ model StrokeCase {
   followUpCallCompleted           Boolean?    @map("follow_up_call_completed")
   followUpCallDate                DateTime?   @map("follow_up_call_date")
   
+  // Stroke Outcome Form Fields
+  dischargeType                   String?     @map("discharge_type") // PLANNED, UNPLANNED, AGAINST_MEDICAL_ADVICE, etc.
+  followUpNotCompletedReason      String?     @map("follow_up_not_completed_reason")
+  followUpSpecify                 String?     @map("follow_up_specify")
+  followUpType                    String?     @map("follow_up_type") // PHONE, IN_PERSON, TELEHEALTH, etc.
+  dischargeModifiedRankinScale    Int?        @map("discharge_modified_rankin_scale") // 0-6 scale
+  followUpModifiedRankinScale     Int?        @map("follow_up_modified_rankin_scale") // 0-6 scale
+  closureReport                   String?     @map("closure_report")
+  functionalStatus                String?     @map("functional_status") // INDEPENDENT, ASSISTANCE_REQUIRED, DEPENDENT, etc.
+  mortality                       String?     @map("mortality") // ALIVE, DEAD, UNKNOWN
+  outcomeFormCompleted            Boolean     @default(false) @map("outcome_form_completed")
+  outcomeFormCompletionDate       DateTime?   @map("outcome_form_completion_date")
+  outcomePercentageCompleteness   Int         @default(0) @map("outcome_percentage_completeness") // 0-100
+  
   // KPI Tracking
   metKpi1                         Boolean?    @map("met_kpi1") // Door to imaging ≤25min
   metKpi2                         Boolean?    @map("met_kpi2") // Door to needle ≤60min  
