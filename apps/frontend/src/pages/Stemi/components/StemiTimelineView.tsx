@@ -154,9 +154,6 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
 
   const timelineEvents = createTimelineEvents();
 
-  const calculateTimeDifference = (startTime: string, endTime: string): number => {
-    return StemiDatetimeService.calculateTimeDifference(startTime, endTime);
-  };
 
   const getKpiStatus = (minutes: number, target: number): { status: 'success' | 'warning' | 'error'; color: string } => {
     if (minutes <= target) {
@@ -180,7 +177,7 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
       {/* KPI Summary Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 3 }}>
         {/* Door to ECG KPI */}
-        {stemiCase.triageTime && stemiCase.firstEcgTime && (
+        {(stemiCase.doorToEcgMinutes !== null && stemiCase.doorToEcgMinutes !== undefined) && (
           <Card>
             <CardContent>
               <Typography variant="subtitle2" gutterBottom>
@@ -188,12 +185,12 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="h6">
-                  {calculateTimeDifference(stemiCase.triageTime, stemiCase.firstEcgTime)} min
+                  {stemiCase.doorToEcgMinutes} min
                 </Typography>
                 <Chip
                   label="≤10 min"
                   size="small"
-                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.firstEcgTime), 10).status}
+                  color={getKpiStatus(stemiCase.doorToEcgMinutes, 10).status}
                 />
               </Box>
             </CardContent>
@@ -201,7 +198,7 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
         )}
 
         {/* Door to Balloon KPI */}
-        {stemiCase.triageTime && stemiCase.balloonInflationTime && (
+        {(stemiCase.doorToBalloonMinutes !== null && stemiCase.doorToBalloonMinutes !== undefined) && (
           <Card>
             <CardContent>
               <Typography variant="subtitle2" gutterBottom>
@@ -209,12 +206,12 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="h6">
-                  {calculateTimeDifference(stemiCase.triageTime, stemiCase.balloonInflationTime)} min
+                  {stemiCase.doorToBalloonMinutes} min
                 </Typography>
                 <Chip
                   label="≤90 min"
                   size="small"
-                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.balloonInflationTime), 90).status}
+                  color={getKpiStatus(stemiCase.doorToBalloonMinutes, 90).status}
                 />
               </Box>
             </CardContent>
@@ -222,7 +219,7 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
         )}
 
         {/* Door to Needle KPI */}
-        {stemiCase.triageTime && stemiCase.thrombolyticAdminTime && (
+        {(stemiCase.doorToNeedleMinutes !== null && stemiCase.doorToNeedleMinutes !== undefined) && (
           <Card>
             <CardContent>
               <Typography variant="subtitle2" gutterBottom>
@@ -230,12 +227,33 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="h6">
-                  {calculateTimeDifference(stemiCase.triageTime, stemiCase.thrombolyticAdminTime)} min
+                  {stemiCase.doorToNeedleMinutes} min
                 </Typography>
                 <Chip
                   label="≤30 min"
                   size="small"
-                  color={getKpiStatus(calculateTimeDifference(stemiCase.triageTime, stemiCase.thrombolyticAdminTime), 30).status}
+                  color={getKpiStatus(stemiCase.doorToNeedleMinutes, 30).status}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Door In Door Out KPI */}
+        {(stemiCase.doorInDoorOutMinutes !== null && stemiCase.doorInDoorOutMinutes !== undefined) && (
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2" gutterBottom>
+                Door In Door Out
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6">
+                  {stemiCase.doorInDoorOutMinutes} min
+                </Typography>
+                <Chip
+                  label="≤120 min"
+                  size="small"
+                  color={getKpiStatus(stemiCase.doorInDoorOutMinutes, 120).status}
                 />
               </Box>
             </CardContent>

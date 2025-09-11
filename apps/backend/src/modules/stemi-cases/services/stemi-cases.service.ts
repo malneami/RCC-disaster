@@ -117,6 +117,9 @@ export class StemiCasesService {
         }
       });
 
+      // Calculate and store quality metrics
+      await this.calculateAndUpdateQualityMetrics(stemiCase.id);
+
       // Timeline events will be handled separately if needed
 
       return await this.getStemiCaseById(stemiCase.id);
@@ -325,6 +328,9 @@ export class StemiCasesService {
         }
       });
 
+      // Recalculate quality metrics after update
+      await this.calculateAndUpdateQualityMetrics(id);
+
       return await this.getStemiCaseById(id);
     } catch (error) {
       console.error('Error updating STEMI case:', error);
@@ -362,5 +368,71 @@ export class StemiCasesService {
       console.error('Error in getKpiSummary:', error);
       throw error;
     }
+  }
+
+  /**
+   * Calculate and update quality metrics for a STEMI case
+   */
+  private async calculateAndUpdateQualityMetrics(stemiCaseId: string) {
+    try {
+      const stemiCase = await this.prisma.stemiCase.findUnique({
+        where: { id: stemiCaseId }
+      });
+
+      if (!stemiCase) {
+        console.warn(`STEMI case ${stemiCaseId} not found for quality metrics calculation`);
+        return;
+      }
+
+      const admissionTime = stemiCase.pathwayStarted;
+      const updateData: any = {};
+
+      // Calculate Door to ECG (triage to first ECG)
+      if (stemiCase.triageTime && stemiCase.firstEcgTime) {
+        updateData.doorToEcgMinutes = this.calculateTimeDifference(stemiCase.triageTime, stemiCase.firstEcgTime);
+        updateData.metKpi1 = updateData.doorToEcgMinutes <= 10; // Door to ECG ≤10min
+      }
+
+      // Calculate Door to Balloon (triage to balloon inflation)
+      if (stemiCase.triageTime && stemiCase.balloonInflationTime) {
+        updateData.doorToBalloonMinutes = this.calculateTimeDifference(stemiCase.triageTime, stemiCase.balloonInflationTime);
+        updateData.metKpi2 = updateData.doorToBalloonMinutes <= 90; // Door to Balloon ≤90min
+      }
+
+      // Calculate Door to Needle (triage to thrombolytic administration)
+      if (stemiCase.triageTime && stemiCase.thrombolyticAdminTime) {
+        updateData.doorToNeedleMinutes = this.calculateTimeDifference(stemiCase.triageTime, stemiCase.thrombolyticAdminTime);
+        updateData.metKpi3 = updateData.doorToNeedleMinutes <= 30; // Door to Needle ≤30min
+      }
+
+      // Calculate Door In Door Out (admission to door out)
+      if (admissionTime && stemiCase.doorOutTime) {
+        updateData.doorInDoorOutMinutes = this.calculateTimeDifference(admissionTime, stemiCase.doorOutTime);
+        updateData.metKpi4 = updateData.doorInDoorOutMinutes <= 120; // Door In Door Out ≤120min
+      }
+
+      // Update the case with calculated metrics
+      if (Object.keys(updateData).length > 0) {
+        await this.prisma.stemiCase.update({
+          where: { id: stemiCaseId },
+          data: updateData
+        });
+        console.log(`Updated quality metrics for STEMI case ${stemiCaseId}:`, updateData);
+      }
+    } catch (error) {
+      console.error('Error calculating quality metrics:', error);
+      // Don't throw error to avoid breaking case creation
+    }
+  }
+
+  /**
+   * Calculate time difference in minutes between two dates
+   */
+  private calculateTimeDifference(startTime: Date, endTime: Date): number | null {
+    if (!startTime || !endTime) return null;
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diffMs = end.getTime() - start.getTime();
+    return Math.round(diffMs / (1000 * 60)); // Convert to minutes
   }
 }
