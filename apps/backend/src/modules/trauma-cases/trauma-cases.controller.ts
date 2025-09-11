@@ -11,18 +11,25 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Res,
+  BadRequestException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { TraumaCasesService } from './trauma-cases.service';
 import { CreateTraumaCaseDto } from './dto/create-trauma-case.dto';
 import { UpdateTraumaCaseDto } from './dto/update-trauma-case.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Public } from '../../auth/decorators/public.decorator';
 import { TraumaModeOfArrival, TraumaMechanismOfInjury } from '@prisma/client';
+import { TraumaExportService } from './services/trauma-export.service';
 
 @Controller('trauma-cases')
 @UseGuards(JwtAuthGuard)
 export class TraumaCasesController {
-  constructor(private readonly traumaCasesService: TraumaCasesService) {}
+  constructor(
+    private readonly traumaCasesService: TraumaCasesService,
+    private readonly traumaExportService: TraumaExportService,
+  ) {}
 
   @Post()
   @Public()
@@ -72,6 +79,20 @@ export class TraumaCasesController {
     @Query('endDate') endDate?: string,
   ) {
     return this.traumaCasesService.getKPISummary(hospitalId, startDate, endDate);
+  }
+
+  @Get('export')
+  @Public()
+  async exportToExcel(@Res() res: Response) {
+    try {
+      const exportResult = await this.traumaExportService.exportTraumaCasesToExcel();
+      res.setHeader('Content-Type', exportResult.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
+      res.send(exportResult.buffer);
+    } catch (error) {
+      console.error('Export error:', error);
+      throw new BadRequestException('Failed to export trauma cases');
+    }
   }
 
   @Get(':id')

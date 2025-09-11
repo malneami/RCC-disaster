@@ -8,6 +8,7 @@ import { TraumaTicketService } from './services/trauma-ticket.service';
 import { TraumaKpiService } from './services/trauma-kpi.service';
 import { TraumaDatetimeService } from './services/trauma-datetime.service';
 import { TraumaQueryService } from './services/trauma-query.service';
+import { TraumaExportService } from './services/trauma-export.service';
 
 @Module({
   imports: [],
@@ -20,8 +21,12 @@ import { TraumaQueryService } from './services/trauma-query.service';
     TraumaTicketService,
     TraumaKpiService,
     TraumaDatetimeService,
-    TraumaQueryService
+    TraumaQueryService,
+    TraumaExportService,
   ],
-  exports: [TraumaCasesService],
+  exports: [
+    TraumaCasesService,
+    TraumaExportService,
+  ],
 })
 export class TraumaCasesModule {}

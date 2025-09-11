@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab, Button } from '@mui/material';
-import { Add, Assessment, Timeline, Dashboard, Warning, TransferWithinAStation, Schedule } from '@mui/icons-material';
+import { Box, Tabs, Tab, CircularProgress, Fab, Button, Tooltip } from '@mui/material';
+import { Add, Assessment, Timeline, Dashboard, Warning, TransferWithinAStation, Schedule, FileDownload } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import TraumaCasesList from './components/TraumaCasesList';
@@ -11,6 +11,7 @@ import TimelineView, { TimelineEvent } from '../../components/Common/TimelineVie
 import { TraumaService, TraumaCase } from '../../services/traumaService';
 import { TraumaKPIsResponse } from './types/traumaTypes';
 import { useAuth } from '../../contexts/AuthContext';
+import { TraumaExportService } from './services/traumaExportService';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -43,6 +44,7 @@ const TraumaPortalPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [exportLoading, setExportLoading] = useState(false);
 
   // Define portal steps
   const portalSteps: PortalStep[] = [
@@ -186,6 +188,18 @@ const TraumaPortalPage: React.FC = () => {
     } catch (err) {
       console.error('Error updating trauma case:', err);
       throw err;
+    }
+  };
+
+  const handleExportToExcel = async () => {
+    try {
+      setExportLoading(true);
+      await TraumaExportService.exportToExcel();
+    } catch (error) {
+      console.error('Export failed:', error);
+      setError('Failed to export trauma cases to Excel');
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -333,19 +347,43 @@ const TraumaPortalPage: React.FC = () => {
         </TabPanel>
 
         {/* Floating Action Button */}
-        <Fab
-          color="primary"
-          aria-label="create trauma case"
+        {/* Floating Action Buttons */}
+        <Box
           sx={{
             position: 'fixed',
             bottom: 16,
             right: 16,
             zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
           }}
-          onClick={() => setCreateDialogOpen(true)}
         >
-          <Add />
-        </Fab>
+          {/* Export Button */}
+          <Tooltip title="Export to Excel" placement="left">
+            <Fab
+              color="secondary"
+              aria-label="export to excel"
+              onClick={handleExportToExcel}
+              disabled={exportLoading}
+              sx={{ width: 56, height: 56 }}
+            >
+              {exportLoading ? <CircularProgress size={24} color="inherit" /> : <FileDownload />}
+            </Fab>
+          </Tooltip>
+
+          {/* Create Button */}
+          <Tooltip title="Create Trauma Case" placement="left">
+            <Fab
+              color="primary"
+              aria-label="create trauma case"
+              onClick={() => setCreateDialogOpen(true)}
+              sx={{ width: 56, height: 56 }}
+            >
+              <Add />
+            </Fab>
+          </Tooltip>
+        </Box>
 
         {/* Create Case Dialog */}
         <CreateTraumaCaseDialog
