@@ -1,7 +1,7 @@
 // Trauma Case model for comprehensive trauma care management
 model TraumaCase {
   id                      String                  @id @default(uuid())
-  ticketId                String                  @map("ticket_id")
+  ticketId                String?                 @map("ticket_id")
   patientId               String                  @map("patient_id")
   originHospitalId        String                  @map("origin_hospital_id")
   destinationHospitalId   String?                 @map("destination_hospital_id")
@@ -39,7 +39,7 @@ model TraumaCase {
   destinationHospital     Hospital?               @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id])
   originHospital          Hospital                @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id])
   patient                 Patient                 @relation(fields: [patientId], references: [id])
-  ticket                  Ticket                  @relation(fields: [ticketId], references: [id])
+  ticket                  Ticket?                 @relation(fields: [ticketId], references: [id])
 
   @@index([ticketId])
   @@index([patientId])

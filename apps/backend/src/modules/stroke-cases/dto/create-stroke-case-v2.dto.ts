@@ -59,6 +59,10 @@ export class CreateStrokeCaseV2Dto {
   @IsString()
   originHospitalId!: string;
 
+  @IsOptional()
+  @IsString()
+  destinationHospitalId?: string;
+
   @IsEnum(StrokeType)
   strokeType!: StrokeType;
 

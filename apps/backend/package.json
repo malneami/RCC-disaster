@@ -26,6 +26,7 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:seed:critical": "ts-node prisma/seed-critical-cases.ts",
     "db:restore-users": "ts-node prisma/restore-users.ts",
     "db:add-hospitals": "ts-node prisma/add-missing-hospitals.ts",
     "db:reset": "prisma migrate reset --force",

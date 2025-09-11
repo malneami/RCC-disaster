@@ -161,8 +161,11 @@ export class StrokeCasesService {
       }
     }
 
-    // Auto-create ticket if not provided
-    if (!ticketId && patientId) {
+    // Auto-create ticket if not provided AND destination hospital is specified
+    if (!ticketId && patientId && createStrokeCaseDto.destinationHospitalId) {
+      console.log('=== TICKET PROCESSING ===');
+      console.log('No ticket ID provided but destination hospital specified, creating new transfer ticket...');
+      
       // Generate a unique ticket number
       const ticketCount = await this.prisma.ticket.count();
       const ticketNumber = `STK-${Date.now()}-${(ticketCount + 1).toString().padStart(4, '0')}`;
@@ -171,21 +174,22 @@ export class StrokeCasesService {
         ticketNumber,
         patientId: patientId,
         originHospitalId: createStrokeCaseDto.originHospitalId,
+        destinationHospitalId: createStrokeCaseDto.destinationHospitalId,
         priority: TicketPriority.HIGH,
         pathway: TicketPathway.STROKE,
         chiefComplaint: createStrokeCaseDto.chiefComplaint || 'Stroke symptoms',
         isEmergency: true,
         createdById: validUserId,
       };
-      console.log('Creating ticket with data:', ticketData);
+      console.log('Creating transfer ticket with data:', ticketData);
       try {
         const ticket = await this.prisma.ticket.create({
           data: ticketData,
         });
-        console.log('Ticket created:', ticket.id);
+        console.log('Transfer ticket created:', ticket.id);
         ticketId = ticket.id;
       } catch (error: any) {
-        console.error('Error creating ticket:', error);
+        console.error('Error creating transfer ticket:', error);
         if (error.code === 'P2002') {
           // Unique constraint violation on ticket number
           console.log('Ticket number collision, generating new number...');
@@ -193,32 +197,35 @@ export class StrokeCasesService {
           const ticket = await this.prisma.ticket.create({
             data: { ...ticketData, ticketNumber: newTicketNumber },
           });
-          console.log('Ticket created with new number:', ticket.id);
+          console.log('Transfer ticket created with new number:', ticket.id);
           ticketId = ticket.id;
         } else {
           throw error;
         }
       }
+    } else if (!ticketId && patientId && !createStrokeCaseDto.destinationHospitalId) {
+      console.log('=== TICKET PROCESSING ===');
+      console.log('No ticket ID provided and no destination hospital - creating standalone stroke case without ticket');
     }
 
-    // Validate that we have both patient and ticket
+    // Validate that we have patient
     if (!patientId) {
       throw new BadRequestException('Patient ID or patient information is required');
     }
-    if (!ticketId) {
-      throw new BadRequestException('Ticket ID is required or could not be created');
+
+    // Validate ticket only if it exists (for transfer cases)
+    let ticket = null;
+    if (ticketId) {
+      ticket = await this.prisma.ticket.findUnique({
+        where: { id: ticketId },
+      });
+
+      if (!ticket) {
+        throw new NotFoundException('Ticket not found');
+      }
     }
 
-    // Validate that the ticket exists and is a stroke pathway
-    const ticket = await this.prisma.ticket.findUnique({
-      where: { id: ticketId },
-    });
-
-    if (!ticket) {
-      throw new NotFoundException('Ticket not found');
-    }
-
-    if (ticket.pathway !== 'STROKE') {
+    if (ticket && ticket.pathway !== 'STROKE') {
       throw new BadRequestException('Ticket must be a stroke pathway');
     }
 
@@ -229,9 +236,10 @@ export class StrokeCasesService {
 
     // Extract only the fields that exist in the CreateStrokeCaseV2Dto
     const strokeCaseData = {
-        ticketId,
+        ticketId: ticketId || null,
         patientId,
         originHospitalId: createStrokeCaseDto.originHospitalId,
+        destinationHospitalId: createStrokeCaseDto.destinationHospitalId,
         presentingSymptoms: createStrokeCaseDto.presentingSymptoms,
         strokeType: createStrokeCaseDto.strokeType,
         currentStatus: createStrokeCaseDto.currentStatus,
@@ -302,7 +310,7 @@ export class StrokeCasesService {
     await this.prisma.strokeTimeline.create({
       data: {
         strokeCaseId: strokeCase.id,
-        ticketId: ticketId,
+        ticketId: ticketId || null,
         fromStatus: null,
         toStatus: createStrokeCaseDto.currentStatus,
         eventTimestamp: new Date(),

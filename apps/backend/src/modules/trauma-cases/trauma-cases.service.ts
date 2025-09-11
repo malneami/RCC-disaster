@@ -47,9 +47,11 @@ export class TraumaCasesService {
         ? await this.ensureHospitalExists(createTraumaCaseDto.destinationHospitalId)
         : null;
 
-      // Process ticket
+      // Process ticket - only create if destination hospital is specified
       let ticketId = createTraumaCaseDto.ticketId;
-      if (!ticketId) {
+      if (!ticketId && destinationHospitalId) {
+        console.log('=== TICKET PROCESSING ===');
+        console.log('No ticket ID provided but destination hospital specified, creating new transfer ticket...');
         ticketId = await this.traumaTicketService.createTicket(
           patientId,
           originHospitalId,
@@ -57,9 +59,15 @@ export class TraumaCasesService {
           createTraumaCaseDto.chiefComplaint || 'Trauma case',
           validUserId
         );
+      } else if (!ticketId && !destinationHospitalId) {
+        console.log('=== TICKET PROCESSING ===');
+        console.log('No ticket ID provided and no destination hospital - creating standalone trauma case without ticket');
       }
       
-      await this.traumaTicketService.validateTicketExists(ticketId);
+      // Validate ticket only if it exists (for transfer cases)
+      if (ticketId) {
+        await this.traumaTicketService.validateTicketExists(ticketId);
+      }
 
       // Calculate derived fields
       const responseTimeMinutes = createTraumaCaseDto.incidentDateTime 
@@ -73,7 +81,7 @@ export class TraumaCasesService {
 
       // Create trauma case
       const traumaCaseData = {
-        ticketId: ticketId,
+        ticketId: ticketId || null,
         patientId: patientId,
         originHospitalId: originHospitalId,
         destinationHospitalId: destinationHospitalId,

@@ -2,7 +2,7 @@
 model StrokeTimeline {
   id                      String          @id @default(uuid())
   strokeCaseId            String          @map("stroke_case_id")
-  ticketId                String          @map("ticket_id")
+  ticketId                String?         @map("ticket_id")
   
   // Status Tracking
   fromStatus              StrokeStatus?   @map("from_status")
@@ -31,7 +31,7 @@ model StrokeTimeline {
   
   // Relations
   strokeCase              StrokeCase      @relation(fields: [strokeCaseId], references: [id])
-  ticket                  Ticket          @relation(fields: [ticketId], references: [id])
+  ticket                  Ticket?         @relation(fields: [ticketId], references: [id])
   triggeredByUser         User            @relation("StrokeTimelineTriggeredBy", fields: [triggeredBy], references: [id])
   createdBy               User            @relation("StrokeTimelineCreator", fields: [createdById], references: [id])
   
