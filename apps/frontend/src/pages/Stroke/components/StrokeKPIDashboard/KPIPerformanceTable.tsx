@@ -24,7 +24,6 @@ import {
   Accessibility,
   Medication,
   Assignment,
-  PhoneCallback,
 } from '@mui/icons-material';
 
 import { StrokeKPISummary } from '../../../../services/strokeService';

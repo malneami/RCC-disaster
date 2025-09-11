@@ -106,7 +106,7 @@ const StrokeTypeBreakdown: React.FC<StrokeTypeBreakdownProps> = ({ kpiSummary })
                   <LinearProgress
                     variant="determinate"
                     value={strokeType.percentage}
-                    color={strokeType.color}
+                    color={strokeType.color === 'primary' ? 'primary' : strokeType.color === 'error' ? 'error' : 'warning'}
                     sx={{ 
                       height: 6, 
                       borderRadius: 3,

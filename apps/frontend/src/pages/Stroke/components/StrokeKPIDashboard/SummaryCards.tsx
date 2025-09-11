@@ -10,9 +10,7 @@ import {
 } from '@mui/material';
 import { 
   Assessment, 
-  Schedule, 
   CheckCircle, 
-  Warning,
   TrendingUp,
   AccessTime
 } from '@mui/icons-material';

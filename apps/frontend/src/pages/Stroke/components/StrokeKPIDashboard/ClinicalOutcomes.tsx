@@ -7,7 +7,6 @@ import {
   Box,
   Avatar,
   Chip,
-  LinearProgress,
 } from '@mui/material';
 import {
   CheckCircle,
