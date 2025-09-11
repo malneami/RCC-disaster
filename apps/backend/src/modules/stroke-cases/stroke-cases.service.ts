@@ -709,7 +709,7 @@ export class StrokeCasesService {
     kpis.metKpi7 = !!data.secondaryPrevention;
 
     // KPI 8: Appropriate rehabilitation referral
-    kpis.metKpi8 = data.dischargeDestination === 'REHABILITATION' || data.dischargeDestination === 'HOME';
+    kpis.metKpi8 = data.dischargeDestination === 'Rehabilitation center' || data.dischargeDestination === 'Home with family';
 
     return kpis;
   }

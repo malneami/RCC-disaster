@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab } from '@mui/material';
-import { Add, Assessment, Timeline, Dashboard } from '@mui/icons-material';
+import { Box, Tabs, Tab, CircularProgress, Fab, Tooltip } from '@mui/material';
+import { Add, Assessment, Timeline, Dashboard, FileDownload } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import StrokeCasesList from './components/StrokeCasesList';
@@ -9,6 +9,7 @@ import CreateStrokeCaseDialog from './components/CreateStrokeCaseDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { StrokeService, StrokeCase, StrokeKPISummary } from '../../services/strokeService';
+import { StrokeExportService } from './services/strokeExportService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface TabPanelProps {
@@ -42,6 +43,7 @@ const StrokePortalPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [exportLoading, setExportLoading] = useState(false);
 
   // Define portal steps
   const portalSteps: PortalStep[] = [
@@ -211,6 +213,18 @@ const StrokePortalPage: React.FC = () => {
     }
   };
 
+  const handleExportToExcel = async () => {
+    try {
+      setExportLoading(true);
+      await StrokeExportService.exportToExcel();
+    } catch (error) {
+      console.error('Export failed:', error);
+      setError('Failed to export stroke cases to Excel');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // Check if user is admin
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'RCC';
 
@@ -360,6 +374,44 @@ const StrokePortalPage: React.FC = () => {
           onSubmit={handleCreateCase}
         />
       </PortalSkeleton>
+
+      {/* Floating Action Buttons */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          zIndex: 1000,
+        }}
+      >
+        {/* Export Button */}
+        <Tooltip title="Export to Excel" placement="left">
+          <Fab
+            color="secondary"
+            aria-label="export to excel"
+            onClick={handleExportToExcel}
+            disabled={exportLoading}
+            sx={{ width: 56, height: 56 }}
+          >
+            {exportLoading ? <CircularProgress size={24} color="inherit" /> : <FileDownload />}
+          </Fab>
+        </Tooltip>
+
+        {/* Create Button */}
+        <Tooltip title="Create Stroke Case" placement="left">
+          <Fab
+            color="primary"
+            aria-label="create stroke case"
+            onClick={() => setCreateDialogOpen(true)}
+            sx={{ width: 56, height: 56 }}
+          >
+            <Add />
+          </Fab>
+        </Tooltip>
+      </Box>
     </>
   );
 };

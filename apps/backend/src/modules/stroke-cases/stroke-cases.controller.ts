@@ -10,8 +10,11 @@ import {
   Request,
   Query,
   ParseIntPipe,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { StrokeCasesService } from './stroke-cases.service';
+import { StrokeExportService } from './services/stroke-export.service';
 import { CreateStrokeCaseDto } from './dto/create-stroke-case.dto';
 import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
 import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
@@ -23,7 +26,10 @@ import { UserRole } from '@prisma/client';
 
 @Controller('stroke-cases')
 export class StrokeCasesController {
-  constructor(private readonly strokeCasesService: StrokeCasesService) {}
+  constructor(
+    private readonly strokeCasesService: StrokeCasesService,
+    private readonly strokeExportService: StrokeExportService
+  ) {}
 
   @Post()
   @Public()
@@ -101,6 +107,21 @@ export class StrokeCasesController {
     const year = yearStr ? parseInt(yearStr, 10) : undefined;
     const month = monthStr ? parseInt(monthStr, 10) : undefined;
     return this.strokeCasesService.getKPISummary(hospitalId, year, month);
+  }
+
+  @Get('export')
+  @Public()
+  async exportStrokeCases(@Res() res: Response) {
+    try {
+      const exportResult = await this.strokeExportService.exportStrokeCasesToExcel();
+      
+      res.setHeader('Content-Type', exportResult.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
+      res.send(exportResult.buffer);
+    } catch (error) {
+      console.error('Error exporting stroke cases:', error);
+      res.status(500).json({ error: 'Failed to export stroke cases' });
+    }
   }
 
   @Get(':id')
