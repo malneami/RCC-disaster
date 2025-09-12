@@ -19,7 +19,7 @@ export interface UnifiedTicket {
   destinationHospitalId?: string;
   pathway?: string;
   chiefComplaint?: string;
-  estimatedArrival?: string;
+  emsContactTime?: string;
   actualArrival?: string;
   transportMode?: string;
   emsUnit?: string;
@@ -110,7 +110,7 @@ export const convertToUnifiedTicket = (ticket: Ticket | HospitalTicket): Unified
       destinationHospitalId: ticket.destinationHospitalId,
       pathway: ticket.pathway,
       chiefComplaint: ticket.chiefComplaint,
-      estimatedArrival: ticket.estimatedArrival,
+      emsContactTime: ticket.emsContactTime,
       actualArrival: ticket.actualArrival,
       transportMode: ticket.transportMode,
       emsUnit: ticket.emsUnit,

@@ -23,7 +23,7 @@ model Ticket {
   treatmentPlan       String?         @map("treatment_plan")
   
   // Transport Details
-  estimatedArrival    DateTime?       @map("estimated_arrival")
+  emsContactTime      DateTime?       @map("ems_contact_time")
   actualArrival       DateTime?       @map("actual_arrival")
   transportMode       String?         @map("transport_mode")
   emsUnit             String?         @map("ems_unit")

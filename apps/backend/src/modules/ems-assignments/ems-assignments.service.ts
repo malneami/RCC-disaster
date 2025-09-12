@@ -33,8 +33,8 @@ export class EmsAssignmentsService {
       data: {
         ...createAssignmentDto,
         assignedAt: new Date(createAssignmentDto.assignedAt),
-        estimatedArrivalTime: createAssignmentDto.estimatedArrivalTime 
-          ? new Date(createAssignmentDto.estimatedArrivalTime) 
+        emsContactTime: createAssignmentDto.emsContactTime 
+          ? new Date(createAssignmentDto.emsContactTime) 
           : null,
         actualArrivalTime: createAssignmentDto.actualArrivalTime 
           ? new Date(createAssignmentDto.actualArrivalTime) 
@@ -67,7 +67,7 @@ export class EmsAssignmentsService {
         eventLocation: 'Dispatch Center',
         metadata: {
           assignmentId: assignment.id,
-          estimatedArrivalTime: createAssignmentDto.estimatedArrivalTime,
+          emsContactTime: createAssignmentDto.emsContactTime,
           priority: assignment.ticket?.priority,
         },
       }
@@ -297,9 +297,9 @@ export class EmsAssignmentsService {
       updateData.status = updateAssignmentDto.status;
     }
 
-    if (updateAssignmentDto.estimatedArrivalTime !== undefined) {
-      updateData.estimatedArrivalTime = updateAssignmentDto.estimatedArrivalTime 
-        ? new Date(updateAssignmentDto.estimatedArrivalTime) 
+    if (updateAssignmentDto.emsContactTime !== undefined) {
+      updateData.emsContactTime = updateAssignmentDto.emsContactTime 
+        ? new Date(updateAssignmentDto.emsContactTime) 
         : null;
     }
 

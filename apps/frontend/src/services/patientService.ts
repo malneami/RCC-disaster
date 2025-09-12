@@ -113,7 +113,7 @@ export interface Ticket {
   vitals?: string;
   diagnostics?: string;
   treatmentPlan?: string;
-  estimatedArrival?: string;
+  emsContactTime?: string;
   actualArrival?: string;
   transportMode?: string;
   emsUnit?: string;

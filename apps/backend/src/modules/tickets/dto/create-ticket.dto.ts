@@ -124,7 +124,7 @@ export class CreateTicketDto {
 
   @IsOptional()
   @IsDateString()
-  estimatedArrival?: string;
+  emsContactTime?: string;
 
   @IsOptional()
   @IsString()

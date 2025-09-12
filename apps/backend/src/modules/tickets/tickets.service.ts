@@ -128,10 +128,10 @@ export class TicketsService {
     // Create ticket with audit trail
     const { requiredResources, ...ticketData } = createTicketDto;
     
-    // Convert estimatedArrival string to Date object if provided
+    // Convert emsContactTime string to Date object if provided
     const processedData = {
       ...ticketData,
-      estimatedArrival: ticketData.estimatedArrival ? new Date(ticketData.estimatedArrival) : undefined,
+      emsContactTime: ticketData.emsContactTime ? new Date(ticketData.emsContactTime) : undefined,
     };
     
     const ticket = await this.prisma.ticket.create({
@@ -194,7 +194,7 @@ export class TicketsService {
             driverId: availableResources.driverId,
             assignedAt: new Date().toISOString(),
             status: AssignmentStatus.EMS_CONTACT,
-            estimatedArrivalTime: createTicketDto.estimatedArrival,
+            emsContactTime: createTicketDto.emsContactTime,
             notes: `Auto-assigned for ticket ${ticket.ticketNumber}`,
           }, userId);
 
@@ -446,7 +446,7 @@ export class TicketsService {
     // Convert DateTime fields from strings to Date objects
     const processedUpdateData = {
       ...updateData,
-      estimatedArrival: updateData.estimatedArrival ? new Date(updateData.estimatedArrival) : undefined,
+      emsContactTime: updateData.emsContactTime ? new Date(updateData.emsContactTime) : undefined,
       actualArrival: updateData.actualArrival ? new Date(updateData.actualArrival) : undefined,
     };
     

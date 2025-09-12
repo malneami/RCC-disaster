@@ -614,14 +614,14 @@ const TicketViewPage: React.FC = () => {
                         />
                       </ListItem>
                       
-                      {ticket.estimatedArrival && (
+                      {ticket.emsContactTime && (
                         <ListItem>
                           <ListItemIcon>
                             <ScheduleIcon />
                           </ListItemIcon>
                           <ListItemText
-                            primary="Estimated Arrival"
-                            secondary={formatDate(ticket.estimatedArrival)}
+                            primary="EMS Contact Time"
+                            secondary={formatDate(ticket.emsContactTime)}
                           />
                         </ListItem>
                       )}

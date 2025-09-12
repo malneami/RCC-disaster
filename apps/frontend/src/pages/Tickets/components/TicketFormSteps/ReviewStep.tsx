@@ -206,7 +206,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
         </Grid>
 
         {/* Transport Information */}
-        {(formData.transportMode || formData.emsUnit || formData.estimatedArrival || formData.notes) && (
+        {(formData.transportMode || formData.emsUnit || formData.emsContactTime || formData.notes) && (
           <Grid item xs={12}>
             <Card>
               <CardContent>
@@ -234,13 +234,13 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                       </Typography>
                     </Grid>
                   )}
-                  {formData.estimatedArrival && (
+                  {formData.emsContactTime && (
                     <Grid item xs={12} md={6}>
                       <Typography variant="body2" color="text.secondary">
-                        Estimated Arrival
+                        EMS Contact Time
                       </Typography>
                       <Typography variant="body1">
-                        {new Date(formData.estimatedArrival).toLocaleString()}
+                        {new Date(formData.emsContactTime).toLocaleString()}
                       </Typography>
                     </Grid>
                   )}

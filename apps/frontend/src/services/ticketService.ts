@@ -42,7 +42,7 @@ export interface CreateTicketData {
   vitals?: Vitals;
   diagnostics?: Diagnostics;
   treatmentPlan?: string;
-  estimatedArrival?: string;
+  emsContactTime?: string;
   transportMode?: string;
   emsUnit?: string;
   notes?: string;
@@ -62,7 +62,7 @@ export interface UpdateTicketData {
   vitals?: Vitals;
   diagnostics?: Diagnostics;
   treatmentPlan?: string;
-  estimatedArrival?: string;
+  emsContactTime?: string;
   actualArrival?: string;
   transportMode?: string;
   emsUnit?: string;
@@ -103,7 +103,7 @@ export interface Ticket {
   vitals?: string;
   diagnostics?: string;
   treatmentPlan?: string;
-  estimatedArrival?: string;
+  emsContactTime?: string;
   actualArrival?: string;
   transportMode?: string;
   emsUnit?: string;

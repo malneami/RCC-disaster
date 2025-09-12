@@ -454,14 +454,14 @@ const TransportInfoStep: React.FC<{
           />
         </Grid>
 
-        {/* Estimated Arrival */}
+        {/* EMS Contact Time */}
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
-            label="Estimated Arrival"
+            label="EMS Contact Time"
             type="datetime-local"
-            value={formData.estimatedArrival ? new Date(formData.estimatedArrival).toISOString().slice(0, 16) : ''}
-            onChange={(e) => handleInputChange('estimatedArrival', e.target.value)}
+            value={formData.emsContactTime ? new Date(formData.emsContactTime).toISOString().slice(0, 16) : ''}
+            onChange={(e) => handleInputChange('emsContactTime', e.target.value)}
             InputLabelProps={{ shrink: true }}
           />
         </Grid>

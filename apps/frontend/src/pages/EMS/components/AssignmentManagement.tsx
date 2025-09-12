@@ -101,7 +101,7 @@ const AssignmentManagement: React.FC = () => {
     driverId: '',
     assignedAt: new Date().toISOString().slice(0, 16),
     status: 'EMS_CONTACT',
-    estimatedArrivalTime: '',
+    emsContactTime: '',
     journeyStartTime: '',
     actualArrivalTime: '',
     journeyEndTime: '',
@@ -117,7 +117,7 @@ const AssignmentManagement: React.FC = () => {
         driverId: assignment.driverId,
         assignedAt: assignment.assignedAt ? assignment.assignedAt.toString() : '',
         status: assignment.status,
-        estimatedArrivalTime: assignment.estimatedArrivalTime ? assignment.estimatedArrivalTime.toString() : '',
+        emsContactTime: assignment.emsContactTime ? assignment.emsContactTime.toString() : '',
         journeyStartTime: assignment.journeyStartTime ? assignment.journeyStartTime.toString() : '',
         actualArrivalTime: assignment.actualArrivalTime ? assignment.actualArrivalTime.toString() : '',
         journeyEndTime: assignment.journeyEndTime ? assignment.journeyEndTime.toString() : '',
@@ -131,7 +131,7 @@ const AssignmentManagement: React.FC = () => {
         driverId: '',
         assignedAt: new Date().toISOString().slice(0, 16),
         status: 'EMS_CONTACT',
-        estimatedArrivalTime: '',
+        emsContactTime: '',
         journeyStartTime: '',
         actualArrivalTime: '',
         journeyEndTime: '',
@@ -154,7 +154,7 @@ const AssignmentManagement: React.FC = () => {
       driverId: assignment.driverId || '',
       assignedAt: assignment.assignedAt ? assignment.assignedAt.toString() : new Date().toISOString(),
       status: assignment.status,
-      estimatedArrivalTime: assignment.estimatedArrivalTime ? assignment.estimatedArrivalTime.toString() : '',
+      emsContactTime: assignment.emsContactTime ? assignment.emsContactTime.toString() : '',
       journeyStartTime: assignment.journeyStartTime ? assignment.journeyStartTime.toString() : '',
       actualArrivalTime: assignment.actualArrivalTime ? assignment.actualArrivalTime.toString() : '',
       journeyEndTime: assignment.journeyEndTime ? assignment.journeyEndTime.toString() : '',
@@ -170,8 +170,8 @@ const AssignmentManagement: React.FC = () => {
       const assignmentData = {
         ...formData,
         assignedAt: new Date(formData.assignedAt).toISOString(),
-        estimatedArrivalTime: formData.estimatedArrivalTime && formData.estimatedArrivalTime.trim() !== ''
-          ? new Date(formData.estimatedArrivalTime).toISOString()
+        emsContactTime: formData.emsContactTime && formData.emsContactTime.trim() !== ''
+          ? new Date(formData.emsContactTime).toISOString()
           : undefined,
         journeyStartTime: formData.journeyStartTime && formData.journeyStartTime.trim() !== ''
           ? new Date(formData.journeyStartTime).toISOString()

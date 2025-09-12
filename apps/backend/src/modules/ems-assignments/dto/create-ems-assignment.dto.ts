@@ -23,11 +23,11 @@ export class CreateEmsAssignmentDto {
   @IsEnum(AssignmentStatus)
   status!: AssignmentStatus;
 
-  @ApiPropertyOptional({ description: 'Estimated arrival time', example: '2024-02-15T08:45:00Z' })
+  @ApiPropertyOptional({ description: 'EMS contact time', example: '2024-02-15T08:45:00Z' })
   @IsOptional()
-  @ValidateIf((o) => o.estimatedArrivalTime !== undefined && o.estimatedArrivalTime !== null)
+  @ValidateIf((o) => o.emsContactTime !== undefined && o.emsContactTime !== null)
   @IsDateString()
-  estimatedArrivalTime?: string;
+  emsContactTime?: string;
 
   @ApiPropertyOptional({ description: 'Actual arrival time', example: '2024-02-15T08:47:00Z' })
   @IsOptional()

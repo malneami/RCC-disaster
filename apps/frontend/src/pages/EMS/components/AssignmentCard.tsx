@@ -127,7 +127,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
         icon: <FontAwesomeIcon icon={faUserMd} />,
         completed: assignment.status !== 'EMS_CONTACT',
         active: assignment.status === 'EMS_CONTACT',
-        timestamp: assignment.assignedAt ? new Date(assignment.assignedAt).toLocaleTimeString() : undefined,
+        timestamp: assignment.emsContactTime ? new Date(assignment.emsContactTime).toLocaleTimeString() : undefined,
       },
       {
         id: 'ems_arrival',

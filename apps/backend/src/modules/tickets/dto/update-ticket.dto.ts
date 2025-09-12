@@ -41,7 +41,7 @@ export class UpdateTicketDto {
 
   @IsOptional()
   @IsDateString()
-  estimatedArrival?: string;
+  emsContactTime?: string;
 
   @IsOptional()
   @IsDateString()

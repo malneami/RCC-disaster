@@ -33,7 +33,7 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
         vitals: parseJsonField(ticket.vitals),
         diagnostics: parseJsonField(ticket.diagnostics),
         treatmentPlan: ticket.treatmentPlan || '',
-        estimatedArrival: ticket.estimatedArrival ? new Date(ticket.estimatedArrival).toISOString().slice(0, 16) : '',
+        emsContactTime: ticket.emsContactTime ? new Date(ticket.emsContactTime).toISOString().slice(0, 16) : '',
         actualArrival: ticket.actualArrival ? new Date(ticket.actualArrival).toISOString().slice(0, 16) : '',
         transportMode: ticket.transportMode || '',
         emsUnit: ticket.emsUnit || '',
@@ -80,7 +80,7 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
       // Prepare the final data
       const finalData: UpdateTicketData = {
         ...formData,
-        estimatedArrival: formData.estimatedArrival ? new Date(formData.estimatedArrival).toISOString() : undefined,
+        emsContactTime: formData.emsContactTime ? new Date(formData.emsContactTime).toISOString() : undefined,
         actualArrival: formData.actualArrival ? new Date(formData.actualArrival).toISOString() : undefined,
       };
 

@@ -38,8 +38,8 @@ const TransportInfoStep: React.FC<TransportInfoStepProps> = ({
   };
 
   const handleInputChange = (field: string, value: any) => {
-    // Convert datetime-local input to ISO-8601 format for estimatedArrival
-    if (field === 'estimatedArrival' && value) {
+    // Convert datetime-local input to ISO-8601 format for emsContactTime
+    if (field === 'emsContactTime' && value) {
       // Convert "YYYY-MM-DDTHH:MM" to "YYYY-MM-DDTHH:MM:SS.sssZ"
       const date = new Date(value);
       if (!isNaN(date.getTime())) {
@@ -95,16 +95,16 @@ const TransportInfoStep: React.FC<TransportInfoStepProps> = ({
           />
         </Grid>
 
-        {/* Estimated Arrival */}
+        {/* EMS Contact Time */}
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
-            label="Estimated Arrival"
+            label="EMS Contact Time"
             type="datetime-local"
-            value={isoToDatetimeLocal(formData.estimatedArrival || '')}
-            onChange={(e) => handleInputChange('estimatedArrival', e.target.value)}
+            value={isoToDatetimeLocal(formData.emsContactTime || '')}
+            onChange={(e) => handleInputChange('emsContactTime', e.target.value)}
             InputLabelProps={{ shrink: true }}
-            helperText="Estimated arrival time at destination"
+            helperText="Time when EMS will contact the patient"
           />
         </Grid>
 

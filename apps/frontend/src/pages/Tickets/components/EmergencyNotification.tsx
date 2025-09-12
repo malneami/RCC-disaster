@@ -127,11 +127,11 @@ const EmergencyNotification: React.FC<EmergencyNotificationProps> = ({
                 </Typography>
               </Box>
             )}
-            {ticket.estimatedArrival && (
+            {ticket.emsContactTime && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <ScheduleIcon color="action" />
                 <Typography>
-                  <strong>ETA:</strong> {new Date(ticket.estimatedArrival).toLocaleString()}
+                  <strong>EMS Contact:</strong> {new Date(ticket.emsContactTime).toLocaleString()}
                 </Typography>
               </Box>
             )}

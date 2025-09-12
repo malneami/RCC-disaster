@@ -10,7 +10,7 @@ model EMSAssignment {
   // Timing Information
   assignedAt              DateTime        @map("assigned_at")
   status                  AssignmentStatus @default(EMS_CONTACT)
-  estimatedArrivalTime    DateTime?       @map("estimated_arrival_time")
+  emsContactTime          DateTime?       @map("ems_contact_time")
   actualArrivalTime       DateTime?       @map("actual_arrival_time")
   journeyStartTime        DateTime?       @map("journey_start_time")
   journeyEndTime          DateTime?       @map("journey_end_time")

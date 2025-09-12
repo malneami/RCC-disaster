@@ -242,8 +242,8 @@ const TicketList: React.FC<TicketListProps> = ({
 
                 <Typography variant="caption" color="text.secondary">
                   Created: {format(new Date(ticket.createdAt), 'MMM dd, yyyy HH:mm')}
-                  {ticket.estimatedArrival && (
-                    <> | ETA: {format(new Date(ticket.estimatedArrival), 'MMM dd, yyyy HH:mm')}</>
+                  {ticket.emsContactTime && (
+                    <> | EMS Contact: {format(new Date(ticket.emsContactTime), 'MMM dd, yyyy HH:mm')}</>
                   )}
                 </Typography>
               </Box>

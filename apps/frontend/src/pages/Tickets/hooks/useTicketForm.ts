@@ -105,11 +105,11 @@ export const useTicketForm = ({ open, onSubmit }: UseTicketFormProps) => {
         pathway: formData.pathway!,
       } as CreateTicketData;
 
-      // Ensure estimatedArrival is properly formatted as ISO-8601 string
-      if (finalData.estimatedArrival && !finalData.estimatedArrival.includes('Z')) {
-        const date = new Date(finalData.estimatedArrival);
+      // Ensure emsContactTime is properly formatted as ISO-8601 string
+      if (finalData.emsContactTime && !finalData.emsContactTime.includes('Z')) {
+        const date = new Date(finalData.emsContactTime);
         if (!isNaN(date.getTime())) {
-          finalData.estimatedArrival = date.toISOString();
+          finalData.emsContactTime = date.toISOString();
         }
       }
 

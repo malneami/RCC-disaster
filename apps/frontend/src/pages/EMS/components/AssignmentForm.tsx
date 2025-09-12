@@ -26,7 +26,7 @@ interface AssignmentFormProps {
     driverId: string;
     assignedAt: string;
     status: string;
-    estimatedArrivalTime: string;
+    emsContactTime: string;
     journeyStartTime: string;
     actualArrivalTime: string;
     journeyEndTime: string;
@@ -137,10 +137,10 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Estimated Arrival"
+              label="EMS Contact Time"
               type="datetime-local"
-              value={formatForDateTimeLocal(formData.estimatedArrivalTime)}
-              onChange={(e) => onFormDataChange('estimatedArrivalTime', e.target.value)}
+              value={formatForDateTimeLocal(formData.emsContactTime)}
+              onChange={(e) => onFormDataChange('emsContactTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
           </Grid>

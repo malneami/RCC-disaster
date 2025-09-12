@@ -83,8 +83,8 @@ const TicketCard: React.FC<TicketCardProps> = ({
 
   const getTimeInfo = () => {
     if (ticket.type === 'TRANSFER') {
-      if (ticket.estimatedArrival) {
-        return `ETA: ${formatDate(ticket.estimatedArrival)}`;
+      if (ticket.emsContactTime) {
+        return `EMS Contact: ${formatDate(ticket.emsContactTime)}`;
       }
       return `Created: ${formatDate(ticket.createdAt)}`;
     }

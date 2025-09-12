@@ -33,7 +33,7 @@ export interface EMSAssignment {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
   status: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
   assignedAt: Date;
-  estimatedArrivalTime?: Date;
+  emsContactTime?: Date;
   actualArrivalTime?: Date;
   journeyStartTime?: Date;
   journeyEndTime?: Date;
