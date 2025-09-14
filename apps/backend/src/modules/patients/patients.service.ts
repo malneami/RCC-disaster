@@ -757,4 +757,62 @@ export class PatientsService {
       doc.end();
     });
   }
+
+  async getLatestCaseInfo(nationalId: string): Promise<{
+    caseType: 'stroke' | 'trauma' | 'stemi' | null;
+    caseId: string | null;
+    createdAt: string | null;
+    status: string | null;
+  }> {
+    const patient = await this.prisma.patient.findFirst({
+      where: { nationalId, deletedAt: null },
+      include: {
+        strokeCases: {
+          select: { id: true, createdAt: true, currentStatus: true },
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+        traumaCases: {
+          select: { id: true, createdAt: true, disposition: true },
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+        stemiCases: {
+          select: { id: true, createdAt: true, currentStatus: true },
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!patient) {
+      return { caseType: null, caseId: null, createdAt: null, status: null };
+    }
+
+    // Find the most recent case across all types
+    const cases = [
+      ...(patient.strokeCases || []).map((c: any) => ({ ...c, type: 'stroke' as const, status: c.currentStatus })),
+      ...(patient.traumaCases || []).map((c: any) => ({ ...c, type: 'trauma' as const, status: c.disposition })),
+      ...(patient.stemiCases || []).map((c: any) => ({ ...c, type: 'stemi' as const, status: c.currentStatus })),
+    ];
+
+    if (cases.length === 0) {
+      return { caseType: null, caseId: null, createdAt: null, status: null };
+    }
+
+    // Sort by creation date and get the latest
+    const latestCase = cases.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )[0];
+
+    return {
+      caseType: latestCase.type,
+      caseId: latestCase.id,
+      createdAt: latestCase.createdAt.toISOString(),
+      status: latestCase.currentStatus,
+    };
+  }
 }

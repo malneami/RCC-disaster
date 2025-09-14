@@ -71,6 +71,13 @@ export class PatientsController {
     return this.patientsService.search(query);
   }
 
+  @Get('latest-case/:nationalId')
+  @ApiOperation({ summary: 'Get latest case information for a patient by National ID' })
+  @ApiParam({ name: 'nationalId', description: 'Patient National ID' })
+  async getLatestCaseInfo(@Param('nationalId') nationalId: string) {
+    return this.patientsService.getLatestCaseInfo(nationalId);
+  }
+
   @Post()
   @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR, UserRole.CATH_LAB_USER)
   @ApiOperation({ summary: 'Create a new patient' })

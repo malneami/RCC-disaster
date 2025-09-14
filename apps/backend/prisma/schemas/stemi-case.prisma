@@ -64,6 +64,7 @@ model StemiCase {
   // Audit Fields
   createdAt                       DateTime    @default(now()) @map("created_at")
   updatedAt                       DateTime    @updatedAt @map("updated_at")
+  deletedAt                       DateTime?   @map("deleted_at")
   createdById                     String      @map("created_by_id")
   
   // Relations

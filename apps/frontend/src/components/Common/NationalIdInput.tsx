@@ -34,6 +34,12 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [latestCaseInfo, setLatestCaseInfo] = useState<{
+    caseType: 'stroke' | 'trauma' | 'stemi' | null;
+    caseId: string | null;
+    createdAt: string | null;
+    status: string | null;
+  } | null>(null);
 
   const getPortalColor = () => {
     switch (portalType) {
@@ -44,20 +50,24 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     }
   };
 
-  const getPortalIcon = () => {
-    switch (portalType) {
-      case 'stroke': return '🧠';
-      case 'trauma': return '🚑';
-      case 'stemi': return '❤️';
-      default: return '🏥';
+
+  // Function to get latest case info for a patient
+  const getLatestCaseInfo = useCallback(async (nationalId: string) => {
+    try {
+      const caseInfo = await patientService.getLatestCaseInfo(nationalId);
+      setLatestCaseInfo(caseInfo);
+    } catch (error) {
+      console.error('Error getting latest case info:', error);
+      setLatestCaseInfo(null);
     }
-  };
+  }, []);
 
   // Debounced search function
   const searchPatients = useCallback(async (nationalId: string) => {
     if (nationalId.length < 4) {
       setSuggestions([]);
       setShowSuggestions(false);
+      setLatestCaseInfo(null);
       return;
     }
 
@@ -73,14 +83,20 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
       
       setSuggestions(matchingPatients);
       setShowSuggestions(matchingPatients.length > 0);
+      
+      // Get latest case info for the first matching patient
+      if (matchingPatients.length > 0) {
+        await getLatestCaseInfo(matchingPatients[0].nationalId!);
+      }
     } catch (error) {
       console.error('Error searching patients:', error);
       setSuggestions([]);
       setShowSuggestions(false);
+      setLatestCaseInfo(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getLatestCaseInfo]);
 
   // Debounce the search
   useEffect(() => {
@@ -115,18 +131,37 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     return parts.join(' • ');
   };
 
-  const getPortalCaseCount = (patient: Patient): number => {
-    switch (portalType) {
-      case 'stroke': return patient.strokeCasesCount || 0;
-      case 'trauma': return patient.traumaCasesCount || 0;
-      case 'stemi': return patient.stemiCasesCount || 0;
-      default: return (patient.strokeCasesCount || 0) + (patient.traumaCasesCount || 0) + (patient.stemiCasesCount || 0);
+  const getLatestCaseColor = (caseType: string | null): string => {
+    switch (caseType) {
+      case 'stroke': return '#1976d2';
+      case 'trauma': return '#d32f2f';
+      case 'stemi': return '#388e3c';
+      default: return '#666666';
     }
   };
 
-  const getPortalCaseLabel = (count: number): string => {
-    const portalName = portalType === 'stemi' ? 'STEMI' : portalType.toUpperCase();
-    return `${count} ${portalName.toLowerCase()} case${count > 1 ? 's' : ''}`;
+  const getLatestCaseIcon = (caseType: string | null): string => {
+    switch (caseType) {
+      case 'stroke': return '🧠';
+      case 'trauma': return '🚑';
+      case 'stemi': return '❤️';
+      default: return '📋';
+    }
+  };
+
+  const getLatestCaseLabel = (): string => {
+    if (!latestCaseInfo || !latestCaseInfo.caseType) {
+      return 'No previous cases';
+    }
+    
+    const caseType = latestCaseInfo.caseType.toUpperCase();
+    const date = latestCaseInfo.createdAt ? new Date(latestCaseInfo.createdAt).toLocaleDateString() : '';
+    return `Latest: ${caseType} (${date})`;
+  };
+
+  const formatCaseStatus = (status: string | null): string => {
+    if (!status) return '';
+    return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
   return (
@@ -196,19 +231,30 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                   <Chip 
-                    label={getPortalCaseLabel(getPortalCaseCount(option))}
+                    label={getLatestCaseLabel()}
                     size="small" 
                     sx={{ 
-                      color: getPortalColor(),
-                      borderColor: getPortalColor(),
+                      color: getLatestCaseColor(latestCaseInfo?.caseType || null),
+                      borderColor: getLatestCaseColor(latestCaseInfo?.caseType || null),
                     }}
                     variant="outlined"
                   />
+                  {latestCaseInfo?.status && (
+                    <Chip 
+                      label={formatCaseStatus(latestCaseInfo.status)}
+                      size="small" 
+                      sx={{ 
+                        backgroundColor: getLatestCaseColor(latestCaseInfo.caseType),
+                        color: 'white',
+                        fontSize: '0.7rem',
+                      }}
+                    />
+                  )}
                   <Chip 
-                    label={`${getPortalIcon()} ${portalType.toUpperCase()}`}
+                    label={`${getLatestCaseIcon(latestCaseInfo?.caseType || null)} ${latestCaseInfo?.caseType?.toUpperCase() || 'NEW'}`}
                     size="small" 
                     sx={{ 
-                      backgroundColor: getPortalColor(),
+                      backgroundColor: latestCaseInfo?.caseType ? getLatestCaseColor(latestCaseInfo.caseType) : getPortalColor(),
                       color: 'white',
                     }}
                   />

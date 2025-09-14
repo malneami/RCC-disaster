@@ -340,6 +340,16 @@ class PatientService {
     const response = await apiClient.get(`/patients/${patientId}/access-logs?${params}`);
     return response.data;
   }
+
+  async getLatestCaseInfo(nationalId: string): Promise<{
+    caseType: 'stroke' | 'trauma' | 'stemi' | null;
+    caseId: string | null;
+    createdAt: string | null;
+    status: string | null;
+  }> {
+    const response = await apiClient.get(`/patients/latest-case/${encodeURIComponent(nationalId)}`);
+    return response.data;
+  }
 }
 
 export const patientService = new PatientService();
