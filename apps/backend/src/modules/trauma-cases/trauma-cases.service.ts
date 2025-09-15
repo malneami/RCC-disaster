@@ -166,8 +166,6 @@ export class TraumaCasesService {
         pediatricBedsAvailable: 10,
         standardBeds: 100,
         standardBedsAvailable: 50,
-        ventilators: 5,
-        ventilatorsAvailable: 2,
         hasStemiService: true,
         hasStrokeService: true,
         hasTraumaService: true,

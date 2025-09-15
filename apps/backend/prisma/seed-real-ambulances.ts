@@ -265,7 +265,7 @@ async function seedRealAmbulances() {
       'First Aid Kit',
       'Blood Pressure Monitor',
       'Pulse Oximeter',
-      'Ventilator',
+      'Medical Equipment',
       'Suction Unit',
       'Splint Set',
       'Emergency Medications',

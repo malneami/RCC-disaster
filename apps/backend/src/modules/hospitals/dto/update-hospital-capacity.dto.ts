@@ -67,17 +67,6 @@ export class UpdateHospitalCapacityDto {
   @IsNumber()
   standardBedsAvailable?: number;
 
-  // Equipment
-  @ApiProperty({ description: 'Total ventilators', required: false })
-  @IsOptional()
-  @IsNumber()
-  ventilators?: number;
-
-  @ApiProperty({ description: 'Available ventilators', required: false })
-  @IsOptional()
-  @IsNumber()
-  ventilatorsAvailable?: number;
-
   // NICU
   @ApiProperty({ description: 'Total NICU beds', required: false })
   @IsOptional()

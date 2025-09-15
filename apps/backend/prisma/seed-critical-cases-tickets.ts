@@ -78,8 +78,8 @@ async function main() {
       createdById: user.id,
     },
     {
-      title: 'Ventilator Maintenance',
-      description: 'Scheduled maintenance for ventilator unit #3',
+      title: 'Equipment Maintenance',
+      description: 'Scheduled maintenance for medical equipment unit #3',
               type: HospitalTicketType.MAINTENANCE,
       priority: TicketPriority.MEDIUM,
       status: HospitalTicketStatus.RESOLVED,

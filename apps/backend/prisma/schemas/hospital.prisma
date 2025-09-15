@@ -28,10 +28,6 @@ model Hospital {
   standardBeds     Int           @default(0) @map("standard_beds")
   standardBedsAvailable Int      @default(0) @map("standard_beds_available")
   
-  // Equipment
-  ventilators       Int           @default(0)
-  ventilatorsAvailable Int       @default(0) @map("ventilators_available")
-  
   // Services
   hasStemiService   Boolean       @default(false) @map("has_stemi_service")
   hasStrokeService  Boolean       @default(false) @map("has_stroke_service")

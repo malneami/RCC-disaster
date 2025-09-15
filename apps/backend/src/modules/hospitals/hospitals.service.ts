@@ -147,7 +147,7 @@ export class HospitalsService {
       'icuBeds', 'icuBedsAvailable', 'picuBeds', 'picuBedsAvailable',
       'maleBeds', 'maleBedsAvailable', 'femaleBeds', 'femaleBedsAvailable',
       'pediatricBeds', 'pediatricBedsAvailable', 'standardBeds', 'standardBedsAvailable',
-      'nicuBeds', 'nicuBedsAvailable', 'ventilators', 'ventilatorsAvailable'
+      'nicuBeds', 'nicuBedsAvailable'
     ];
 
     for (const field of fields) {
@@ -166,11 +166,6 @@ export class HospitalsService {
     if (updateData.picuBedsAvailable !== undefined && 
         updateData.picuBedsAvailable > (updateData.picuBeds ?? hospital.picuBeds)) {
       throw new BadRequestException('Available PICU beds cannot exceed total PICU beds');
-    }
-
-    if (updateData.ventilatorsAvailable !== undefined && 
-        updateData.ventilatorsAvailable > (updateData.ventilators ?? hospital.ventilators)) {
-      throw new BadRequestException('Available ventilators cannot exceed total ventilators');
     }
   }
 

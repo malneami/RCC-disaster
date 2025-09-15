@@ -227,22 +227,6 @@ const CreateHospitalDialog: React.FC<CreateHospitalDialogProps> = ({
       validation: (value) => value < 0 ? 'Available NICU beds cannot be negative' : null,
     },
     // Equipment
-    {
-      key: 'ventilators',
-      label: 'Total Ventilators',
-      type: 'number',
-      required: true,
-      gridSize: { xs: 12, sm: 6 },
-      validation: (value) => value < 0 ? 'Ventilators cannot be negative' : null,
-    },
-    {
-      key: 'ventilatorsAvailable',
-      label: 'Available Ventilators',
-      type: 'number',
-      required: true,
-      gridSize: { xs: 12, sm: 6 },
-      validation: (value) => value < 0 ? 'Available ventilators cannot be negative' : null,
-    },
     // Services
     {
       key: 'hasStemiService',
@@ -321,8 +305,6 @@ const CreateHospitalDialog: React.FC<CreateHospitalDialogProps> = ({
     pediatricBedsAvailable: 0,
     standardBeds: 0,
     standardBedsAvailable: 0,
-    ventilators: 0,
-    ventilatorsAvailable: 0,
     hasStemiService: false,
     hasStrokeService: false,
     hasTraumaService: false,

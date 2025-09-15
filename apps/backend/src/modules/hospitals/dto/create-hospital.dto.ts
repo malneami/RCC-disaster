@@ -87,17 +87,6 @@ export class CreateHospitalDto {
   @IsNumber()
   standardBedsAvailable?: number;
 
-  // Equipment
-  @ApiProperty({ description: 'Total ventilators', default: 0 })
-  @IsOptional()
-  @IsNumber()
-  ventilators?: number;
-
-  @ApiProperty({ description: 'Available ventilators', default: 0 })
-  @IsOptional()
-  @IsNumber()
-  ventilatorsAvailable?: number;
-
   // Services
   @ApiProperty({ description: 'Has STEMI service', default: false })
   @IsOptional()

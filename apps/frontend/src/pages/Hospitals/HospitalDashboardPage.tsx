@@ -540,14 +540,6 @@ const HospitalDashboardPage: React.FC = () => {
                         {hospital.nicuBedsAvailable}/{hospital.nicuBeds}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        Ventilators
-                      </Typography>
-                      <Typography variant="h6">
-                        {hospital.ventilatorsAvailable}/{hospital.ventilators}
-                      </Typography>
-                    </Grid>
                   </Grid>
                 </Grid>
               </Grid>

@@ -29,10 +29,6 @@ export interface Hospital {
   standardBeds: number;
   standardBedsAvailable: number;
   
-  // Equipment
-  ventilators: number;
-  ventilatorsAvailable: number;
-  
   // Services
   hasStemiService: boolean;
   hasStrokeService: boolean;
@@ -94,8 +90,6 @@ export interface CreateHospitalDto {
   pediatricBedsAvailable?: number;
   standardBeds?: number;
   standardBedsAvailable?: number;
-  ventilators?: number;
-  ventilatorsAvailable?: number;
   hasStemiService?: boolean;
   hasStrokeService?: boolean;
   hasTraumaService?: boolean;
@@ -124,8 +118,6 @@ export interface UpdateHospitalCapacityDto {
   pediatricBedsAvailable?: number;
   standardBeds?: number;
   standardBedsAvailable?: number;
-  ventilators?: number;
-  ventilatorsAvailable?: number;
   nicuBeds?: number;
   nicuBedsAvailable?: number;
   updateSource?: string;

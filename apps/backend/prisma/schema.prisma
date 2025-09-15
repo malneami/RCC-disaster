@@ -102,8 +102,6 @@ model Hospital {
   standardBedsAvailable       Int                    @default(0) @map("standard_beds_available")
   updateToken                 String?                @map("update_token")
   updateTokenExpiry           DateTime?              @map("update_token_expiry")
-  ventilators                 Int                    @default(0)
-  ventilatorsAvailable        Int                    @default(0) @map("ventilators_available")
   traumaLevel                 TraumaLevel            @default(NONE) @map("trauma_level")
   avgDoorToGroinMinutes       Int?                   @map("avg_door_to_groin_minutes")
   avgDoorToImagingMinutes     Int?                   @map("avg_door_to_imaging_minutes")

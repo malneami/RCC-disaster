@@ -32,8 +32,6 @@ const UpdateCapacityDialog: React.FC<UpdateCapacityDialogProps> = ({
         pediatricBedsAvailable: hospital.pediatricBedsAvailable,
         standardBeds: hospital.standardBeds,
         standardBedsAvailable: hospital.standardBedsAvailable,
-        ventilators: hospital.ventilators,
-        ventilatorsAvailable: hospital.ventilatorsAvailable,
         nicuBeds: hospital.nicuBeds,
         nicuBedsAvailable: hospital.nicuBedsAvailable,
         updateSource: 'MANUAL',
@@ -212,30 +210,6 @@ const UpdateCapacityDialog: React.FC<UpdateCapacityDialogProps> = ({
         const total = initialData.nicuBeds;
         if (total !== undefined && value > total) {
           return 'Available beds cannot exceed total beds';
-        }
-        return null;
-      },
-    },
-    // Equipment Section
-    {
-      key: 'ventilators',
-      label: 'Total Ventilators',
-      type: 'number',
-      required: true,
-      gridSize: { xs: 12, sm: 6 },
-      validation: (value) => value < 0 ? 'Cannot be negative' : null,
-    },
-    {
-      key: 'ventilatorsAvailable',
-      label: 'Available Ventilators',
-      type: 'number',
-      required: true,
-      gridSize: { xs: 12, sm: 6 },
-      validation: (value) => {
-        if (value < 0) return 'Cannot be negative';
-        const total = initialData.ventilators;
-        if (total !== undefined && value > total) {
-          return 'Available ventilators cannot exceed total ventilators';
         }
         return null;
       },
