@@ -60,11 +60,11 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     if (stemiStrokeCases.length > 0) {
       const criticalCases = stemiStrokeCases.filter(case_ => {
         const elapsed = Date.now() - new Date(case_.createdAt).getTime();
-        const timeLimit = case_.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000; // 120 min or 4.5 hr
-        const remaining = timeLimit - elapsed;
+        const timeLimit = case_.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000; 
+        const percentage = Math.min(100, (elapsed / timeLimit) * 100);
         
-        // Play alert if less than 10 minutes remaining
-        return remaining < 10 * 60 * 1000 && remaining > 0;
+        // Play alert only when deadline is missed (100%)
+        return percentage >= 100;
       });
 
       if (criticalCases.length > 0) {
@@ -112,7 +112,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
         
         setTimeRemaining(remaining);
         setProgressPercentage(percentage);
-        setIsCritical(remaining < 10 * 60 * 1000 && remaining > 0); // Less than 10 minutes
+        setIsCritical(percentage >= 100); // Critical only when deadline is missed
       };
 
       calculateTime();
@@ -137,8 +137,8 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     };
 
     const getProgressColor = () => {
-      if (isCritical) return '#d32f2f'; // Red for critical
-      if (progressPercentage > 75) return '#ff9800'; // Orange for warning
+      if (progressPercentage >= 100) return '#d32f2f'; // Red for missed deadline
+      if (progressPercentage >= 75) return '#ff9800'; // Orange for warning
       return '#4caf50'; // Green for normal
     };
 
@@ -251,85 +251,122 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
 
           {/* Time Remaining */}
           <Box sx={{ mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <FontAwesomeIcon 
-                icon={faClock} 
-                style={{ 
-                  color: isCritical ? '#d32f2f' : '#666', 
-                  marginRight: '8px',
-                  fontSize: '14px'
-                }} 
-              />
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  fontWeight: 600,
-                  color: isCritical ? '#d32f2f' : 'inherit'
-                }}
-              >
-                {criticalCase.status === 'COMPLETED' 
-                  ? 'COMPLETED' 
-                  : timeRemaining > 0 
-                    ? formatTime(timeRemaining) 
-                    : 'TIME EXPIRED'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                {criticalCase.status === 'COMPLETED' 
-                  ? '' 
-                  : timeRemaining > 0 
-                    ? 'remaining' 
-                    : ''}
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-evenly' }}>
+              {/* Left side - Time info */}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <FontAwesomeIcon 
+                    icon={faClock} 
+                    style={{ 
+                      color: isCritical ? '#d32f2f' : '#666', 
+                      marginRight: '8px',
+                      fontSize: '14px'
+                    }} 
+                  />
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: isCritical ? '#d32f2f' : 'inherit'
+                    }}
+                  >
+                    {criticalCase.status === 'COMPLETED' 
+                      ? 'COMPLETED' 
+                      : timeRemaining > 0 
+                        ? formatTime(timeRemaining) 
+                        : 'TIME EXPIRED'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                    {criticalCase.status === 'COMPLETED' 
+                      ? '' 
+                      : timeRemaining > 0 
+                        ? 'remaining' 
+                        : ''}
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  {criticalCase.status === 'COMPLETED' 
+                    ? 'Case completed successfully' 
+                    : `${Math.round(progressPercentage)}% of time limit elapsed`}
+                </Typography>
+              </Box>
+              
+              {/* Middle - Route Information */}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mx: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                    <FontAwesomeIcon 
+                      icon={faMapMarkerAlt} 
+                      style={{ color: '#666', marginRight: '8px', fontSize: '14px' }} 
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      From: {criticalCase.originHospital?.name}
+                    </Typography>
+                  </Box>
+                  {criticalCase.destinationHospital && (
+                    <Typography variant="body2" color="text.secondary">
+                      To: {criticalCase.destinationHospital.name}
+                    </Typography>
+                  )}
+                  {criticalCase.estimatedArrival && (
+                    <Typography variant="body2" color="text.secondary">
+                      ETA: {new Date(criticalCase.estimatedArrival).toLocaleString()}
+                    </Typography>
+                  )}
+                </Box>
+                {/* Show direction indicator */}
+                <Box sx={{ mt: 1 }}>
+                  <Chip
+                    label={criticalCase.originHospital?.id === hospitalId ? 'OUTGOING' : 'INCOMING'}
+                    size="small"
+                    sx={{
+                      backgroundColor: criticalCase.originHospital?.id === hospitalId ? '#ff9800' : '#4caf50',
+                      color: 'white',
+                      fontWeight: 500,
+                    }}
+                  />
+                </Box>
+              </Box>
+              
+              {/* Right side - Circular Progress Bar */}
+              <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                  <CircularProgress
+                    variant="determinate"
+                    value={progressPercentage}
+                    size={80}
+                    thickness={6}
+                    sx={{
+                      color: getProgressColor(),
+                      '& .MuiCircularProgress-circle': {
+                        strokeLinecap: 'round',
+                      },
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      top: 0,
+                      left: 0,
+                      bottom: 0,
+                      right: 0,
+                      position: 'absolute',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      component="div"
+                      color="text.secondary"
+                      sx={{ fontSize: '0.75rem', fontWeight: 600 }}
+                    >
+                      {`${Math.round(progressPercentage)}%`}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
             </Box>
-            
-            {/* Progress Bar */}
-            <Box
-              sx={{
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: alpha(getProgressColor(), 0.1),
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  height: '100%',
-                  width: `${progressPercentage}%`,
-                  backgroundColor: getProgressColor(),
-                  borderRadius: 4,
-                  transition: 'width 1s ease-in-out',
-                }}
-              />
-            </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              {criticalCase.status === 'COMPLETED' 
-                ? 'Case completed successfully' 
-                : `${Math.round(progressPercentage)}% of time limit elapsed`}
-            </Typography>
-          </Box>
-
-          {/* Route Information */}
-          <Box sx={{ mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <FontAwesomeIcon 
-                icon={faMapMarkerAlt} 
-                style={{ color: '#666', marginRight: '8px', fontSize: '14px' }} 
-              />
-              <Typography variant="body2" color="text.secondary">
-                From: {criticalCase.originHospital?.name}
-              </Typography>
-            </Box>
-            {criticalCase.destinationHospital && (
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                To: {criticalCase.destinationHospital.name}
-              </Typography>
-            )}
-            {criticalCase.estimatedArrival && (
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                ETA: {new Date(criticalCase.estimatedArrival).toLocaleString()}
-              </Typography>
-            )}
           </Box>
 
           {/* Chief Complaint */}
@@ -438,7 +475,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
               Active Critical Cases Summary
             </Typography>
-            <Stack direction="row" spacing={3}>
+            <Stack direction="row" spacing={3} sx={{ mb: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <FontAwesomeIcon icon={faHeart} style={{ color: '#d32f2f', marginRight: '8px' }} />
                 <Typography variant="body2">
@@ -449,6 +486,20 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
                 <FontAwesomeIcon icon={faBrain} style={{ color: '#d32f2f', marginRight: '8px' }} />
                 <Typography variant="body2">
                   Stroke: {stemiStrokeCases.filter(c => c.pathway === 'STROKE').length}
+                </Typography>
+              </Box>
+            </Stack>
+            <Stack direction="row" spacing={3}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Chip label="INCOMING" size="small" sx={{ backgroundColor: '#4caf50', color: 'white', mr: 1 }} />
+                <Typography variant="body2">
+                  {stemiStrokeCases.filter(c => c.originHospital?.id !== hospitalId).length}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Chip label="OUTGOING" size="small" sx={{ backgroundColor: '#ff9800', color: 'white', mr: 1 }} />
+                <Typography variant="body2">
+                  {stemiStrokeCases.filter(c => c.originHospital?.id === hospitalId).length}
                 </Typography>
               </Box>
             </Stack>

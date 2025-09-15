@@ -1,5 +1,6 @@
 import { useQuery } from 'react-query';
 import { hospitalService } from '../../../services/hospitalService';
+import { ticketService } from '../../../services/ticketService';
 
 export interface HospitalCriticalCase {
   id: string;
@@ -17,10 +18,12 @@ export interface HospitalCriticalCase {
     mrn?: string;
   };
   originHospital: {
+    id: string;
     name: string;
     status: string;
   };
   destinationHospital?: {
+    id: string;
     name: string;
     status: string;
   };
@@ -39,11 +42,25 @@ export const useHospitalCriticalCases = (hospitalId: string) => {
     queryKey: ['hospital-critical-cases', hospitalId],
     queryFn: async () => {
       try {
-        // Fetch transfer tickets for this hospital (as destination)
-        const transferTickets = await hospitalService.getTransferTicketsForHospital(hospitalId);
+        // Fetch transfer tickets where this hospital is the destination
+        const destinationTickets = await hospitalService.getTransferTicketsForHospital(hospitalId);
+        
+        // Fetch transfer tickets where this hospital is the origin
+        const originTicketsResponse = await ticketService.getTickets(1, 100, {
+          originHospitalId: hospitalId,
+        });
+        const originTickets = originTicketsResponse.data || [];
+        
+        // Combine both sets of tickets
+        const allTickets = [...destinationTickets, ...originTickets];
+        
+        // Remove duplicates based on ticket ID
+        const uniqueTickets = allTickets.filter((ticket, index, self) => 
+          index === self.findIndex(t => t.id === ticket.id)
+        );
         
         // Filter for STEMI and Stroke cases only
-        const criticalCases = transferTickets.filter((ticket: any) => 
+        const criticalCases = uniqueTickets.filter((ticket: any) => 
           ticket.pathway === 'STEMI' || ticket.pathway === 'STROKE'
         );
 
@@ -92,15 +109,16 @@ const getMockHospitalCriticalCases = (hospitalId: string): HospitalCriticalCase[
   const now = new Date();
   const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const twoHoursAgo = new Date(now.getTime() - 120 * 60 * 1000);
 
   const mockData = [
     {
-      id: `mock-stemi-${hospitalId}-1`,
+      id: `mock-stemi-dest-${hospitalId}-1`,
       ticketNumber: 'T-2024-001',
       pathway: 'STEMI',
       priority: 'CRITICAL',
       status: 'IN_TRANSPORT',
-      createdAt: thirtyMinutesAgo.toISOString(), // Newer case
+      createdAt: thirtyMinutesAgo.toISOString(), // Newer case - destination
       updatedAt: now.toISOString(),
       patient: {
         firstName: 'John',
@@ -110,10 +128,12 @@ const getMockHospitalCriticalCases = (hospitalId: string): HospitalCriticalCase[
         mrn: 'MRN123456',
       },
       originHospital: {
+        id: 'city-general-hospital',
         name: 'City General Hospital',
         status: 'ACTIVE',
       },
       destinationHospital: {
+        id: 'regional-medical-center',
         name: 'Regional Medical Center',
         status: 'ACTIVE',
       },
@@ -126,12 +146,12 @@ const getMockHospitalCriticalCases = (hospitalId: string): HospitalCriticalCase[
       requiresSpecialist: true,
     },
     {
-      id: `mock-stroke-${hospitalId}-1`,
+      id: `mock-stroke-origin-${hospitalId}-1`,
       ticketNumber: 'T-2024-002',
       pathway: 'STROKE',
       priority: 'HIGH',
       status: 'ASSIGNED',
-      createdAt: oneHourAgo.toISOString(), // Older case
+      createdAt: oneHourAgo.toISOString(), // Origin case
       updatedAt: now.toISOString(),
       patient: {
         firstName: 'Sarah',
@@ -141,10 +161,12 @@ const getMockHospitalCriticalCases = (hospitalId: string): HospitalCriticalCase[
         mrn: 'MRN789012',
       },
       originHospital: {
+        id: 'community-hospital',
         name: 'Community Hospital',
         status: 'ACTIVE',
       },
       destinationHospital: {
+        id: 'stroke-center',
         name: 'Stroke Center',
         status: 'ACTIVE',
       },
@@ -154,6 +176,39 @@ const getMockHospitalCriticalCases = (hospitalId: string): HospitalCriticalCase[
       emsUnit: 'HELI-002',
       isEmergency: true,
       requiresBlood: false,
+      requiresSpecialist: true,
+    },
+    {
+      id: `mock-stemi-origin-${hospitalId}-2`,
+      ticketNumber: 'T-2024-003',
+      pathway: 'STEMI',
+      priority: 'EMERGENCY',
+      status: 'PENDING',
+      createdAt: twoHoursAgo.toISOString(), // Older origin case
+      updatedAt: now.toISOString(),
+      patient: {
+        firstName: 'Michael',
+        lastName: 'Brown',
+        dateOfBirth: '1965-03-10',
+        gender: 'Male',
+        mrn: 'MRN345678',
+      },
+      originHospital: {
+        id: 'regional-medical-center',
+        name: 'Regional Medical Center',
+        status: 'ACTIVE',
+      },
+      destinationHospital: {
+        id: 'cardiac-center',
+        name: 'Cardiac Center',
+        status: 'ACTIVE',
+      },
+      chiefComplaint: 'Acute myocardial infarction with cardiogenic shock',
+      estimatedArrival: new Date(now.getTime() + 20 * 60 * 1000).toISOString(),
+      transportMode: 'Ambulance',
+      emsUnit: 'EMS-003',
+      isEmergency: true,
+      requiresBlood: true,
       requiresSpecialist: true,
     },
   ];
