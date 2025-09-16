@@ -11,7 +11,7 @@ export async function seedUsers() {
   
   const users = [
     {
-      email: 'admin@rcc.com',
+      email: 'admin@rcc-healthcare.com',
       firstName: 'System',
       lastName: 'Administrator',
       phoneNumber: '+966 50 000 0001',
@@ -22,7 +22,7 @@ export async function seedUsers() {
       hospitalId: '2', // KFCH
     },
     {
-      email: 'coordinator@rcc.com',
+      email: 'coordinator@rcc-healthcare.com',
       firstName: 'RCC',
       lastName: 'Coordinator',
       phoneNumber: '+966 50 000 0002',
@@ -33,7 +33,7 @@ export async function seedUsers() {
       hospitalId: '2', // KFCH
     },
     {
-      email: 'ems@rcc.com',
+      email: 'ems@rcc-healthcare.com',
       firstName: 'EMS',
       lastName: 'Operator',
       phoneNumber: '+966 50 000 0003',
@@ -44,7 +44,7 @@ export async function seedUsers() {
       hospitalId: '1', // JGH
     },
     {
-      email: 'datacollector@rcc.com',
+      email: 'datacollector@rcc-healthcare.com',
       firstName: 'Data',
       lastName: 'Collector',
       phoneNumber: '+966 50 000 0004',
@@ -55,7 +55,7 @@ export async function seedUsers() {
       hospitalId: '3', // PMNH
     },
     {
-      email: 'cathlab@rcc.com',
+      email: 'cathlab@rcc-healthcare.com',
       firstName: 'Cath Lab',
       lastName: 'Technician',
       phoneNumber: '+966 50 000 0005',

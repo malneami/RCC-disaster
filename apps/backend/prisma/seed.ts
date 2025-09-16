@@ -4,6 +4,9 @@ import { seedUsers } from './seed-users';
 import { seedCriticalCases } from './seed-critical-cases-simple';
 import { seedComprehensiveCases } from './seed-comprehensive-cases';
 import { seedStrokeKpiTest } from './seed-stroke-kpi';
+import { seedComprehensiveStemiCases } from './seed-comprehensive-stemi';
+import { seedComprehensiveStrokeCases } from './seed-comprehensive-stroke';
+import { seedComprehensiveTraumaCases } from './seed-comprehensive-trauma';
 
 const prisma = new PrismaClient();
 
@@ -45,6 +48,18 @@ async function main() {
   // Always run comprehensive case seeding for testing
   console.log('🚨 Running comprehensive case seeding...');
   await seedComprehensiveCases();
+
+  // Run comprehensive STEMI cases
+  console.log('❤️ Running comprehensive STEMI case seeding...');
+  await seedComprehensiveStemiCases();
+
+  // Run comprehensive Stroke cases
+  console.log('🧠 Running comprehensive Stroke case seeding...');
+  await seedComprehensiveStrokeCases();
+
+  // Run comprehensive Trauma cases
+  console.log('🚑 Running comprehensive Trauma case seeding...');
+  await seedComprehensiveTraumaCases();
 
   // Always run stroke KPI test seed for comprehensive testing
   console.log('🧠 Running stroke KPI test seed...');
