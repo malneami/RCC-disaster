@@ -118,7 +118,7 @@ const PatientSearchDialog: React.FC<PatientSearchDialogProps> = ({
       const dob = new Date(patient.dateOfBirth).toLocaleDateString();
       info.push(`DOB: ${dob}`);
     }
-    if (patient.gender && patient.gender !== 'UNKNOWN') {
+    if (patient.gender) {
       info.push(`Gender: ${patient.gender}`);
     }
     return info.join(' • ');

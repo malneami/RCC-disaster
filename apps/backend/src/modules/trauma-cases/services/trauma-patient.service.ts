@@ -105,7 +105,7 @@ export class TraumaPatientService {
       if (patientInfo.gender) {
         patientData.gender = patientInfo.gender as PatientGender;
       } else {
-        patientData.gender = PatientGender.UNKNOWN; // Default gender
+        patientData.gender = PatientGender.MALE; // Default gender
       }
       
       console.log('Creating new patient with data:', patientData);

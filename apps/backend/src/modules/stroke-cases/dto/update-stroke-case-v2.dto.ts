@@ -1,263 +1,244 @@
 import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, Min, Max } from 'class-validator';
-import { StrokeType, StrokeSeverity, StrokeStatus, StrokeTreatment } from '@prisma/client';
+import { 
+  StrokeType, 
+  StrokeStatus, 
+  StrokeTreatment,
+  StrokeModeOfArrival,
+  StrokeTypeDetailed,
+  SwallowingScreeningResult,
+  CTFindings,
+  CandidateAssessment,
+  IVThrombolysisGiven,
+  StrokeDisposition,
+  ReferralTo,
+  ModifiedRankinScale
+} from '@prisma/client';
 
 export class UpdateStrokeCaseV2Dto {
   // All fields are optional for updates - no required fields
+
+  @IsOptional()
+  @IsString()
+  ticketId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  patientId?: string;
+
+  @IsOptional()
+  @IsString()
+  originHospitalId?: string;
+
+  @IsOptional()
+  @IsString()
+  destinationHospitalId?: string | null;
+
+  @IsOptional()
+  @IsEnum(StrokeType)
+  strokeType?: StrokeType;
 
   @IsOptional()
   @IsEnum(StrokeStatus)
   currentStatus?: StrokeStatus;
 
   @IsOptional()
-  @IsEnum(StrokeSeverity)
-  strokeSeverity?: StrokeSeverity;
-
-  @IsOptional()
   @IsEnum(StrokeTreatment)
-  selectedTreatment?: StrokeTreatment;
+  selectedTreatment?: StrokeTreatment | null;
 
-  // Clinical Assessments
+  // Patient Arrival & Timing
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(42)
-  nihssBaseline?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(42)
-  nihss24hr?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(42)
-  nihssDischarge?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(6)
-  mrsBaseline?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(6)
-  mrs90day?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(100)
-  barthelBaseline?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(100)
-  barthelDischarge?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  aspectsScore?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(3)
-  @Max(15)
-  gcsBaseline?: number;
-
-  // Symptom & Presentation
-  @IsOptional()
-  @IsString()
-  presentingSymptoms?: string;
+  @IsEnum(StrokeModeOfArrival)
+  modeOfArrival?: StrokeModeOfArrival | null;
 
   @IsOptional()
   @IsDateString()
-  symptomOnset?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  symptomToHospitalMinutes?: number;
+  srcaCallTime?: string | null;
 
   @IsOptional()
   @IsDateString()
-  lastKnownWell?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  wakeUpStroke?: boolean;
-
-  // Treatment Details
-  @IsOptional()
-  @IsBoolean()
-  eligibleForThrombolysis?: boolean;
-
-  @IsOptional()
-  @IsString()
-  thrombolysisContraindications?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  eligibleForThrombectomy?: boolean;
-
-  @IsOptional()
-  @IsString()
-  thrombectomyContraindications?: string;
-
-  // Pathway Timings
-  @IsOptional()
-  @IsDateString()
-  pathwayStarted?: string;
+  timeOfSymptomOnset?: string | null;
 
   @IsOptional()
   @IsDateString()
-  pathwayCompleted?: string;
+  lastKnownNormal?: string | null;
 
   @IsOptional()
   @IsDateString()
-  strokeUnitAdmissionTime?: string;
-
-  // Key Performance Timings (minutes)
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  doorToImagingMinutes?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  doorToNeedleMinutes?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  doorToGroinMinutes?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  symptomNeedleMinutes?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  symptomGroinMinutes?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  imagingToNeedleMinutes?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  imagingToGroinMinutes?: number;
-
-  // Clinical Assessments Timeline
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  dysphagiaScreeningMinutes?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  earlyMobilizationHours?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  speechTherapyHours?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  physiotherapyHours?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  occupationalTherapyHours?: number;
-
-  // Imaging Results
-  @IsOptional()
-  @IsString()
-  ctResults?: string;
-
-  @IsOptional()
-  @IsString()
-  ctaResults?: string;
-
-  @IsOptional()
-  @IsString()
-  ctpResults?: string;
-
-  @IsOptional()
-  @IsString()
-  mriResults?: string;
-
-  @IsOptional()
-  @IsString()
-  mraResults?: string;
-
-  @IsOptional()
-  @IsString()
-  echocardiogram?: string;
-
-  @IsOptional()
-  @IsString()
-  carotidUcsDoppler?: string;
-
-  // Treatment Outcomes
-  @IsOptional()
-  @IsBoolean()
-  successful?: boolean;
-
-  @IsOptional()
-  @IsString()
-  recanalizationGrade?: string;
-
-  @IsOptional()
-  @IsString()
-  complications?: string;
-
-  @IsOptional()
-  @IsString()
-  secondaryPrevention?: string;
-
-  // Discharge & Follow-up
-  @IsOptional()
-  @IsString()
-  dischargeDestination?: string;
+  timeOfRegistration?: string | null;
 
   @IsOptional()
   @IsDateString()
-  dischargeDate?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  lengthOfStayDays?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  thirtyDayReadmission?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  ninetyDayMortality?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  followUpCallCompleted?: boolean;
+  timeOfTriage?: string | null;
 
   @IsOptional()
   @IsDateString()
-  followUpCallDate?: string;
+  timeOfPhysicianAssessment?: string | null;
+
+  // Clinical Assessment & Diagnosis
+  @IsOptional()
+  @IsEnum(StrokeTypeDetailed)
+  strokeTypeDetailed?: StrokeTypeDetailed | null;
+
+  @IsOptional()
+  @IsBoolean()
+  swallowingScreeningPerformed?: boolean | null;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfSwallowingScreening?: string | null;
+
+  @IsOptional()
+  @IsEnum(SwallowingScreeningResult)
+  swallowingScreeningResult?: SwallowingScreeningResult | null;
+
+  @IsOptional()
+  @IsBoolean()
+  ctScanPerformed?: boolean | null;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfCtScanStart?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfCtReportFinal?: string | null;
+
+  @IsOptional()
+  @IsEnum(CTFindings)
+  ctFindings?: CTFindings | null;
+
+  @IsOptional()
+  @IsBoolean()
+  lvoDetected?: boolean | null;
+
+  @IsOptional()
+  @IsEnum(CandidateAssessment)
+  candidateForIVThrombolysis?: CandidateAssessment | null;
+
+  @IsOptional()
+  @IsDateString()
+  thrombolysisOrderTime?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  ivThrombolysisAdministrationTime?: string | null;
+
+  @IsOptional()
+  @IsEnum(IVThrombolysisGiven)
+  ivThrombolysisGiven?: IVThrombolysisGiven | null;
+
+  @IsOptional()
+  @IsString()
+  reasonForNotAdministeringIV?: string | null;
+
+  @IsOptional()
+  @IsEnum(CandidateAssessment)
+  candidateForMechanicalThrombectomy?: CandidateAssessment | null;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfGroinPuncture?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  mechanicalThrombectomyPerformed?: boolean | null;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfThrombectomyComplete?: string | null;
+
+  // Disposition & Transfer Decisions
+  @IsOptional()
+  @IsBoolean()
+  facilityHasCt?: boolean | null;
+
+  @IsOptional()
+  @IsBoolean()
+  transferToAnotherHospital?: boolean | null;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfTransferActivation?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfTransferDeparture?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  prehospitalNotificationBySrca?: boolean | null;
+
+  @IsOptional()
+  @IsBoolean()
+  prehospitalNotificationByUccPhc?: boolean | null;
+
+  @IsOptional()
+  @IsEnum(StrokeDisposition)
+  disposition?: StrokeDisposition | null;
+
+  @IsOptional()
+  @IsEnum(ReferralTo)
+  referralTo?: ReferralTo | null;
+
+  @IsOptional()
+  @IsBoolean()
+  admittedToStrokeUnit?: boolean | null;
+
+  // Follow-up & Outcome Tracking
+  @IsOptional()
+  @IsBoolean()
+  followUpContactAttempted?: boolean | null;
+
+  @IsOptional()
+  @IsEnum(ModifiedRankinScale)
+  modifiedRankinScaleAt90Days?: ModifiedRankinScale | null;
+
+  // Legacy fields
+  @IsOptional()
+  @IsString()
+  strokeSubtype?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  eligibleForThrombolysis?: boolean | null;
+
+  @IsOptional()
+  @IsString()
+  thrombolysisContraindications?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  eligibleForThrombectomy?: boolean | null;
+
+  @IsOptional()
+  @IsString()
+  thrombectomyContraindications?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  pathwayStarted?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  pathwayCompleted?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  strokeUnitAdmissionTime?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  symptomNeedleMinutes?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  symptomGroinMinutes?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  imagingToNeedleMinutes?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  imagingToGroinMinutes?: number | null;
 }

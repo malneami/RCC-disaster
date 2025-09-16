@@ -11,7 +11,7 @@ export interface PatientInfoFormData {
   nationalId: string;
   dateOfBirth?: string; // Will be removed after migration
   age?: number; // Age in years
-  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  gender: 'MALE' | 'FEMALE';
   phoneNumber: string;
   address: string;
   emergencyContact: string;

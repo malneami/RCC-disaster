@@ -4,6 +4,17 @@ import { apiClient } from './apiClient';
 export type StrokeType = 'ISCHEMIC' | 'HEMORRHAGIC' | 'TIA' | 'UNKNOWN';
 export type StrokeSeverity = 'MILD' | 'MODERATE' | 'SEVERE' | 'CRITICAL';
 export type StrokeStatus = 'SUSPECTED' | 'CONFIRMED' | 'IMAGING_PENDING' | 'IMAGING_COMPLETE' | 'TREATMENT_EVALUATION' | 'THROMBOLYSIS_STARTED' | 'THROMBECTOMY_STARTED' | 'TREATMENT_COMPLETE' | 'STROKEUNIT_ADMITTED' | 'REHABILITATION_STARTED' | 'DISCHARGED' | 'FOLLOW_UP';
+
+// Stroke Toolkit Enums
+export type StrokeModeOfArrival = 'AMBULANCE' | 'BY_AMBULANCE_RED_CRESCENT' | 'TRANSFERRED_FROM_PHC_UCC' | 'WALK_IN' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+export type StrokeTypeDetailed = 'ISCHEMIC_STROKE' | 'HEMORRHAGIC_STROKE' | 'TRANSIENT_ISCHEMIC_ATTACK_TIA' | 'UNKNOWN';
+export type SwallowingScreeningResult = 'PASS' | 'FAIL' | 'NOT_APPLICABLE';
+export type CTFindings = 'ISCHEMIC_CHANGES' | 'HEMORRHAGE' | 'NORMAL' | 'UNCLEAR' | 'OTHER';
+export type CandidateAssessment = 'YES' | 'NO' | 'NOT_ASSESSED';
+export type IVThrombolysisGiven = 'YES' | 'NO' | 'NOT_APPLICABLE';
+export type StrokeDisposition = 'STROKE_UNIT' | 'ICU' | 'INPATIENT_WARD' | 'DISCHARGED_HOME' | 'DIED_BEFORE_ADMISSION' | 'TRANSFERRED_TO_ANOTHER_HOSPITAL' | 'DAMA' | 'IN_ED_WAITING_FOR_ADMISSION';
+export type ReferralTo = 'STROKE_UNIT' | 'ICU' | 'NEUROLOGY' | 'INTERVENTIONAL_RADIOLOGY' | 'ANOTHER_HOSPITAL' | 'OTHER';
+export type ModifiedRankinScale = 'SCORE_0' | 'SCORE_1' | 'SCORE_2' | 'SCORE_3' | 'SCORE_4' | 'SCORE_5' | 'SCORE_6_DEAD';
 export type StrokeTreatment = 'IV_THROMBOLYSIS' | 'MECHANICAL_THROMBECTOMY' | 'COMBINED_THERAPY' | 'CONSERVATIVE_MANAGEMENT' | 'SURGICAL_INTERVENTION' | 'NOT_ELIGIBLE';
 export type StrokeEventType = 'ARRIVAL' | 'TRIAGE' | 'ASSESSMENT' | 'IMAGING' | 'LABORATORY' | 'TREATMENT_START' | 'TREATMENT_COMPLETE' | 'TRANSFER' | 'DISCHARGE' | 'COMPLICATION' | 'FOLLOWUP';
 
@@ -16,7 +27,7 @@ export interface PatientInfo {
   middleName?: string;
   dateOfBirth?: string; // Will be removed after migration
   age?: number; // Age in years
-  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
+  gender?: 'MALE' | 'FEMALE';
   phoneNumber?: string;
   email?: string;
 }
@@ -29,8 +40,15 @@ export interface StrokeCase {
   originHospitalId: string;
   destinationHospitalId?: string;
   strokeType: StrokeType;
-  strokeSubtype?: string;
   strokeSeverity?: StrokeSeverity;
+  
+  // Treatment Details
+  currentStatus: StrokeStatus;
+  selectedTreatment?: StrokeTreatment;
+  eligibleForThrombolysis?: boolean;
+  thrombolysisContraindications?: string;
+  eligibleForThrombectomy?: boolean;
+  thrombectomyContraindications?: string;
   
   // Clinical Assessments
   nihssBaseline?: number;
@@ -43,34 +61,69 @@ export interface StrokeCase {
   aspectsScore?: number;
   gcsBaseline?: number;
   
-  // Symptom & Presentation
+  // Legacy fields
+  chiefComplaint?: string;
   presentingSymptoms?: string;
   symptomOnset?: string;
   symptomToHospitalMinutes?: number;
   lastKnownWell?: string;
   wakeUpStroke?: boolean;
   
-  // Treatment Details
-  currentStatus: StrokeStatus;
-  selectedTreatment?: StrokeTreatment;
-  eligibleForThrombolysis?: boolean;
-  thrombolysisContraindications?: string;
-  eligibleForThrombectomy?: boolean;
-  thrombectomyContraindications?: string;
+  // Patient Arrival & Timing (Step 1)
+  modeOfArrival?: StrokeModeOfArrival;
+  srcaCallTime?: string;
+  timeOfSymptomOnset?: string;
+  lastKnownNormal?: string;
+  timeOfRegistration?: string;
+  timeOfTriage?: string;
+  timeOfPhysicianAssessment?: string;
+  
+  // Clinical Assessment & Diagnosis (Step 2)
+  strokeTypeDetailed?: StrokeTypeDetailed;
+  swallowingScreeningPerformed?: boolean;
+  timeOfSwallowingScreening?: string;
+  swallowingScreeningResult?: SwallowingScreeningResult;
+  ctScanPerformed?: boolean;
+  timeOfCtScanStart?: string;
+  timeOfCtReportFinal?: string;
+  ctFindings?: CTFindings;
+  lvoDetected?: boolean;
+  candidateForIVThrombolysis?: CandidateAssessment;
+  thrombolysisOrderTime?: string;
+  ivThrombolysisAdministrationTime?: string;
+  ivThrombolysisGiven?: IVThrombolysisGiven;
+  reasonForNotAdministeringIV?: string;
+  candidateForMechanicalThrombectomy?: CandidateAssessment;
+  timeOfGroinPuncture?: string;
+  mechanicalThrombectomyPerformed?: boolean;
+  timeOfThrombectomyComplete?: string;
+  
+  // Disposition & Transfer Decisions (Step 3)
+  facilityHasCt?: boolean;
+  transferToAnotherHospital?: boolean;
+  timeOfTransferActivation?: string;
+  timeOfTransferDeparture?: string;
+  prehospitalNotificationBySrca?: boolean;
+  prehospitalNotificationByUccPhc?: boolean;
+  disposition?: StrokeDisposition;
+  referralTo?: ReferralTo[];
+  admittedToStrokeUnit?: boolean;
+  
+  // Follow-up & Outcome Tracking (Step 4)
+  followUpContactAttempted?: boolean;
+  modifiedRankinScaleAt90Days?: ModifiedRankinScale;
   
   // Pathway Timings
   pathwayStarted?: string;
   pathwayCompleted?: string;
   strokeUnitAdmissionTime?: string;
-  
-  // Key Performance Timings (minutes)
-  doorToImagingMinutes?: number;
-  doorToNeedleMinutes?: number;
-  doorToGroinMinutes?: number;
   symptomNeedleMinutes?: number;
   symptomGroinMinutes?: number;
   imagingToNeedleMinutes?: number;
   imagingToGroinMinutes?: number;
+  doorToImagingMinutes?: number;
+  doorToNeedleMinutes?: number;
+  doorToGroinMinutes?: number;
   
   // Clinical Assessments Timeline
   dysphagiaScreeningMinutes?: number;
@@ -115,6 +168,16 @@ export interface StrokeCase {
   metKpi6?: boolean;
   metKpi7?: boolean;
   metKpi8?: boolean;
+  
+  // KPI Timing Calculations (in minutes)
+  doorToPhysicianMinutes?: number;
+  registrationToCtMinutes?: number;
+  doorToCtReportMinutes?: number;
+  doorToThrombolysisOrderMinutes?: number;
+  registrationToThrombolysisMinutes?: number;
+  registrationToGroinMinutes?: number;
+  srcaCallToArrivalMinutes?: number;
+  transferActivationToDepartureMinutes?: number;
   
   // Relations
   ticket?: {
@@ -178,7 +241,6 @@ export interface StrokeTimeline {
   minutesFromAdmission?: number;
   withinTarget?: boolean;
   targetMinutes?: number;
-  nihssAtSession?: number;
   clinicalNotes?: string;
   
   // Relations
@@ -216,7 +278,6 @@ export interface StrokeAssessmentScore {
   id: string;
   strokeCaseId: string;
   patientId: string;
-  assessmentType: string; // NIHSS, MRS, BARTHEL, ASPECTS, GCS
   assessmentTiming: string; // BASELINE, 24HR, DISCHARGE, 90DAY
   totalScore?: number;
   subScores?: string; // JSON for detailed breakdown
@@ -256,22 +317,7 @@ export interface CreateStrokeCaseData {
   originHospitalId: string;
   destinationHospitalId?: string;
   strokeType: StrokeType;
-  strokeSubtype?: string;
   strokeSeverity?: StrokeSeverity;
-  nihssBaseline?: number;
-  nihss24hr?: number;
-  nihssDischarge?: number;
-  mrsBaseline?: number;
-  mrs90day?: number;
-  barthelBaseline?: number;
-  barthelDischarge?: number;
-  aspectsScore?: number;
-  gcsBaseline?: number;
-  presentingSymptoms?: string;
-  symptomOnset?: string;
-  symptomToHospitalMinutes?: number;
-  lastKnownWell?: string;
-  wakeUpStroke?: boolean;
   currentStatus: StrokeStatus;
   selectedTreatment?: StrokeTreatment;
   eligibleForThrombolysis?: boolean;
@@ -281,13 +327,32 @@ export interface CreateStrokeCaseData {
   pathwayStarted?: string;
   pathwayCompleted?: string;
   strokeUnitAdmissionTime?: string;
-  doorToImagingMinutes?: number;
-  doorToNeedleMinutes?: number;
-  doorToGroinMinutes?: number;
   symptomNeedleMinutes?: number;
   symptomGroinMinutes?: number;
   imagingToNeedleMinutes?: number;
   imagingToGroinMinutes?: number;
+  doorToImagingMinutes?: number;
+  doorToNeedleMinutes?: number;
+  doorToGroinMinutes?: number;
+  
+  // Clinical Assessments
+  nihssBaseline?: number;
+  nihss24hr?: number;
+  nihssDischarge?: number;
+  mrsBaseline?: number;
+  mrs90day?: number;
+  barthelBaseline?: number;
+  barthelDischarge?: number;
+  aspectsScore?: number;
+  gcsBaseline?: number;
+  
+  // Legacy fields
+  presentingSymptoms?: string;
+  symptomOnset?: string;
+  symptomToHospitalMinutes?: number;
+  lastKnownWell?: string;
+  wakeUpStroke?: boolean;
+  
   dysphagiaScreeningMinutes?: number;
   earlyMobilizationHours?: number;
   speechTherapyHours?: number;
@@ -311,6 +376,74 @@ export interface CreateStrokeCaseData {
   ninetyDayMortality?: boolean;
   followUpCallCompleted?: boolean;
   followUpCallDate?: string;
+
+  // Stroke Toolkit Fields - Patient Arrival & Timing (Step 1)
+  modeOfArrival?: StrokeModeOfArrival;
+  srcaCallTime?: string;
+  timeOfSymptomOnset?: string;
+  lastKnownNormal?: string;
+  timeOfRegistration?: string;
+  timeOfTriage?: string;
+  timeOfPhysicianAssessment?: string;
+
+  // Clinical Assessment & Diagnosis (Step 2)
+  strokeTypeDetailed?: StrokeTypeDetailed;
+  swallowingScreeningPerformed?: boolean;
+  timeOfSwallowingScreening?: string;
+  swallowingScreeningResult?: SwallowingScreeningResult;
+  ctScanPerformed?: boolean;
+  timeOfCtScanStart?: string;
+  timeOfCtReportFinal?: string;
+  ctFindings?: CTFindings;
+  lvoDetected?: boolean;
+  candidateForIVThrombolysis?: CandidateAssessment;
+  thrombolysisOrderTime?: string;
+  ivThrombolysisAdministrationTime?: string;
+  ivThrombolysisGiven?: IVThrombolysisGiven;
+  reasonForNotAdministeringIV?: string;
+  candidateForMechanicalThrombectomy?: CandidateAssessment;
+  timeOfGroinPuncture?: string;
+  mechanicalThrombectomyPerformed?: boolean;
+  timeOfThrombectomyComplete?: string;
+
+  // Disposition & Transfer Decisions (Step 3)
+  facilityHasCt?: boolean;
+  transferToAnotherHospital?: boolean;
+  timeOfTransferActivation?: string;
+  timeOfTransferDeparture?: string;
+  prehospitalNotificationBySrca?: boolean;
+  prehospitalNotificationByUccPhc?: boolean;
+  disposition?: StrokeDisposition;
+  referralTo?: ReferralTo[];
+  admittedToStrokeUnit?: boolean;
+
+  // Follow-up & Outcome Tracking (Step 4)
+  followUpContactAttempted?: boolean;
+  modifiedRankinScaleAt90Days?: ModifiedRankinScale;
+
+  // KPI Tracking (11 Stroke Toolkit KPIs)
+  metKpi1?: boolean;
+  metKpi2?: boolean;
+  metKpi3?: boolean;
+  metKpi4?: boolean;
+  metKpi5?: boolean;
+  metKpi6?: boolean;
+  metKpi7?: boolean;
+  metKpi8?: boolean;
+  metKpi9?: boolean;
+  metKpi10?: boolean;
+  metKpi11?: boolean;
+
+  // KPI Timing Calculations (in minutes)
+  doorToPhysicianMinutes?: number;
+  registrationToCtMinutes?: number;
+  doorToCtReportMinutes?: number;
+  doorToThrombolysisOrderMinutes?: number;
+  registrationToThrombolysisMinutes?: number;
+  registrationToGroinMinutes?: number;
+  srcaCallToArrivalMinutes?: number;
+  transferActivationToDepartureMinutes?: number;
+  swallowingScreeningWithin4Hours?: boolean;
 }
 
 export interface CreateStrokeTimelineData {
@@ -327,7 +460,6 @@ export interface CreateStrokeTimelineData {
   minutesFromAdmission?: number;
   withinTarget?: boolean;
   targetMinutes?: number;
-  nihssAtSession?: number;
   clinicalNotes?: string;
 }
 
@@ -367,15 +499,15 @@ export interface StrokeKPISummary {
     kpi8: { met: number; total: number; percentage: number };
   };
   averageTimings: {
-    doorToImaging: number;
-    doorToNeedle: number;
-    doorToGroin: number;
+    doorToPhysician: number;
+    registrationToCt: number;
+    registrationToThrombolysis: number;
+    registrationToGroin: number;
+    srcaCallToArrival: number;
+    transferActivationToDeparture: number;
   };
   outcomes: {
     successRate: number;
-    readmissionRate: number;
-    mortalityRate: number;
-    averageLengthOfStay: number;
     independentDischargeRate: number;
   };
 }
@@ -384,7 +516,7 @@ export interface StrokeKPISummary {
 export class StrokeService {
   // Stroke Cases
   static async createStrokeCase(data: CreateStrokeCaseData): Promise<StrokeCase> {
-    // Filter data to only include fields that exist in the backend DTO
+    // Include all fields that exist in the backend DTO
     const filteredData = {
       ticketId: data.ticketId,
       patientId: data.patientId,
@@ -400,10 +532,54 @@ export class StrokeService {
       } : undefined,
       chiefComplaint: data.chiefComplaint,
       originHospitalId: data.originHospitalId,
+      destinationHospitalId: data.destinationHospitalId,
       strokeType: data.strokeType,
       currentStatus: data.currentStatus,
-      strokeSeverity: data.strokeSeverity,
-      selectedTreatment: data.selectedTreatment
+      selectedTreatment: data.selectedTreatment,
+      
+      // Patient Arrival & Timing (Step 1)
+      modeOfArrival: data.modeOfArrival,
+      srcaCallTime: data.srcaCallTime,
+      timeOfSymptomOnset: data.timeOfSymptomOnset,
+      lastKnownNormal: data.lastKnownNormal,
+      timeOfRegistration: data.timeOfRegistration,
+      timeOfTriage: data.timeOfTriage,
+      timeOfPhysicianAssessment: data.timeOfPhysicianAssessment,
+      
+      // Clinical Assessment & Diagnosis (Step 2)
+      strokeTypeDetailed: data.strokeTypeDetailed,
+      swallowingScreeningPerformed: data.swallowingScreeningPerformed,
+      timeOfSwallowingScreening: data.timeOfSwallowingScreening,
+      swallowingScreeningResult: data.swallowingScreeningResult,
+      ctScanPerformed: data.ctScanPerformed,
+      timeOfCtScanStart: data.timeOfCtScanStart,
+      timeOfCtReportFinal: data.timeOfCtReportFinal,
+      ctFindings: data.ctFindings,
+      lvoDetected: data.lvoDetected,
+      candidateForIVThrombolysis: data.candidateForIVThrombolysis,
+      thrombolysisOrderTime: data.thrombolysisOrderTime,
+      ivThrombolysisAdministrationTime: data.ivThrombolysisAdministrationTime,
+      ivThrombolysisGiven: data.ivThrombolysisGiven,
+      reasonForNotAdministeringIV: data.reasonForNotAdministeringIV,
+      candidateForMechanicalThrombectomy: data.candidateForMechanicalThrombectomy,
+      timeOfGroinPuncture: data.timeOfGroinPuncture,
+      mechanicalThrombectomyPerformed: data.mechanicalThrombectomyPerformed,
+      timeOfThrombectomyComplete: data.timeOfThrombectomyComplete,
+      
+      // Disposition & Transfer Decisions (Step 3)
+      facilityHasCt: data.facilityHasCt,
+      transferToAnotherHospital: data.transferToAnotherHospital,
+      timeOfTransferActivation: data.timeOfTransferActivation,
+      timeOfTransferDeparture: data.timeOfTransferDeparture,
+      prehospitalNotificationBySrca: data.prehospitalNotificationBySrca,
+      prehospitalNotificationByUccPhc: data.prehospitalNotificationByUccPhc,
+      disposition: data.disposition,
+      referralTo: data.referralTo,
+      admittedToStrokeUnit: data.admittedToStrokeUnit,
+      
+      // Follow-up & Outcome Tracking (Step 4)
+      followUpContactAttempted: data.followUpContactAttempted,
+      modifiedRankinScaleAt90Days: data.modifiedRankinScaleAt90Days,
     };
     
     console.log('Sending filtered data:', filteredData);
@@ -485,16 +661,6 @@ export class StrokeService {
     await apiClient.delete(`/stroke-timeline/${id}`);
   }
 
-  // KPI Summary
-  static async getKPISummary(hospitalId?: string, year?: number, month?: number): Promise<StrokeKPISummary> {
-    const params = new URLSearchParams();
-    if (hospitalId) params.append('hospitalId', hospitalId);
-    if (year) params.append('year', year.toString());
-    if (month) params.append('month', month.toString());
-
-    const response = await apiClient.get(`/stroke-cases/kpi-summary?${params.toString()}`);
-    return response.data;
-  }
 
   // Utility functions
   static getStrokeTypeLabel(strokeType: StrokeType): string {
@@ -566,14 +732,17 @@ export class StrokeService {
 
   static getKPILabel(kpiNumber: number): string {
     const labels: Record<number, string> = {
-      1: 'Door to Imaging ≤25min',
-      2: 'Door to Needle ≤60min',
-      3: 'Door to Groin ≤90min',
-      4: 'Stroke Unit Admission ≤4hr',
-      5: 'Dysphagia Screening ≤4hr',
-      6: 'Early Mobilization ≤24hr',
-      7: 'Secondary Prevention Prescribed',
-      8: 'Appropriate Rehabilitation Referral',
+      1: 'Door to Physician ≤15min',
+      2: 'Pre-hospital Notification ≥90%',
+      3: 'Registration to CT ≤20min',
+      4: 'Registration to IV Thrombolysis ≤60min',
+      5: 'IV Thrombolysis Rate ≥5%',
+      6: 'Direct Stroke Unit Admission ≥80%',
+      7: 'Transfer Time ≤20min (no CT), ≤40min (with CT)',
+      8: 'Registration to Groin Puncture ≤120min',
+      9: 'SRCA Call to Arrival ≤60min',
+      10: 'Swallowing Screening ≤4hr ≥85%',
+      11: '3-month Follow-up with mRS ≥80%',
     };
     return labels[kpiNumber] || `KPI ${kpiNumber}`;
   }
@@ -620,6 +789,39 @@ export class StrokeService {
       console.error('Error deleting stroke case:', error);
       throw error;
     }
+  }
+
+  // KPI Dashboard Methods
+  static async getKPISummary(filters?: {
+    hospitalId?: string;
+    timeframe?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters?.hospitalId) params.append('hospitalId', filters.hospitalId);
+    if (filters?.timeframe) params.append('timeframe', filters.timeframe);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+
+    const response = await apiClient.get(`/stroke-cases/kpi-summary?${params.toString()}`);
+    return response.data;
+  }
+
+  static async getKPIDetails(kpiId: string, filters?: {
+    hospitalId?: string;
+    timeframe?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters?.hospitalId) params.append('hospitalId', filters.hospitalId);
+    if (filters?.timeframe) params.append('timeframe', filters.timeframe);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+
+    const response = await apiClient.get(`/stroke-cases/kpi-details/${kpiId}?${params.toString()}`);
+    return response.data;
   }
 
 }

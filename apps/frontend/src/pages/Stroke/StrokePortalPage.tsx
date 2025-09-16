@@ -262,9 +262,9 @@ const StrokePortalPage: React.FC = () => {
       color: '#1976d2',
     },
     {
-      title: 'Avg Door to Imaging',
-      value: kpiSummary?.averageTimings.doorToImaging ? 
-        `${Math.round(kpiSummary.averageTimings.doorToImaging)} min` : 'N/A',
+      title: 'Avg Registration to CT',
+      value: kpiSummary?.averageTimings.registrationToCt ? 
+        `${Math.round(kpiSummary.averageTimings.registrationToCt)} min` : 'N/A',
       icon: <Timeline />,
       color: '#ed6c02',
     },

@@ -39,7 +39,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
     firstName: '',
     lastName: '',
     age: undefined,
-    gender: 'UNKNOWN',
+    gender: 'MALE',
     privacyLevel: 'PRIVATE',
     consentGiven: false,
   });

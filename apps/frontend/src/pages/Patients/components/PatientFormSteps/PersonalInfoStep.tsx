@@ -118,7 +118,7 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
           <FormControl fullWidth required>
             <InputLabel>Gender</InputLabel>
             <Select
-              value={formData.gender || 'UNKNOWN'}
+              value={formData.gender || 'MALE'}
               onChange={(e) => handleChange('gender', e.target.value)}
               label="Gender"
             >

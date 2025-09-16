@@ -157,7 +157,7 @@ export class StrokeTimelineService {
             id: true,
             strokeType: true,
             currentStatus: true,
-            symptomOnset: true,
+            timeOfSymptomOnset: true,
             pathwayStarted: true,
             patient: {
               select: {

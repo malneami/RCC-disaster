@@ -22,14 +22,43 @@ model StrokeCase {
   aspectsScore                    Int?        @map("aspects_score") // 0-10 scale
   gcsBaseline                     Int?        @map("gcs_baseline") // 3-15 scale
   
-  // Symptom & Presentation
+  // Patient Arrival & Timing (Step 1)
+  modeOfArrival                   StrokeModeOfArrival? @map("mode_of_arrival")
+  srcaCallTime                    DateTime?   @map("srca_call_time")
+  timeOfSymptomOnset              DateTime?   @map("time_of_symptom_onset")
+  lastKnownNormal                 DateTime?   @map("last_known_normal")
+  timeOfRegistration              DateTime?   @map("time_of_registration")
+  timeOfTriage                    DateTime?   @map("time_of_triage")
+  timeOfPhysicianAssessment       DateTime?   @map("time_of_physician_assessment")
+  
+  // Legacy fields (keeping for backward compatibility)
   presentingSymptoms              String?     @map("presenting_symptoms")
   symptomOnset                    DateTime?   @map("symptom_onset")
   symptomToHospitalMinutes        Int?        @map("symptom_to_hospital_minutes")
   lastKnownWell                   DateTime?   @map("last_known_well")
   wakeUpStroke                    Boolean     @default(false) @map("wake_up_stroke")
   
-  // Treatment Details  
+  // Clinical Assessment & Diagnosis (Step 2)
+  strokeTypeDetailed              StrokeTypeDetailed? @map("stroke_type_detailed")
+  swallowingScreeningPerformed    Boolean?    @map("swallowing_screening_performed")
+  timeOfSwallowingScreening       DateTime?   @map("time_of_swallowing_screening")
+  swallowingScreeningResult       SwallowingScreeningResult? @map("swallowing_screening_result")
+  ctScanPerformed                 Boolean?    @map("ct_scan_performed")
+  timeOfCtScanStart              DateTime?   @map("time_of_ct_scan_start")
+  timeOfCtReportFinal            DateTime?   @map("time_of_ct_report_final")
+  ctFindings                     CTFindings? @map("ct_findings")
+  lvoDetected                    Boolean?    @map("lvo_detected")
+  candidateForIVThrombolysis     CandidateAssessment? @map("candidate_for_iv_thrombolysis")
+  thrombolysisOrderTime          DateTime?   @map("thrombolysis_order_time")
+  ivThrombolysisAdministrationTime DateTime? @map("iv_thrombolysis_administration_time")
+  ivThrombolysisGiven            IVThrombolysisGiven? @map("iv_thrombolysis_given")
+  reasonForNotAdministeringIV    String?     @map("reason_for_not_administering_iv")
+  candidateForMechanicalThrombectomy CandidateAssessment? @map("candidate_for_mechanical_thrombectomy")
+  timeOfGroinPuncture            DateTime?   @map("time_of_groin_puncture")
+  mechanicalThrombectomyPerformed Boolean?   @map("mechanical_thrombectomy_performed")
+  timeOfThrombectomyComplete     DateTime?   @map("time_of_thrombectomy_complete")
+  
+  // Treatment Details (Legacy)
   currentStatus                   StrokeStatus @map("current_status")
   selectedTreatment               StrokeTreatment? @map("selected_treatment")
   eligibleForThrombolysis         Boolean?    @map("eligible_for_thrombolysis")
@@ -73,7 +102,22 @@ model StrokeCase {
   complications                   String?
   secondaryPrevention             String?     @map("secondary_prevention")
   
-  // Discharge & Follow-up
+  // Disposition & Transfer Decisions (Step 3)
+  facilityHasCt                   Boolean?    @map("facility_has_ct")
+  transferToAnotherHospital       Boolean?    @map("transfer_to_another_hospital")
+  timeOfTransferActivation        DateTime?   @map("time_of_transfer_activation")
+  timeOfTransferDeparture         DateTime?   @map("time_of_transfer_departure")
+  prehospitalNotificationBySrca  Boolean?    @map("prehospital_notification_by_srca")
+  prehospitalNotificationByUccPhc Boolean?    @map("prehospital_notification_by_ucc_phc")
+  disposition                     StrokeDisposition? @map("disposition")
+  referralTo                      ReferralTo[] @map("referral_to")
+  admittedToStrokeUnit            Boolean?    @map("admitted_to_stroke_unit") // Auto-calculated
+  
+  // Follow-up & Outcome Tracking (Step 4)
+  followUpContactAttempted        Boolean?    @map("follow_up_contact_attempted")
+  modifiedRankinScaleAt90Days     ModifiedRankinScale? @map("modified_rankin_scale_at_90_days")
+  
+  // Discharge & Follow-up (Legacy)
   dischargeDestination            String?     @map("discharge_destination") // HOME, REHABILITATION, NURSING_HOME, etc.
   dischargeDate                   DateTime?   @map("discharge_date")
   lengthOfStayDays                Int?        @map("length_of_stay_days")
@@ -96,15 +140,27 @@ model StrokeCase {
   outcomeFormCompletionDate       DateTime?   @map("outcome_form_completion_date")
   outcomePercentageCompleteness   Int         @default(0) @map("outcome_percentage_completeness") // 0-100
   
-  // KPI Tracking
-  metKpi1                         Boolean?    @map("met_kpi1") // Door to imaging ≤25min
-  metKpi2                         Boolean?    @map("met_kpi2") // Door to needle ≤60min  
-  metKpi3                         Boolean?    @map("met_kpi3") // Door to groin ≤90min
-  metKpi4                         Boolean?    @map("met_kpi4") // Stroke unit admission ≤4hr
-  metKpi5                         Boolean?    @map("met_kpi5") // Dysphagia screening ≤4hr
-  metKpi6                         Boolean?    @map("met_kpi6") // Early mobilization ≤24hr
-  metKpi7                         Boolean?    @map("met_kpi7") // Secondary prevention prescribed
-  metKpi8                         Boolean?    @map("met_kpi8") // Appropriate rehabilitation referral
+  // KPI Tracking (11 Stroke Toolkit KPIs)
+  metKpi1                         Boolean?    @map("met_kpi1") // Median time interval from door to physician ≤15min
+  metKpi2                         Boolean?    @map("met_kpi2") // Proportion of transferred patients with pre-hospital notification ≥90%
+  metKpi3                         Boolean?    @map("met_kpi3") // Median time interval from registration to CT scan ≤20min
+  metKpi4                         Boolean?    @map("met_kpi4") // Median time interval from registration to IV thrombolysis ≤60min
+  metKpi5                         Boolean?    @map("met_kpi5") // Proportion of acute ischemic stroke patients who received IV thrombolysis ≥5%
+  metKpi6                         Boolean?    @map("met_kpi6") // Proportion of acute stroke patients admitted directly to stroke unit ≥80%
+  metKpi7                         Boolean?    @map("met_kpi7") // Median transfer time (door-in to door-out) ≤20min (no CT), ≤40min (with CT)
+  metKpi8                         Boolean?    @map("met_kpi8") // Median time interval from registration to groin puncture ≤120min
+  metKpi9                         Boolean?    @map("met_kpi9") // Median time interval from SRCA call to hospital arrival ≤60min
+  metKpi10                        Boolean?    @map("met_kpi10") // Percentage of acute stroke patients who received swallowing screening within 4 hours ≥85%
+  metKpi11                        Boolean?    @map("met_kpi11") // Percentage of patients with 3-month follow-up using modified Rankin Scale ≥80%
+  
+  // KPI Timing Calculations (in minutes)
+  doorToPhysicianMinutes          Int?        @map("door_to_physician_minutes")
+  registrationToCtMinutes         Int?        @map("registration_to_ct_minutes")
+  registrationToThrombolysisMinutes Int?      @map("registration_to_thrombolysis_minutes")
+  registrationToGroinMinutes      Int?        @map("registration_to_groin_minutes")
+  srcaCallToArrivalMinutes        Int?        @map("srca_call_to_arrival_minutes")
+  transferActivationToDepartureMinutes Int?   @map("transfer_activation_to_departure_minutes")
+  swallowingScreeningWithin4Hours  Boolean?    @map("swallowing_screening_within_4_hours")
   
   // Audit Fields
   createdAt                       DateTime    @default(now()) @map("created_at")

@@ -127,7 +127,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     const parts = [];
     if (patient.nationalId) parts.push(`ID: ${patient.nationalId}`);
     if (patient.mrn) parts.push(`MRN: ${patient.mrn}`);
-    if (patient.gender !== 'UNKNOWN') parts.push(patient.gender);
+    if (patient.gender) parts.push(patient.gender);
     return parts.join(' • ');
   };
 

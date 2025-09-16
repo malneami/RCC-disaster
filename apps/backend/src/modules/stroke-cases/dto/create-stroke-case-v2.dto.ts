@@ -1,6 +1,19 @@
-import { IsString, IsEnum, IsOptional, IsNumber, ValidateNested } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsNumber, ValidateNested, IsBoolean, IsDateString, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
-import { StrokeType, StrokeStatus, StrokeSeverity, StrokeTreatment } from '@prisma/client';
+import { 
+  StrokeType, 
+  StrokeStatus, 
+  StrokeTreatment,
+  StrokeModeOfArrival,
+  StrokeTypeDetailed,
+  SwallowingScreeningResult,
+  CTFindings,
+  CandidateAssessment,
+  IVThrombolysisGiven,
+  StrokeDisposition,
+  ReferralTo,
+  ModifiedRankinScale
+} from '@prisma/client';
 
 export class PatientInfoV2Dto {
   @IsString()
@@ -41,7 +54,7 @@ export class PatientInfoV2Dto {
 export class CreateStrokeCaseV2Dto {
   @IsOptional()
   @IsString()
-  ticketId?: string;
+  ticketId?: string | null;
 
   @IsOptional()
   @IsString()
@@ -56,16 +69,13 @@ export class CreateStrokeCaseV2Dto {
   @IsString()
   chiefComplaint?: string;
 
-  @IsOptional()
-  @IsString()
-  presentingSymptoms?: string;
 
   @IsString()
   originHospitalId!: string;
 
   @IsOptional()
   @IsString()
-  destinationHospitalId?: string;
+  destinationHospitalId?: string | null;
 
   @IsEnum(StrokeType)
   strokeType!: StrokeType;
@@ -73,12 +83,158 @@ export class CreateStrokeCaseV2Dto {
   @IsEnum(StrokeStatus)
   currentStatus!: StrokeStatus;
 
-  @IsOptional()
-  @IsEnum(StrokeSeverity)
-  strokeSeverity?: StrokeSeverity;
 
   @IsOptional()
   @IsEnum(StrokeTreatment)
-  selectedTreatment?: StrokeTreatment;
+  selectedTreatment?: StrokeTreatment | null;
+
+  // Stroke Toolkit Fields - Patient Arrival & Timing (Step 1)
+  @IsOptional()
+  @IsEnum(StrokeModeOfArrival)
+  modeOfArrival?: StrokeModeOfArrival | null;
+
+  @IsOptional()
+  @IsDateString()
+  srcaCallTime?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfSymptomOnset?: string;
+
+  @IsOptional()
+  @IsDateString()
+  lastKnownNormal?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfRegistration?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfTriage?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfPhysicianAssessment?: string;
+
+  // Clinical Assessment & Diagnosis (Step 2)
+  @IsOptional()
+  @IsEnum(StrokeTypeDetailed)
+  strokeTypeDetailed?: StrokeTypeDetailed;
+
+  @IsOptional()
+  @IsBoolean()
+  swallowingScreeningPerformed?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfSwallowingScreening?: string;
+
+  @IsOptional()
+  @IsEnum(SwallowingScreeningResult)
+  swallowingScreeningResult?: SwallowingScreeningResult;
+
+  @IsOptional()
+  @IsBoolean()
+  ctScanPerformed?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfCtScanStart?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfCtReportFinal?: string;
+
+  @IsOptional()
+  @IsEnum(CTFindings)
+  ctFindings?: CTFindings;
+
+  @IsOptional()
+  @IsBoolean()
+  lvoDetected?: boolean;
+
+  @IsOptional()
+  @IsEnum(CandidateAssessment)
+  candidateForIVThrombolysis?: CandidateAssessment;
+
+  @IsOptional()
+  @IsDateString()
+  thrombolysisOrderTime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  ivThrombolysisAdministrationTime?: string;
+
+  @IsOptional()
+  @IsEnum(IVThrombolysisGiven)
+  ivThrombolysisGiven?: IVThrombolysisGiven;
+
+  @IsOptional()
+  @IsString()
+  reasonForNotAdministeringIV?: string;
+
+  @IsOptional()
+  @IsEnum(CandidateAssessment)
+  candidateForMechanicalThrombectomy?: CandidateAssessment;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfGroinPuncture?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  mechanicalThrombectomyPerformed?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfThrombectomyComplete?: string;
+
+  // Disposition & Transfer Decisions (Step 3)
+  @IsOptional()
+  @IsBoolean()
+  facilityHasCt?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  transferToAnotherHospital?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfTransferActivation?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfTransferDeparture?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  prehospitalNotificationBySrca?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  prehospitalNotificationByUccPhc?: boolean;
+
+  @IsOptional()
+  @IsEnum(StrokeDisposition)
+  disposition?: StrokeDisposition;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(ReferralTo, { each: true })
+  referralTo?: ReferralTo[];
+
+  @IsOptional()
+  @IsBoolean()
+  admittedToStrokeUnit?: boolean;
+
+  // Follow-up & Outcome Tracking (Step 4)
+  @IsOptional()
+  @IsBoolean()
+  followUpContactAttempted?: boolean;
+
+  @IsOptional()
+  @IsEnum(ModifiedRankinScale)
+  modifiedRankinScaleAt90Days?: ModifiedRankinScale;
 }
 

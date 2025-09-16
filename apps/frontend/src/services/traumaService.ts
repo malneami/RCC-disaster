@@ -15,7 +15,7 @@ export interface PatientInfo {
   lastName: string;
   middleName?: string;
   dateOfBirth?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'UNKNOWN';
+  gender?: 'MALE' | 'FEMALE';
   phoneNumber?: string;
   email?: string;
 }

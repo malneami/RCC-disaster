@@ -141,11 +141,27 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
       </TableCell>
       
       <TableCell>
-        {strokeCase.nihssBaseline || 'N/A'}
+        {formatDuration(strokeCase.doorToPhysicianMinutes)}
+      </TableCell>
+      
+      <TableCell>
+        {formatDuration(strokeCase.registrationToCtMinutes)}
+      </TableCell>
+      
+      <TableCell>
+        {formatDuration(strokeCase.doorToCtReportMinutes)}
+      </TableCell>
+      
+      <TableCell>
+        {formatDuration(strokeCase.doorToThrombolysisOrderMinutes)}
       </TableCell>
       
       <TableCell>
         {formatDuration(strokeCase.doorToNeedleMinutes)}
+      </TableCell>
+      
+      <TableCell>
+        {formatDuration(strokeCase.registrationToGroinMinutes)}
       </TableCell>
       
       <TableCell>

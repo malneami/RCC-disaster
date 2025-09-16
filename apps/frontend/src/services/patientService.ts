@@ -10,7 +10,7 @@ export interface Patient {
   middleName?: string;
   dateOfBirth?: string; // Will be removed after migration
   age?: number; // Age in years
-  gender: 'MALE' | 'FEMALE' | 'OTHER' | 'UNKNOWN';
+  gender: 'MALE' | 'FEMALE';
   maritalStatus?: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'SEPARATED' | 'UNKNOWN';
   phoneNumber?: string;
   email?: string;
@@ -68,7 +68,7 @@ export interface CreatePatientData {
   middleName?: string;
   dateOfBirth?: string; // Will be removed after migration
   age?: number; // Age in years
-  gender: 'MALE' | 'FEMALE' | 'OTHER' | 'UNKNOWN';
+  gender: 'MALE' | 'FEMALE';
   maritalStatus?: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'SEPARATED' | 'UNKNOWN';
   phoneNumber?: string;
   email?: string;

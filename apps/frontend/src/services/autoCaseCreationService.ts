@@ -162,7 +162,7 @@ class AutoCaseCreationService {
           lastName: patient.lastName,
           nationalId: patient.nationalId || '',
           dateOfBirth: patient.dateOfBirth,
-          gender: patient.gender as 'MALE' | 'FEMALE' | 'OTHER',
+          gender: patient.gender as 'MALE' | 'FEMALE',
           phoneNumber: patient.phoneNumber,
           address: patient.address,
           emergencyContact: patient.emergencyContact,

@@ -1,6 +1,19 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, IsNumber, Min, Max, IsNotEmpty, ValidateNested } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, IsNumber, Min, Max, IsNotEmpty, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
-import { StrokeType, StrokeSeverity, StrokeStatus, StrokeTreatment } from '@prisma/client';
+import {
+  StrokeType,
+  StrokeStatus,
+  StrokeTreatment,
+  StrokeModeOfArrival,
+  StrokeTypeDetailed,
+  SwallowingScreeningResult,
+  CTFindings,
+  CandidateAssessment,
+  IVThrombolysisGiven,
+  StrokeDisposition,
+  ReferralTo,
+  ModifiedRankinScale
+} from '@prisma/client';
 
 export class PatientInfoDto {
   @IsOptional()
@@ -82,8 +95,6 @@ export class CreateStrokeCaseDto {
   strokeSubtype?: string;
 
   @IsOptional()
-  @IsEnum(StrokeSeverity)
-  strokeSeverity?: StrokeSeverity;
 
   // Clinical Assessments
   @IsOptional()
@@ -161,6 +172,155 @@ export class CreateStrokeCaseDto {
   @IsOptional()
   @IsBoolean()
   wakeUpStroke?: boolean;
+
+  // Patient Arrival & Timing (Step 1)
+  @IsOptional()
+  @IsEnum(StrokeModeOfArrival)
+  modeOfArrival?: StrokeModeOfArrival;
+
+  @IsOptional()
+  @IsDateString()
+  srcaCallTime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfSymptomOnset?: string;
+
+  @IsOptional()
+  @IsDateString()
+  lastKnownNormal?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfRegistration?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfTriage?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfPhysicianAssessment?: string;
+
+  // Clinical Assessment & Diagnosis (Step 2)
+  @IsOptional()
+  @IsEnum(StrokeTypeDetailed)
+  strokeTypeDetailed?: StrokeTypeDetailed;
+
+  @IsOptional()
+  @IsBoolean()
+  swallowingScreeningPerformed?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfSwallowingScreening?: string;
+
+  @IsOptional()
+  @IsEnum(SwallowingScreeningResult)
+  swallowingScreeningResult?: SwallowingScreeningResult;
+
+  @IsOptional()
+  @IsBoolean()
+  ctScanPerformed?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfCtScanStart?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfCtReportFinal?: string;
+
+  @IsOptional()
+  @IsEnum(CTFindings)
+  ctFindings?: CTFindings;
+
+  @IsOptional()
+  @IsBoolean()
+  lvoDetected?: boolean;
+
+  @IsOptional()
+  @IsEnum(CandidateAssessment)
+  candidateForIVThrombolysis?: CandidateAssessment;
+
+  @IsOptional()
+  @IsDateString()
+  thrombolysisOrderTime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  ivThrombolysisAdministrationTime?: string;
+
+  @IsOptional()
+  @IsEnum(IVThrombolysisGiven)
+  ivThrombolysisGiven?: IVThrombolysisGiven;
+
+  @IsOptional()
+  @IsString()
+  reasonForNotAdministeringIV?: string;
+
+  @IsOptional()
+  @IsEnum(CandidateAssessment)
+  candidateForMechanicalThrombectomy?: CandidateAssessment;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfGroinPuncture?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  mechanicalThrombectomyPerformed?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfThrombectomyComplete?: string;
+
+  // Disposition & Transfer Decisions (Step 3)
+  @IsOptional()
+  @IsBoolean()
+  facilityHasCt?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  transferToAnotherHospital?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfTransferActivation?: string;
+
+  @IsOptional()
+  @IsDateString()
+  timeOfTransferDeparture?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  prehospitalNotificationBySrca?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  prehospitalNotificationByUccPhc?: boolean;
+
+  @IsOptional()
+  @IsEnum(StrokeDisposition)
+  disposition?: StrokeDisposition;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(ReferralTo, { each: true })
+  referralTo?: ReferralTo[];
+
+  @IsOptional()
+  @IsBoolean()
+  admittedToStrokeUnit?: boolean;
+
+  // Follow-up & Outcome Tracking (Step 4)
+  @IsOptional()
+  @IsBoolean()
+  followUpContactAttempted?: boolean;
+
+  @IsOptional()
+  @IsEnum(ModifiedRankinScale)
+  modifiedRankinScaleAt90Days?: ModifiedRankinScale;
 
   // Treatment Details
   @IsEnum(StrokeStatus)
@@ -370,6 +530,63 @@ export class CreateStrokeCaseDto {
   @IsOptional()
   @IsBoolean()
   metKpi8?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  metKpi9?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  metKpi10?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  metKpi11?: boolean;
+
+  // KPI Timing Calculations (in minutes)
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  doorToPhysicianMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  registrationToCtMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  doorToCtReportMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  doorToThrombolysisOrderMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  registrationToThrombolysisMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  registrationToGroinMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  srcaCallToArrivalMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  transferActivationToDepartureMinutes?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  swallowingScreeningWithin4Hours?: boolean;
 }
 
 export class UpdateStrokeCaseDto {
@@ -409,8 +626,6 @@ export class UpdateStrokeCaseDto {
   strokeSubtype?: string;
 
   @IsOptional()
-  @IsEnum(StrokeSeverity)
-  strokeSeverity?: StrokeSeverity;
 
   @IsOptional()
   @IsInt()
@@ -687,4 +902,49 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsBoolean()
   metKpi8?: boolean;
+
+  // KPI Timing Calculations (in minutes)
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  doorToPhysicianMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  registrationToCtMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  doorToCtReportMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  doorToThrombolysisOrderMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  registrationToThrombolysisMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  registrationToGroinMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  srcaCallToArrivalMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  transferActivationToDepartureMinutes?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  swallowingScreeningWithin4Hours?: boolean;
 }

@@ -409,53 +409,112 @@ async function seedCriticalCases() {
           originHospitalId: originHospital.id,
           destinationHospitalId: destinationHospital?.id,
           
-          // Clinical Assessment
-          nihssBaseline: Math.floor(Math.random() * 20) + 1,
-          strokeType: getRandomItem(['ISCHEMIC', 'HEMORRHAGIC', 'TIA']),
-          presentingSymptoms: 'Sudden onset left-sided weakness, facial droop, speech difficulty',
-          symptomOnset: addMinutes(admissionTime, -Math.floor(Math.random() * 180) - 30),
-          lastKnownWell: addMinutes(admissionTime, -Math.floor(Math.random() * 240) - 60),
-          
-          // Pathway Execution
+          // Basic Information
+          strokeType: getRandomItem(['ISCHEMIC', 'HEMORRHAGIC', 'TIA', 'UNKNOWN']),
           currentStatus: getRandomItem(['SUSPECTED', 'CONFIRMED', 'IMAGING_PENDING', 'IMAGING_COMPLETE', 'TREATMENT_EVALUATION', 'THROMBOLYSIS_STARTED', 'THROMBECTOMY_STARTED', 'TREATMENT_COMPLETE', 'STROKEUNIT_ADMITTED', 'REHABILITATION_STARTED', 'DISCHARGED', 'FOLLOW_UP']),
-          selectedTreatment: getRandomItem(['IV_THROMBOLYSIS', 'MECHANICAL_THROMBECTOMY', 'COMBINED_THERAPY', 'CONSERVATIVE_MANAGEMENT', 'SURGICAL_INTERVENTION', 'NOT_ELIGIBLE']),
-          pathwayStarted: admissionTime,
           
-          // Imaging Results
-          ctResults: getRandomItem(['NORMAL', 'ACUTE_INFARCT', 'HEMORRHAGE', 'OLD_INFARCT']),
+          // Patient Arrival & Timing
+          modeOfArrival: getRandomItem(['AMBULANCE', 'BY_AMBULANCE_RED_CRESCENT', 'TRANSFERRED_FROM_PHC_UCC', 'WALK_IN', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'POLICE', 'TRANSFERRED_FROM_HOSPITAL', 'OTHER']),
+          srcaCallTime: Math.random() > 0.5 ? addMinutes(admissionTime, -Math.floor(Math.random() * 60) - 30) : null,
+          timeOfSymptomOnset: addMinutes(admissionTime, -Math.floor(Math.random() * 180) - 30),
+          lastKnownNormal: addMinutes(admissionTime, -Math.floor(Math.random() * 240) - 60),
+          timeOfRegistration: admissionTime,
+          timeOfTriage: addMinutes(admissionTime, Math.floor(Math.random() * 10) + 5),
+          timeOfPhysicianAssessment: addMinutes(admissionTime, Math.floor(Math.random() * 20) + 10),
           
-          // Interventions and Treatments
-          eligibleForThrombolysis: Math.random() > 0.3,
-          eligibleForThrombectomy: Math.random() > 0.4,
+          // Clinical Assessment & Diagnosis
+          strokeTypeDetailed: getRandomItem(['ISCHEMIC_STROKE', 'HEMORRHAGIC_STROKE', 'TRANSIENT_ISCHEMIC_ATTACK_TIA', 'UNKNOWN']),
+          ctScanPerformed: Math.random() > 0.1,
+          timeOfCtScanStart: Math.random() > 0.1 ? addMinutes(admissionTime, Math.floor(Math.random() * 30) + 10) : null,
+          timeOfCtReportFinal: Math.random() > 0.1 ? addMinutes(admissionTime, Math.floor(Math.random() * 45) + 20) : null,
+          ctFindings: getRandomItem(['ISCHEMIC_CHANGES', 'HEMORRHAGE', 'NORMAL', 'UNCLEAR', 'OTHER']),
+          lvoDetected: Math.random() > 0.7,
+          swallowingScreeningPerformed: Math.random() > 0.2,
+          timeOfSwallowingScreening: Math.random() > 0.2 ? addMinutes(admissionTime, Math.floor(Math.random() * 240) + 60) : null,
+          swallowingScreeningResult: getRandomItem(['PASS', 'FAIL', 'NOT_APPLICABLE']),
           
-          // Outcomes
-          successful: Math.random() > 0.15,
-          complications: Math.random() > 0.8 ? getRandomItem(['Intracranial hemorrhage', 'Aspiration pneumonia', 'UTI']) : null,
-          dischargeDate: Math.random() > 0.3 ? addMinutes(admissionTime, Math.floor(Math.random() * 2880) + 1440) : null,
-          thirtyDayReadmission: Math.random() > 0.85,
-          followUpCallCompleted: Math.random() > 0.4,
-          followUpCallDate: Math.random() > 0.4 ? addMinutes(admissionTime, Math.floor(Math.random() * 4320) + 1440) : null,
+          // Treatment Details
+          candidateForIVThrombolysis: getRandomItem(['YES', 'NO', 'NOT_ASSESSED']),
+          thrombolysisOrderTime: Math.random() > 0.3 ? addMinutes(admissionTime, Math.floor(Math.random() * 60) + 20) : null,
+          ivThrombolysisAdministrationTime: Math.random() > 0.3 ? addMinutes(admissionTime, Math.floor(Math.random() * 90) + 30) : null,
+          ivThrombolysisGiven: getRandomItem(['YES', 'NO', 'NOT_APPLICABLE']),
+          reasonForNotAdministeringIV: Math.random() > 0.7 ? 'Contraindications present' : null,
+          candidateForMechanicalThrombectomy: getRandomItem(['YES', 'NO', 'NOT_ASSESSED']),
+          timeOfGroinPuncture: Math.random() > 0.4 ? addMinutes(admissionTime, Math.floor(Math.random() * 120) + 60) : null,
+          mechanicalThrombectomyPerformed: Math.random() > 0.6,
+          timeOfThrombectomyComplete: Math.random() > 0.6 ? addMinutes(admissionTime, Math.floor(Math.random() * 180) + 90) : null,
+          
+          // Disposition & Transfer Decisions
+          facilityHasCt: Math.random() > 0.3,
+          transferToAnotherHospital: Math.random() > 0.7,
+          timeOfTransferActivation: Math.random() > 0.7 ? addMinutes(admissionTime, Math.floor(Math.random() * 120) + 60) : null,
+          timeOfTransferDeparture: Math.random() > 0.7 ? addMinutes(admissionTime, Math.floor(Math.random() * 180) + 90) : null,
+          prehospitalNotificationBySrca: Math.random() > 0.5,
+          prehospitalNotificationByUccPhc: Math.random() > 0.6,
+          disposition: getRandomItem(['STROKE_UNIT', 'ICU', 'INPATIENT_WARD', 'DISCHARGED_HOME', 'DIED_BEFORE_ADMISSION', 'TRANSFERRED_TO_ANOTHER_HOSPITAL', 'DAMA', 'IN_ED_WAITING_FOR_ADMISSION']),
+          referralTo: Math.random() > 0.5 ? [getRandomItem(['STROKE_UNIT', 'ICU', 'NEUROLOGY', 'INTERVENTIONAL_RADIOLOGY', 'ANOTHER_HOSPITAL', 'OTHER'])] : [],
+          admittedToStrokeUnit: Math.random() > 0.3,
+          
+          // Follow-up & Outcome Tracking
+          followUpContactAttempted: Math.random() > 0.4,
+          modifiedRankinScaleAt90Days: getRandomItem(['SCORE_0', 'SCORE_1', 'SCORE_2', 'SCORE_3', 'SCORE_4', 'SCORE_5', 'SCORE_6_DEAD']),
           
           createdById: createdBy.id,
         },
       });
 
-      // Calculate and update quality metrics
+      // Calculate and update quality metrics using new field names
       const updateData: any = {};
       
-      if (triageTime && firstCtTime) {
-        const doorToCt = Math.round((firstCtTime.getTime() - triageTime.getTime()) / (1000 * 60));
-        updateData.doorToImagingMinutes = doorToCt;
-        updateData.metKpi1 = doorToCt <= 25;
+      // KPI 1: Door to Physician Assessment ≤15 min
+      if (strokeCase.timeOfRegistration && strokeCase.timeOfPhysicianAssessment) {
+        const doorToPhysician = Math.round((strokeCase.timeOfPhysicianAssessment.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.doorToPhysicianMinutes = doorToPhysician;
+        updateData.metKpi1 = doorToPhysician <= 15;
       }
       
-      if (triageTime && thrombolyticAdminTime) {
-        const doorToNeedle = Math.round((thrombolyticAdminTime.getTime() - triageTime.getTime()) / (1000 * 60));
-        updateData.doorToNeedleMinutes = doorToNeedle;
-        updateData.metKpi2 = doorToNeedle <= 60;
+      // KPI 3: Registration to CT Scan ≤20 min
+      if (strokeCase.timeOfRegistration && strokeCase.timeOfCtScanStart) {
+        const registrationToCt = Math.round((strokeCase.timeOfCtScanStart.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.registrationToCtMinutes = registrationToCt;
+        updateData.metKpi3 = registrationToCt <= 20;
       }
       
-      // doorInDoorOutMinutes field not available in stroke case schema
+      // KPI 4: Registration to IV Thrombolysis ≤60 min
+      if (strokeCase.timeOfRegistration && strokeCase.ivThrombolysisAdministrationTime) {
+        const registrationToThrombolysis = Math.round((strokeCase.ivThrombolysisAdministrationTime.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.registrationToThrombolysisMinutes = registrationToThrombolysis;
+        updateData.metKpi4 = registrationToThrombolysis <= 60;
+      }
+      
+      // KPI 8: Registration to Groin Puncture ≤120 min
+      if (strokeCase.timeOfRegistration && strokeCase.timeOfGroinPuncture) {
+        const registrationToGroin = Math.round((strokeCase.timeOfGroinPuncture.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.registrationToGroinMinutes = registrationToGroin;
+        updateData.metKpi8 = registrationToGroin <= 120;
+      }
+      
+      // KPI 9: SRCA Call to Arrival ≤60 min
+      if (strokeCase.srcaCallTime && strokeCase.timeOfRegistration) {
+        const srcaCallToArrival = Math.round((strokeCase.timeOfRegistration.getTime() - strokeCase.srcaCallTime.getTime()) / (1000 * 60));
+        updateData.srcaCallToArrivalMinutes = srcaCallToArrival;
+        updateData.metKpi9 = srcaCallToArrival <= 60;
+      }
+      
+      // KPI 7: Transfer Time ≤20 min (no CT), ≤40 min (with CT)
+      if (strokeCase.timeOfTransferActivation && strokeCase.timeOfTransferDeparture) {
+        const transferTime = Math.round((strokeCase.timeOfTransferDeparture.getTime() - strokeCase.timeOfTransferActivation.getTime()) / (1000 * 60));
+        updateData.transferActivationToDepartureMinutes = transferTime;
+        const threshold = strokeCase.facilityHasCt ? 40 : 20;
+        updateData.metKpi7 = transferTime <= threshold;
+      }
+      
+      // KPI 10: Swallowing Screening within 4 hours
+      if (strokeCase.timeOfRegistration && strokeCase.timeOfSwallowingScreening) {
+        const swallowingTime = Math.round((strokeCase.timeOfSwallowingScreening.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.swallowingScreeningWithin4Hours = swallowingTime <= 240; // 4 hours = 240 minutes
+        updateData.metKpi10 = swallowingTime <= 240;
+      }
 
       if (Object.keys(updateData).length > 0) {
         await prisma.strokeCase.update({

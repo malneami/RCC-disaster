@@ -42,12 +42,32 @@ const StrokeCasesTableHeader: React.FC = () => {
         </TableCell>
         <TableCell>
           <Typography variant="subtitle2" fontWeight="bold">
-            NIHSS
+            Door to Physician
           </Typography>
         </TableCell>
         <TableCell>
           <Typography variant="subtitle2" fontWeight="bold">
-            Door-to-Needle
+            Door to CT
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="subtitle2" fontWeight="bold">
+            Door to CT Report
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="subtitle2" fontWeight="bold">
+            Door to Thrombolysis Order
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="subtitle2" fontWeight="bold">
+            Door to Needle
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="subtitle2" fontWeight="bold">
+            Door to Thrombectomy
           </Typography>
         </TableCell>
         <TableCell>

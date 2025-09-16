@@ -54,7 +54,7 @@ const initializeFormData = (patient?: Patient | null): CreatePatientData => {
     firstName: '',
     lastName: '',
     age: undefined,
-    gender: 'UNKNOWN',
+    gender: 'MALE',
     privacyLevel: 'PRIVATE',
     consentGiven: false,
   };
@@ -65,7 +65,7 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
     firstName: '',
     lastName: '',
     age: undefined,
-    gender: 'UNKNOWN',
+    gender: 'MALE',
     privacyLevel: 'PRIVATE',
     consentGiven: false,
   });

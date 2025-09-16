@@ -82,7 +82,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
                 lastName: patient.lastName,
                 nationalId: patient.nationalId || '',
                 age: patient.age || undefined,
-                gender: patient.gender as 'MALE' | 'FEMALE' | 'OTHER',
+                gender: patient.gender as 'MALE' | 'FEMALE',
                 phoneNumber: patient.phoneNumber || '',
                 address: patient.address || '',
                 emergencyContact: patient.emergencyContact || '',

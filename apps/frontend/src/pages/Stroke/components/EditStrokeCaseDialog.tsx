@@ -1,22 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
-  Grid,
+  Stepper,
+  Step,
+  StepLabel,
+  Box,
   Alert,
 } from '@mui/material';
 
-import { StrokeCase } from '../../../services/strokeService';
+import { StrokeCase, CreateStrokeCaseData } from '../../../services/strokeService';
 import { useAuth } from '../../../contexts/AuthContext';
-import BasicInformationSection from './EditStrokeCase/BasicInformationSection';
-import ClinicalAssessmentsSection from './EditStrokeCase/ClinicalAssessmentsSection';
-import TreatmentInformationSection from './EditStrokeCase/TreatmentInformationSection';
-import PerformanceTimingsSection from './EditStrokeCase/PerformanceTimingsSection';
-import AdditionalInformationSection from './EditStrokeCase/AdditionalInformationSection';
-import PatientInformationSection from './EditStrokeCase/PatientInformationSection';
+import PatientStep from './CreateStrokeCase/PatientStep';
+import AssessmentStep from './CreateStrokeCase/AssessmentStep';
+import DiagnosisStep from './CreateStrokeCase/DiagnosisStep';
+import TreatmentStep from './CreateStrokeCase/TreatmentStep';
+import ReviewStep from './CreateStrokeCase/ReviewStep';
 
 interface EditStrokeCaseDialogProps {
   open: boolean;
@@ -25,90 +27,186 @@ interface EditStrokeCaseDialogProps {
   onUpdate: (id: string, data: any) => Promise<void>;
 }
 
+const steps = [
+  'Patient',
+  'Assessment', 
+  'Diagnosis',
+  'Treatment',
+  'Review & Submit'
+];
+
 const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
   open,
   onClose,
   strokeCase,
   onUpdate,
 }) => {
-  const { user } = useAuth();
+  const { } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<any>({});
+  const [activeStep, setActiveStep] = useState(0);
+  const [formData, setFormData] = useState<CreateStrokeCaseData>({
+    originHospitalId: '',
+    strokeType: 'ISCHEMIC',
+    currentStatus: 'SUSPECTED',
+    patientInfo: {
+      firstName: '',
+      lastName: '',
+      nationalId: '',
+      mrn: '',
+      age: undefined,
+      gender: 'MALE',
+      phoneNumber: '',
+      email: '',
+    },
+  });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (strokeCase) {
       setFormData({
+        // Basic Information
+        originHospitalId: strokeCase.originHospitalId,
+        destinationHospitalId: strokeCase.destinationHospitalId,
         strokeType: strokeCase.strokeType,
-        strokeSubtype: strokeCase.strokeSubtype || '',
-        strokeSeverity: strokeCase.strokeSeverity || '',
-        nihssBaseline: strokeCase.nihssBaseline || '',
-        nihss24hr: strokeCase.nihss24hr || '',
-        nihssDischarge: strokeCase.nihssDischarge || '',
-        mrsBaseline: strokeCase.mrsBaseline || '',
-        mrs90day: strokeCase.mrs90day || '',
-        barthelBaseline: strokeCase.barthelBaseline || '',
-        barthelDischarge: strokeCase.barthelDischarge || '',
-        aspectsScore: strokeCase.aspectsScore || '',
-        gcsBaseline: strokeCase.gcsBaseline || '',
-        presentingSymptoms: strokeCase.presentingSymptoms || '',
-        symptomOnset: strokeCase.symptomOnset || '',
-        symptomToHospitalMinutes: strokeCase.symptomToHospitalMinutes || '',
-        lastKnownWell: strokeCase.lastKnownWell || '',
-        wakeUpStroke: strokeCase.wakeUpStroke || false,
         currentStatus: strokeCase.currentStatus,
-        selectedTreatment: strokeCase.selectedTreatment || '',
-        eligibleForThrombolysis: strokeCase.eligibleForThrombolysis || false,
-        thrombolysisContraindications: strokeCase.thrombolysisContraindications || '',
-        eligibleForThrombectomy: strokeCase.eligibleForThrombectomy || false,
-        thrombectomyContraindications: strokeCase.thrombectomyContraindications || '',
-        pathwayStarted: strokeCase.pathwayStarted || '',
-        pathwayCompleted: strokeCase.pathwayCompleted || '',
-        strokeUnitAdmissionTime: strokeCase.strokeUnitAdmissionTime || '',
-        doorToImagingMinutes: strokeCase.doorToImagingMinutes || '',
-        doorToNeedleMinutes: strokeCase.doorToNeedleMinutes || '',
-        doorToGroinMinutes: strokeCase.doorToGroinMinutes || '',
-        symptomNeedleMinutes: strokeCase.symptomNeedleMinutes || '',
-        symptomGroinMinutes: strokeCase.symptomGroinMinutes || '',
-        imagingToNeedleMinutes: strokeCase.imagingToNeedleMinutes || '',
-        imagingToGroinMinutes: strokeCase.imagingToGroinMinutes || '',
-        dysphagiaScreeningMinutes: strokeCase.dysphagiaScreeningMinutes || '',
-        earlyMobilizationHours: strokeCase.earlyMobilizationHours || '',
-        ctResults: strokeCase.ctResults || '',
-        mriResults: strokeCase.mriResults || '',
-        complications: strokeCase.complications || '',
-        dischargeDate: strokeCase.dischargeDate || '',
-        lengthOfStayDays: strokeCase.lengthOfStayDays || '',
-        followUpCallDate: strokeCase.followUpCallDate || '',
-        followUpCallCompleted: strokeCase.followUpCallCompleted || false,
-        successful: strokeCase.successful || false,
-        thirtyDayReadmission: strokeCase.thirtyDayReadmission || false,
-        ninetyDayMortality: strokeCase.ninetyDayMortality || false,
-        secondaryPrevention: strokeCase.secondaryPrevention || '',
-        dischargeDestination: strokeCase.dischargeDestination || '',
+        chiefComplaint: strokeCase.chiefComplaint || '',
+        
+        // Patient Information
         patientInfo: {
           firstName: strokeCase.patient?.firstName || '',
           lastName: strokeCase.patient?.lastName || '',
           nationalId: strokeCase.patient?.nationalId || '',
           mrn: strokeCase.patient?.mrn || '',
           age: strokeCase.patient?.age || undefined,
-          gender: strokeCase.patient?.gender || '',
+          gender: (strokeCase.patient?.gender as 'MALE' | 'FEMALE') || 'MALE',
           phoneNumber: strokeCase.patient?.phoneNumber || '',
           email: strokeCase.patient?.email || '',
         },
+        
+        // Patient Arrival & Timing
+        modeOfArrival: strokeCase.modeOfArrival,
+        srcaCallTime: strokeCase.srcaCallTime,
+        timeOfSymptomOnset: strokeCase.timeOfSymptomOnset,
+        lastKnownNormal: strokeCase.lastKnownNormal,
+        timeOfRegistration: strokeCase.timeOfRegistration,
+        timeOfTriage: strokeCase.timeOfTriage,
+        timeOfPhysicianAssessment: strokeCase.timeOfPhysicianAssessment,
+        
+        // Clinical Assessment & Diagnosis
+        strokeTypeDetailed: strokeCase.strokeTypeDetailed,
+        swallowingScreeningPerformed: strokeCase.swallowingScreeningPerformed,
+        timeOfSwallowingScreening: strokeCase.timeOfSwallowingScreening,
+        swallowingScreeningResult: strokeCase.swallowingScreeningResult,
+        ctScanPerformed: strokeCase.ctScanPerformed,
+        timeOfCtScanStart: strokeCase.timeOfCtScanStart,
+        timeOfCtReportFinal: strokeCase.timeOfCtReportFinal,
+        ctFindings: strokeCase.ctFindings,
+        lvoDetected: strokeCase.lvoDetected,
+        candidateForIVThrombolysis: strokeCase.candidateForIVThrombolysis,
+        thrombolysisOrderTime: strokeCase.thrombolysisOrderTime,
+        ivThrombolysisAdministrationTime: strokeCase.ivThrombolysisAdministrationTime,
+        ivThrombolysisGiven: strokeCase.ivThrombolysisGiven,
+        reasonForNotAdministeringIV: strokeCase.reasonForNotAdministeringIV,
+        candidateForMechanicalThrombectomy: strokeCase.candidateForMechanicalThrombectomy,
+        timeOfGroinPuncture: strokeCase.timeOfGroinPuncture,
+        mechanicalThrombectomyPerformed: strokeCase.mechanicalThrombectomyPerformed,
+        timeOfThrombectomyComplete: strokeCase.timeOfThrombectomyComplete,
+        
+        // Disposition & Transfer Decisions
+        facilityHasCt: strokeCase.facilityHasCt,
+        transferToAnotherHospital: strokeCase.transferToAnotherHospital,
+        timeOfTransferActivation: strokeCase.timeOfTransferActivation,
+        timeOfTransferDeparture: strokeCase.timeOfTransferDeparture,
+        prehospitalNotificationBySrca: strokeCase.prehospitalNotificationBySrca,
+        prehospitalNotificationByUccPhc: strokeCase.prehospitalNotificationByUccPhc,
+        disposition: strokeCase.disposition,
+        referralTo: strokeCase.referralTo,
+        admittedToStrokeUnit: strokeCase.admittedToStrokeUnit,
+        
+        // Follow-up & Outcome Tracking
+        followUpContactAttempted: strokeCase.followUpContactAttempted,
+        modifiedRankinScaleAt90Days: strokeCase.modifiedRankinScaleAt90Days,
       });
     }
   }, [strokeCase]);
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const updateFormData = (field: keyof CreateStrokeCaseData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const renderStepContent = (step: number) => {
+    switch (step) {
+      case 0:
+        return (
+          <PatientStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 1:
+        return (
+          <AssessmentStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 2:
+        return (
+          <DiagnosisStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 3:
+        return (
+          <TreatmentStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 4:
+        return <ReviewStep formData={formData} />;
+      default:
+        return null;
+    }
+  };
+
+  const isStepValid = (step: number): boolean => {
+    switch (step) {
+      case 0:
+        return !!(
+          formData.patientInfo?.firstName && 
+          formData.patientInfo?.lastName && 
+          formData.patientInfo?.nationalId && 
+          formData.originHospitalId && 
+          formData.strokeType
+        );
+      case 1:
+        return true; // Assessment fields are mostly optional
+      case 2:
+        return true; // Diagnosis fields are mostly optional
+      case 3:
+        return true; // Treatment fields are mostly optional
+      case 4:
+        return true; // Review step
+      default:
+        return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (activeStep < steps.length - 1) {
+      setActiveStep(prev => prev + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (activeStep > 0) {
+      setActiveStep(prev => prev - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!strokeCase) return;
 
     try {
@@ -139,13 +237,14 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
 
   const handleClose = () => {
     setError(null);
+    setActiveStep(0);
     onClose();
   };
 
   if (!strokeCase) return null;
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         Edit Stroke Case - {strokeCase.patient?.firstName} {strokeCase.patient?.lastName}
       </DialogTitle>
@@ -156,52 +255,46 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <PatientInformationSection
-              formData={formData}
-              handleInputChange={handleInputChange}
-              isAdmin={user?.role === 'ADMIN'}
-            />
-            
-            <BasicInformationSection
-              formData={formData}
-              handleInputChange={handleInputChange}
-            />
-            
-            <ClinicalAssessmentsSection
-              formData={formData}
-              handleInputChange={handleInputChange}
-            />
-            
-            <TreatmentInformationSection
-              formData={formData}
-              handleInputChange={handleInputChange}
-            />
-            
-            <PerformanceTimingsSection
-              formData={formData}
-              handleInputChange={handleInputChange}
-            />
-            
-            <AdditionalInformationSection
-              formData={formData}
-              handleInputChange={handleInputChange}
-            />
-          </Grid>
-        </form>
+        <Box sx={{ width: '100%', mt: 2 }}>
+          <Stepper activeStep={activeStep} alternativeLabel>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
+
+        <Box sx={{ mt: 3 }}>
+          {renderStepContent(activeStep)}
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>
           Cancel
         </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={loading}
-        >
-          {loading ? 'Updating...' : 'Update'}
-        </Button>
+        {activeStep > 0 && (
+          <Button onClick={handleBack} disabled={loading}>
+            Back
+          </Button>
+        )}
+        {activeStep < steps.length - 1 ? (
+          <Button
+            onClick={handleNext}
+            variant="contained"
+            disabled={!isStepValid(activeStep)}
+          >
+            Next
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={loading || !isStepValid(activeStep)}
+          >
+            {loading ? 'Updating...' : 'Update'}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

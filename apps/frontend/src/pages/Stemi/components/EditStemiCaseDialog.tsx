@@ -127,7 +127,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         lastName: stemiCase.patient?.lastName || '',
         nationalId: stemiCase.patient?.nationalId || '',
         age: stemiCase.patient?.age || undefined,
-        gender: (stemiCase.patient?.gender as 'MALE' | 'FEMALE' | 'OTHER') || 'MALE',
+        gender: (stemiCase.patient?.gender as 'MALE' | 'FEMALE') || 'MALE',
         phoneNumber: stemiCase.patient?.phoneNumber || '',
         address: (stemiCase.patient as any)?.address || '',
         emergencyContact: (stemiCase.patient as any)?.emergencyContact || '',

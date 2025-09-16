@@ -49,7 +49,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
     firstName: '',
     lastName: '',
     dateOfBirth: '',
-    gender: 'UNKNOWN',
+    gender: 'MALE',
   });
 
   // Load initial patients
@@ -128,7 +128,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
         firstName: '',
         lastName: '',
         dateOfBirth: '',
-        gender: 'UNKNOWN',
+        gender: 'MALE',
       });
     } catch (error) {
       console.error('Error creating patient:', error);
@@ -156,7 +156,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
 
   const getPatientSubtitle = (patient: Patient) => {
     const parts = [];
-    if (patient.gender !== 'UNKNOWN') parts.push(patient.gender);
+    if (patient.gender) parts.push(patient.gender);
     if (patient.age) parts.push(`${patient.age} years old`);
     if (patient.phoneNumber) parts.push(patient.phoneNumber);
     return parts.join(' • ');

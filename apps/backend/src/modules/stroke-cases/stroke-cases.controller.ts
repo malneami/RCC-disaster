@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { StrokeCasesService } from './stroke-cases.service';
-import { StrokeExportService } from './services/stroke-export.service';
+// import { StrokeExportService } from './services/stroke-export.service';
 import { CreateStrokeCaseDto } from './dto/create-stroke-case.dto';
 import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
 import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
@@ -28,7 +28,7 @@ import { UserRole } from '@prisma/client';
 export class StrokeCasesController {
   constructor(
     private readonly strokeCasesService: StrokeCasesService,
-    private readonly strokeExportService: StrokeExportService
+    // private readonly strokeExportService: StrokeExportService
   ) {}
 
   @Post()
@@ -97,31 +97,36 @@ export class StrokeCasesController {
     return this.strokeCasesService.findAll(filters);
   }
 
-  @Get('kpi-summary')
-  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR)
-  getKPISummary(
-    @Query('hospitalId') hospitalId?: string,
-    @Query('year') yearStr?: string,
-    @Query('month') monthStr?: string,
-  ) {
-    const year = yearStr ? parseInt(yearStr, 10) : undefined;
-    const month = monthStr ? parseInt(monthStr, 10) : undefined;
-    return this.strokeCasesService.getKPISummary(hospitalId, year, month);
-  }
 
-  @Get('export')
-  @Public()
-  async exportStrokeCases(@Res() res: Response) {
-    try {
-      const exportResult = await this.strokeExportService.exportStrokeCasesToExcel();
+  // @Get('export')
+  // @Public()
+  // async exportStrokeCases(@Res() res: Response) {
+  //   try {
+  //     const exportResult = await this.strokeExportService.exportStrokeCasesToExcel();
       
-      res.setHeader('Content-Type', exportResult.mimeType);
-      res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
-      res.send(exportResult.buffer);
-    } catch (error) {
-      console.error('Error exporting stroke cases:', error);
-      res.status(500).json({ error: 'Failed to export stroke cases' });
-    }
+  //     res.setHeader('Content-Type', exportResult.mimeType);
+  //     res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
+  //     res.send(exportResult.buffer);
+  //   } catch (error) {
+  //     console.error('Error exporting stroke cases:', error);
+  //     res.status(500).json({ error: 'Failed to export stroke cases' });
+  //   }
+  // }
+
+  @Get('kpi-summary')
+  @Public()
+  async getKPISummary(
+    @Query('hospitalId') hospitalId?: string,
+    @Query('timeframe') timeframe?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.strokeCasesService.getKPISummary({
+      hospitalId,
+      timeframe,
+      startDate,
+      endDate,
+    });
   }
 
   @Get(':id')
@@ -158,5 +163,22 @@ export class StrokeCasesController {
   @Roles(UserRole.ADMIN, UserRole.RCC)
   remove(@Param('id') id: string) {
     return this.strokeCasesService.remove(id);
+  }
+
+  @Get('kpi-details/:kpiId')
+  @Public()
+  async getKPIDetails(
+    @Param('kpiId') kpiId: string,
+    @Query('hospitalId') hospitalId?: string,
+    @Query('timeframe') timeframe?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.strokeCasesService.getKPIDetails(kpiId, {
+      hospitalId,
+      timeframe,
+      startDate,
+      endDate,
+    });
   }
 }

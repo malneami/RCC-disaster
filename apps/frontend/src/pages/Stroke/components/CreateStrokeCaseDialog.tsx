@@ -13,9 +13,10 @@ import {
 } from '@mui/material';
 
 import { CreateStrokeCaseData } from '../../../services/strokeService';
-import BasicInformationStep from './CreateStrokeCase/BasicInformationStep';
-import ClinicalAssessmentsStep from './CreateStrokeCase/ClinicalAssessmentsStep';
-import TreatmentInformationStep from './CreateStrokeCase/TreatmentInformationStep';
+import PatientStep from './CreateStrokeCase/PatientStep';
+import AssessmentStep from './CreateStrokeCase/AssessmentStep';
+import DiagnosisStep from './CreateStrokeCase/DiagnosisStep';
+import TreatmentStep from './CreateStrokeCase/TreatmentStep';
 import ReviewStep from './CreateStrokeCase/ReviewStep';
 
 interface CreateStrokeCaseDialogProps {
@@ -25,9 +26,10 @@ interface CreateStrokeCaseDialogProps {
 }
 
 const steps = [
-  'Basic Information',
-  'Clinical Assessments', 
-  'Treatment Information',
+  'Patient',
+  'Assessment', 
+  'Diagnosis',
+  'Treatment',
   'Review & Submit'
 ];
 
@@ -78,26 +80,33 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
     switch (step) {
       case 0:
         return (
-          <BasicInformationStep
+          <PatientStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
       case 1:
         return (
-          <ClinicalAssessmentsStep
+          <AssessmentStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
       case 2:
         return (
-          <TreatmentInformationStep
+          <DiagnosisStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
       case 3:
+        return (
+          <TreatmentStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 4:
         return <ReviewStep formData={formData} />;
       default:
         return null;
@@ -111,15 +120,16 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           formData.patientInfo?.firstName && 
           formData.patientInfo?.lastName && 
           formData.patientInfo?.nationalId && 
-          formData.patientInfo?.age && 
           formData.originHospitalId && 
           formData.strokeType
         );
       case 1:
-        return true; // Clinical assessment is optional
+        return true; // Assessment fields are mostly optional
       case 2:
-        return true; // Treatment details are optional
+        return true; // Diagnosis fields are mostly optional
       case 3:
+        return true; // Treatment fields are mostly optional
+      case 4:
         return true; // Review step
       default:
         return false;

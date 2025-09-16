@@ -20,8 +20,8 @@ export class PatientInfoDto {
   @IsNumber()
   age?: number; // Age in years
 
-  @IsEnum(['MALE', 'FEMALE', 'OTHER'])
-  gender!: 'MALE' | 'FEMALE' | 'OTHER';
+  @IsEnum(['MALE', 'FEMALE'])
+  gender!: 'MALE' | 'FEMALE';
 
   @IsOptional()
   @IsString()

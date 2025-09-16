@@ -5,12 +5,14 @@ import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
 import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
 import { StrokeCase, StrokeStatus, StrokeType, TicketPriority, TicketPathway, PatientGender } from '@prisma/client';
 import { PatientMergeService } from '../patients/patient-merge.service';
+import { StrokeKPICalculatorService } from './services/stroke-kpi-calculator.service';
 
 @Injectable()
 export class StrokeCasesService {
   constructor(
     private prisma: PrismaService,
-    private patientMergeService: PatientMergeService
+    private patientMergeService: PatientMergeService,
+    private kpiCalculator: StrokeKPICalculatorService
   ) {}
 
   async create(createStrokeCaseDto: CreateStrokeCaseV2Dto, userId: string): Promise<StrokeCase> {
@@ -25,7 +27,7 @@ export class StrokeCasesService {
         // Try to find the admin user
         const adminUser = await this.prisma.user.findFirst({
           where: { 
-            email: 'admin@rcc-healthcare.com',
+            email: 'admin@rcc.com',
             deletedAt: null 
           }
         });
@@ -33,7 +35,16 @@ export class StrokeCasesService {
           validUserId = adminUser.id;
           console.log('Using admin user ID:', validUserId);
         } else {
-          throw new BadRequestException('No valid user found for creating stroke case');
+          // Fallback to first available user for testing
+          const firstUser = await this.prisma.user.findFirst({
+            where: { deletedAt: null }
+          });
+          if (firstUser) {
+            validUserId = firstUser.id;
+            console.log('Using first available user ID:', validUserId);
+          } else {
+            throw new BadRequestException('No valid user found for creating stroke case');
+          }
         }
       }
       
@@ -125,7 +136,7 @@ export class StrokeCasesService {
         if (createStrokeCaseDto.patientInfo.gender) {
           patientData.gender = createStrokeCaseDto.patientInfo.gender as PatientGender;
         } else {
-          patientData.gender = PatientGender.UNKNOWN; // Default gender
+          patientData.gender = PatientGender.MALE; // Default gender
         }
         
         console.log('Creating new patient with data:', patientData);
@@ -247,6 +258,8 @@ export class StrokeCasesService {
     console.log('Calculating KPIs...');
     const kpiData = this.calculateKPIs(createStrokeCaseDto);
     console.log('KPIs calculated:', kpiData);
+    console.log('Door to CT Report Minutes:', kpiData.doorToCtReportMinutes);
+    console.log('Door to Thrombolysis Order Minutes:', kpiData.doorToThrombolysisOrderMinutes);
 
     // Extract only the fields that exist in the CreateStrokeCaseV2Dto
     const strokeCaseData = {
@@ -254,12 +267,56 @@ export class StrokeCasesService {
         patientId,
         originHospitalId: createStrokeCaseDto.originHospitalId,
         destinationHospitalId: createStrokeCaseDto.destinationHospitalId,
-        presentingSymptoms: createStrokeCaseDto.presentingSymptoms,
         strokeType: createStrokeCaseDto.strokeType,
         currentStatus: createStrokeCaseDto.currentStatus,
-        strokeSeverity: createStrokeCaseDto.strokeSeverity,
         selectedTreatment: createStrokeCaseDto.selectedTreatment,
         createdById: validUserId,
+        
+        // Include all timing fields from the DTO
+        modeOfArrival: createStrokeCaseDto.modeOfArrival,
+        srcaCallTime: createStrokeCaseDto.srcaCallTime ? new Date(createStrokeCaseDto.srcaCallTime) : undefined,
+        timeOfSymptomOnset: createStrokeCaseDto.timeOfSymptomOnset ? new Date(createStrokeCaseDto.timeOfSymptomOnset) : undefined,
+        lastKnownNormal: createStrokeCaseDto.lastKnownNormal ? new Date(createStrokeCaseDto.lastKnownNormal) : undefined,
+        timeOfRegistration: createStrokeCaseDto.timeOfRegistration ? new Date(createStrokeCaseDto.timeOfRegistration) : undefined,
+        timeOfTriage: createStrokeCaseDto.timeOfTriage ? new Date(createStrokeCaseDto.timeOfTriage) : undefined,
+        timeOfPhysicianAssessment: createStrokeCaseDto.timeOfPhysicianAssessment ? new Date(createStrokeCaseDto.timeOfPhysicianAssessment) : undefined,
+        
+        // Clinical Assessment & Diagnosis
+        strokeTypeDetailed: createStrokeCaseDto.strokeTypeDetailed,
+        swallowingScreeningPerformed: createStrokeCaseDto.swallowingScreeningPerformed,
+        timeOfSwallowingScreening: createStrokeCaseDto.timeOfSwallowingScreening ? new Date(createStrokeCaseDto.timeOfSwallowingScreening) : undefined,
+        swallowingScreeningResult: createStrokeCaseDto.swallowingScreeningResult,
+        ctScanPerformed: createStrokeCaseDto.ctScanPerformed,
+        timeOfCtScanStart: createStrokeCaseDto.timeOfCtScanStart ? new Date(createStrokeCaseDto.timeOfCtScanStart) : undefined,
+        timeOfCtReportFinal: createStrokeCaseDto.timeOfCtReportFinal ? new Date(createStrokeCaseDto.timeOfCtReportFinal) : undefined,
+        ctFindings: createStrokeCaseDto.ctFindings,
+        lvoDetected: createStrokeCaseDto.lvoDetected,
+        candidateForIVThrombolysis: createStrokeCaseDto.candidateForIVThrombolysis,
+        thrombolysisOrderTime: createStrokeCaseDto.thrombolysisOrderTime ? new Date(createStrokeCaseDto.thrombolysisOrderTime) : undefined,
+        ivThrombolysisAdministrationTime: createStrokeCaseDto.ivThrombolysisAdministrationTime ? new Date(createStrokeCaseDto.ivThrombolysisAdministrationTime) : undefined,
+        ivThrombolysisGiven: createStrokeCaseDto.ivThrombolysisGiven,
+        reasonForNotAdministeringIV: createStrokeCaseDto.reasonForNotAdministeringIV,
+        candidateForMechanicalThrombectomy: createStrokeCaseDto.candidateForMechanicalThrombectomy,
+        timeOfGroinPuncture: createStrokeCaseDto.timeOfGroinPuncture ? new Date(createStrokeCaseDto.timeOfGroinPuncture) : undefined,
+        mechanicalThrombectomyPerformed: createStrokeCaseDto.mechanicalThrombectomyPerformed,
+        timeOfThrombectomyComplete: createStrokeCaseDto.timeOfThrombectomyComplete ? new Date(createStrokeCaseDto.timeOfThrombectomyComplete) : undefined,
+        
+        // Disposition & Transfer Decisions
+        facilityHasCt: createStrokeCaseDto.facilityHasCt,
+        transferToAnotherHospital: createStrokeCaseDto.transferToAnotherHospital,
+        timeOfTransferActivation: createStrokeCaseDto.timeOfTransferActivation ? new Date(createStrokeCaseDto.timeOfTransferActivation) : undefined,
+        timeOfTransferDeparture: createStrokeCaseDto.timeOfTransferDeparture ? new Date(createStrokeCaseDto.timeOfTransferDeparture) : undefined,
+        prehospitalNotificationBySrca: createStrokeCaseDto.prehospitalNotificationBySrca,
+        prehospitalNotificationByUccPhc: createStrokeCaseDto.prehospitalNotificationByUccPhc,
+        disposition: createStrokeCaseDto.disposition,
+        referralTo: createStrokeCaseDto.referralTo,
+        admittedToStrokeUnit: createStrokeCaseDto.admittedToStrokeUnit,
+        
+        // Follow-up & Outcome Tracking
+        followUpContactAttempted: createStrokeCaseDto.followUpContactAttempted,
+        modifiedRankinScaleAt90Days: createStrokeCaseDto.modifiedRankinScaleAt90Days,
+        
+        // Include calculated KPI data
         ...kpiData,
       };
 
@@ -534,98 +591,101 @@ export class StrokeCasesService {
   }
 
   async update(id: string, updateStrokeCaseDto: UpdateStrokeCaseDto, userId: string): Promise<StrokeCase> {
-    const existingCase = await this.findOne(id);
-
-    // Handle patient info updates if provided
-    if (updateStrokeCaseDto.patientInfo && existingCase.patientId) {
-      console.log('=== UPDATING PATIENT INFO ===');
-      console.log('Patient Info:', updateStrokeCaseDto.patientInfo);
+    try {
+      console.log('=== STROKE CASE UPDATE DEBUG ===');
+      console.log('Stroke Case ID:', id);
+      console.log('Update DTO:', JSON.stringify(updateStrokeCaseDto, null, 2));
+      console.log('DTO keys:', Object.keys(updateStrokeCaseDto));
       
-      const patientUpdateData: any = {};
+      const existingCase = await this.findOne(id);
+      console.log('Existing case found:', existingCase.id);
+
+      // Handle patient info updates if provided
+
+      // Calculate updated KPIs
+      // Convert Date objects to strings for the DTO
+      const existingCaseForKPI = {
+        ...existingCase,
+        srcaCallTime: existingCase.srcaCallTime ? existingCase.srcaCallTime.toISOString() : null,
+        timeOfSymptomOnset: existingCase.timeOfSymptomOnset ? existingCase.timeOfSymptomOnset.toISOString() : null,
+        lastKnownNormal: existingCase.lastKnownNormal ? existingCase.lastKnownNormal.toISOString() : null,
+        timeOfRegistration: existingCase.timeOfRegistration ? existingCase.timeOfRegistration.toISOString() : null,
+        timeOfTriage: existingCase.timeOfTriage ? existingCase.timeOfTriage.toISOString() : null,
+        timeOfPhysicianAssessment: existingCase.timeOfPhysicianAssessment ? existingCase.timeOfPhysicianAssessment.toISOString() : null,
+        timeOfSwallowingScreening: existingCase.timeOfSwallowingScreening ? existingCase.timeOfSwallowingScreening.toISOString() : null,
+        timeOfCtScanStart: existingCase.timeOfCtScanStart ? existingCase.timeOfCtScanStart.toISOString() : null,
+        timeOfCtReportFinal: existingCase.timeOfCtReportFinal ? existingCase.timeOfCtReportFinal.toISOString() : null,
+        thrombolysisOrderTime: existingCase.thrombolysisOrderTime ? existingCase.thrombolysisOrderTime.toISOString() : null,
+        ivThrombolysisAdministrationTime: existingCase.ivThrombolysisAdministrationTime ? existingCase.ivThrombolysisAdministrationTime.toISOString() : null,
+        timeOfGroinPuncture: existingCase.timeOfGroinPuncture ? existingCase.timeOfGroinPuncture.toISOString() : null,
+        timeOfThrombectomyComplete: existingCase.timeOfThrombectomyComplete ? existingCase.timeOfThrombectomyComplete.toISOString() : null,
+        timeOfTransferActivation: existingCase.timeOfTransferActivation ? existingCase.timeOfTransferActivation.toISOString() : null,
+        timeOfTransferDeparture: existingCase.timeOfTransferDeparture ? existingCase.timeOfTransferDeparture.toISOString() : null,
+      };
       
-      if (updateStrokeCaseDto.patientInfo.firstName) {
-        patientUpdateData.firstName = updateStrokeCaseDto.patientInfo.firstName.trim();
+      console.log('Calculating KPIs...');
+      let kpiData = {};
+      try {
+        kpiData = this.calculateKPIsForUpdate({ ...existingCaseForKPI, ...updateStrokeCaseDto });
+        console.log('KPI data calculated:', kpiData);
+      } catch (kpiError) {
+        console.error('KPI calculation failed, continuing without KPIs:', kpiError);
+        kpiData = {};
       }
-      if (updateStrokeCaseDto.patientInfo.lastName) {
-        patientUpdateData.lastName = updateStrokeCaseDto.patientInfo.lastName.trim();
-      }
-      if (updateStrokeCaseDto.patientInfo.nationalId) {
-        patientUpdateData.nationalId = updateStrokeCaseDto.patientInfo.nationalId.trim();
-      }
-      if (updateStrokeCaseDto.patientInfo.mrn) {
-        patientUpdateData.mrn = updateStrokeCaseDto.patientInfo.mrn.trim();
-      }
-      if (updateStrokeCaseDto.patientInfo.phoneNumber) {
-        patientUpdateData.phoneNumber = updateStrokeCaseDto.patientInfo.phoneNumber.trim();
-      }
-      if (updateStrokeCaseDto.patientInfo.email) {
-        patientUpdateData.email = updateStrokeCaseDto.patientInfo.email.trim();
-      }
-      // Handle age field (preferred over dateOfBirth)
-      if (updateStrokeCaseDto.patientInfo.age !== undefined && updateStrokeCaseDto.patientInfo.age !== null) {
-        patientUpdateData.age = updateStrokeCaseDto.patientInfo.age;
-      } else if (updateStrokeCaseDto.patientInfo.dateOfBirth) {
-        // Calculate age from dateOfBirth if age not provided
-        const today = new Date();
-        const birthDate = new Date(updateStrokeCaseDto.patientInfo.dateOfBirth);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
-        patientUpdateData.age = age;
-        patientUpdateData.dateOfBirth = birthDate;
-      }
-      if (updateStrokeCaseDto.patientInfo.gender) {
-        patientUpdateData.gender = updateStrokeCaseDto.patientInfo.gender;
-      }
-      
-      if (Object.keys(patientUpdateData).length > 0) {
-        try {
-          await this.prisma.patient.update({
-            where: { id: existingCase.patientId },
-            data: patientUpdateData,
-          });
-          console.log('Patient info updated successfully');
-        } catch (error) {
-          console.error('Error updating patient info:', error);
-          throw new BadRequestException('Failed to update patient information');
-        }
-      }
-    }
 
-    // Calculate updated KPIs
-    const kpiData = this.calculateKPIs({ ...existingCase, ...updateStrokeCaseDto });
+      // Prepare stroke case update data
+      const strokeCaseUpdateData = { ...updateStrokeCaseDto };
+      console.log('Preparing update data...');
 
-    // Remove patientInfo from the update data since we handle it separately
-    const { patientInfo, ...strokeCaseUpdateData } = updateStrokeCaseDto;
-
-    return this.prisma.strokeCase.update({
-      where: { id },
-      data: {
+      const updateData = {
         ...strokeCaseUpdateData,
-        symptomOnset: updateStrokeCaseDto.symptomOnset ? new Date(updateStrokeCaseDto.symptomOnset) : undefined,
-        lastKnownWell: updateStrokeCaseDto.lastKnownWell ? new Date(updateStrokeCaseDto.lastKnownWell) : undefined,
-        pathwayStarted: updateStrokeCaseDto.pathwayStarted ? new Date(updateStrokeCaseDto.pathwayStarted) : undefined,
-        pathwayCompleted: updateStrokeCaseDto.pathwayCompleted ? new Date(updateStrokeCaseDto.pathwayCompleted) : undefined,
-        strokeUnitAdmissionTime: updateStrokeCaseDto.strokeUnitAdmissionTime ? new Date(updateStrokeCaseDto.strokeUnitAdmissionTime) : undefined,
-        dischargeDate: updateStrokeCaseDto.dischargeDate ? new Date(updateStrokeCaseDto.dischargeDate) : undefined,
-        followUpCallDate: updateStrokeCaseDto.followUpCallDate ? new Date(updateStrokeCaseDto.followUpCallDate) : undefined,
+        // Convert date strings to Date objects for new fields
+        srcaCallTime: updateStrokeCaseDto.srcaCallTime ? new Date(updateStrokeCaseDto.srcaCallTime) : undefined,
+        timeOfSymptomOnset: updateStrokeCaseDto.timeOfSymptomOnset ? new Date(updateStrokeCaseDto.timeOfSymptomOnset) : undefined,
+        lastKnownNormal: updateStrokeCaseDto.lastKnownNormal ? new Date(updateStrokeCaseDto.lastKnownNormal) : undefined,
+        timeOfRegistration: updateStrokeCaseDto.timeOfRegistration ? new Date(updateStrokeCaseDto.timeOfRegistration) : undefined,
+        timeOfTriage: updateStrokeCaseDto.timeOfTriage ? new Date(updateStrokeCaseDto.timeOfTriage) : undefined,
+        timeOfPhysicianAssessment: updateStrokeCaseDto.timeOfPhysicianAssessment ? new Date(updateStrokeCaseDto.timeOfPhysicianAssessment) : undefined,
+        timeOfSwallowingScreening: updateStrokeCaseDto.timeOfSwallowingScreening ? new Date(updateStrokeCaseDto.timeOfSwallowingScreening) : undefined,
+        timeOfCtScanStart: updateStrokeCaseDto.timeOfCtScanStart ? new Date(updateStrokeCaseDto.timeOfCtScanStart) : undefined,
+        timeOfCtReportFinal: updateStrokeCaseDto.timeOfCtReportFinal ? new Date(updateStrokeCaseDto.timeOfCtReportFinal) : undefined,
+        thrombolysisOrderTime: updateStrokeCaseDto.thrombolysisOrderTime ? new Date(updateStrokeCaseDto.thrombolysisOrderTime) : undefined,
+        ivThrombolysisAdministrationTime: updateStrokeCaseDto.ivThrombolysisAdministrationTime ? new Date(updateStrokeCaseDto.ivThrombolysisAdministrationTime) : undefined,
+        timeOfGroinPuncture: updateStrokeCaseDto.timeOfGroinPuncture ? new Date(updateStrokeCaseDto.timeOfGroinPuncture) : undefined,
+        timeOfThrombectomyComplete: updateStrokeCaseDto.timeOfThrombectomyComplete ? new Date(updateStrokeCaseDto.timeOfThrombectomyComplete) : undefined,
+        timeOfTransferActivation: updateStrokeCaseDto.timeOfTransferActivation ? new Date(updateStrokeCaseDto.timeOfTransferActivation) : undefined,
+        timeOfTransferDeparture: updateStrokeCaseDto.timeOfTransferDeparture ? new Date(updateStrokeCaseDto.timeOfTransferDeparture) : undefined,
         updatedAt: new Date(),
         ...kpiData,
-      },
-      include: {
-        ticket: true,
-        patient: true,
-        originHospital: true,
-        destinationHospital: true,
-        createdBy: true,
-        timeline: {
-          orderBy: { eventTimestamp: 'asc' },
-          take: 10,
+      };
+      
+      console.log('Final update data:', JSON.stringify(updateData, null, 2));
+      console.log('Performing database update...');
+
+      const result = await this.prisma.strokeCase.update({
+        where: { id },
+        data: updateData,
+        include: {
+          ticket: true,
+          patient: true,
+          originHospital: true,
+          destinationHospital: true,
+          createdBy: true,
+          timeline: {
+            orderBy: { eventTimestamp: 'asc' },
+            take: 10,
+          },
         },
-      },
-    });
+      });
+      
+      console.log('=== UPDATE SUCCESSFUL ===');
+      return result;
+    } catch (error) {
+      console.error('=== UPDATE ERROR ===');
+      console.error('Error:', error);
+      console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      throw error;
+    }
   }
 
   async remove(id: string): Promise<void> {
@@ -637,116 +697,6 @@ export class StrokeCasesService {
     });
   }
 
-  async getKPISummary(hospitalId?: string, year?: number, month?: number) {
-    const where: any = {
-      deletedAt: null,
-    };
-
-    if (hospitalId) {
-      where.OR = [
-        { originHospitalId: hospitalId },
-        { destinationHospitalId: hospitalId },
-      ];
-    }
-
-    if (year) {
-      where.createdAt = {
-        gte: new Date(year, 0, 1),
-        lt: new Date(year + 1, 0, 1),
-      };
-    }
-
-    if (month && year) {
-      where.createdAt = {
-        gte: new Date(year, month - 1, 1),
-        lt: new Date(year, month, 1),
-      };
-    }
-
-    const cases = await this.prisma.strokeCase.findMany({
-      where,
-      select: {
-        strokeType: true,
-        doorToImagingMinutes: true,
-        doorToNeedleMinutes: true,
-        doorToGroinMinutes: true,
-        strokeUnitAdmissionTime: true,
-        dysphagiaScreeningMinutes: true,
-        earlyMobilizationHours: true,
-        secondaryPrevention: true,
-        dischargeDestination: true,
-        metKpi1: true,
-        metKpi2: true,
-        metKpi3: true,
-        metKpi4: true,
-        metKpi5: true,
-        metKpi6: true,
-        metKpi7: true,
-        metKpi8: true,
-        successful: true,
-        thirtyDayReadmission: true,
-        ninetyDayMortality: true,
-        lengthOfStayDays: true,
-        // mrsDischarge: true,
-      },
-    });
-
-    return this.calculateKPISummary(cases);
-  }
-
-  private calculateKPIs(data: any) {
-    const kpis = {
-      metKpi1: false,
-      metKpi2: false,
-      metKpi3: false,
-      metKpi4: false,
-      metKpi5: false,
-      metKpi6: false,
-      metKpi7: false,
-      metKpi8: false,
-    };
-
-    // KPI 1: Door to imaging ≤25min
-    if (data.doorToImagingMinutes !== null && data.doorToImagingMinutes !== undefined) {
-      kpis.metKpi1 = data.doorToImagingMinutes <= 25;
-    }
-
-    // KPI 2: Door to needle ≤60min
-    if (data.doorToNeedleMinutes !== null && data.doorToNeedleMinutes !== undefined) {
-      kpis.metKpi2 = data.doorToNeedleMinutes <= 60;
-    }
-
-    // KPI 3: Door to groin ≤90min
-    if (data.doorToGroinMinutes !== null && data.doorToGroinMinutes !== undefined) {
-      kpis.metKpi3 = data.doorToGroinMinutes <= 90;
-    }
-
-    // KPI 4: Stroke unit admission ≤4hr (240min)
-    if (data.strokeUnitAdmissionTime && data.pathwayStarted) {
-      const admissionTime = new Date(data.strokeUnitAdmissionTime);
-      const pathwayStart = new Date(data.pathwayStarted);
-      const minutesToAdmission = (admissionTime.getTime() - pathwayStart.getTime()) / (1000 * 60);
-      kpis.metKpi4 = minutesToAdmission <= 240;
-    }
-
-    // KPI 5: Dysphagia screening ≤4hr (240min)
-    if (data.dysphagiaScreeningMinutes !== null && data.dysphagiaScreeningMinutes !== undefined) {
-      kpis.metKpi5 = data.dysphagiaScreeningMinutes <= 240;
-    }
-
-    // KPI 6: Early mobilization ≤24hr (1440min)
-    if (data.earlyMobilizationHours !== null && data.earlyMobilizationHours !== undefined) {
-      kpis.metKpi6 = data.earlyMobilizationHours <= 24;
-    }
-
-    // KPI 7: Secondary prevention prescribed
-    kpis.metKpi7 = !!data.secondaryPrevention;
-
-    // KPI 8: Appropriate rehabilitation referral
-    kpis.metKpi8 = data.dischargeDestination === 'Rehabilitation center' || data.dischargeDestination === 'Home with family';
-
-    return kpis;
-  }
 
   private calculateKPISummary(cases: any[]) {
     const totalCases = cases.length;
@@ -762,16 +712,20 @@ export class StrokeCasesService {
     const kpi6Met = cases.filter(c => c.metKpi6).length;
     const kpi7Met = cases.filter(c => c.metKpi7).length;
     const kpi8Met = cases.filter(c => c.metKpi8).length;
+    const kpi9Met = cases.filter(c => c.metKpi9).length;
+    const kpi10Met = cases.filter(c => c.metKpi10).length;
+    const kpi11Met = cases.filter(c => c.metKpi11).length;
 
-    const avgDoorToImaging = this.calculateAverage(cases.map(c => c.doorToImagingMinutes));
-    const avgDoorToNeedle = this.calculateAverage(cases.map(c => c.doorToNeedleMinutes));
-    const avgDoorToGroin = this.calculateAverage(cases.map(c => c.doorToGroinMinutes));
+    const avgDoorToPhysician = this.calculateAverage(cases.map(c => c.doorToPhysicianMinutes).filter(v => v !== null && v !== undefined));
+    const avgRegistrationToCt = this.calculateAverage(cases.map(c => c.registrationToCtMinutes).filter(v => v !== null && v !== undefined));
+    const avgRegistrationToThrombolysis = this.calculateAverage(cases.map(c => c.registrationToThrombolysisMinutes).filter(v => v !== null && v !== undefined));
+    const avgRegistrationToGroin = this.calculateAverage(cases.map(c => c.registrationToGroinMinutes).filter(v => v !== null && v !== undefined));
+    const avgSrcaCallToArrival = this.calculateAverage(cases.map(c => c.srcaCallToArrivalMinutes).filter(v => v !== null && v !== undefined));
+    const avgTransferActivationToDeparture = this.calculateAverage(cases.map(c => c.transferActivationToDepartureMinutes).filter(v => v !== null && v !== undefined));
 
-    const successfulCases = cases.filter(c => c.successful).length;
-    const readmissionCases = cases.filter(c => c.thirtyDayReadmission).length;
-    const mortalityCases = cases.filter(c => c.ninetyDayMortality).length;
-    const avgLengthOfStay = this.calculateAverage(cases.map(c => c.lengthOfStayDays));
-    const independentDischarge = cases.filter(c => c.mrsDischarge && c.mrsDischarge <= 2).length;
+    // For outcomes, we'll calculate what we can with the new schema
+    const successfulCases = cases.filter(c => c.strokeType === 'ISCHEMIC' && c.ivThrombolysisGiven === 'YES').length;
+    const independentDischarge = cases.filter(c => c.modifiedRankinScaleAt90Days && (c.modifiedRankinScaleAt90Days === 'SCORE_0' || c.modifiedRankinScaleAt90Days === 'SCORE_1' || c.modifiedRankinScaleAt90Days === 'SCORE_2')).length;
 
     return {
       totalCases,
@@ -789,17 +743,20 @@ export class StrokeCasesService {
         kpi6: { met: kpi6Met, total: totalCases, percentage: totalCases > 0 ? (kpi6Met / totalCases) * 100 : 0 },
         kpi7: { met: kpi7Met, total: totalCases, percentage: totalCases > 0 ? (kpi7Met / totalCases) * 100 : 0 },
         kpi8: { met: kpi8Met, total: totalCases, percentage: totalCases > 0 ? (kpi8Met / totalCases) * 100 : 0 },
+        kpi9: { met: kpi9Met, total: totalCases, percentage: totalCases > 0 ? (kpi9Met / totalCases) * 100 : 0 },
+        kpi10: { met: kpi10Met, total: totalCases, percentage: totalCases > 0 ? (kpi10Met / totalCases) * 100 : 0 },
+        kpi11: { met: kpi11Met, total: totalCases, percentage: totalCases > 0 ? (kpi11Met / totalCases) * 100 : 0 },
       },
       averageTimings: {
-        doorToImaging: avgDoorToImaging,
-        doorToNeedle: avgDoorToNeedle,
-        doorToGroin: avgDoorToGroin,
+        doorToPhysician: avgDoorToPhysician,
+        registrationToCt: avgRegistrationToCt,
+        registrationToThrombolysis: avgRegistrationToThrombolysis,
+        registrationToGroin: avgRegistrationToGroin,
+        srcaCallToArrival: avgSrcaCallToArrival,
+        transferActivationToDeparture: avgTransferActivationToDeparture,
       },
       outcomes: {
         successRate: totalCases > 0 ? (successfulCases / totalCases) * 100 : 0,
-        readmissionRate: totalCases > 0 ? (readmissionCases / totalCases) * 100 : 0,
-        mortalityRate: totalCases > 0 ? (mortalityCases / totalCases) * 100 : 0,
-        averageLengthOfStay: avgLengthOfStay,
         independentDischargeRate: totalCases > 0 ? (independentDischarge / totalCases) * 100 : 0,
       },
     };
@@ -808,6 +765,370 @@ export class StrokeCasesService {
   private calculateAverage(values: (number | null | undefined)[]): number {
     const validValues = values.filter(v => v !== null && v !== undefined) as number[];
     return validValues.length > 0 ? validValues.reduce((sum, val) => sum + val, 0) / validValues.length : 0;
+  }
+
+  /**
+   * Calculate KPIs for a stroke case based on the provided data
+   */
+  private calculateKPIsForUpdate(updateData: any): any {
+    try {
+      console.log('=== KPI CALCULATION DEBUG ===');
+      console.log('Update data for KPI calculation:', JSON.stringify(updateData, null, 2));
+      
+      // Create a temporary stroke case object for KPI calculation
+      const tempStrokeCase: Partial<StrokeCase> = {
+      // Patient Arrival & Timing (Step 1)
+      modeOfArrival: updateData.modeOfArrival,
+      srcaCallTime: updateData.srcaCallTime ? new Date(updateData.srcaCallTime) : undefined,
+      timeOfSymptomOnset: updateData.timeOfSymptomOnset ? new Date(updateData.timeOfSymptomOnset) : undefined,
+      lastKnownNormal: updateData.lastKnownNormal ? new Date(updateData.lastKnownNormal) : undefined,
+      timeOfRegistration: updateData.timeOfRegistration ? new Date(updateData.timeOfRegistration) : undefined,
+      timeOfTriage: updateData.timeOfTriage ? new Date(updateData.timeOfTriage) : undefined,
+      timeOfPhysicianAssessment: updateData.timeOfPhysicianAssessment ? new Date(updateData.timeOfPhysicianAssessment) : undefined,
+      
+      // Clinical Assessment & Diagnosis (Step 2)
+      strokeTypeDetailed: updateData.strokeTypeDetailed,
+      swallowingScreeningPerformed: updateData.swallowingScreeningPerformed,
+      timeOfSwallowingScreening: updateData.timeOfSwallowingScreening ? new Date(updateData.timeOfSwallowingScreening) : undefined,
+      swallowingScreeningResult: updateData.swallowingScreeningResult,
+      ctScanPerformed: updateData.ctScanPerformed,
+      timeOfCtScanStart: updateData.timeOfCtScanStart ? new Date(updateData.timeOfCtScanStart) : undefined,
+      timeOfCtReportFinal: updateData.timeOfCtReportFinal ? new Date(updateData.timeOfCtReportFinal) : undefined,
+      ctFindings: updateData.ctFindings,
+      lvoDetected: updateData.lvoDetected,
+      candidateForIVThrombolysis: updateData.candidateForIVThrombolysis,
+      thrombolysisOrderTime: updateData.thrombolysisOrderTime ? new Date(updateData.thrombolysisOrderTime) : undefined,
+      ivThrombolysisAdministrationTime: updateData.ivThrombolysisAdministrationTime ? new Date(updateData.ivThrombolysisAdministrationTime) : undefined,
+      ivThrombolysisGiven: updateData.ivThrombolysisGiven,
+      reasonForNotAdministeringIV: updateData.reasonForNotAdministeringIV,
+      candidateForMechanicalThrombectomy: updateData.candidateForMechanicalThrombectomy,
+      timeOfGroinPuncture: updateData.timeOfGroinPuncture ? new Date(updateData.timeOfGroinPuncture) : undefined,
+      mechanicalThrombectomyPerformed: updateData.mechanicalThrombectomyPerformed,
+      timeOfThrombectomyComplete: updateData.timeOfThrombectomyComplete ? new Date(updateData.timeOfThrombectomyComplete) : undefined,
+      
+      // Disposition & Transfer Decisions (Step 3)
+      facilityHasCt: updateData.facilityHasCt,
+      transferToAnotherHospital: updateData.transferToAnotherHospital,
+      timeOfTransferActivation: updateData.timeOfTransferActivation ? new Date(updateData.timeOfTransferActivation) : undefined,
+      timeOfTransferDeparture: updateData.timeOfTransferDeparture ? new Date(updateData.timeOfTransferDeparture) : undefined,
+      prehospitalNotificationBySrca: updateData.prehospitalNotificationBySrca,
+      prehospitalNotificationByUccPhc: updateData.prehospitalNotificationByUccPhc,
+      disposition: updateData.disposition,
+      referralTo: updateData.referralTo,
+      admittedToStrokeUnit: updateData.admittedToStrokeUnit,
+      
+      // Follow-up & Outcome Tracking (Step 4)
+      followUpContactAttempted: updateData.followUpContactAttempted,
+      modifiedRankinScaleAt90Days: updateData.modifiedRankinScaleAt90Days,
+      
+      // Legacy fields
+      strokeType: updateData.strokeType,
+      currentStatus: updateData.currentStatus,
+    };
+
+    // Use the KPI calculator service to calculate all KPIs
+    const kpiCalculations = this.kpiCalculator.calculateKPIs(tempStrokeCase as StrokeCase);
+
+    // Return the KPI data to be included in the stroke case update
+    return {
+      // KPI boolean flags
+      metKpi1: kpiCalculations.metKpi1,
+      metKpi2: kpiCalculations.metKpi2,
+      metKpi3: kpiCalculations.metKpi3,
+      metKpi4: kpiCalculations.metKpi4,
+      metKpi5: kpiCalculations.metKpi5,
+      metKpi6: kpiCalculations.metKpi6,
+      metKpi7: kpiCalculations.metKpi7,
+      metKpi8: kpiCalculations.metKpi8,
+      metKpi9: kpiCalculations.metKpi9,
+      metKpi10: kpiCalculations.metKpi10,
+      metKpi11: kpiCalculations.metKpi11,
+      
+      // KPI timing calculations
+      doorToPhysicianMinutes: kpiCalculations.doorToPhysicianMinutes,
+      registrationToCtMinutes: kpiCalculations.registrationToCtMinutes,
+      doorToCtReportMinutes: kpiCalculations.doorToCtReportMinutes,
+      doorToThrombolysisOrderMinutes: kpiCalculations.doorToThrombolysisOrderMinutes,
+      registrationToThrombolysisMinutes: kpiCalculations.registrationToThrombolysisMinutes,
+      registrationToGroinMinutes: kpiCalculations.registrationToGroinMinutes,
+      srcaCallToArrivalMinutes: kpiCalculations.srcaCallToArrivalMinutes,
+      transferActivationToDepartureMinutes: kpiCalculations.transferActivationToDepartureMinutes,
+      swallowingScreeningWithin4Hours: kpiCalculations.swallowingScreeningWithin4Hours,
+    };
+    } catch (error) {
+      console.error('=== KPI CALCULATION ERROR ===');
+      console.error('Error:', error);
+      console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      throw error;
+    }
+  }
+
+  private calculateKPIs(createStrokeCaseDto: CreateStrokeCaseV2Dto): any {
+    // Create a temporary stroke case object for KPI calculation
+    const tempStrokeCase: Partial<StrokeCase> = {
+      // Patient Arrival & Timing (Step 1)
+      modeOfArrival: createStrokeCaseDto.modeOfArrival,
+      srcaCallTime: createStrokeCaseDto.srcaCallTime ? new Date(createStrokeCaseDto.srcaCallTime) : undefined,
+      timeOfSymptomOnset: createStrokeCaseDto.timeOfSymptomOnset ? new Date(createStrokeCaseDto.timeOfSymptomOnset) : undefined,
+      lastKnownNormal: createStrokeCaseDto.lastKnownNormal ? new Date(createStrokeCaseDto.lastKnownNormal) : undefined,
+      timeOfRegistration: createStrokeCaseDto.timeOfRegistration ? new Date(createStrokeCaseDto.timeOfRegistration) : undefined,
+      timeOfTriage: createStrokeCaseDto.timeOfTriage ? new Date(createStrokeCaseDto.timeOfTriage) : undefined,
+      timeOfPhysicianAssessment: createStrokeCaseDto.timeOfPhysicianAssessment ? new Date(createStrokeCaseDto.timeOfPhysicianAssessment) : undefined,
+      
+      // Clinical Assessment & Diagnosis (Step 2)
+      strokeTypeDetailed: createStrokeCaseDto.strokeTypeDetailed,
+      swallowingScreeningPerformed: createStrokeCaseDto.swallowingScreeningPerformed,
+      timeOfSwallowingScreening: createStrokeCaseDto.timeOfSwallowingScreening ? new Date(createStrokeCaseDto.timeOfSwallowingScreening) : undefined,
+      swallowingScreeningResult: createStrokeCaseDto.swallowingScreeningResult,
+      ctScanPerformed: createStrokeCaseDto.ctScanPerformed,
+      timeOfCtScanStart: createStrokeCaseDto.timeOfCtScanStart ? new Date(createStrokeCaseDto.timeOfCtScanStart) : undefined,
+      timeOfCtReportFinal: createStrokeCaseDto.timeOfCtReportFinal ? new Date(createStrokeCaseDto.timeOfCtReportFinal) : undefined,
+      ctFindings: createStrokeCaseDto.ctFindings,
+      lvoDetected: createStrokeCaseDto.lvoDetected,
+      candidateForIVThrombolysis: createStrokeCaseDto.candidateForIVThrombolysis,
+      thrombolysisOrderTime: createStrokeCaseDto.thrombolysisOrderTime ? new Date(createStrokeCaseDto.thrombolysisOrderTime) : undefined,
+      ivThrombolysisAdministrationTime: createStrokeCaseDto.ivThrombolysisAdministrationTime ? new Date(createStrokeCaseDto.ivThrombolysisAdministrationTime) : undefined,
+      ivThrombolysisGiven: createStrokeCaseDto.ivThrombolysisGiven,
+      reasonForNotAdministeringIV: createStrokeCaseDto.reasonForNotAdministeringIV,
+      candidateForMechanicalThrombectomy: createStrokeCaseDto.candidateForMechanicalThrombectomy,
+      timeOfGroinPuncture: createStrokeCaseDto.timeOfGroinPuncture ? new Date(createStrokeCaseDto.timeOfGroinPuncture) : undefined,
+      mechanicalThrombectomyPerformed: createStrokeCaseDto.mechanicalThrombectomyPerformed,
+      timeOfThrombectomyComplete: createStrokeCaseDto.timeOfThrombectomyComplete ? new Date(createStrokeCaseDto.timeOfThrombectomyComplete) : undefined,
+      
+      // Disposition & Transfer Decisions (Step 3)
+      facilityHasCt: createStrokeCaseDto.facilityHasCt,
+      transferToAnotherHospital: createStrokeCaseDto.transferToAnotherHospital,
+      timeOfTransferActivation: createStrokeCaseDto.timeOfTransferActivation ? new Date(createStrokeCaseDto.timeOfTransferActivation) : undefined,
+      timeOfTransferDeparture: createStrokeCaseDto.timeOfTransferDeparture ? new Date(createStrokeCaseDto.timeOfTransferDeparture) : undefined,
+      prehospitalNotificationBySrca: createStrokeCaseDto.prehospitalNotificationBySrca,
+      prehospitalNotificationByUccPhc: createStrokeCaseDto.prehospitalNotificationByUccPhc,
+      disposition: createStrokeCaseDto.disposition,
+      referralTo: createStrokeCaseDto.referralTo,
+      admittedToStrokeUnit: createStrokeCaseDto.admittedToStrokeUnit,
+      
+      // Follow-up & Outcome Tracking (Step 4)
+      followUpContactAttempted: createStrokeCaseDto.followUpContactAttempted,
+      modifiedRankinScaleAt90Days: createStrokeCaseDto.modifiedRankinScaleAt90Days,
+      
+      // Legacy fields
+      strokeType: createStrokeCaseDto.strokeType,
+      currentStatus: createStrokeCaseDto.currentStatus,
+    };
+
+    // Use the KPI calculator service to calculate all KPIs
+    const kpiCalculations = this.kpiCalculator.calculateKPIs(tempStrokeCase as StrokeCase);
+
+    // Return the KPI data to be included in the stroke case creation
+    return {
+      // KPI boolean flags
+      metKpi1: kpiCalculations.metKpi1,
+      metKpi2: kpiCalculations.metKpi2,
+      metKpi3: kpiCalculations.metKpi3,
+      metKpi4: kpiCalculations.metKpi4,
+      metKpi5: kpiCalculations.metKpi5,
+      metKpi6: kpiCalculations.metKpi6,
+      metKpi7: kpiCalculations.metKpi7,
+      metKpi8: kpiCalculations.metKpi8,
+      metKpi9: kpiCalculations.metKpi9,
+      metKpi10: kpiCalculations.metKpi10,
+      metKpi11: kpiCalculations.metKpi11,
+      
+      // KPI timing calculations
+      doorToPhysicianMinutes: kpiCalculations.doorToPhysicianMinutes,
+      registrationToCtMinutes: kpiCalculations.registrationToCtMinutes,
+      doorToCtReportMinutes: kpiCalculations.doorToCtReportMinutes,
+      doorToThrombolysisOrderMinutes: kpiCalculations.doorToThrombolysisOrderMinutes,
+      registrationToThrombolysisMinutes: kpiCalculations.registrationToThrombolysisMinutes,
+      registrationToGroinMinutes: kpiCalculations.registrationToGroinMinutes,
+      srcaCallToArrivalMinutes: kpiCalculations.srcaCallToArrivalMinutes,
+      transferActivationToDepartureMinutes: kpiCalculations.transferActivationToDepartureMinutes,
+      swallowingScreeningWithin4Hours: kpiCalculations.swallowingScreeningWithin4Hours,
+    };
+  }
+
+  /**
+   * Get KPI summary for dashboard
+   */
+  async getKPISummary(filters: {
+    hospitalId?: string;
+    timeframe?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    console.log('getKPISummary called with filters:', filters);
+    const whereClause: any = {};
+    
+    // Add hospital filter
+    if (filters.hospitalId) {
+      whereClause.originHospitalId = filters.hospitalId;
+    }
+    
+    // Add date filters
+    if (filters.startDate || filters.endDate) {
+      whereClause.createdAt = {};
+      if (filters.startDate) {
+        whereClause.createdAt.gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        whereClause.createdAt.lte = new Date(filters.endDate);
+      }
+    } else if (filters.timeframe) {
+      const days = parseInt(filters.timeframe);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      whereClause.createdAt = {
+        gte: startDate,
+      };
+    }
+    
+    console.log('Where clause:', whereClause);
+
+    const cases = await this.prisma.strokeCase.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        strokeType: true,
+        metKpi1: true,
+        metKpi2: true,
+        metKpi3: true,
+        metKpi4: true,
+        metKpi5: true,
+        metKpi6: true,
+        metKpi7: true,
+        metKpi8: true,
+        metKpi9: true,
+        metKpi10: true,
+        metKpi11: true,
+        doorToPhysicianMinutes: true,
+        registrationToCtMinutes: true,
+        registrationToThrombolysisMinutes: true,
+        registrationToGroinMinutes: true,
+        srcaCallToArrivalMinutes: true,
+        transferActivationToDepartureMinutes: true,
+        swallowingScreeningWithin4Hours: true,
+        ivThrombolysisGiven: true,
+        modifiedRankinScaleAt90Days: true,
+      },
+    });
+
+    return this.calculateKPISummary(cases);
+  }
+
+  /**
+   * Get detailed KPI data for a specific KPI
+   */
+  async getKPIDetails(kpiId: string, filters: {
+    hospitalId?: string;
+    timeframe?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const whereClause: any = {};
+    
+    // Add hospital filter
+    if (filters.hospitalId) {
+      whereClause.originHospitalId = filters.hospitalId;
+    }
+    
+    // Add date filters
+    if (filters.startDate || filters.endDate) {
+      whereClause.createdAt = {};
+      if (filters.startDate) {
+        whereClause.createdAt.gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        whereClause.createdAt.lte = new Date(filters.endDate);
+      }
+    } else if (filters.timeframe) {
+      const days = parseInt(filters.timeframe);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      whereClause.createdAt = {
+        gte: startDate,
+      };
+    }
+
+    const cases = await this.prisma.strokeCase.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        patientId: true,
+        originHospitalId: true,
+        strokeType: true,
+        createdAt: true,
+        metKpi1: true,
+        metKpi2: true,
+        metKpi3: true,
+        metKpi4: true,
+        metKpi5: true,
+        metKpi6: true,
+        metKpi7: true,
+        metKpi8: true,
+        metKpi9: true,
+        metKpi10: true,
+        metKpi11: true,
+        doorToPhysicianMinutes: true,
+        registrationToCtMinutes: true,
+        registrationToThrombolysisMinutes: true,
+        registrationToGroinMinutes: true,
+        srcaCallToArrivalMinutes: true,
+        transferActivationToDepartureMinutes: true,
+        swallowingScreeningWithin4Hours: true,
+      },
+    });
+
+    return {
+      kpiId,
+      totalCases: cases.length,
+      metCases: cases.filter(c => {
+        switch (kpiId) {
+          case 'kpi1': return c.metKpi1;
+          case 'kpi2': return c.metKpi2;
+          case 'kpi3': return c.metKpi3;
+          case 'kpi4': return c.metKpi4;
+          case 'kpi5': return c.metKpi5;
+          case 'kpi6': return c.metKpi6;
+          case 'kpi7': return c.metKpi7;
+          case 'kpi8': return c.metKpi8;
+          case 'kpi9': return c.metKpi9;
+          case 'kpi10': return c.metKpi10;
+          case 'kpi11': return c.metKpi11;
+          default: return false;
+        }
+      }).length,
+      cases: cases.map(c => ({
+        id: c.id,
+        patientId: c.patientId,
+        originHospitalId: c.originHospitalId,
+        strokeType: c.strokeType,
+        createdAt: c.createdAt,
+        metKpi: (() => {
+          switch (kpiId) {
+            case 'kpi1': return c.metKpi1;
+            case 'kpi2': return c.metKpi2;
+            case 'kpi3': return c.metKpi3;
+            case 'kpi4': return c.metKpi4;
+            case 'kpi5': return c.metKpi5;
+            case 'kpi6': return c.metKpi6;
+            case 'kpi7': return c.metKpi7;
+            case 'kpi8': return c.metKpi8;
+            case 'kpi9': return c.metKpi9;
+            case 'kpi10': return c.metKpi10;
+            case 'kpi11': return c.metKpi11;
+            default: return false;
+          }
+        })(),
+        timings: {
+          doorToPhysician: c.doorToPhysicianMinutes,
+          registrationToCt: c.registrationToCtMinutes,
+          registrationToThrombolysis: c.registrationToThrombolysisMinutes,
+          registrationToGroin: c.registrationToGroinMinutes,
+          srcaCallToArrival: c.srcaCallToArrivalMinutes,
+          transferActivationToDeparture: c.transferActivationToDepartureMinutes,
+          swallowingScreeningWithin4Hours: c.swallowingScreeningWithin4Hours,
+        },
+      })),
+    };
   }
 
 }
