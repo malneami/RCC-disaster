@@ -480,11 +480,29 @@ async function seedCriticalCases() {
         updateData.metKpi3 = registrationToCt <= 20;
       }
       
+      // Door to CT Report Minutes (for table display)
+      if (strokeCase.timeOfRegistration && strokeCase.timeOfCtReportFinal) {
+        const doorToCtReport = Math.round((strokeCase.timeOfCtReportFinal.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.doorToCtReportMinutes = doorToCtReport;
+      }
+      
+      // Door to Thrombolysis Order Minutes (for table display)
+      if (strokeCase.timeOfRegistration && strokeCase.thrombolysisOrderTime) {
+        const doorToThrombolysisOrder = Math.round((strokeCase.thrombolysisOrderTime.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.doorToThrombolysisOrderMinutes = doorToThrombolysisOrder;
+      }
+      
       // KPI 4: Registration to IV Thrombolysis ≤60 min
       if (strokeCase.timeOfRegistration && strokeCase.ivThrombolysisAdministrationTime) {
         const registrationToThrombolysis = Math.round((strokeCase.ivThrombolysisAdministrationTime.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
         updateData.registrationToThrombolysisMinutes = registrationToThrombolysis;
         updateData.metKpi4 = registrationToThrombolysis <= 60;
+      }
+      
+      // Door to Needle Minutes (for table display - same as registration to thrombolysis)
+      if (strokeCase.timeOfRegistration && strokeCase.ivThrombolysisAdministrationTime) {
+        const doorToNeedle = Math.round((strokeCase.ivThrombolysisAdministrationTime.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.doorToNeedleMinutes = doorToNeedle;
       }
       
       // KPI 8: Registration to Groin Puncture ≤120 min

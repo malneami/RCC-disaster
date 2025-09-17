@@ -99,6 +99,7 @@ export async function seedComprehensiveStrokeCases() {
     const physicianAssessmentTime = addMinutes(arrivalTime, Math.random() * 15 + 10);
     const ctScanStart = addMinutes(arrivalTime, Math.random() * 30 + 15);
     const ctReportFinal = addMinutes(ctScanStart, Math.random() * 20 + 10);
+    const thrombolysisOrderTime = addMinutes(arrivalTime, Math.random() * 60 + 30);
 
     await prisma.strokeCase.create({
       data: {
@@ -182,6 +183,9 @@ export async function seedComprehensiveStrokeCases() {
         // KPI Timing Calculations (in minutes)
         doorToPhysicianMinutes: Math.floor((physicianAssessmentTime.getTime() - arrivalTime.getTime()) / (1000 * 60)),
         registrationToCtMinutes: Math.floor((ctScanStart.getTime() - registrationTime.getTime()) / (1000 * 60)),
+        doorToCtReportMinutes: Math.floor((ctReportFinal.getTime() - registrationTime.getTime()) / (1000 * 60)),
+        doorToThrombolysisOrderMinutes: Math.floor((thrombolysisOrderTime.getTime() - registrationTime.getTime()) / (1000 * 60)),
+        doorToNeedleMinutes: Math.floor(Math.random() * 75 + 45), // Same as registration to thrombolysis
         registrationToThrombolysisMinutes: Math.floor(Math.random() * 75 + 45),
         registrationToGroinMinutes: Math.floor(Math.random() * 120 + 60),
         srcaCallToArrivalMinutes: Math.random() > 0.5 ? Math.floor(Math.random() * 60 + 30) : null,

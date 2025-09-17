@@ -54,21 +54,6 @@ const BasicInformationSection: React.FC<BasicInformationSectionProps> = ({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6}>
-        <FormControl fullWidth>
-          <InputLabel>Stroke Severity</InputLabel>
-          <Select
-            value={formData.strokeSeverity || ''}
-            label="Stroke Severity"
-            onChange={(e) => handleInputChange('strokeSeverity', e.target.value)}
-          >
-            <MenuItem value="MILD">Mild</MenuItem>
-            <MenuItem value="MODERATE">Moderate</MenuItem>
-            <MenuItem value="SEVERE">Severe</MenuItem>
-            <MenuItem value="CRITICAL">Critical</MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
 
       <Grid item xs={12} sm={6}>
         <FormControl fullWidth>

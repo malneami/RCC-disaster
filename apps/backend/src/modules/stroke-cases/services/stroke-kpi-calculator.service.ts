@@ -16,6 +16,7 @@ export interface StrokeKPICalculations {
   // Additional timing calculations for table display
   doorToCtReportMinutes?: number;
   doorToThrombolysisOrderMinutes?: number;
+  doorToNeedleMinutes?: number;
 
   // KPI 4: Median time interval from registration to IV thrombolysis ≤60min
   registrationToThrombolysisMinutes?: number;
@@ -70,6 +71,7 @@ export class StrokeKPICalculatorService {
     // Additional timing calculations for table display
     calculations.doorToCtReportMinutes = this.calculateDoorToCtReportMinutes(strokeCase);
     calculations.doorToThrombolysisOrderMinutes = this.calculateDoorToThrombolysisOrderMinutes(strokeCase);
+    calculations.doorToNeedleMinutes = this.calculateDoorToNeedleMinutes(strokeCase);
 
     // KPI 4: Registration to IV thrombolysis ≤60min
     calculations.registrationToThrombolysisMinutes = this.calculateRegistrationToThrombolysisMinutes(strokeCase);
@@ -168,6 +170,20 @@ export class StrokeKPICalculatorService {
     const thrombolysisOrderTime = new Date(strokeCase.thrombolysisOrderTime);
     
     return Math.round((thrombolysisOrderTime.getTime() - registrationTime.getTime()) / (1000 * 60));
+  }
+
+  /**
+   * Calculate door to needle time in minutes (same as registration to thrombolysis)
+   */
+  private calculateDoorToNeedleMinutes(strokeCase: StrokeCase): number | undefined {
+    if (!strokeCase.timeOfRegistration || !strokeCase.ivThrombolysisAdministrationTime) {
+      return undefined;
+    }
+
+    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const thrombolysisTime = new Date(strokeCase.ivThrombolysisAdministrationTime);
+    
+    return Math.round((thrombolysisTime.getTime() - registrationTime.getTime()) / (1000 * 60));
   }
 
   /**

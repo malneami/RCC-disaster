@@ -22,11 +22,6 @@ const StrokeCasesTableHeader: React.FC = () => {
         </TableCell>
         <TableCell>
           <Typography variant="subtitle2" fontWeight="bold">
-            Severity
-          </Typography>
-        </TableCell>
-        <TableCell>
-          <Typography variant="subtitle2" fontWeight="bold">
             Status
           </Typography>
         </TableCell>

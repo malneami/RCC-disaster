@@ -70,12 +70,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           <Typography variant="body1">{StrokeService.getStrokeTypeLabel(formData.strokeType)}</Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Severity:</Typography>
-          <Typography variant="body1">
-            {formData.strokeSeverity ? StrokeService.getStrokeSeverityLabel(formData.strokeSeverity) : 'Not specified'}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
           <Typography variant="body2" color="text.secondary">NIHSS Baseline:</Typography>
           <Typography variant="body1">{formData.nihssBaseline || 'Not specified'}</Typography>
         </Grid>

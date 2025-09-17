@@ -16,7 +16,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faUser, faHospital } from '@fortawesome/free-solid-svg-icons';
 
-import { StrokeCase, StrokeService, StrokeStatus, StrokeSeverity } from '../../../../services/strokeService';
+import { StrokeCase, StrokeService, StrokeStatus } from '../../../../services/strokeService';
 import OutcomeFormCompleteness from '../OutcomeFormCompleteness';
 
 interface StrokeCaseTableRowProps {
@@ -54,16 +54,6 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
     return colors[status] || 'default';
   };
 
-  const getSeverityColor = (severity?: StrokeSeverity): string => {
-    if (!severity) return 'default';
-    const colors: Record<StrokeSeverity, string> = {
-      MILD: 'success',
-      MODERATE: 'warning',
-      SEVERE: 'error',
-      CRITICAL: 'error',
-    };
-    return colors[severity] || 'default';
-  };
 
   const formatDateTime = (dateString?: string): string => {
     if (!dateString) return 'N/A';
@@ -105,18 +95,6 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
         />
       </TableCell>
       
-      <TableCell>
-        {strokeCase.strokeSeverity ? (
-          <Chip
-            label={StrokeService.getStrokeSeverityLabel(strokeCase.strokeSeverity)}
-            size="small"
-            color={getSeverityColor(strokeCase.strokeSeverity) as any}
-            variant="outlined"
-          />
-        ) : (
-          'N/A'
-        )}
-      </TableCell>
       
       <TableCell>
         <Chip

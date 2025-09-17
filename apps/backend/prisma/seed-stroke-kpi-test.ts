@@ -477,6 +477,12 @@ async function main() {
       kpiData.metKpi4 = kpiData.registrationToThrombolysisMinutes <= 60;
     }
     
+    // Door to Needle Minutes (for table display - same as registration to thrombolysis)
+    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.ivThrombolysisAdministrationTime) {
+      const doorToNeedleMs = updatedStrokeCase.ivThrombolysisAdministrationTime.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+      kpiData.doorToNeedleMinutes = Math.round(doorToNeedleMs / (1000 * 60));
+    }
+    
     // KPI 5: IV thrombolysis rate (for eligible patients)
     if (updatedStrokeCase.strokeType === 'ISCHEMIC' && updatedStrokeCase.candidateForIVThrombolysis === 'YES') {
       kpiData.metKpi5 = updatedStrokeCase.ivThrombolysisGiven === 'YES';

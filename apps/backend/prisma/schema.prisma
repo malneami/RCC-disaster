@@ -521,6 +521,7 @@ model StrokeCase {
   registrationToCtMinutes       Int?                    @map("registration_to_ct_minutes")
   doorToCtReportMinutes         Int?                    @map("door_to_ct_report_minutes")
   doorToThrombolysisOrderMinutes Int?                   @map("door_to_thrombolysis_order_minutes")
+  doorToNeedleMinutes           Int?                    @map("door_to_needle_minutes")
   registrationToThrombolysisMinutes Int?                 @map("registration_to_thrombolysis_minutes")
   registrationToGroinMinutes    Int?                    @map("registration_to_groin_minutes")
   srcaCallToArrivalMinutes      Int?                    @map("srca_call_to_arrival_minutes")
