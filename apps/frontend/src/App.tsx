@@ -15,7 +15,7 @@ import StemiPortalPage from './pages/Stemi/StemiPortalPage';
 import StrokePortal from './pages/Portals/StrokePortal';
 import TraumaPortalPage from './pages/Trauma/TraumaPortalPage';
 import EMSPortal from './pages/EMS/EMSPortal';
-import EMSDashboardPage from './pages/Dashboard/EMSDashboardPage';
+import EMSDashboardPage from './pages/EMSDashboard';
 import AdminPage from './pages/Admin/AdminPage';
 import ProfilePage from './pages/Profile/ProfilePage';
 import LoadingSpinner from './components/Common/LoadingSpinner';

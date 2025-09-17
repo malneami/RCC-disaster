@@ -67,3 +67,4 @@ model GPSValidationLog {
   @@index([isValid])
 }
 
+
