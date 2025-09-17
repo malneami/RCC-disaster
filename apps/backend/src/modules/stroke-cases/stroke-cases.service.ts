@@ -958,7 +958,9 @@ export class StrokeCasesService {
     endDate?: string;
   }) {
     console.log('getKPISummary called with filters:', filters);
-    const whereClause: any = {};
+    const whereClause: any = {
+      deletedAt: null, // Exclude soft-deleted cases
+    };
     
     // Add hospital filter
     if (filters.hospitalId) {
@@ -1025,7 +1027,9 @@ export class StrokeCasesService {
     startDate?: string;
     endDate?: string;
   }) {
-    const whereClause: any = {};
+    const whereClause: any = {
+      deletedAt: null, // Exclude soft-deleted cases
+    };
     
     // Add hospital filter
     if (filters.hospitalId) {
