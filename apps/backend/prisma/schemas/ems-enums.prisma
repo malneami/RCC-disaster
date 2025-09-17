@@ -21,7 +21,11 @@ enum EquipmentStatus {
 }
 
 enum AssignmentStatus {
+  ASSIGNED
   EMS_CONTACT
+  EN_ROUTE
+  AT_PICKUP
+  PATIENT_LOADED
   EMS_ARRIVAL
   DEPARTED
   ARRIVED
@@ -76,6 +80,9 @@ enum EMSEventType {
   SPEED_VIOLATION
   DRIVER_BREAK_STARTED
   DRIVER_BREAK_ENDED
+  EMS_TRANSPORT_START
+  EMS_ARRIVAL
+  STATUS_CHANGE
 }
 
 enum PerformanceMetricType {

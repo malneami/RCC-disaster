@@ -77,8 +77,8 @@ class EMSService {
     await apiClient.delete(`${this.baseUrl}/ambulances/${id}`);
   }
 
-  async updateAmbulanceLocation(vehicleId: string, lat: number, lng: number, address?: string): Promise<Ambulance> {
-    const response = await apiClient.patch(`${this.baseUrl}/ambulances/${vehicleId}/location`, {
+  async updateAmbulanceLocation(vehicleImei: string, lat: number, lng: number, address?: string): Promise<Ambulance> {
+    const response = await apiClient.patch(`${this.baseUrl}/ambulances/${vehicleImei}/location`, {
       lat,
       lng,
       address,

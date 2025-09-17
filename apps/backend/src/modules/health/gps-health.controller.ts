@@ -130,7 +130,8 @@ export class GpsHealthController {
     
     try {
       // Test API connectivity with a simple request
-      const isConfigured = await this.gpsApiService.isApiConfigured();
+      const gpsConfig = this.configService.get('gps');
+      const isConfigured = !!gpsConfig?.apiKey;
       
       if (!isConfigured) {
         return {

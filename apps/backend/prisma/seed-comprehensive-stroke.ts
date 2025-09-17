@@ -183,8 +183,6 @@ export async function seedComprehensiveStrokeCases() {
         // KPI Timing Calculations (in minutes)
         doorToPhysicianMinutes: Math.floor((physicianAssessmentTime.getTime() - arrivalTime.getTime()) / (1000 * 60)),
         registrationToCtMinutes: Math.floor((ctScanStart.getTime() - registrationTime.getTime()) / (1000 * 60)),
-        doorToCtReportMinutes: Math.floor((ctReportFinal.getTime() - registrationTime.getTime()) / (1000 * 60)),
-        doorToThrombolysisOrderMinutes: Math.floor((thrombolysisOrderTime.getTime() - registrationTime.getTime()) / (1000 * 60)),
         doorToNeedleMinutes: Math.floor(Math.random() * 75 + 45), // Same as registration to thrombolysis
         registrationToThrombolysisMinutes: Math.floor(Math.random() * 75 + 45),
         registrationToGroinMinutes: Math.floor(Math.random() * 120 + 60),

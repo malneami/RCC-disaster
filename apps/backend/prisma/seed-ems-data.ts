@@ -64,7 +64,7 @@ async function seedEMSData() {
     const ambulances = await Promise.all([
       prisma.ambulance.create({
         data: {
-          vehicleId: 'GPS001',
+          vehicleImei: '123456789012345',
           callSign: 'Alpha-1',
           plateNumber: 'ABC-123',
           model: 'Mercedes Sprinter',
@@ -90,7 +90,7 @@ async function seedEMSData() {
       }),
       prisma.ambulance.create({
         data: {
-          vehicleId: 'GPS002',
+          vehicleImei: '123456789012346',
           callSign: 'Bravo-2',
           plateNumber: 'DEF-456',
           model: 'Ford Transit',
@@ -116,7 +116,7 @@ async function seedEMSData() {
       }),
       prisma.ambulance.create({
         data: {
-          vehicleId: 'GPS003',
+          vehicleImei: '123456789012347',
           callSign: 'Charlie-3',
           plateNumber: 'GHI-789',
           model: 'Toyota Hiace',
@@ -139,7 +139,7 @@ async function seedEMSData() {
       }),
       prisma.ambulance.create({
         data: {
-          vehicleId: 'GPS004',
+          vehicleImei: '123456789012348',
           callSign: 'Delta-4',
           plateNumber: 'JKL-012',
           model: 'Mercedes Sprinter',

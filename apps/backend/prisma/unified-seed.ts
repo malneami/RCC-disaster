@@ -511,7 +511,7 @@ async function seedAmbulancesAndEMS() {
 
     await prisma.ambulance.create({
       data: {
-        vehicleId: `Jazan-${i + 1}`,
+        vehicleImei: `123456789012${(i + 1).toString().padStart(3, '0')}`,
         callSign: `Jazan-${i + 1}`,
         plateNumber: ambulance.plate_number,
         model: ambulance.model,

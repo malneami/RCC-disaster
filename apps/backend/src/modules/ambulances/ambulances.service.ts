@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateAmbulanceDto } from './dto/create-ambulance.dto';
 import { UpdateAmbulanceDto } from './dto/update-ambulance.dto';
@@ -22,6 +22,11 @@ export class AmbulancesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createAmbulanceDto: CreateAmbulanceDto): Promise<Ambulance> {
+    // Validate IMEI format if provided
+    if (createAmbulanceDto.vehicleImei && !/^\d{15}$/.test(createAmbulanceDto.vehicleImei)) {
+      throw new BadRequestException('IMEI must be exactly 15 digits');
+    }
+
     await this.checkUniqueConstraints(createAmbulanceDto);
     await this.validateDriver(createAmbulanceDto.driverId);
 
@@ -58,7 +63,7 @@ export class AmbulancesService {
       where.OR = [
         { callSign: { contains: filters.search, mode: 'insensitive' } },
         { plateNumber: { contains: filters.search, mode: 'insensitive' } },
-        { vehicleId: { contains: filters.search, mode: 'insensitive' } },
+        { vehicleImei: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
 
@@ -102,22 +107,23 @@ export class AmbulancesService {
     return ambulance;
   }
 
-  async findByVehicleId(vehicleId: string): Promise<Ambulance> {
+  async findByVehicleImei(vehicleImei: string): Promise<Ambulance> {
     const ambulance = await this.prisma.ambulance.findUnique({
-      where: { vehicleId },
+      where: { vehicleImei },
     });
 
     if (!ambulance) {
-      throw new NotFoundException(`Ambulance with vehicle ID ${vehicleId} not found`);
+      throw new NotFoundException(`Ambulance with vehicle IMEI ${vehicleImei} not found`);
     }
 
     return ambulance;
   }
 
+
   async update(id: string, updateAmbulanceDto: UpdateAmbulanceDto): Promise<Ambulance> {
     await this.findById(id);
 
-    if (updateAmbulanceDto.vehicleId || updateAmbulanceDto.callSign || updateAmbulanceDto.plateNumber) {
+    if (updateAmbulanceDto.vehicleImei || updateAmbulanceDto.callSign || updateAmbulanceDto.plateNumber) {
       await this.checkUniqueConstraints(updateAmbulanceDto, id);
     }
 
@@ -173,8 +179,8 @@ export class AmbulancesService {
     });
   }
 
-  async updateLocation(vehicleId: string, lat: number, lng: number, address?: string): Promise<Ambulance> {
-    const ambulance = await this.findByVehicleId(vehicleId);
+  async updateLocation(vehicleImei: string, lat: number, lng: number, address?: string): Promise<Ambulance> {
+    const ambulance = await this.findByVehicleImei(vehicleImei);
 
     return this.prisma.ambulance.update({
       where: { id: ambulance.id },
@@ -192,7 +198,7 @@ export class AmbulancesService {
     const where: Prisma.AmbulanceWhereInput = excludeId ? { id: { not: excludeId } } : {};
 
     const checks = [
-      { field: 'vehicleId', value: dto.vehicleId },
+      { field: 'vehicleImei', value: dto.vehicleImei },
       { field: 'callSign', value: dto.callSign },
       { field: 'plateNumber', value: dto.plateNumber },
       { field: 'vin', value: dto.vin },

@@ -1,11 +1,17 @@
-import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean, Min, Max } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean, Min, Max, Length } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AmbulanceType, AmbulanceStatus, EquipmentStatus } from '@prisma/client';
 
 export class CreateAmbulanceDto {
-  @ApiProperty({ description: 'GPS tracking device ID', example: 'GPS001' })
+  @ApiProperty({ 
+    description: 'GPS device IMEI (15-digit number)', 
+    example: '123456789012345',
+    minLength: 15,
+    maxLength: 15
+  })
   @IsString()
-  vehicleId!: string;
+  @Length(15, 15, { message: 'IMEI must be exactly 15 digits' })
+  vehicleImei!: string;
 
   @ApiProperty({ description: 'Radio call sign', example: 'Alpha-1' })
   @IsString()

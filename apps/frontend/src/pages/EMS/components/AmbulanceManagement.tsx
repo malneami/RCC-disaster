@@ -27,7 +27,7 @@ const AmbulanceManagement: React.FC = () => {
   const [editingAmbulance, setEditingAmbulance] = useState<Ambulance | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    vehicleId: '',
+    vehicleImei: '',
     callSign: '',
     plateNumber: '',
     type: 'BASIC',
@@ -48,7 +48,7 @@ const AmbulanceManagement: React.FC = () => {
     if (ambulance) {
       setEditingAmbulance(ambulance);
       setFormData({
-        vehicleId: ambulance.vehicleId,
+        vehicleImei: ambulance.vehicleImei,
         callSign: ambulance.callSign,
         plateNumber: ambulance.plateNumber,
         type: ambulance.type,
@@ -64,7 +64,7 @@ const AmbulanceManagement: React.FC = () => {
     } else {
       setEditingAmbulance(null);
       setFormData({
-        vehicleId: '',
+        vehicleImei: '',
         callSign: '',
         plateNumber: '',
         type: 'BASIC',

@@ -4,7 +4,7 @@ export interface Ambulance {
   plateNumber: string;
   type: 'BASIC' | 'ADVANCED' | 'CRITICAL_CARE';
   status: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'OUT_OF_SERVICE';
-  vehicleId: string;
+  vehicleImei: string;
   manufacturer?: string;
   model: string;
   year: number;
@@ -41,7 +41,7 @@ export interface AmbulanceFilters {
 }
 
 export interface CreateAmbulanceData {
-  vehicleId: string;
+  vehicleImei: string;
   callSign: string;
   plateNumber: string;
   type: string;

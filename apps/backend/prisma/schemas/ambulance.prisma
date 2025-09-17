@@ -3,7 +3,7 @@ model Ambulance {
   id                      String          @id @default(uuid())
   
   // Vehicle Identification
-  vehicleId               String          @unique @map("vehicle_id") // GPS tracking ID
+  vehicleImei             String          @unique @map("vehicle_imei") // GPS device IMEI (15-digit number)
   callSign                String          @unique @map("call_sign") // Radio call sign
   plateNumber             String          @unique @map("plate_number") // License plate
   
@@ -57,7 +57,7 @@ model Ambulance {
   @@index([status])
   @@index([baseStation])
   @@index([isActive])
-  @@index([vehicleId])
+  @@index([vehicleImei])
   @@index([plateNumber])
   @@index([callSign])
   @@index([driverId])

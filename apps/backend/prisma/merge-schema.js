@@ -29,7 +29,7 @@ const SCHEMA_ORDER = [
   'ems-alerts.prisma',
   'ems-performance.prisma',
   'equipment-inventory.prisma',
-  'gps-tracking.prisma',
+  'gps.prisma',
   'maintenance-record.prisma',
   'timeline-events.prisma',
   // Stroke assessment and rehabilitation models
@@ -111,7 +111,9 @@ function validateMergedSchema(content) {
     { name: 'DriverSchedule model', pattern: /model DriverSchedule/, required: true },
     { name: 'EMSAssignment model', pattern: /model EMSAssignment/, required: true },
     { name: 'EMSAlert model', pattern: /model EMSAlert/, required: true },
-    { name: 'GPSTracking model', pattern: /model GPSTracking/, required: true },
+    { name: 'GPSTrackingLog model', pattern: /model GPSTrackingLog/, required: true },
+    { name: 'GPSApiLog model', pattern: /model GPSApiLog/, required: true },
+    { name: 'GPSValidationLog model', pattern: /model GPSValidationLog/, required: true },
     { name: 'TimelineEvent model', pattern: /model TimelineEvent/, required: true },
     // Stroke assessment and rehabilitation models
     { name: 'StrokeKpiSummary model', pattern: /model StrokeKpiSummary/, required: false },

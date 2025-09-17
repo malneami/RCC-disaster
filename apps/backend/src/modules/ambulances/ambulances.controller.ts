@@ -62,14 +62,15 @@ export class AmbulancesController {
     return this.ambulancesService.findById(id);
   }
 
-  @Get('vehicle/:vehicleId')
+  @Get('vehicle/:vehicleImei')
   @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
-  @ApiOperation({ summary: 'Get ambulance by vehicle ID' })
+  @ApiOperation({ summary: 'Get ambulance by vehicle IMEI' })
   @ApiResponse({ status: 200, description: 'Ambulance retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Ambulance not found' })
-  async findByVehicleId(@Param('vehicleId') vehicleId: string) {
-    return this.ambulancesService.findByVehicleId(vehicleId);
+  async findByVehicleImei(@Param('vehicleImei') vehicleImei: string) {
+    return this.ambulancesService.findByVehicleImei(vehicleImei);
   }
+
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.EMS)
@@ -81,16 +82,16 @@ export class AmbulancesController {
     return this.ambulancesService.update(id, updateAmbulanceDto);
   }
 
-  @Patch(':vehicleId/location')
+  @Patch(':vehicleImei/location')
   @Roles(UserRole.ADMIN, UserRole.EMS)
   @ApiOperation({ summary: 'Update ambulance location' })
   @ApiResponse({ status: 200, description: 'Ambulance location updated successfully' })
   @ApiResponse({ status: 404, description: 'Ambulance not found' })
   async updateLocation(
-    @Param('vehicleId') vehicleId: string,
+    @Param('vehicleImei') vehicleImei: string,
     @Body() body: { lat: number; lng: number; address?: string },
   ) {
-    return this.ambulancesService.updateLocation(vehicleId, body.lat, body.lng, body.address);
+    return this.ambulancesService.updateLocation(vehicleImei, body.lat, body.lng, body.address);
   }
 
 

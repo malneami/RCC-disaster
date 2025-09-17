@@ -19,7 +19,7 @@ interface AmbulanceFormProps {
   open: boolean;
   editingAmbulance: Ambulance | null;
   formData: {
-    vehicleId: string;
+    vehicleImei: string;
     callSign: string;
     plateNumber: string;
     type: string;
@@ -59,9 +59,15 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Vehicle ID"
-              value={formData.vehicleId}
-              onChange={(e) => onFormDataChange('vehicleId', e.target.value)}
+              label="Vehicle IMEI"
+              value={formData.vehicleImei}
+              onChange={(e) => onFormDataChange('vehicleImei', e.target.value)}
+              placeholder="15-digit IMEI number"
+              inputProps={{ 
+                maxLength: 15,
+                pattern: '[0-9]{15}'
+              }}
+              helperText="Enter 15-digit IMEI number for GPS tracking"
               required
             />
           </Grid>

@@ -1,3 +1,6 @@
+// GPS Database Models - Consolidated
+// This file contains all GPS-related database models
+
 // GPS Tracking Log model for real-time location monitoring
 model GPSTrackingLog {
   id                      String          @id @default(uuid())
@@ -33,4 +36,34 @@ model GPSTrackingLog {
   @@index([createdAt])
 }
 
+// GPS API Log model for tracking API calls (minimal logging)
+model GPSApiLog {
+  id           String   @id @default(uuid())
+  vehicleId    String   @map("vehicle_id")
+  endpoint     String
+  statusCode   Int?     @map("status_code")
+  responseTime Int?     @map("response_time") // milliseconds
+  error        String?
+  timestamp    DateTime @default(now())
+  
+  @@map("gps_api_logs")
+  @@index([vehicleId])
+  @@index([timestamp])
+  @@index([endpoint])
+}
+
+// GPS Validation Log model for tracking validation failures (minimal logging)
+model GPSValidationLog {
+  id              String   @id @default(uuid())
+  vehicleId       String   @map("vehicle_id")
+  isValid         Boolean  @map("is_valid")
+  error           String?
+  validationRules String   @map("validation_rules") // JSON string
+  timestamp       DateTime @default(now())
+  
+  @@map("gps_validation_logs")
+  @@index([vehicleId])
+  @@index([timestamp])
+  @@index([isValid])
+}
 

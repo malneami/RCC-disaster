@@ -119,6 +119,23 @@ export class StatusMappingService {
 
     // Define allowed transitions
     const allowedTransitions: Record<AssignmentStatus, AssignmentStatus[]> = {
+      'ASSIGNED': [
+        'EN_ROUTE',
+        'CANCELLED'
+      ],
+      'EN_ROUTE': [
+        'AT_PICKUP',
+        'ARRIVED',
+        'CANCELLED'
+      ],
+      'AT_PICKUP': [
+        'PATIENT_LOADED',
+        'CANCELLED'
+      ],
+      'PATIENT_LOADED': [
+        'EN_ROUTE',
+        'CANCELLED'
+      ],
       'EMS_CONTACT': [
         'EMS_ARRIVAL',
         'DEPARTED',

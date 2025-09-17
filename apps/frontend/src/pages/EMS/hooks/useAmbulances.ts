@@ -42,8 +42,8 @@ export const useAmbulances = (filter?: AmbulanceFilter) => {
   );
 
   const updateLocationMutation = useMutation(
-    ({ vehicleId, lat, lng, address }: { vehicleId: string; lat: number; lng: number; address?: string }) =>
-      emsService.updateAmbulanceLocation(vehicleId, lat, lng, address),
+    ({ vehicleImei, lat, lng, address }: { vehicleImei: string; lat: number; lng: number; address?: string }) =>
+      emsService.updateAmbulanceLocation(vehicleImei, lat, lng, address),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('ambulances');

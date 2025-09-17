@@ -46,6 +46,7 @@ const AmbulanceTable: React.FC<AmbulanceTableProps> = ({
           <TableRow>
             <TableCell>Call Sign</TableCell>
             <TableCell>Plate Number</TableCell>
+            <TableCell>Vehicle IMEI</TableCell>
             <TableCell>Type</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Driver</TableCell>
@@ -67,6 +68,11 @@ const AmbulanceTable: React.FC<AmbulanceTableProps> = ({
                 </Box>
               </TableCell>
               <TableCell>{ambulance.plateNumber}</TableCell>
+              <TableCell>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                  {ambulance.vehicleImei}
+                </Typography>
+              </TableCell>
               <TableCell>
                 <Chip
                   label={ambulance.type}

@@ -231,7 +231,7 @@ async function seedRealAmbulances() {
         },
         create: {
           id: ambulance.id.toString(),
-          vehicleId: `GPS${ambulance.id.toString().padStart(3, '0')}`,
+          vehicleImei: `123456789012${ambulance.id.toString().padStart(3, '0')}`,
           callSign: `${ambulance.location.split(' ')[0]}-${ambulance.id}`,
           plateNumber: ambulance.plateNumber,
           model: ambulance.model,

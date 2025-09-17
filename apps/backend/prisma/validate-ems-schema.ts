@@ -50,7 +50,7 @@ async function validateEMSSchema() {
     // Create a test ambulance
     const testAmbulance = await prisma.ambulance.create({
       data: {
-        vehicleId: 'TEST001',
+        vehicleImei: '123456789012001',
         callSign: 'TEST-1',
         plateNumber: 'TEST-001',
         model: 'Test Model',
@@ -225,7 +225,7 @@ async function validateEMSSchema() {
     try {
       await prisma.ambulance.create({
         data: {
-          vehicleId: 'TEST001', // Duplicate vehicle ID
+          vehicleImei: '123456789012001', // Duplicate vehicle ID
           callSign: 'TEST-2',
           plateNumber: 'TEST-002',
           model: 'Test Model',
@@ -247,7 +247,7 @@ async function validateEMSSchema() {
     try {
       await prisma.ambulance.create({
         data: {
-          vehicleId: 'TEST002',
+          vehicleImei: '123456789012002',
           callSign: 'TEST-3',
           plateNumber: 'TEST-003',
           model: 'Test Model',
@@ -270,7 +270,7 @@ async function validateEMSSchema() {
     try {
       await prisma.ambulance.create({
         data: {
-          vehicleId: 'TEST003',
+          vehicleImei: '123456789012003',
           callSign: 'TEST-4',
           plateNumber: 'TEST-004',
           model: 'Test Model',

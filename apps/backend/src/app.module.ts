@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
 import { DatabaseModule } from './database/database.module';
@@ -28,7 +29,7 @@ import { DriverSchedulesModule } from './modules/driver-schedules/driver-schedul
 import { DriversModule } from './modules/drivers/drivers.module';
 import { EmsDashboardModule } from './modules/ems-dashboard/ems-dashboard.module';
 import { EmsGatewayModule } from './modules/ems-gateway/ems-gateway.module';
-import { GpsTrackingModule } from './modules/gps-tracking/gps-tracking.module';
+import { GpsModule } from './modules/gps/gps.module';
 import { TimelineEventsModule } from './modules/timeline-events/timeline-events.module';
 
 @Module({
@@ -37,6 +38,7 @@ import { TimelineEventsModule } from './modules/timeline-events/timeline-events.
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         name: 'short',
@@ -63,7 +65,7 @@ import { TimelineEventsModule } from './modules/timeline-events/timeline-events.
     DriversModule,
     EmsDashboardModule,
     EmsGatewayModule,
-    GpsTrackingModule,
+    GpsModule,
     TimelineEventsModule,
     
     AuthModule,
