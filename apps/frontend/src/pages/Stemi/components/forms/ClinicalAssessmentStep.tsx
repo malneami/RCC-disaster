@@ -60,49 +60,6 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
       </Typography>
 
       <Grid container spacing={3}>
-        {/* HEART Score */}
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="HEART Score"
-            type="number"
-            value={data.heartScore || ''}
-            onChange={handleChange('heartScore')}
-            inputProps={{ min: 0, max: 10 }}
-            helperText="HEART score for risk stratification (0-10)"
-          />
-        </Grid>
-
-        {/* Clinical Risk Level */}
-        <Grid item xs={12} sm={6}>
-          <FormControl fullWidth>
-            <InputLabel>Clinical Risk Level</InputLabel>
-            <Select
-              value={data.clinicalRiskLevel || ''}
-              onChange={handleChange('clinicalRiskLevel')}
-              label="Clinical Risk Level"
-            >
-              <MenuItem value="">Select Risk Level</MenuItem>
-              <MenuItem value="Low">Low</MenuItem>
-              <MenuItem value="Intermediate">Intermediate</MenuItem>
-              <MenuItem value="High">High</MenuItem>
-              <MenuItem value="Very High">Very High</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Presenting Symptoms */}
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Presenting Symptoms"
-            value={data.presentingSymptoms || ''}
-            onChange={handleChange('presentingSymptoms')}
-            multiline
-            rows={3}
-            helperText="Describe the patient's presenting symptoms"
-          />
-        </Grid>
 
         {/* Symptom Onset */}
         <Grid item xs={12} sm={6}>

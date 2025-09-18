@@ -1,4 +1,5 @@
 import { PrismaClient, HospitalStatus, TraumaLevel } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +9,7 @@ export async function seedHospitals() {
   const hospitals = [
     // Major Hospitals with full services
     {
-      id: '1',
+      id: uuidv4(),
       name: 'Jazan General Hospital (JGH)',
       address: 'Jazan, Saudi Arabia',
       latitude: 16.8892,
@@ -40,7 +41,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '2',
+      id: uuidv4(),
       name: 'King Fahad Central Hospital (KFCH)',
       address: 'Jazan, Saudi Arabia',
       latitude: 16.9087,
@@ -72,7 +73,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '3',
+      id: uuidv4(),
       name: 'Prince Mohammed Bin Nasser Hospital (PMNH)',
       address: 'Jazan, Saudi Arabia',
       latitude: 16.8999,
@@ -105,7 +106,7 @@ export async function seedHospitals() {
     },
     // Regional Hospitals with varied services
     {
-      id: '4',
+      id: uuidv4(),
       name: 'Samtah General Hospital',
       address: 'Samtah, Jazan, Saudi Arabia',
       latitude: 16.6050,
@@ -137,7 +138,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '5',
+      id: uuidv4(),
       name: 'Abu Arish General Hospital (AAGH)',
       address: 'Abu Arish, Jazan, Saudi Arabia',
       latitude: 16.9815,
@@ -170,7 +171,7 @@ export async function seedHospitals() {
     },
     // Smaller hospitals with limited services
     {
-      id: '6',
+      id: uuidv4(),
       name: 'Sabya General Hospital',
       icuBeds: 10,
       icuBedsAvailable: 5,
@@ -199,7 +200,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '7',
+      id: uuidv4(),
       name: 'Baysh General Hospital',
       icuBeds: 8,
       icuBedsAvailable: 4,
@@ -228,7 +229,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '8',
+      id: uuidv4(),
       name: 'Al-Hurrath General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -257,7 +258,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '9',
+      id: uuidv4(),
       name: 'Al-Darb General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -286,7 +287,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '10',
+      id: uuidv4(),
       name: 'Al-Rayth General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -315,7 +316,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '11',
+      id: uuidv4(),
       name: 'Al-Tuwal General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -344,7 +345,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '12',
+      id: uuidv4(),
       name: 'Al-Aridha General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -373,7 +374,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '13',
+      id: uuidv4(),
       name: 'Al-Muwassam General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -402,7 +403,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '14',
+      id: uuidv4(),
       name: 'Ahad Al-Masarhah General Hospital',
       icuBeds: 8,
       icuBedsAvailable: 4,
@@ -431,7 +432,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '15',
+      id: uuidv4(),
       name: 'Bani Malik General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -460,7 +461,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '16',
+      id: uuidv4(),
       name: 'Eradah Mental Health Complex',
       icuBeds: 10,
       icuBedsAvailable: 5,
@@ -489,7 +490,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '17',
+      id: uuidv4(),
       name: 'Chest Diseases Hospital',
       icuBeds: 8,
       icuBedsAvailable: 4,
@@ -518,7 +519,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '18',
+      id: uuidv4(),
       name: 'Al-Aidabi General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -547,7 +548,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '19',
+      id: uuidv4(),
       name: 'Dhamad General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -576,7 +577,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '20',
+      id: uuidv4(),
       name: 'Farasan General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -605,7 +606,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '21',
+      id: uuidv4(),
       name: 'Fayfa General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -634,7 +635,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '22',
+      id: uuidv4(),
       name: 'Jazan Specialized Hospital',
       icuBeds: 15,
       icuBedsAvailable: 8,
@@ -663,7 +664,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '23',
+      id: uuidv4(),
       name: 'PHC Centers',
       icuBeds: 0,
       icuBedsAvailable: 0,
@@ -692,7 +693,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '24',
+      id: uuidv4(),
       name: 'Private Hospital',
       address: 'Various Private Locations',
       icuBeds: 0,
@@ -722,7 +723,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: '25',
+      id: uuidv4(),
       name: 'Other Hospital',
       address: 'External Healthcare Facility',
       icuBeds: 0,

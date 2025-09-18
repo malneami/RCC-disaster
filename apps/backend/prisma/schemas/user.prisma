@@ -24,7 +24,7 @@ model User {
   deletedAt         DateTime?   @map("deleted_at")
   
   // Relations
-  hospital          Hospital?   @relation(fields: [hospitalId], references: [id])
+  hospital          Hospital?   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   
   // Ticket Relations
   createdTickets    Ticket[]    @relation("TicketCreator")

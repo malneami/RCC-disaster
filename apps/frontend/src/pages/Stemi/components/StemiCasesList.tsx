@@ -38,7 +38,7 @@ import {
 import { StemiCase, StemiFilterParams } from '../services/stemiService';
 import LiveFilterDialog from './LiveFilterDialog';
 import StemiOutcomeForm from './StemiOutcomeForm';
-import StemiOutcomeFormCompleteness from './StemiOutcomeFormCompleteness';
+import StemiCaseCompleteness from './StemiCaseCompleteness';
 
 interface StemiCasesListProps {
   cases: StemiCase[];
@@ -482,7 +482,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                 <TableCell>Status</TableCell>
                 <TableCell>Origin Hospital</TableCell>
                 <TableCell>Destination Hospital</TableCell>
-                <TableCell>Outcome Form</TableCell>
+                <TableCell>Completeness</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -547,7 +547,11 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
-                        <StemiOutcomeFormCompleteness stemiCase={case_ as any} />
+                        <StemiCaseCompleteness stemiCase={case_ as any} />
+                      </Box>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box display="flex" gap={1} justifyContent="flex-end">
                         <Tooltip title="Open Outcome Form">
                           <IconButton
                             size="small"
@@ -557,10 +561,6 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                             <OutcomeFormIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box display="flex" gap={1} justifyContent="flex-end">
                         <Tooltip title="View Details">
                           <IconButton
                             size="small"

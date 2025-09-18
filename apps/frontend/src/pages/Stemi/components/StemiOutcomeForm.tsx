@@ -63,6 +63,7 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { isDirty },
   } = useForm<StemiOutcomeFormData>({
     defaultValues: {
@@ -81,6 +82,7 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
   });
 
   const watchedValues = watch();
+  const followUpProvider = watch('followUpAppointmentProvider');
 
   // Calculate completeness percentage in real-time
   useEffect(() => {
@@ -92,9 +94,13 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
       'postPciComplications',
       'dischargeStatus',
       'dischargeMedications',
-      'followUpAppointmentDate',
       'followUpAppointmentProvider',
     ];
+
+    // Add followUpAppointmentDate only if followUpAppointmentProvider is YES
+    if (followUpProvider === 'YES') {
+      outcomeFields.push('followUpAppointmentDate');
+    }
 
     const completedFields = outcomeFields.filter(field => {
       const value = watchedValues[field as keyof StemiOutcomeFormData];
@@ -103,7 +109,15 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
 
     const percentage = Math.round((completedFields.length / outcomeFields.length) * 100);
     setCompleteness(percentage);
-  }, [watchedValues]);
+  }, [watchedValues, followUpProvider]);
+
+  // Clear follow-up date when provider is set to NO
+  useEffect(() => {
+    if (followUpProvider === 'NO') {
+      // Use setValue instead of reset to avoid infinite loops
+      setValue('followUpAppointmentDate', '');
+    }
+  }, [followUpProvider, setValue]);
 
   // Helper function to format ISO date string for datetime-local input
   const formatDateForInput = (isoDateString?: string): string => {
@@ -201,9 +215,13 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
       'postPciComplications',
       'dischargeStatus',
       'dischargeMedications',
-      'followUpAppointmentDate',
       'followUpAppointmentProvider',
     ];
+
+    // Add followUpAppointmentDate only if followUpAppointmentProvider is YES
+    if (formData.followUpAppointmentProvider === 'YES') {
+      outcomeFields.push('followUpAppointmentDate');
+    }
 
     const completedFields = outcomeFields.filter(field => {
       const value = formData[field as keyof StemiOutcomeFormData];
@@ -385,14 +403,13 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
                   name="postPciComplications"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Post-PCI Complications"
-                      multiline
-                      rows={3}
-                      helperText="Document any complications that occurred after the PCI procedure"
-                    />
+                    <FormControl fullWidth>
+                      <InputLabel>Post-PCI Complications</InputLabel>
+                      <Select {...field} label="Post-PCI Complications">
+                        <MenuItem value="YES">Yes</MenuItem>
+                        <MenuItem value="NO">No</MenuItem>
+                      </Select>
+                    </FormControl>
                   )}
                 />
               </Grid>
@@ -405,11 +422,11 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
                     <FormControl fullWidth>
                       <InputLabel>Discharge Status</InputLabel>
                       <Select {...field} label="Discharge Status">
-                        <MenuItem value="STABLE">Stable</MenuItem>
-                        <MenuItem value="COMPLICATIONS">Complications</MenuItem>
-                        <MenuItem value="TRANSFERRED">Transferred</MenuItem>
+                        <MenuItem value="DISCHARGED_HOME">Discharged Home</MenuItem>
+                        <MenuItem value="TRANSFER_TO_ANOTHER_FACILITY">Transfer to Another Facility</MenuItem>
+                        <MenuItem value="EXTENDED_OBSERVATION">Extended Observation</MenuItem>
                         <MenuItem value="DECEASED">Deceased</MenuItem>
-                        <MenuItem value="AGAINST_MEDICAL_ADVICE">Against Medical Advice</MenuItem>
+                        <MenuItem value="ICU_TRANSFER">ICU Transfer</MenuItem>
                         <MenuItem value="OTHER">Other</MenuItem>
                       </Select>
                     </FormControl>
@@ -422,32 +439,35 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
                   name="followUpAppointmentProvider"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Follow-up Appointment Provider"
-                      helperText="Name of the provider for follow-up appointment"
-                    />
+                    <FormControl fullWidth>
+                      <InputLabel>Follow-up Appointment Provider</InputLabel>
+                      <Select {...field} label="Follow-up Appointment Provider">
+                        <MenuItem value="YES">Yes</MenuItem>
+                        <MenuItem value="NO">No</MenuItem>
+                      </Select>
+                    </FormControl>
                   )}
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="followUpAppointmentDate"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Follow-up Appointment Date"
-                      type="datetime-local"
-                      InputLabelProps={{ shrink: true }}
-                      helperText="Scheduled follow-up appointment date and time"
-                    />
-                  )}
-                />
-              </Grid>
+              {followUpProvider === 'YES' && (
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="followUpAppointmentDate"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Follow-up Appointment Date"
+                        type="datetime-local"
+                        InputLabelProps={{ shrink: true }}
+                        helperText="Scheduled follow-up appointment date and time"
+                      />
+                    )}
+                  />
+                </Grid>
+              )}
 
               <Grid item xs={12}>
                 <Controller

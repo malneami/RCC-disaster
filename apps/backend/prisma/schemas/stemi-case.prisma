@@ -21,6 +21,7 @@ model StemiCase {
   modeOfArrival                   String?     @map("mode_of_arrival") // AMBULANCE, PRIVATE_VEHICLE, AIR_TRANSPORT, etc.
   rccActivated                    Boolean     @default(false) @map("rcc_activated")
   rccUnit                         String?     @map("rcc_unit")
+  caseType                        String      @default("DIRECT") @map("case_type") // DIRECT or TRANSFER
   
   // Critical Timestamps
   triageTime                      DateTime?   @map("triage_time")
@@ -73,7 +74,9 @@ model StemiCase {
   
   // KPI Achievement Flags
   metKpi1                         Boolean?    @map("met_kpi_1") // Door to ECG ≤10min
-  metKpi2                         Boolean?    @map("met_kpi_2") // Door to Balloon ≤90min
+  metKpi2                         Boolean?    @map("met_kpi_2") // Door to Balloon ≤90min (Direct) / ≤120min (Transfer)
+  metKpi2Direct                   Boolean?    @map("met_kpi_2_direct") // Door to Balloon ≤90min (Direct cases)
+  metKpi2Transfer                 Boolean?    @map("met_kpi_2_transfer") // Door to Balloon ≤120min (Transfer cases)
   metKpi3                         Boolean?    @map("met_kpi_3") // Door to Needle ≤30min
   metKpi4                         Boolean?    @map("met_kpi_4") // RCC Activation ≤15min
   metKpi5                         Boolean?    @map("met_kpi_5") // Door In Door Out ≤30min
@@ -88,8 +91,8 @@ model StemiCase {
   // Relations
   ticket                          Ticket?     @relation(fields: [ticketId], references: [id])
   patient                         Patient     @relation(fields: [patientId], references: [id])
-  originHospital                  Hospital    @relation("StemiOriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital             Hospital?   @relation("StemiDestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital                  Hospital    @relation("StemiOriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
+  destinationHospital             Hospital?   @relation("StemiDestinationHospital", fields: [destinationHospitalId], references: [id], onDelete: Cascade)
   createdBy                       User        @relation("StemiCaseCreator", fields: [createdById], references: [id])
   
   @@map("stemi_cases")

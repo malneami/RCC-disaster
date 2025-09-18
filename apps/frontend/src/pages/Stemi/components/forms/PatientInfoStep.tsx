@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { PatientInfo } from '../../services/stemiService';
 import HospitalSelect from '../../../../components/Common/HospitalSelect';
+import StemiDestinationHospitalSelect from '../../../../components/Common/StemiDestinationHospitalSelect';
 import NationalIdInput from '../../../../components/Common/NationalIdInput';
 
 interface PatientInfoStepProps {
@@ -134,6 +135,30 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           />
         </Grid>
 
+              {/* Hospital Information */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+                  Hospital Information
+                </Typography>
+              </Grid>
+      
+              <Grid item xs={12} sm={6}>
+                <HospitalSelect
+                  label="Origin Hospital"
+                  value={data.originHospitalId}
+                  onChange={handleHospitalChange('originHospitalId')}
+                  required
+                />
+              </Grid>
+      
+              <Grid item xs={12} sm={6}>
+                <StemiDestinationHospitalSelect
+                  label="Destination Hospital (Optional)"
+                  value={data.destinationHospitalId || ''}
+                  onChange={handleHospitalChange('destinationHospitalId')}
+                  helperText="Only hospitals with STEMI or Cardiology services are shown"
+                />
+              </Grid>
         {/* Contact Information */}
         <Grid item xs={12}>
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
@@ -210,29 +235,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           />
         </Grid>
 
-        {/* Hospital Information */}
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-            Hospital Information
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <HospitalSelect
-            label="Origin Hospital"
-            value={data.originHospitalId}
-            onChange={handleHospitalChange('originHospitalId')}
-            required
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <HospitalSelect
-            label="Destination Hospital (Optional)"
-            value={data.destinationHospitalId || ''}
-            onChange={handleHospitalChange('destinationHospitalId')}
-          />
-        </Grid>
       </Grid>
     </Box>
   );

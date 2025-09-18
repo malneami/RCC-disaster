@@ -33,7 +33,7 @@ model StrokeRehabilitation {
   strokeCase              StrokeCase  @relation(fields: [strokeCaseId], references: [id])
   patient                 Patient     @relation(fields: [patientId], references: [id])
   therapist               User?       @relation("StrokeRehabilitationTherapist", fields: [therapistId], references: [id])
-  rehabilitationCenter    Hospital?   @relation("StrokeRehabilitationCenter", fields: [rehabilitationCenterId], references: [id])
+  rehabilitationCenter    Hospital?   @relation("StrokeRehabilitationCenter", fields: [rehabilitationCenterId], references: [id], onDelete: Cascade)
   createdBy               User        @relation("StrokeRehabilitationCreator", fields: [createdById], references: [id])
   
   @@map("stroke_rehabilitation")

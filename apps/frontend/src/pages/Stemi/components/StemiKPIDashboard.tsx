@@ -203,12 +203,22 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({ kpiSummary }) => 
         </Grid>
         <Grid item xs={12} md={6}>
           <KpiCard
-            title={kpiSummary.kpi2.name}
-            target={kpiSummary.kpi2.target}
-            totalCases={kpiSummary.kpi2.totalCases}
-            withinTarget={kpiSummary.kpi2.withinTarget}
-            percentage={kpiSummary.kpi2.percentage}
-            status={kpiSummary.kpi2.status}
+            title={kpiSummary.kpi2Direct.name}
+            target={kpiSummary.kpi2Direct.target}
+            totalCases={kpiSummary.kpi2Direct.totalCases}
+            withinTarget={kpiSummary.kpi2Direct.withinTarget}
+            percentage={kpiSummary.kpi2Direct.percentage}
+            status={kpiSummary.kpi2Direct.status}
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <KpiCard
+            title={kpiSummary.kpi2Transfer.name}
+            target={kpiSummary.kpi2Transfer.target}
+            totalCases={kpiSummary.kpi2Transfer.totalCases}
+            withinTarget={kpiSummary.kpi2Transfer.withinTarget}
+            percentage={kpiSummary.kpi2Transfer.percentage}
+            status={kpiSummary.kpi2Transfer.status}
           />
         </Grid>
         <Grid item xs={12} md={6}>

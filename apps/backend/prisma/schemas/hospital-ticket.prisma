@@ -14,7 +14,7 @@ model HospitalTicket {
   deletedAt       DateTime?             @map("deleted_at")
   
   // Relations
-  hospital        Hospital              @relation(fields: [hospitalId], references: [id])
+  hospital        Hospital              @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   createdBy       User                  @relation("HospitalTicketCreator", fields: [createdById], references: [id])
   assignedTo      User?                 @relation("HospitalTicketAssignee", fields: [assignedToId], references: [id])
   

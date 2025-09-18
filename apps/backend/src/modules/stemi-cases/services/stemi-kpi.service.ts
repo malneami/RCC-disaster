@@ -96,8 +96,16 @@ export class StemiKpiService {
         followUpCallCompleted: true,
         selectedTreatment: true,
         thrombolyticGiven: true,
+        eligibleForPrimaryPci: true,
+        caseType: true,
+        ticketId: true,
         createdAt: true,
         updatedAt: true,
+        ticket: {
+          select: {
+            emsContactTime: true,
+          },
+        },
       },
     });
 
@@ -151,28 +159,45 @@ export class StemiKpiService {
       return doorToEcg > 0 && doorToEcg <= 10;
     }).length;
 
-    const kpi2Cases = allCases.filter(c => {
+    // KPI 2: Door to Balloon - Direct cases (≤90min) and Transfer cases (≤120min)
+    const kpi2DirectCases = allCases.filter(c => {
       const doorToBalloon = this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime);
-      return doorToBalloon > 0 && doorToBalloon <= 90;
+      return doorToBalloon > 0 && doorToBalloon <= 90 && c.caseType === 'DIRECT';
     }).length;
+
+    const kpi2TransferCases = allCases.filter(c => {
+      const doorToBalloon = this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime);
+      return doorToBalloon > 0 && doorToBalloon <= 120 && c.caseType === 'TRANSFER';
+    }).length;
+
+    const kpi2Cases = kpi2DirectCases + kpi2TransferCases;
 
     const kpi3Cases = allCases.filter(c => {
       const doorToNeedle = this.calculateDoorToNeedleTime(c.triageTime, c.thrombolyticAdminTime);
       return doorToNeedle > 0 && doorToNeedle <= 30;
     }).length;
 
-    // RCC Activation - cases where RCC was activated within 15 minutes of triage
+    // RCC Activation - only for transfer cases: EMS contact to door out ≤15 minutes
     const kpi4Cases = allCases.filter(c => {
-      if (!c.rccActivated || !c.triageTime) return false;
-      // For RCC activation, we'll use the time from triage to when RCC was activated
-      // Since we don't have a specific RCC activation timestamp, we'll assume it happens
-      // within 15 minutes of triage for cases marked as rccActivated
-      return true; // All cases with rccActivated = true meet this criteria
+      if (!c.rccActivated) return false;
+      
+      // Only calculate for transfer cases
+      if (c.caseType === 'TRANSFER' && c.ticketId) {
+        if (!c.ticket?.emsContactTime || !c.doorOutTime) return false;
+        const emsContact = new Date(c.ticket.emsContactTime);
+        const doorOut = new Date(c.doorOutTime);
+        const diffMinutes = (doorOut.getTime() - emsContact.getTime()) / (1000 * 60);
+        return diffMinutes <= 15;
+      }
+      
+      // Exclude direct cases from RCC Activation KPI
+      return false;
     }).length;
 
     // Door In Door Out - cases where door out time is within 30 minutes of triage
+    // Only include cases where patient is eligible for primary PCI
     const kpi5Cases = allCases.filter(c => {
-      if (!c.triageTime || !c.doorOutTime) return false;
+      if (!c.triageTime || !c.doorOutTime || !c.eligibleForPrimaryPci) return false;
       const triage = new Date(c.triageTime);
       const doorOut = new Date(c.doorOutTime);
       const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
@@ -213,13 +238,37 @@ export class StemiKpiService {
                 totalCases > 0 && (kpi1Cases / totalCases) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi2: {
-        name: 'Door to Balloon ≤90min',
-        target: '≤90 minutes',
+        name: 'Door to Balloon (Combined)',
+        target: '≤90min (Direct) / ≤120min (Transfer)',
         totalCases,
         withinTarget: kpi2Cases,
         percentage: totalCases > 0 ? Math.round((kpi2Cases / totalCases) * 100 * 10) / 10 : 0,
         status: totalCases > 0 && (kpi2Cases / totalCases) >= 0.9 ? 'GREEN' : 
                 totalCases > 0 && (kpi2Cases / totalCases) >= 0.75 ? 'YELLOW' : 'RED',
+      },
+      kpi2Direct: {
+        name: 'Door to Balloon (Direct)',
+        target: '≤90 minutes',
+        totalCases: allCases.filter(c => c.caseType === 'DIRECT').length,
+        withinTarget: kpi2DirectCases,
+        percentage: allCases.filter(c => c.caseType === 'DIRECT').length > 0 ? 
+                   Math.round((kpi2DirectCases / allCases.filter(c => c.caseType === 'DIRECT').length) * 100 * 10) / 10 : 0,
+        status: allCases.filter(c => c.caseType === 'DIRECT').length > 0 && 
+                (kpi2DirectCases / allCases.filter(c => c.caseType === 'DIRECT').length) >= 0.9 ? 'GREEN' : 
+                allCases.filter(c => c.caseType === 'DIRECT').length > 0 && 
+                (kpi2DirectCases / allCases.filter(c => c.caseType === 'DIRECT').length) >= 0.75 ? 'YELLOW' : 'RED',
+      },
+      kpi2Transfer: {
+        name: 'Door to Balloon (Transfer)',
+        target: '≤120 minutes',
+        totalCases: allCases.filter(c => c.caseType === 'TRANSFER').length,
+        withinTarget: kpi2TransferCases,
+        percentage: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 ? 
+                   Math.round((kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER').length) * 100 * 10) / 10 : 0,
+        status: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
+                (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.9 ? 'GREEN' : 
+                allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
+                (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi3: {
         name: 'Door to Needle ≤30min',
@@ -233,20 +282,26 @@ export class StemiKpiService {
       kpi4: {
         name: 'RCC Activation ≤15min',
         target: '≤15 minutes',
-        totalCases,
+        totalCases: allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length,
         withinTarget: kpi4Cases,
-        percentage: totalCases > 0 ? Math.round((kpi4Cases / totalCases) * 100 * 10) / 10 : 0,
-        status: totalCases > 0 && (kpi4Cases / totalCases) >= 0.9 ? 'GREEN' : 
-                totalCases > 0 && (kpi4Cases / totalCases) >= 0.75 ? 'YELLOW' : 'RED',
+        percentage: allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length > 0 ? 
+                   Math.round((kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length) * 100 * 10) / 10 : 0,
+        status: allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length > 0 && 
+                (kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length) >= 0.9 ? 'GREEN' : 
+                allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length > 0 && 
+                (kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi5: {
-        name: 'Door In Door Out ≤30min',
+        name: 'Door In Door Out ≤30min (Primary PCI Eligible)',
         target: '≤30 minutes',
-        totalCases,
+        totalCases: allCases.filter(c => c.eligibleForPrimaryPci === true).length,
         withinTarget: kpi5Cases,
-        percentage: totalCases > 0 ? Math.round((kpi5Cases / totalCases) * 100 * 10) / 10 : 0,
-        status: totalCases > 0 && (kpi5Cases / totalCases) >= 0.9 ? 'GREEN' : 
-                totalCases > 0 && (kpi5Cases / totalCases) >= 0.75 ? 'YELLOW' : 'RED',
+        percentage: allCases.filter(c => c.eligibleForPrimaryPci === true).length > 0 ? 
+                   Math.round((kpi5Cases / allCases.filter(c => c.eligibleForPrimaryPci === true).length) * 100 * 10) / 10 : 0,
+        status: allCases.filter(c => c.eligibleForPrimaryPci === true).length > 0 && 
+                (kpi5Cases / allCases.filter(c => c.eligibleForPrimaryPci === true).length) >= 0.9 ? 'GREEN' : 
+                allCases.filter(c => c.eligibleForPrimaryPci === true).length > 0 && 
+                (kpi5Cases / allCases.filter(c => c.eligibleForPrimaryPci === true).length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi6: {
         name: 'Primary PCI Success',

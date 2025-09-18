@@ -70,14 +70,6 @@ const StemiOutcomeFormCompleteness: React.FC<StemiOutcomeFormCompletenessProps> 
           size="small"
           variant={stemiCase.outcomeFormCompleted ? "filled" : "outlined"}
         />
-        {stemiCase.outcomeFormCompleted && (
-          <Chip
-            label="Completed"
-            color="success"
-            size="small"
-            variant="outlined"
-          />
-        )}
       </Box>
     </Tooltip>
   );

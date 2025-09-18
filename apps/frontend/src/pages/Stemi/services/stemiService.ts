@@ -48,6 +48,7 @@ export interface StemiCase {
   originHospitalId: string;
   destinationHospitalId?: string;
   modeOfArrival?: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+  caseType?: 'DIRECT' | 'TRANSFER';
   
   // Patient Information
   patient?: {
@@ -132,6 +133,8 @@ export interface StemiCase {
   doorToBalloonMinutes?: number;
   metKpi1?: boolean;
   metKpi2?: boolean;
+  metKpi2Direct?: boolean;
+  metKpi2Transfer?: boolean;
   metKpi3?: boolean;
   metKpi4?: boolean;
   metKpi5?: boolean;
@@ -269,6 +272,22 @@ export interface StemiKpiResponse {
     status: 'GREEN' | 'YELLOW' | 'RED';
   };
   kpi2: {
+    name: string;
+    target: string;
+    totalCases: number;
+    withinTarget: number;
+    percentage: number;
+    status: 'GREEN' | 'YELLOW' | 'RED';
+  };
+  kpi2Direct: {
+    name: string;
+    target: string;
+    totalCases: number;
+    withinTarget: number;
+    percentage: number;
+    status: 'GREEN' | 'YELLOW' | 'RED';
+  };
+  kpi2Transfer: {
     name: string;
     target: string;
     totalCases: number;

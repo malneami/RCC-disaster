@@ -6,6 +6,19 @@ const prisma = new PrismaClient();
 export async function seedUsers() {
   console.log('👥 Seeding users...');
   
+  // Get hospital IDs
+  const hospitals = await prisma.hospital.findMany({
+    select: { id: true, name: true }
+  });
+  
+  const kfch = hospitals.find(h => h.name.includes('King Fahad Central Hospital'));
+  const jgh = hospitals.find(h => h.name.includes('Jazan General Hospital'));
+  
+  if (!kfch || !jgh) {
+    console.error('❌ Required hospitals not found. Please seed hospitals first.');
+    return;
+  }
+  
   // Hash the password
   const passwordHash = await bcrypt.hash('Healthcare@2024', 10);
   
@@ -19,7 +32,7 @@ export async function seedUsers() {
       status: UserStatus.ACTIVE,
       isEmailVerified: true,
       passwordHash: passwordHash,
-      hospitalId: '2', // KFCH
+      hospitalId: kfch.id, // KFCH
     },
     {
       email: 'coordinator@rcc-healthcare.com',
@@ -30,7 +43,7 @@ export async function seedUsers() {
       status: UserStatus.ACTIVE,
       isEmailVerified: true,
       passwordHash: passwordHash,
-      hospitalId: '2', // KFCH
+      hospitalId: kfch.id, // KFCH
     },
     {
       email: 'ems@rcc-healthcare.com',
@@ -41,7 +54,7 @@ export async function seedUsers() {
       status: UserStatus.ACTIVE,
       isEmailVerified: true,
       passwordHash: passwordHash,
-      hospitalId: '1', // JGH
+      hospitalId: jgh.id, // JGH
     },
     {
       email: 'datacollector@rcc-healthcare.com',
@@ -63,7 +76,7 @@ export async function seedUsers() {
       status: UserStatus.ACTIVE,
       isEmailVerified: true,
       passwordHash: passwordHash,
-      hospitalId: '2', // KFCH
+      hospitalId: kfch.id, // KFCH
     },
   ];
 

@@ -95,7 +95,7 @@ model StrokeKpiSummary {
   updatedAt                      DateTime    @updatedAt @map("updated_at")
   
   // Relations
-  hospital                       Hospital    @relation(fields: [hospitalId], references: [id])
+  hospital                       Hospital    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   
   @@map("stroke_kpi_summary")
   @@index([hospitalId])

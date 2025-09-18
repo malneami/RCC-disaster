@@ -36,8 +36,8 @@ model TraumaCase {
   extremitiesInjury       String?                 @map("extremities_injury")
   externalInjury          String?                 @map("external_injury")
   createdBy               User                    @relation("TraumaCaseCreator", fields: [createdById], references: [id])
-  destinationHospital     Hospital?               @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id])
-  originHospital          Hospital                @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital     Hospital?               @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id], onDelete: Cascade)
+  originHospital          Hospital                @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
   patient                 Patient                 @relation(fields: [patientId], references: [id])
   ticket                  Ticket?                 @relation(fields: [ticketId], references: [id])
 

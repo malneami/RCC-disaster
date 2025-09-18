@@ -19,6 +19,43 @@ export class StemiCasesService {
     const { patientInfo, admissionTime, modeOfArrival, criticalTimestamps, interventionsAndTreatments, clinicalAssessment, ...stemiData } = createStemiCaseDto;
 
     try {
+      // Determine case type based on hospital services
+      const originHospital = await this.prisma.hospital.findUnique({
+        where: { id: patientInfo.originHospitalId },
+        select: { hasStemiService: true }
+      });
+
+      if (!originHospital) {
+        throw new BadRequestException('Origin hospital not found');
+      }
+
+      let caseType: 'DIRECT' | 'TRANSFER' = 'DIRECT';
+      
+      if (!originHospital.hasStemiService) {
+        // Origin hospital doesn't have STEMI service, must be transfer case
+        if (!patientInfo.destinationHospitalId) {
+          throw new BadRequestException('Destination hospital is required when origin hospital does not have STEMI service');
+        }
+        
+        const destinationHospital = await this.prisma.hospital.findUnique({
+          where: { id: patientInfo.destinationHospitalId },
+          select: { hasStemiService: true }
+        });
+
+        if (!destinationHospital) {
+          throw new BadRequestException('Destination hospital not found');
+        }
+
+        if (!destinationHospital.hasStemiService) {
+          throw new BadRequestException('Destination hospital must have STEMI service for transfer cases');
+        }
+
+        caseType = 'TRANSFER';
+      } else if (patientInfo.destinationHospitalId && patientInfo.destinationHospitalId !== patientInfo.originHospitalId) {
+        // Origin has STEMI service but destination is different - still transfer
+        caseType = 'TRANSFER';
+      }
+
       // Create or update patient
       console.log('Creating patient with data:', JSON.stringify(patientInfo, null, 2));
       const patient = await this.stemiPatientService.createOrUpdatePatient(patientInfo, userId);
@@ -54,11 +91,11 @@ export class StemiCasesService {
       }
 
       // Validate hospital IDs before creating STEMI case
-      const originHospital = await this.prisma.hospital.findUnique({
+      const originHospitalData = await this.prisma.hospital.findUnique({
         where: { id: patientInfo.originHospitalId }
       });
       
-      if (!originHospital) {
+      if (!originHospitalData) {
         throw new BadRequestException(`Origin hospital with ID ${patientInfo.originHospitalId} not found`);
       }
 
@@ -94,6 +131,7 @@ export class StemiCasesService {
           selectedTreatment: stemiData.selectedTreatment,
           pathwayStarted: admissionTime ? new Date(admissionTime) : new Date(),
           modeOfArrival: modeOfArrival,
+          caseType: caseType,
           
           // ECG Results
           ecgResult: stemiData.ecgResult,
@@ -396,7 +434,22 @@ export class StemiCasesService {
       // Calculate Door to Balloon (triage to balloon inflation)
       if (stemiCase.triageTime && stemiCase.balloonInflationTime) {
         updateData.doorToBalloonMinutes = this.calculateTimeDifference(stemiCase.triageTime, stemiCase.balloonInflationTime);
-        updateData.metKpi2 = updateData.doorToBalloonMinutes <= 90; // Door to Balloon ≤90min
+        
+        // Set KPI based on case type
+        if (stemiCase.caseType === 'DIRECT') {
+          updateData.metKpi2 = updateData.doorToBalloonMinutes <= 90; // Direct: ≤90min
+          updateData.metKpi2Direct = updateData.doorToBalloonMinutes <= 90;
+          updateData.metKpi2Transfer = false; // Not applicable for direct cases
+        } else if (stemiCase.caseType === 'TRANSFER') {
+          updateData.metKpi2 = updateData.doorToBalloonMinutes <= 120; // Transfer: ≤120min
+          updateData.metKpi2Direct = false; // Not applicable for transfer cases
+          updateData.metKpi2Transfer = updateData.doorToBalloonMinutes <= 120;
+        } else {
+          // Fallback for legacy cases without caseType
+          updateData.metKpi2 = updateData.doorToBalloonMinutes <= 90;
+          updateData.metKpi2Direct = updateData.doorToBalloonMinutes <= 90;
+          updateData.metKpi2Transfer = false;
+        }
       }
 
       // Calculate Door to Needle (triage to thrombolytic administration)
@@ -405,11 +458,31 @@ export class StemiCasesService {
         updateData.metKpi3 = updateData.doorToNeedleMinutes <= 30; // Door to Needle ≤30min
       }
 
-      // Calculate Door In Door Out (admission to door out)
+      // Calculate Door In Door Out (admission to door out) - only for primary PCI eligible cases
       if (admissionTime && stemiCase.doorOutTime) {
         updateData.doorInDoorOutMinutes = this.calculateTimeDifference(admissionTime, stemiCase.doorOutTime);
-        updateData.metKpi4 = updateData.doorInDoorOutMinutes <= 120; // Door In Door Out ≤120min
+        // Only set KPI5 for cases eligible for primary PCI
+        if (stemiCase.eligibleForPrimaryPci) {
+          updateData.metKpi5 = updateData.doorInDoorOutMinutes <= 30; // Door In Door Out ≤30min
+        }
       }
+
+      // Calculate RCC Activation KPI (KPI4) - only for transfer cases
+      if (stemiCase.rccActivated && stemiCase.caseType === 'TRANSFER' && stemiCase.ticketId) {
+        // For transfer cases: EMS contact to door out ≤15 minutes
+        const ticket = await this.prisma.ticket.findUnique({
+          where: { id: stemiCase.ticketId },
+          select: { emsContactTime: true }
+        });
+        
+        if (ticket?.emsContactTime && stemiCase.doorOutTime) {
+          const emsContact = new Date(ticket.emsContactTime);
+          const doorOut = new Date(stemiCase.doorOutTime);
+          const diffMinutes = (doorOut.getTime() - emsContact.getTime()) / (1000 * 60);
+          updateData.metKpi4 = diffMinutes <= 15;
+        }
+      }
+      // Direct cases are excluded from RCC Activation KPI calculation
 
       // Update the case with calculated metrics
       if (Object.keys(updateData).length > 0) {

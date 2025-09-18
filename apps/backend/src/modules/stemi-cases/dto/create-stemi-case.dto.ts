@@ -149,6 +149,10 @@ export class CreateStemiCaseDto {
   selectedTreatment?: string;
 
   @IsOptional()
+  @IsEnum(['DIRECT', 'TRANSFER'])
+  caseType?: 'DIRECT' | 'TRANSFER';
+
+  @IsOptional()
   @IsString()
   ecgResult?: string;
 
@@ -205,6 +209,10 @@ export class UpdateStemiCaseDto {
   @IsOptional()
   @IsString()
   selectedTreatment?: string;
+
+  @IsOptional()
+  @IsEnum(['DIRECT', 'TRANSFER'])
+  caseType?: 'DIRECT' | 'TRANSFER';
 
   @IsOptional()
   @IsString()

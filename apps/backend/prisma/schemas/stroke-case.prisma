@@ -171,8 +171,8 @@ model StrokeCase {
   // Relations
   ticket                          Ticket?      @relation(fields: [ticketId], references: [id])
   patient                         Patient     @relation(fields: [patientId], references: [id])
-  originHospital                  Hospital    @relation("StrokeOriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital             Hospital?   @relation("StrokeDestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital                  Hospital    @relation("StrokeOriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
+  destinationHospital             Hospital?   @relation("StrokeDestinationHospital", fields: [destinationHospitalId], references: [id], onDelete: Cascade)
   createdBy                       User        @relation("StrokeCaseCreator", fields: [createdById], references: [id])
   
   // Related Models

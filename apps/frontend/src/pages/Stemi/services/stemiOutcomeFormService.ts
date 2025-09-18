@@ -171,9 +171,13 @@ class StemiOutcomeFormService {
       'postPciComplications',
       'dischargeStatus',
       'dischargeMedications',
-      'followUpAppointmentDate',
       'followUpAppointmentProvider',
     ];
+
+    // Add followUpAppointmentDate only if followUpAppointmentProvider is YES
+    if (caseData.followUpAppointmentProvider === 'YES') {
+      outcomeFields.push('followUpAppointmentDate');
+    }
 
     const completedFields = outcomeFields.filter(field => {
       const value = caseData[field as keyof StemiOutcomeFormData];
@@ -208,11 +212,11 @@ class StemiOutcomeFormService {
     if (!status) return 'Not specified';
     
     const statuses = {
-      STABLE: 'Stable',
-      COMPLICATIONS: 'Complications',
-      TRANSFERRED: 'Transferred',
+      DISCHARGED_HOME: 'Discharged Home',
+      TRANSFER_TO_ANOTHER_FACILITY: 'Transfer to Another Facility',
+      EXTENDED_OBSERVATION: 'Extended Observation',
       DECEASED: 'Deceased',
-      AGAINST_MEDICAL_ADVICE: 'Against Medical Advice',
+      ICU_TRANSFER: 'ICU Transfer',
       OTHER: 'Other',
     };
     
@@ -232,6 +236,8 @@ class StemiOutcomeFormService {
    */
   formatAppointmentProvider(provider?: string): string {
     if (!provider) return 'Not specified';
+    if (provider === 'YES') return 'Yes';
+    if (provider === 'NO') return 'No';
     return provider;
   }
 }

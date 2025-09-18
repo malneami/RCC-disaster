@@ -213,7 +213,9 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
         id: 'post-pci-complications',
         timestamp: stemiCase.outcomeFormCompletionDate || stemiCase.updatedAt || '',
         status: 'Post-PCI Complications',
-        description: stemiCase.postPciComplications || 'Recovery monitoring and complication assessment',
+        description: stemiCase.postPciComplications 
+          ? `Complications: ${stemiCase.postPciComplications === 'YES' ? 'Yes' : 'No'}`
+          : 'Recovery monitoring and complication assessment',
         icon: <Warning />,
         color: '#ff9800',
         recorded: !!stemiCase.postPciComplications,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -10,9 +10,11 @@ import {
   FormControlLabel,
   Switch,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import { InterventionsAndTreatments } from '../../services/stemiService';
 import { StemiDatetimeService } from '../../services/stemiDatetimeService';
+import { hospitalService, Hospital } from '../../../../services/hospitalService';
 
 interface InterventionsAndTreatmentsStepProps {
   data: InterventionsAndTreatments;
@@ -23,6 +25,28 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
   data,
   onChange,
 }) => {
+  const [hospitalsWithStemi, setHospitalsWithStemi] = useState<Hospital[]>([]);
+  const [loadingHospitals, setLoadingHospitals] = useState(false);
+
+  // Fetch hospitals with STEMI service
+  useEffect(() => {
+    const fetchHospitalsWithStemi = async () => {
+      setLoadingHospitals(true);
+      try {
+        const hospitals = await hospitalService.getAllHospitals({
+          hasStemiService: true,
+        });
+        setHospitalsWithStemi(hospitals);
+      } catch (error) {
+        console.error('Error fetching hospitals with STEMI service:', error);
+      } finally {
+        setLoadingHospitals(false);
+      }
+    };
+
+    fetchHospitalsWithStemi();
+  }, []);
+
   const handleChange = (field: keyof InterventionsAndTreatments) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
   ) => {
@@ -64,10 +88,23 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
               value={data.pciLocation || ''}
               onChange={handleChange('pciLocation')}
               label="PCI Location"
+              disabled={loadingHospitals}
             >
               <MenuItem value="">Select PCI Location</MenuItem>
-              <MenuItem value="King Fahad Central Hospital">King Fahad Central Hospital</MenuItem>
-              <MenuItem value="Prince Mohammed Bin Nasser Hospital">Prince Mohammed Bin Nasser Hospital</MenuItem>
+              {loadingHospitals ? (
+                <MenuItem disabled>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CircularProgress size={16} />
+                    Loading hospitals...
+                  </Box>
+                </MenuItem>
+              ) : (
+                hospitalsWithStemi.map((hospital) => (
+                  <MenuItem key={hospital.id} value={hospital.name}>
+                    {hospital.name}
+                  </MenuItem>
+                ))
+              )}
               <MenuItem value="Other">Other</MenuItem>
             </Select>
           </FormControl>

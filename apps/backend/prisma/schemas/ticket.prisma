@@ -62,8 +62,8 @@ model Ticket {
   
   // Relations
   patient             Patient         @relation(fields: [patientId], references: [id])
-  originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
+  destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id], onDelete: Cascade)
   createdBy           User            @relation("TicketCreator", fields: [createdById], references: [id])
   assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
   completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
