@@ -137,7 +137,7 @@ export class UpdateStrokeCaseV2Dto {
 
   @IsOptional()
   @IsDateString()
-  timeOfGroinPuncture?: string | null;
+  timeOfMechanicalThrombectomyPuncture?: string | null;
 
   @IsOptional()
   @IsBoolean()
@@ -232,7 +232,7 @@ export class UpdateStrokeCaseV2Dto {
 
   @IsOptional()
   @IsInt()
-  symptomGroinMinutes?: number | null;
+  symptomToMechanicalThrombectomyMinutes?: number | null;
 
   @IsOptional()
   @IsInt()
@@ -240,5 +240,5 @@ export class UpdateStrokeCaseV2Dto {
 
   @IsOptional()
   @IsInt()
-  imagingToGroinMinutes?: number | null;
+  imagingToMechanicalThrombectomyMinutes?: number | null;
 }

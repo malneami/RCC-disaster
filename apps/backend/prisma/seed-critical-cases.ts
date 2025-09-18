@@ -440,7 +440,7 @@ async function seedCriticalCases() {
           ivThrombolysisGiven: getRandomItem(['YES', 'NO', 'NOT_APPLICABLE']),
           reasonForNotAdministeringIV: Math.random() > 0.7 ? 'Contraindications present' : null,
           candidateForMechanicalThrombectomy: getRandomItem(['YES', 'NO', 'NOT_ASSESSED']),
-          timeOfGroinPuncture: Math.random() > 0.4 ? addMinutes(admissionTime, Math.floor(Math.random() * 120) + 60) : null,
+          timeOfMechanicalThrombectomyPuncture: Math.random() > 0.4 ? addMinutes(admissionTime, Math.floor(Math.random() * 120) + 60) : null,
           mechanicalThrombectomyPerformed: Math.random() > 0.6,
           timeOfThrombectomyComplete: Math.random() > 0.6 ? addMinutes(admissionTime, Math.floor(Math.random() * 180) + 90) : null,
           
@@ -505,11 +505,11 @@ async function seedCriticalCases() {
         updateData.doorToNeedleMinutes = doorToNeedle;
       }
       
-      // KPI 8: Registration to Groin Puncture ≤120 min
-      if (strokeCase.timeOfRegistration && strokeCase.timeOfGroinPuncture) {
-        const registrationToGroin = Math.round((strokeCase.timeOfGroinPuncture.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
-        updateData.registrationToGroinMinutes = registrationToGroin;
-        updateData.metKpi8 = registrationToGroin <= 120;
+      // KPI 8: Registration to Mechanical Thrombectomy Puncture ≤120 min
+      if (strokeCase.timeOfRegistration && strokeCase.timeOfMechanicalThrombectomyPuncture) {
+        const registrationToMechanicalThrombectomy = Math.round((strokeCase.timeOfMechanicalThrombectomyPuncture.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+        updateData.registrationToMechanicalThrombectomyMinutes = registrationToMechanicalThrombectomy;
+        updateData.metKpi8 = registrationToMechanicalThrombectomy <= 120;
       }
       
       // KPI 9: SRCA Call to Arrival ≤60 min

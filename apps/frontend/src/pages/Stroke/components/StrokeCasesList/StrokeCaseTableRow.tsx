@@ -139,7 +139,7 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
       </TableCell>
       
       <TableCell>
-        {formatDuration(strokeCase.registrationToGroinMinutes)}
+        {formatDuration(strokeCase.registrationToMechanicalThrombectomyMinutes)}
       </TableCell>
       
       <TableCell>

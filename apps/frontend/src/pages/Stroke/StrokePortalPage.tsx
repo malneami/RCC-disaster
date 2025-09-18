@@ -117,7 +117,7 @@ const StrokePortalPage: React.FC = () => {
           details: {
             treatment: case_.selectedTreatment,
             doorToNeedleMinutes: case_.doorToNeedleMinutes,
-            doorToImagingMinutes: case_.doorToImagingMinutes,
+            doorToCtScanMinutes: case_.doorToCtScanMinutes,
             patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
             patientNationalId: case_.patient?.nationalId || 'N/A',
           },

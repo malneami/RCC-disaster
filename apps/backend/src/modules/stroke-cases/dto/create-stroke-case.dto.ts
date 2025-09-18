@@ -265,7 +265,7 @@ export class CreateStrokeCaseDto {
 
   @IsOptional()
   @IsDateString()
-  timeOfGroinPuncture?: string;
+  timeOfMechanicalThrombectomyPuncture?: string;
 
   @IsOptional()
   @IsBoolean()
@@ -364,7 +364,7 @@ export class CreateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  doorToImagingMinutes?: number;
+  doorToCtScanMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -374,7 +374,7 @@ export class CreateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  doorToGroinMinutes?: number;
+  doorToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -384,7 +384,7 @@ export class CreateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  symptomGroinMinutes?: number;
+  symptomToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -394,7 +394,7 @@ export class CreateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  imagingToGroinMinutes?: number;
+  imagingToMechanicalThrombectomyMinutes?: number;
 
   // Clinical Assessments Timeline
   @IsOptional()
@@ -422,7 +422,7 @@ export class CreateStrokeCaseDto {
   @Min(0)
   occupationalTherapyHours?: number;
 
-  // Imaging Results
+  // CT Scan Results
   @IsOptional()
   @IsString()
   ctResults?: string;
@@ -572,7 +572,7 @@ export class CreateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  registrationToGroinMinutes?: number;
+  registrationToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -741,7 +741,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  doorToImagingMinutes?: number;
+  doorToCtScanMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -751,7 +751,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  doorToGroinMinutes?: number;
+  doorToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -761,7 +761,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  symptomGroinMinutes?: number;
+  symptomToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -771,7 +771,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  imagingToGroinMinutes?: number;
+  imagingToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -932,7 +932,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  registrationToGroinMinutes?: number;
+  registrationToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()

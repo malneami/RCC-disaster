@@ -84,9 +84,9 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           </Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Door to Imaging:</Typography>
+          <Typography variant="body2" color="text.secondary">Door to CT Scan:</Typography>
           <Typography variant="body1">
-            {formData.doorToImagingMinutes ? `${formData.doorToImagingMinutes} minutes` : 'Not specified'}
+            {formData.doorToCtScanMinutes ? `${formData.doorToCtScanMinutes} minutes` : 'Not specified'}
           </Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -96,9 +96,9 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           </Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Door to Groin:</Typography>
+          <Typography variant="body2" color="text.secondary">Door to Mechanical Thrombectomy:</Typography>
           <Typography variant="body1">
-            {formData.doorToGroinMinutes ? `${formData.doorToGroinMinutes} minutes` : 'Not specified'}
+            {formData.doorToMechanicalThrombectomyMinutes ? `${formData.doorToMechanicalThrombectomyMinutes} minutes` : 'Not specified'}
           </Typography>
         </Grid>
         <Grid item xs={12} sm={6}>

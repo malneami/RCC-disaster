@@ -75,8 +75,8 @@ const DashboardPage: React.FC = () => {
       color: '#9c27b0',
       activeCount: '107 Active',
       metrics: [
-        { label: 'Door-to-Needle Target: ≤60 min', value: '45 min avg', progress: 75, color: '#4caf50' },
-        { label: 'Door-to-Imaging Target: ≤25 min', value: '22 min avg', progress: 88, color: '#4caf50' },
+        { label: 'Door to Needle Target: ≤60 min', value: '45 min avg', progress: 75, color: '#4caf50' },
+        { label: 'Door to CT Scan Target: ≤25 min', value: '22 min avg', progress: 88, color: '#4caf50' },
       ],
     },
     {

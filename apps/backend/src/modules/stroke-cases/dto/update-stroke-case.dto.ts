@@ -137,7 +137,7 @@ export class UpdateStrokeCaseDto {
 
   @IsOptional()
   @IsDateString()
-  timeOfGroinPuncture?: string;
+  timeOfMechanicalThrombectomyPuncture?: string;
 
   @IsOptional()
   @IsBoolean()
@@ -233,7 +233,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  doorToImagingMinutes?: number;
+  doorToCtScanMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -243,7 +243,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  doorToGroinMinutes?: number;
+  doorToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -253,7 +253,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  symptomGroinMinutes?: number;
+  symptomToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -263,7 +263,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  imagingToGroinMinutes?: number;
+  imagingToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()
@@ -425,7 +425,7 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  registrationToGroinMinutes?: number;
+  registrationToMechanicalThrombectomyMinutes?: number;
 
   @IsOptional()
   @IsInt()

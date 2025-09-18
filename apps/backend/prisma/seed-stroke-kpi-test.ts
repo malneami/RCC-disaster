@@ -118,7 +118,7 @@ async function main() {
         ivThrombolysisGiven: 'YES',
         reasonForNotAdministeringIV: null,
         candidateForMechanicalThrombectomy: 'NO',
-        timeOfGroinPuncture: null,
+        timeOfMechanicalThrombectomyPuncture: null,
         mechanicalThrombectomyPerformed: false,
         timeOfThrombectomyComplete: null,
         
@@ -147,9 +147,9 @@ async function main() {
         pathwayCompleted: addMinutes(admissionTime, 60),
         strokeUnitAdmissionTime: addMinutes(admissionTime, 90),
         symptomNeedleMinutes: 165, // 2h45min from symptom onset
-        symptomGroinMinutes: null,
+        symptomToMechanicalThrombectomyMinutes: null,
         imagingToNeedleMinutes: 30,
-        imagingToGroinMinutes: null,
+        imagingToMechanicalThrombectomyMinutes: null,
         
         // KPI calculations will be done by the service
         createdById: users[0].id,
@@ -204,7 +204,7 @@ async function main() {
         ivThrombolysisGiven: 'YES',
         reasonForNotAdministeringIV: null,
         candidateForMechanicalThrombectomy: 'YES',
-        timeOfGroinPuncture: addMinutes(admissionTime, 110), // 110 min after registration
+        timeOfMechanicalThrombectomyPuncture: addMinutes(admissionTime, 110), // 110 min after registration
         mechanicalThrombectomyPerformed: true,
         timeOfThrombectomyComplete: addMinutes(admissionTime, 180), // 180 min after registration
         
@@ -233,9 +233,9 @@ async function main() {
         pathwayCompleted: addMinutes(admissionTime, 75),
         strokeUnitAdmissionTime: addMinutes(admissionTime, 120),
         symptomNeedleMinutes: 235, // 3h55min from symptom onset
-        symptomGroinMinutes: 290, // 4h50min from symptom onset
+        symptomToMechanicalThrombectomyMinutes: 290, // 4h50min from symptom onset
         imagingToNeedleMinutes: 33,
-        imagingToGroinMinutes: 88,
+        imagingToMechanicalThrombectomyMinutes: 88,
         
         createdById: users[0].id,
       },
@@ -289,7 +289,7 @@ async function main() {
         ivThrombolysisGiven: 'NO',
         reasonForNotAdministeringIV: 'Outside treatment window',
         candidateForMechanicalThrombectomy: 'NO',
-        timeOfGroinPuncture: null,
+        timeOfMechanicalThrombectomyPuncture: null,
         mechanicalThrombectomyPerformed: false,
         timeOfThrombectomyComplete: null,
         
@@ -318,9 +318,9 @@ async function main() {
         pathwayCompleted: addMinutes(admissionTime, 120),
         strokeUnitAdmissionTime: null,
         symptomNeedleMinutes: null,
-        symptomGroinMinutes: null,
+        symptomToMechanicalThrombectomyMinutes: null,
         imagingToNeedleMinutes: null,
-        imagingToGroinMinutes: null,
+        imagingToMechanicalThrombectomyMinutes: null,
         
         createdById: users[0].id,
       },
@@ -374,7 +374,7 @@ async function main() {
         ivThrombolysisGiven: getRandomItem(['YES', 'NO']),
         reasonForNotAdministeringIV: randomBoolean(0.4) ? 'Contraindications present' : null,
         candidateForMechanicalThrombectomy: getRandomItem(['YES', 'NO']),
-        timeOfGroinPuncture: randomBoolean(0.4) ? addMinutes(admissionTime, 90) : null,
+        timeOfMechanicalThrombectomyPuncture: randomBoolean(0.4) ? addMinutes(admissionTime, 90) : null,
         mechanicalThrombectomyPerformed: randomBoolean(0.4),
         timeOfThrombectomyComplete: randomBoolean(0.4) ? addMinutes(admissionTime, 150) : null,
         
@@ -403,9 +403,9 @@ async function main() {
         pathwayCompleted: addMinutes(admissionTime, 75),
         strokeUnitAdmissionTime: randomBoolean(0.7) ? addMinutes(admissionTime, 120) : null,
         symptomNeedleMinutes: randomBoolean(0.6) ? 240 : null, // 4 hours from symptom onset
-        symptomGroinMinutes: randomBoolean(0.4) ? 300 : null, // 5 hours from symptom onset
+        symptomToMechanicalThrombectomyMinutes: randomBoolean(0.4) ? 300 : null, // 5 hours from symptom onset
         imagingToNeedleMinutes: randomBoolean(0.6) ? 35 : null,
-        imagingToGroinMinutes: randomBoolean(0.4) ? 85 : null,
+        imagingToMechanicalThrombectomyMinutes: randomBoolean(0.4) ? 85 : null,
         
         createdById: users[0].id,
       },
@@ -500,11 +500,11 @@ async function main() {
       kpiData.metKpi7 = kpiData.transferActivationToDepartureMinutes <= target;
     }
     
-    // KPI 8: Registration to groin puncture
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.timeOfGroinPuncture) {
-      const registrationToGroinMs = updatedStrokeCase.timeOfGroinPuncture.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
-      kpiData.registrationToGroinMinutes = Math.round(registrationToGroinMs / (1000 * 60));
-      kpiData.metKpi8 = kpiData.registrationToGroinMinutes <= 120;
+    // KPI 8: Registration to mechanical thrombectomy puncture
+    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.timeOfMechanicalThrombectomyPuncture) {
+      const registrationToMechanicalThrombectomyMs = updatedStrokeCase.timeOfMechanicalThrombectomyPuncture.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+      kpiData.registrationToMechanicalThrombectomyMinutes = Math.round(registrationToMechanicalThrombectomyMs / (1000 * 60));
+      kpiData.metKpi8 = kpiData.registrationToMechanicalThrombectomyMinutes <= 120;
     }
     
     // KPI 9: SRCA call to arrival

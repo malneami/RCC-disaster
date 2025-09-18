@@ -3,9 +3,9 @@
 export const STROKE_CONFIG = {
   // KPI Targets (in minutes)
   KPI_TARGETS: {
-    DOOR_TO_IMAGING: 25,
+    DOOR_TO_CT_SCAN: 25,
     DOOR_TO_NEEDLE: 60,
-    DOOR_TO_GROIN: 90,
+    DOOR_TO_MECHANICAL_THROMBECTOMY: 90,
     STROKE_UNIT_ADMISSION: 240, // 4 hours
     DYSPHAGIA_SCREENING: 240, // 4 hours
     EARLY_MOBILIZATION: 1440, // 24 hours
@@ -39,8 +39,8 @@ export const STROKE_CONFIG = {
   STROKE_STATUSES: [
     { value: 'SUSPECTED', label: 'Suspected', color: '#666' },
     { value: 'CONFIRMED', label: 'Confirmed', color: '#1976d2' },
-    { value: 'IMAGING_PENDING', label: 'Imaging Pending', color: '#ed6c02' },
-    { value: 'IMAGING_COMPLETE', label: 'Imaging Complete', color: '#2e7d32' },
+    { value: 'IMAGING_PENDING', label: 'CT Scan Pending', color: '#ed6c02' },
+    { value: 'IMAGING_COMPLETE', label: 'CT Scan Complete', color: '#2e7d32' },
     { value: 'TREATMENT_EVALUATION', label: 'Treatment Evaluation', color: '#9c27b0' },
     { value: 'THROMBOLYSIS_STARTED', label: 'Thrombolysis Started', color: '#2e7d32' },
     { value: 'THROMBECTOMY_STARTED', label: 'Thrombectomy Started', color: '#2e7d32' },
@@ -66,7 +66,7 @@ export const STROKE_CONFIG = {
     { value: 'ARRIVAL', label: 'Arrival', color: '#1976d2' },
     { value: 'TRIAGE', label: 'Triage', color: '#ed6c02' },
     { value: 'ASSESSMENT', label: 'Assessment', color: '#2e7d32' },
-    { value: 'IMAGING', label: 'Imaging', color: '#9c27b0' },
+    { value: 'IMAGING', label: 'CT Scan', color: '#9c27b0' },
     { value: 'LABORATORY', label: 'Laboratory', color: '#f57c00' },
     { value: 'TREATMENT_START', label: 'Treatment Start', color: '#d32f2f' },
     { value: 'TREATMENT_COMPLETE', label: 'Treatment Complete', color: '#388e3c' },

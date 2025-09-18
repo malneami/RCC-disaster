@@ -25,11 +25,11 @@ const PerformanceTimingsSection: React.FC<PerformanceTimingsSectionProps> = ({
       <Grid item xs={12} sm={4}>
         <TextField
           fullWidth
-          label="Door to Imaging (min)"
+          label="Door to CT Scan (min)"
           type="number"
           inputProps={{ min: 0 }}
-          value={formData.doorToImagingMinutes || ''}
-          onChange={(e) => handleInputChange('doorToImagingMinutes', parseInt(e.target.value) || null)}
+          value={formData.doorToCtScanMinutes || ''}
+          onChange={(e) => handleInputChange('doorToCtScanMinutes', parseInt(e.target.value) || null)}
         />
       </Grid>
 
@@ -47,11 +47,11 @@ const PerformanceTimingsSection: React.FC<PerformanceTimingsSectionProps> = ({
       <Grid item xs={12} sm={4}>
         <TextField
           fullWidth
-          label="Door to Groin (min)"
+          label="Door to Mechanical Thrombectomy (min)"
           type="number"
           inputProps={{ min: 0 }}
-          value={formData.doorToGroinMinutes || ''}
-          onChange={(e) => handleInputChange('doorToGroinMinutes', parseInt(e.target.value) || null)}
+          value={formData.doorToMechanicalThrombectomyMinutes || ''}
+          onChange={(e) => handleInputChange('doorToMechanicalThrombectomyMinutes', parseInt(e.target.value) || null)}
         />
       </Grid>
 
@@ -69,18 +69,18 @@ const PerformanceTimingsSection: React.FC<PerformanceTimingsSectionProps> = ({
       <Grid item xs={12} sm={4}>
         <TextField
           fullWidth
-          label="Symptom to Groin (min)"
+          label="Symptom to Mechanical Thrombectomy (min)"
           type="number"
           inputProps={{ min: 0 }}
-          value={formData.symptomGroinMinutes || ''}
-          onChange={(e) => handleInputChange('symptomGroinMinutes', parseInt(e.target.value) || null)}
+          value={formData.symptomToMechanicalThrombectomyMinutes || ''}
+          onChange={(e) => handleInputChange('symptomToMechanicalThrombectomyMinutes', parseInt(e.target.value) || null)}
         />
       </Grid>
 
       <Grid item xs={12} sm={4}>
         <TextField
           fullWidth
-          label="Imaging to Needle (min)"
+          label="CT Scan to Needle (min)"
           type="number"
           inputProps={{ min: 0 }}
           value={formData.imagingToNeedleMinutes || ''}
@@ -91,11 +91,11 @@ const PerformanceTimingsSection: React.FC<PerformanceTimingsSectionProps> = ({
       <Grid item xs={12} sm={4}>
         <TextField
           fullWidth
-          label="Imaging to Groin (min)"
+          label="CT Scan to Mechanical Thrombectomy (min)"
           type="number"
           inputProps={{ min: 0 }}
-          value={formData.imagingToGroinMinutes || ''}
-          onChange={(e) => handleInputChange('imagingToGroinMinutes', parseInt(e.target.value) || null)}
+          value={formData.imagingToMechanicalThrombectomyMinutes || ''}
+          onChange={(e) => handleInputChange('imagingToMechanicalThrombectomyMinutes', parseInt(e.target.value) || null)}
         />
       </Grid>
 

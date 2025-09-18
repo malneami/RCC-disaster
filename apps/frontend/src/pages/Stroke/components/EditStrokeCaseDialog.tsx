@@ -108,7 +108,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         ivThrombolysisGiven: strokeCase.ivThrombolysisGiven,
         reasonForNotAdministeringIV: strokeCase.reasonForNotAdministeringIV,
         candidateForMechanicalThrombectomy: strokeCase.candidateForMechanicalThrombectomy,
-        timeOfGroinPuncture: strokeCase.timeOfGroinPuncture,
+        timeOfMechanicalThrombectomyPuncture: strokeCase.timeOfMechanicalThrombectomyPuncture,
         mechanicalThrombectomyPerformed: strokeCase.mechanicalThrombectomyPerformed,
         timeOfThrombectomyComplete: strokeCase.timeOfThrombectomyComplete,
         

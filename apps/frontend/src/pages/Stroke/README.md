@@ -16,9 +16,9 @@ The Stroke Portal provides specialized tools for managing stroke cases, tracking
 - **Treatment Protocols**: Thrombolysis and thrombectomy pathway management
 
 ### Key Performance Indicators (KPIs)
-1. **Door to Imaging** ≤ 25 minutes
+1. **Door to CT Scan** ≤ 25 minutes
 2. **Door to Needle** ≤ 60 minutes (for thrombolysis)
-3. **Door to Groin** ≤ 90 minutes (for thrombectomy)
+3. **Door to Mechanical Thrombectomy** ≤ 90 minutes (for thrombectomy)
 4. **Stroke Unit Admission** ≤ 4 hours
 5. **Dysphagia Screening** ≤ 4 hours
 6. **Early Mobilization** ≤ 24 hours
@@ -134,7 +134,7 @@ Event tracking model for:
 
 - Real-time notifications
 - Advanced analytics and reporting
-- Integration with imaging systems
+- Integration with CT scan systems
 - Mobile app support
 - AI-powered risk assessment
 

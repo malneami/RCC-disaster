@@ -65,8 +65,8 @@ const BasicInformationSection: React.FC<BasicInformationSectionProps> = ({
           >
             <MenuItem value="SUSPECTED">Suspected</MenuItem>
             <MenuItem value="CONFIRMED">Confirmed</MenuItem>
-            <MenuItem value="IMAGING_PENDING">Imaging Pending</MenuItem>
-            <MenuItem value="IMAGING_COMPLETE">Imaging Complete</MenuItem>
+            <MenuItem value="IMAGING_PENDING">CT Scan Pending</MenuItem>
+            <MenuItem value="IMAGING_COMPLETE">CT Scan Complete</MenuItem>
             <MenuItem value="TREATMENT_EVALUATION">Treatment Evaluation</MenuItem>
             <MenuItem value="THROMBOLYSIS_STARTED">Thrombolysis Started</MenuItem>
             <MenuItem value="THROMBECTOMY_STARTED">Thrombectomy Started</MenuItem>

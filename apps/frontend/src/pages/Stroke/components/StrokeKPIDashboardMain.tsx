@@ -291,9 +291,9 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
         <Grid container spacing={3}>
           {kpiSummary.kpiPerformance ? Object.entries(kpiSummary.kpiPerformance).map(([kpiId, kpiData]) => {
             const kpiNames: { [key: string]: { name: string; description: string; target: number; category: string } } = {
-              kpi1: { name: 'Door-to-Imaging', description: 'Time from arrival to imaging', target: 20, category: 'Timing' },
-              kpi2: { name: 'Door-to-Needle', description: 'Time from arrival to thrombolysis', target: 60, category: 'Treatment' },
-              kpi3: { name: 'Door-to-Groin', description: 'Time from arrival to thrombectomy', target: 120, category: 'Treatment' },
+              kpi1: { name: 'Door to CT Scan', description: 'Time from arrival to CT scan', target: 20, category: 'Timing' },
+              kpi2: { name: 'Door to Needle', description: 'Time from arrival to thrombolysis', target: 60, category: 'Treatment' },
+              kpi3: { name: 'Door to Mechanical Thrombectomy', description: 'Time from arrival to thrombectomy', target: 120, category: 'Treatment' },
               kpi4: { name: 'Stroke Unit Admission', description: 'Admission to stroke unit', target: 24, category: 'Care' },
               kpi5: { name: 'Dysphagia Screening', description: 'Dysphagia screening completion', target: 4, category: 'Assessment' },
               kpi6: { name: 'Early Mobilization', description: 'Early mobilization within 24h', target: 24, category: 'Rehabilitation' },

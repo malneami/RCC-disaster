@@ -598,9 +598,9 @@ model Hospital {
   hasThrombolysis   Boolean       @default(false) @map("has_thrombolysis")
   hasThrombectomy   Boolean       @default(false) @map("has_thrombectomy")
   stroke24x7Service Boolean       @default(false) @map("stroke_24x7_service")
-  avgDoorToImagingMinutes Int?    @map("avg_door_to_imaging_minutes")
+  avgDoorToCtScanMinutes Int?    @map("avg_door_to_ct_scan_minutes")
   avgDoorToNeedleMinutes Int?     @map("avg_door_to_needle_minutes")
-  avgDoorToGroinMinutes Int?      @map("avg_door_to_groin_minutes")
+  avgDoorToMechanicalThrombectomyMinutes Int? @map("avg_door_to_mechanical_thrombectomy_minutes")
   lastStrokeCase    DateTime?     @map("last_stroke_case")
   strokeCasesPerMonth Int         @default(0) @map("stroke_cases_per_month")
   strokeCasesCurrentYear Int      @default(0) @map("stroke_cases_current_year")
@@ -1059,7 +1059,7 @@ model StrokeCase {
   ivThrombolysisGiven            IVThrombolysisGiven? @map("iv_thrombolysis_given")
   reasonForNotAdministeringIV    String?     @map("reason_for_not_administering_iv")
   candidateForMechanicalThrombectomy CandidateAssessment? @map("candidate_for_mechanical_thrombectomy")
-  timeOfGroinPuncture            DateTime?   @map("time_of_groin_puncture")
+  timeOfMechanicalThrombectomyPuncture DateTime? @map("time_of_mechanical_thrombectomy_puncture")
   mechanicalThrombectomyPerformed Boolean?   @map("mechanical_thrombectomy_performed")
   timeOfThrombectomyComplete     DateTime?   @map("time_of_thrombectomy_complete")
   
@@ -1077,13 +1077,13 @@ model StrokeCase {
   strokeUnitAdmissionTime         DateTime?   @map("stroke_unit_admission_time")
   
   // Key Performance Timings (minutes)
-  doorToImagingMinutes            Int?        @map("door_to_imaging_minutes")
+  doorToCtScanMinutes             Int?        @map("door_to_ct_scan_minutes")
   doorToNeedleMinutes             Int?        @map("door_to_needle_minutes") // For thrombolysis
-  doorToGroinMinutes              Int?        @map("door_to_groin_minutes") // For thrombectomy  
+  doorToMechanicalThrombectomyMinutes Int?    @map("door_to_mechanical_thrombectomy_minutes") // For thrombectomy  
   symptomNeedleMinutes            Int?        @map("symptom_needle_minutes")
-  symptomGroinMinutes             Int?        @map("symptom_groin_minutes")
+  symptomToMechanicalThrombectomyMinutes Int? @map("symptom_to_mechanical_thrombectomy_minutes")
   imagingToNeedleMinutes          Int?        @map("imaging_to_needle_minutes")
-  imagingToGroinMinutes           Int?        @map("imaging_to_groin_minutes")
+  imagingToMechanicalThrombectomyMinutes Int?  @map("imaging_to_mechanical_thrombectomy_minutes")
   
   // Clinical Assessments Timeline  
   dysphagiaScreeningMinutes       Int?        @map("dysphagia_screening_minutes") // From admission
@@ -1092,7 +1092,7 @@ model StrokeCase {
   physiotherapyHours              Int?        @map("physiotherapy_hours")
   occupationalTherapyHours        Int?        @map("occupational_therapy_hours")
   
-  // Imaging Results
+  // CT Scan Results
   ctResults                       String?     @map("ct_results")
   ctaResults                      String?     @map("cta_results")
   ctpResults                      String?     @map("ctp_results")
@@ -1153,7 +1153,7 @@ model StrokeCase {
   metKpi5                         Boolean?    @map("met_kpi5") // Proportion of acute ischemic stroke patients who received IV thrombolysis ≥5%
   metKpi6                         Boolean?    @map("met_kpi6") // Proportion of acute stroke patients admitted directly to stroke unit ≥80%
   metKpi7                         Boolean?    @map("met_kpi7") // Median transfer time (door-in to door-out) ≤20min (no CT), ≤40min (with CT)
-  metKpi8                         Boolean?    @map("met_kpi8") // Median time interval from registration to groin puncture ≤120min
+  metKpi8                         Boolean?    @map("met_kpi8") // Median time interval from registration to mechanical thrombectomy puncture ≤120min
   metKpi9                         Boolean?    @map("met_kpi9") // Median time interval from SRCA call to hospital arrival ≤60min
   metKpi10                        Boolean?    @map("met_kpi10") // Percentage of acute stroke patients who received swallowing screening within 4 hours ≥85%
   metKpi11                        Boolean?    @map("met_kpi11") // Percentage of patients with 3-month follow-up using modified Rankin Scale ≥80%
@@ -1162,7 +1162,7 @@ model StrokeCase {
   doorToPhysicianMinutes          Int?        @map("door_to_physician_minutes")
   registrationToCtMinutes         Int?        @map("registration_to_ct_minutes")
   registrationToThrombolysisMinutes Int?      @map("registration_to_thrombolysis_minutes")
-  registrationToGroinMinutes      Int?        @map("registration_to_groin_minutes")
+  registrationToMechanicalThrombectomyMinutes Int? @map("registration_to_mechanical_thrombectomy_minutes")
   srcaCallToArrivalMinutes        Int?        @map("srca_call_to_arrival_minutes")
   transferActivationToDepartureMinutes Int?   @map("transfer_activation_to_departure_minutes")
   swallowingScreeningWithin4Hours  Boolean?    @map("swallowing_screening_within_4_hours")
@@ -1955,24 +1955,24 @@ model StrokeKpiSummary {
   thrombectomyCases              Int         @default(0) @map("thrombectomy_cases")
   
   // Average Performance Timings  
-  avgDoorToImagingMinutes        Float?      @map("avg_door_to_imaging_minutes")
+  avgDoorToCtScanMinutes         Float?      @map("avg_door_to_ct_scan_minutes")
   avgDoorToNeedleMinutes         Float?      @map("avg_door_to_needle_minutes")
-  avgDoorToGroinMinutes          Float?      @map("avg_door_to_groin_minutes")
+  avgDoorToMechanicalThrombectomyMinutes Float? @map("avg_door_to_mechanical_thrombectomy_minutes")
   avgStrokeUnitAdmissionMinutes  Float?      @map("avg_stroke_unit_admission_minutes")
   
   // Median Performance Timings
-  medianDoorToImagingMinutes     Int?        @map("median_door_to_imaging_minutes")
+  medianDoorToCtScanMinutes      Int?        @map("median_door_to_ct_scan_minutes")
   medianDoorToNeedleMinutes      Int?        @map("median_door_to_needle_minutes")
-  medianDoorToGroinMinutes       Int?        @map("median_door_to_groin_minutes")
+  medianDoorToMechanicalThrombectomyMinutes Int? @map("median_door_to_mechanical_thrombectomy_minutes")
   
   // Best/Worst Performance
-  bestDoorToImagingMinutes       Int?        @map("best_door_to_imaging_minutes")
-  worstDoorToImagingMinutes      Int?        @map("worst_door_to_imaging_minutes")
+  bestDoorToCtScanMinutes        Int?        @map("best_door_to_ct_scan_minutes")
+  worstDoorToCtScanMinutes       Int?        @map("worst_door_to_ct_scan_minutes")
   bestDoorToNeedleMinutes        Int?        @map("best_door_to_needle_minutes")
   worstDoorToNeedleMinutes       Int?        @map("worst_door_to_needle_minutes")
   
   // Performance Trends
-  performanceTrendImaging        Float?      @map("performance_trend_imaging") // Month over month change
+  performanceTrendCtScan         Float?      @map("performance_trend_ct_scan") // Month over month change
   performanceTrendThrombolysis   Float?      @map("performance_trend_thrombolysis")
   performanceTrendThrombectomy    Float?      @map("performance_trend_thrombectomy")
   volumeTrend                    Float?      @map("volume_trend")
@@ -1987,7 +1987,7 @@ model StrokeKpiSummary {
   independentDischargeRate       Float?      @map("independent_discharge_rate") // mRS 0-2 at discharge
   
   // KPI Performance Metrics
-  kpi1TotalCases                 Int?        @map("kpi1_total_cases") // Door to imaging ≤25min
+  kpi1TotalCases                 Int?        @map("kpi1_total_cases") // Door to CT Scan ≤25min
   kpi1Within25min                Int?        @map("kpi1_within_25min")
   kpi1Percentage                 Float?      @map("kpi1_percentage")
   kpi1Status                     String?     @map("kpi1_status") // ABOVE_TARGET, AT_TARGET, BELOW_TARGET
@@ -1997,7 +1997,7 @@ model StrokeKpiSummary {
   kpi2Percentage                 Float?      @map("kpi2_percentage")
   kpi2Status                     String?     @map("kpi2_status")
   
-  kpi3TotalCases                 Int?        @map("kpi3_total_cases") // Door to groin ≤90min
+  kpi3TotalCases                 Int?        @map("kpi3_total_cases") // Door to Mechanical Thrombectomy ≤90min
   kpi3Within90min                Int?        @map("kpi3_within_90min")
   kpi3Percentage                 Float?      @map("kpi3_percentage")
   kpi3Status                     String?     @map("kpi3_status")

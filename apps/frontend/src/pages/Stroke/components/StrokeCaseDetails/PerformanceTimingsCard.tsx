@@ -39,8 +39,8 @@ const PerformanceTimingsCard: React.FC<PerformanceTimingsCardProps> = ({
 
   const timingMetrics = [
     {
-      label: 'Door to Imaging',
-      value: strokeCase.doorToImagingMinutes,
+      label: 'Door to CT Scan',
+      value: strokeCase.doorToCtScanMinutes,
       target: 25, // 25 minutes target
     },
     {
@@ -49,8 +49,8 @@ const PerformanceTimingsCard: React.FC<PerformanceTimingsCardProps> = ({
       target: 60, // 60 minutes target
     },
     {
-      label: 'Door to Groin',
-      value: strokeCase.doorToGroinMinutes,
+      label: 'Door to Mechanical Thrombectomy',
+      value: strokeCase.doorToMechanicalThrombectomyMinutes,
       target: 90, // 90 minutes target
     },
     {

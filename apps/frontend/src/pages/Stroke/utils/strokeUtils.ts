@@ -121,13 +121,13 @@ export const calculateDoorToNeedleTime = (
   return Math.floor((needle.getTime() - arrival.getTime()) / (1000 * 60));
 };
 
-export const calculateDoorToGroinTime = (
+export const calculateDoorToMechanicalThrombectomyTime = (
   arrivalTime: string,
-  groinTime: string
+  thrombectomyTime: string
 ): number => {
   const arrival = new Date(arrivalTime);
-  const groin = new Date(groinTime);
-  return Math.floor((groin.getTime() - arrival.getTime()) / (1000 * 60));
+  const thrombectomy = new Date(thrombectomyTime);
+  return Math.floor((thrombectomy.getTime() - arrival.getTime()) / (1000 * 60));
 };
 
 export const calculateSymptomToNeedleTime = (
@@ -139,13 +139,13 @@ export const calculateSymptomToNeedleTime = (
   return Math.floor((needle.getTime() - onset.getTime()) / (1000 * 60));
 };
 
-export const calculateSymptomToGroinTime = (
+export const calculateSymptomToMechanicalThrombectomyTime = (
   symptomOnset: string,
-  groinTime: string
+  thrombectomyTime: string
 ): number => {
   const onset = new Date(symptomOnset);
-  const groin = new Date(groinTime);
-  return Math.floor((groin.getTime() - onset.getTime()) / (1000 * 60));
+  const thrombectomy = new Date(thrombectomyTime);
+  return Math.floor((thrombectomy.getTime() - onset.getTime()) / (1000 * 60));
 };
 
 export const getStrokeRiskFactors = (): string[] => {
@@ -267,9 +267,9 @@ export default {
   isWithinTargetTime,
   getTargetTimeStatus,
   calculateDoorToNeedleTime,
-  calculateDoorToGroinTime,
+  calculateDoorToMechanicalThrombectomyTime,
   calculateSymptomToNeedleTime,
-  calculateSymptomToGroinTime,
+  calculateSymptomToMechanicalThrombectomyTime,
   getStrokeRiskFactors,
   getThrombolysisContraindications,
   getThrombectomyContraindications,

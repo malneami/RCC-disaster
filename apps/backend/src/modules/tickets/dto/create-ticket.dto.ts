@@ -41,7 +41,7 @@ export class DiagnosticsDto {
 
   @IsOptional()
   @IsString()
-  imaging?: string;
+  ctScan?: string;
 
   @IsOptional()
   @IsString()

@@ -180,7 +180,7 @@ export class CreateStrokeCaseV2Dto {
 
   @IsOptional()
   @IsDateString()
-  timeOfGroinPuncture?: string;
+  timeOfMechanicalThrombectomyPuncture?: string;
 
   @IsOptional()
   @IsBoolean()

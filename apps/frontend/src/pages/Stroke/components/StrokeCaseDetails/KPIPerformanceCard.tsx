@@ -20,9 +20,9 @@ const KPIPerformanceCard: React.FC<KPIPerformanceCardProps> = ({
   strokeCase,
 }) => {
   const kpiItems = [
-    { label: 'Door to Imaging ≤25min', met: strokeCase.metKpi1, key: 'metKpi1' },
+    { label: 'Door to CT Scan ≤25min', met: strokeCase.metKpi1, key: 'metKpi1' },
     { label: 'Door to Needle ≤60min', met: strokeCase.metKpi2, key: 'metKpi2' },
-    { label: 'Door to Groin ≤90min', met: strokeCase.metKpi3, key: 'metKpi3' },
+    { label: 'Door to Mechanical Thrombectomy ≤90min', met: strokeCase.metKpi3, key: 'metKpi3' },
     { label: 'Dysphagia Screening', met: strokeCase.metKpi4, key: 'metKpi4' },
     { label: 'Early Mobilization', met: strokeCase.metKpi5, key: 'metKpi5' },
     { label: 'Secondary Prevention', met: strokeCase.metKpi6, key: 'metKpi6' },

@@ -43,13 +43,13 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
 
   return (
     <Grid container spacing={3}>
-      {/* Imaging & Diagnosis Section */}
+      {/* CT Scan & Diagnosis Section */}
       <Grid item xs={12}>
         <Typography variant="h6" gutterBottom>
-          Imaging & Diagnosis
+          CT Scan & Diagnosis
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Record imaging results and diagnostic findings.
+          Record CT scan results and diagnostic findings.
         </Typography>
       </Grid>
 

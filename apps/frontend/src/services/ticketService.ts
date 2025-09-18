@@ -17,7 +17,7 @@ export interface Symptoms {
 export interface Diagnostics {
   ecg?: string;
   labResults?: string;
-  imaging?: string;
+  ctScan?: string;
   otherTests?: string;
 }
 

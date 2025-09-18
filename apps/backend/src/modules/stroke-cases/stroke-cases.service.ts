@@ -297,7 +297,7 @@ export class StrokeCasesService {
         ivThrombolysisGiven: createStrokeCaseDto.ivThrombolysisGiven,
         reasonForNotAdministeringIV: createStrokeCaseDto.reasonForNotAdministeringIV,
         candidateForMechanicalThrombectomy: createStrokeCaseDto.candidateForMechanicalThrombectomy,
-        timeOfGroinPuncture: createStrokeCaseDto.timeOfGroinPuncture ? new Date(createStrokeCaseDto.timeOfGroinPuncture) : undefined,
+        timeOfMechanicalThrombectomyPuncture: createStrokeCaseDto.timeOfMechanicalThrombectomyPuncture ? new Date(createStrokeCaseDto.timeOfMechanicalThrombectomyPuncture) : undefined,
         mechanicalThrombectomyPerformed: createStrokeCaseDto.mechanicalThrombectomyPerformed,
         timeOfThrombectomyComplete: createStrokeCaseDto.timeOfThrombectomyComplete ? new Date(createStrokeCaseDto.timeOfThrombectomyComplete) : undefined,
         
@@ -617,7 +617,7 @@ export class StrokeCasesService {
         timeOfCtReportFinal: existingCase.timeOfCtReportFinal ? existingCase.timeOfCtReportFinal.toISOString() : null,
         thrombolysisOrderTime: existingCase.thrombolysisOrderTime ? existingCase.thrombolysisOrderTime.toISOString() : null,
         ivThrombolysisAdministrationTime: existingCase.ivThrombolysisAdministrationTime ? existingCase.ivThrombolysisAdministrationTime.toISOString() : null,
-        timeOfGroinPuncture: existingCase.timeOfGroinPuncture ? existingCase.timeOfGroinPuncture.toISOString() : null,
+        timeOfMechanicalThrombectomyPuncture: existingCase.timeOfMechanicalThrombectomyPuncture ? existingCase.timeOfMechanicalThrombectomyPuncture.toISOString() : null,
         timeOfThrombectomyComplete: existingCase.timeOfThrombectomyComplete ? existingCase.timeOfThrombectomyComplete.toISOString() : null,
         timeOfTransferActivation: existingCase.timeOfTransferActivation ? existingCase.timeOfTransferActivation.toISOString() : null,
         timeOfTransferDeparture: existingCase.timeOfTransferDeparture ? existingCase.timeOfTransferDeparture.toISOString() : null,
@@ -651,7 +651,7 @@ export class StrokeCasesService {
         timeOfCtReportFinal: updateStrokeCaseDto.timeOfCtReportFinal ? new Date(updateStrokeCaseDto.timeOfCtReportFinal) : undefined,
         thrombolysisOrderTime: updateStrokeCaseDto.thrombolysisOrderTime ? new Date(updateStrokeCaseDto.thrombolysisOrderTime) : undefined,
         ivThrombolysisAdministrationTime: updateStrokeCaseDto.ivThrombolysisAdministrationTime ? new Date(updateStrokeCaseDto.ivThrombolysisAdministrationTime) : undefined,
-        timeOfGroinPuncture: updateStrokeCaseDto.timeOfGroinPuncture ? new Date(updateStrokeCaseDto.timeOfGroinPuncture) : undefined,
+        timeOfMechanicalThrombectomyPuncture: updateStrokeCaseDto.timeOfMechanicalThrombectomyPuncture ? new Date(updateStrokeCaseDto.timeOfMechanicalThrombectomyPuncture) : undefined,
         timeOfThrombectomyComplete: updateStrokeCaseDto.timeOfThrombectomyComplete ? new Date(updateStrokeCaseDto.timeOfThrombectomyComplete) : undefined,
         timeOfTransferActivation: updateStrokeCaseDto.timeOfTransferActivation ? new Date(updateStrokeCaseDto.timeOfTransferActivation) : undefined,
         timeOfTransferDeparture: updateStrokeCaseDto.timeOfTransferDeparture ? new Date(updateStrokeCaseDto.timeOfTransferDeparture) : undefined,
@@ -719,7 +719,6 @@ export class StrokeCasesService {
     const avgDoorToPhysician = this.calculateAverage(cases.map(c => c.doorToPhysicianMinutes).filter(v => v !== null && v !== undefined));
     const avgRegistrationToCt = this.calculateAverage(cases.map(c => c.registrationToCtMinutes).filter(v => v !== null && v !== undefined));
     const avgRegistrationToThrombolysis = this.calculateAverage(cases.map(c => c.registrationToThrombolysisMinutes).filter(v => v !== null && v !== undefined));
-    const avgRegistrationToGroin = this.calculateAverage(cases.map(c => c.registrationToGroinMinutes).filter(v => v !== null && v !== undefined));
     const avgSrcaCallToArrival = this.calculateAverage(cases.map(c => c.srcaCallToArrivalMinutes).filter(v => v !== null && v !== undefined));
     const avgTransferActivationToDeparture = this.calculateAverage(cases.map(c => c.transferActivationToDepartureMinutes).filter(v => v !== null && v !== undefined));
 
@@ -751,7 +750,6 @@ export class StrokeCasesService {
         doorToPhysician: avgDoorToPhysician,
         registrationToCt: avgRegistrationToCt,
         registrationToThrombolysis: avgRegistrationToThrombolysis,
-        registrationToGroin: avgRegistrationToGroin,
         srcaCallToArrival: avgSrcaCallToArrival,
         transferActivationToDeparture: avgTransferActivationToDeparture,
       },
@@ -802,7 +800,7 @@ export class StrokeCasesService {
       ivThrombolysisGiven: updateData.ivThrombolysisGiven,
       reasonForNotAdministeringIV: updateData.reasonForNotAdministeringIV,
       candidateForMechanicalThrombectomy: updateData.candidateForMechanicalThrombectomy,
-      timeOfGroinPuncture: updateData.timeOfGroinPuncture ? new Date(updateData.timeOfGroinPuncture) : undefined,
+      timeOfMechanicalThrombectomyPuncture: updateData.timeOfMechanicalThrombectomyPuncture ? new Date(updateData.timeOfMechanicalThrombectomyPuncture) : undefined,
       mechanicalThrombectomyPerformed: updateData.mechanicalThrombectomyPerformed,
       timeOfThrombectomyComplete: updateData.timeOfThrombectomyComplete ? new Date(updateData.timeOfThrombectomyComplete) : undefined,
       
@@ -846,12 +844,10 @@ export class StrokeCasesService {
       
       // KPI timing calculations
       doorToPhysicianMinutes: kpiCalculations.doorToPhysicianMinutes,
-      registrationToCtMinutes: kpiCalculations.registrationToCtMinutes,
       doorToCtReportMinutes: kpiCalculations.doorToCtReportMinutes,
       doorToThrombolysisOrderMinutes: kpiCalculations.doorToThrombolysisOrderMinutes,
       doorToNeedleMinutes: kpiCalculations.doorToNeedleMinutes,
       registrationToThrombolysisMinutes: kpiCalculations.registrationToThrombolysisMinutes,
-      registrationToGroinMinutes: kpiCalculations.registrationToGroinMinutes,
       srcaCallToArrivalMinutes: kpiCalculations.srcaCallToArrivalMinutes,
       transferActivationToDepartureMinutes: kpiCalculations.transferActivationToDepartureMinutes,
       swallowingScreeningWithin4Hours: kpiCalculations.swallowingScreeningWithin4Hours,
@@ -892,7 +888,7 @@ export class StrokeCasesService {
       ivThrombolysisGiven: createStrokeCaseDto.ivThrombolysisGiven,
       reasonForNotAdministeringIV: createStrokeCaseDto.reasonForNotAdministeringIV,
       candidateForMechanicalThrombectomy: createStrokeCaseDto.candidateForMechanicalThrombectomy,
-      timeOfGroinPuncture: createStrokeCaseDto.timeOfGroinPuncture ? new Date(createStrokeCaseDto.timeOfGroinPuncture) : undefined,
+      timeOfMechanicalThrombectomyPuncture: createStrokeCaseDto.timeOfMechanicalThrombectomyPuncture ? new Date(createStrokeCaseDto.timeOfMechanicalThrombectomyPuncture) : undefined,
       mechanicalThrombectomyPerformed: createStrokeCaseDto.mechanicalThrombectomyPerformed,
       timeOfThrombectomyComplete: createStrokeCaseDto.timeOfThrombectomyComplete ? new Date(createStrokeCaseDto.timeOfThrombectomyComplete) : undefined,
       
@@ -936,12 +932,10 @@ export class StrokeCasesService {
       
       // KPI timing calculations
       doorToPhysicianMinutes: kpiCalculations.doorToPhysicianMinutes,
-      registrationToCtMinutes: kpiCalculations.registrationToCtMinutes,
       doorToCtReportMinutes: kpiCalculations.doorToCtReportMinutes,
       doorToThrombolysisOrderMinutes: kpiCalculations.doorToThrombolysisOrderMinutes,
       doorToNeedleMinutes: kpiCalculations.doorToNeedleMinutes,
       registrationToThrombolysisMinutes: kpiCalculations.registrationToThrombolysisMinutes,
-      registrationToGroinMinutes: kpiCalculations.registrationToGroinMinutes,
       srcaCallToArrivalMinutes: kpiCalculations.srcaCallToArrivalMinutes,
       transferActivationToDepartureMinutes: kpiCalculations.transferActivationToDepartureMinutes,
       swallowingScreeningWithin4Hours: kpiCalculations.swallowingScreeningWithin4Hours,
@@ -1004,9 +998,7 @@ export class StrokeCasesService {
         metKpi10: true,
         metKpi11: true,
         doorToPhysicianMinutes: true,
-        registrationToCtMinutes: true,
         registrationToThrombolysisMinutes: true,
-        registrationToGroinMinutes: true,
         srcaCallToArrivalMinutes: true,
         transferActivationToDepartureMinutes: true,
         swallowingScreeningWithin4Hours: true,
@@ -1074,9 +1066,7 @@ export class StrokeCasesService {
         metKpi10: true,
         metKpi11: true,
         doorToPhysicianMinutes: true,
-        registrationToCtMinutes: true,
         registrationToThrombolysisMinutes: true,
-        registrationToGroinMinutes: true,
         srcaCallToArrivalMinutes: true,
         transferActivationToDepartureMinutes: true,
         swallowingScreeningWithin4Hours: true,
@@ -1126,9 +1116,7 @@ export class StrokeCasesService {
         })(),
         timings: {
           doorToPhysician: c.doorToPhysicianMinutes,
-          registrationToCt: c.registrationToCtMinutes,
           registrationToThrombolysis: c.registrationToThrombolysisMinutes,
-          registrationToGroin: c.registrationToGroinMinutes,
           srcaCallToArrival: c.srcaCallToArrivalMinutes,
           transferActivationToDeparture: c.transferActivationToDepartureMinutes,
           swallowingScreeningWithin4Hours: c.swallowingScreeningWithin4Hours,

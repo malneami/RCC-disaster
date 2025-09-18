@@ -151,12 +151,12 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Time of Groin Puncture"
+              label="Time of Mechanical Thrombectomy Puncture"
               type="datetime-local"
-              value={formatForDateTimeLocal(formData.timeOfGroinPuncture || '')}
-              onChange={(e) => handleDateTimeChange('timeOfGroinPuncture', e.target.value)}
+              value={formatForDateTimeLocal(formData.timeOfMechanicalThrombectomyPuncture || '')}
+              onChange={(e) => handleDateTimeChange('timeOfMechanicalThrombectomyPuncture', e.target.value)}
               InputLabelProps={{ shrink: true }}
-              helperText="When groin puncture was performed (KPI#8)"
+              helperText="When mechanical thrombectomy puncture was performed (KPI#8)"
             />
           </Grid>
           <Grid item xs={12} sm={6}>

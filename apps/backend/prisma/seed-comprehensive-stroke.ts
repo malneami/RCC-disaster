@@ -137,7 +137,7 @@ export async function seedComprehensiveStrokeCases() {
         ivThrombolysisGiven: getRandomItem(['YES', 'NO', 'NOT_APPLICABLE']),
         reasonForNotAdministeringIV: Math.random() > 0.8 ? getRandomItem(['Contraindications', 'Outside time window', 'Patient refusal', 'Bleeding risk']) : null,
         candidateForMechanicalThrombectomy: getRandomItem(['YES', 'NO', 'NOT_ASSESSED']),
-        timeOfGroinPuncture: addMinutes(arrivalTime, Math.random() * 120 + 60),
+        timeOfMechanicalThrombectomyPuncture: addMinutes(arrivalTime, Math.random() * 120 + 60),
         mechanicalThrombectomyPerformed: Math.random() > 0.8,
         timeOfThrombectomyComplete: addMinutes(arrivalTime, Math.random() * 180 + 120),
         
@@ -185,7 +185,7 @@ export async function seedComprehensiveStrokeCases() {
         registrationToCtMinutes: Math.floor((ctScanStart.getTime() - registrationTime.getTime()) / (1000 * 60)),
         doorToNeedleMinutes: Math.floor(Math.random() * 75 + 45), // Same as registration to thrombolysis
         registrationToThrombolysisMinutes: Math.floor(Math.random() * 75 + 45),
-        registrationToGroinMinutes: Math.floor(Math.random() * 120 + 60),
+        registrationToMechanicalThrombectomyMinutes: Math.floor(Math.random() * 120 + 60),
         srcaCallToArrivalMinutes: Math.random() > 0.5 ? Math.floor(Math.random() * 60 + 30) : null,
         transferActivationToDepartureMinutes: Math.random() > 0.6 ? Math.floor(Math.random() * 40 + 20) : null,
         swallowingScreeningWithin4Hours: Math.random() > 0.15,

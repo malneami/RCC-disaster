@@ -18,24 +18,24 @@ model StrokeKpiSummary {
   thrombectomyCases              Int         @default(0) @map("thrombectomy_cases")
   
   // Average Performance Timings  
-  avgDoorToImagingMinutes        Float?      @map("avg_door_to_imaging_minutes")
+  avgDoorToCtScanMinutes         Float?      @map("avg_door_to_ct_scan_minutes")
   avgDoorToNeedleMinutes         Float?      @map("avg_door_to_needle_minutes")
-  avgDoorToGroinMinutes          Float?      @map("avg_door_to_groin_minutes")
+  avgDoorToMechanicalThrombectomyMinutes Float? @map("avg_door_to_mechanical_thrombectomy_minutes")
   avgStrokeUnitAdmissionMinutes  Float?      @map("avg_stroke_unit_admission_minutes")
   
   // Median Performance Timings
-  medianDoorToImagingMinutes     Int?        @map("median_door_to_imaging_minutes")
+  medianDoorToCtScanMinutes      Int?        @map("median_door_to_ct_scan_minutes")
   medianDoorToNeedleMinutes      Int?        @map("median_door_to_needle_minutes")
-  medianDoorToGroinMinutes       Int?        @map("median_door_to_groin_minutes")
+  medianDoorToMechanicalThrombectomyMinutes Int? @map("median_door_to_mechanical_thrombectomy_minutes")
   
   // Best/Worst Performance
-  bestDoorToImagingMinutes       Int?        @map("best_door_to_imaging_minutes")
-  worstDoorToImagingMinutes      Int?        @map("worst_door_to_imaging_minutes")
+  bestDoorToCtScanMinutes        Int?        @map("best_door_to_ct_scan_minutes")
+  worstDoorToCtScanMinutes       Int?        @map("worst_door_to_ct_scan_minutes")
   bestDoorToNeedleMinutes        Int?        @map("best_door_to_needle_minutes")
   worstDoorToNeedleMinutes       Int?        @map("worst_door_to_needle_minutes")
   
   // Performance Trends
-  performanceTrendImaging        Float?      @map("performance_trend_imaging") // Month over month change
+  performanceTrendCtScan         Float?      @map("performance_trend_ct_scan") // Month over month change
   performanceTrendThrombolysis   Float?      @map("performance_trend_thrombolysis")
   performanceTrendThrombectomy    Float?      @map("performance_trend_thrombectomy")
   volumeTrend                    Float?      @map("volume_trend")
@@ -50,7 +50,7 @@ model StrokeKpiSummary {
   independentDischargeRate       Float?      @map("independent_discharge_rate") // mRS 0-2 at discharge
   
   // KPI Performance Metrics
-  kpi1TotalCases                 Int?        @map("kpi1_total_cases") // Door to imaging ≤25min
+  kpi1TotalCases                 Int?        @map("kpi1_total_cases") // Door to CT Scan ≤25min
   kpi1Within25min                Int?        @map("kpi1_within_25min")
   kpi1Percentage                 Float?      @map("kpi1_percentage")
   kpi1Status                     String?     @map("kpi1_status") // ABOVE_TARGET, AT_TARGET, BELOW_TARGET
@@ -60,7 +60,7 @@ model StrokeKpiSummary {
   kpi2Percentage                 Float?      @map("kpi2_percentage")
   kpi2Status                     String?     @map("kpi2_status")
   
-  kpi3TotalCases                 Int?        @map("kpi3_total_cases") // Door to groin ≤90min
+  kpi3TotalCases                 Int?        @map("kpi3_total_cases") // Door to Mechanical Thrombectomy ≤90min
   kpi3Within90min                Int?        @map("kpi3_within_90min")
   kpi3Percentage                 Float?      @map("kpi3_percentage")
   kpi3Status                     String?     @map("kpi3_status")

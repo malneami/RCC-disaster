@@ -32,8 +32,8 @@ export interface StrokeKPICalculations {
   transferActivationToDepartureMinutes?: number;
   metKpi7?: boolean;
 
-  // KPI 8: Median time interval from registration to groin puncture ≤120min
-  registrationToGroinMinutes?: number;
+  // KPI 8: Median time interval from registration to mechanical thrombectomy puncture ≤120min
+  registrationToMechanicalThrombectomyMinutes?: number;
   metKpi8?: boolean;
 
   // KPI 9: Median time interval from SRCA call to hospital arrival ≤60min
@@ -87,9 +87,9 @@ export class StrokeKPICalculatorService {
     calculations.transferActivationToDepartureMinutes = this.calculateTransferTime(strokeCase);
     calculations.metKpi7 = this.calculateTransferTimeKPI(strokeCase, calculations.transferActivationToDepartureMinutes);
 
-    // KPI 8: Registration to groin puncture ≤120min
-    calculations.registrationToGroinMinutes = this.calculateRegistrationToGroinMinutes(strokeCase);
-    calculations.metKpi8 = calculations.registrationToGroinMinutes !== undefined && calculations.registrationToGroinMinutes <= 120;
+    // KPI 8: Registration to mechanical thrombectomy puncture ≤120min
+    calculations.registrationToMechanicalThrombectomyMinutes = this.calculateRegistrationToMechanicalThrombectomyMinutes(strokeCase);
+    calculations.metKpi8 = calculations.registrationToMechanicalThrombectomyMinutes !== undefined && calculations.registrationToMechanicalThrombectomyMinutes <= 120;
 
     // KPI 9: SRCA call to arrival ≤60min
     calculations.srcaCallToArrivalMinutes = this.calculateSrcaCallToArrivalMinutes(strokeCase);
@@ -250,17 +250,17 @@ export class StrokeKPICalculatorService {
   }
 
   /**
-   * KPI 8: Calculate registration to groin puncture time in minutes
+   * KPI 8: Calculate registration to mechanical thrombectomy puncture time in minutes
    */
-  private calculateRegistrationToGroinMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfRegistration || !strokeCase.timeOfGroinPuncture) {
+  private calculateRegistrationToMechanicalThrombectomyMinutes(strokeCase: StrokeCase): number | undefined {
+    if (!strokeCase.timeOfRegistration || !strokeCase.timeOfMechanicalThrombectomyPuncture) {
       return undefined;
     }
 
     const registrationTime = new Date(strokeCase.timeOfRegistration);
-    const groinTime = new Date(strokeCase.timeOfGroinPuncture);
+    const mechanicalThrombectomyTime = new Date(strokeCase.timeOfMechanicalThrombectomyPuncture);
     
-    return Math.round((groinTime.getTime() - registrationTime.getTime()) / (1000 * 60));
+    return Math.round((mechanicalThrombectomyTime.getTime() - registrationTime.getTime()) / (1000 * 60));
   }
 
   /**
@@ -325,7 +325,7 @@ export class StrokeKPICalculatorService {
       kpi5: this.calculatePercentageKPI(kpiCalculations.map(k => k.metKpi5), 5),
       kpi6: this.calculatePercentageKPI(kpiCalculations.map(k => k.metKpi6), 80),
       kpi7: this.calculateMedianKPI(kpiCalculations.map(k => k.transferActivationToDepartureMinutes), 20),
-      kpi8: this.calculateMedianKPI(kpiCalculations.map(k => k.registrationToGroinMinutes), 120),
+      kpi8: this.calculateMedianKPI(kpiCalculations.map(k => k.registrationToMechanicalThrombectomyMinutes), 120),
       kpi9: this.calculateMedianKPI(kpiCalculations.map(k => k.srcaCallToArrivalMinutes), 60),
       kpi10: this.calculatePercentageKPI(kpiCalculations.map(k => k.metKpi10), 85),
       kpi11: this.calculatePercentageKPI(kpiCalculations.map(k => k.metKpi11), 80),

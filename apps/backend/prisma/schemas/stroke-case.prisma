@@ -54,7 +54,7 @@ model StrokeCase {
   ivThrombolysisGiven            IVThrombolysisGiven? @map("iv_thrombolysis_given")
   reasonForNotAdministeringIV    String?     @map("reason_for_not_administering_iv")
   candidateForMechanicalThrombectomy CandidateAssessment? @map("candidate_for_mechanical_thrombectomy")
-  timeOfGroinPuncture            DateTime?   @map("time_of_groin_puncture")
+  timeOfMechanicalThrombectomyPuncture DateTime? @map("time_of_mechanical_thrombectomy_puncture")
   mechanicalThrombectomyPerformed Boolean?   @map("mechanical_thrombectomy_performed")
   timeOfThrombectomyComplete     DateTime?   @map("time_of_thrombectomy_complete")
   
@@ -72,13 +72,13 @@ model StrokeCase {
   strokeUnitAdmissionTime         DateTime?   @map("stroke_unit_admission_time")
   
   // Key Performance Timings (minutes)
-  doorToImagingMinutes            Int?        @map("door_to_imaging_minutes")
+  doorToCtScanMinutes             Int?        @map("door_to_ct_scan_minutes")
   doorToNeedleMinutes             Int?        @map("door_to_needle_minutes") // For thrombolysis
-  doorToGroinMinutes              Int?        @map("door_to_groin_minutes") // For thrombectomy  
+  doorToMechanicalThrombectomyMinutes Int?    @map("door_to_mechanical_thrombectomy_minutes") // For thrombectomy  
   symptomNeedleMinutes            Int?        @map("symptom_needle_minutes")
-  symptomGroinMinutes             Int?        @map("symptom_groin_minutes")
+  symptomToMechanicalThrombectomyMinutes Int? @map("symptom_to_mechanical_thrombectomy_minutes")
   imagingToNeedleMinutes          Int?        @map("imaging_to_needle_minutes")
-  imagingToGroinMinutes           Int?        @map("imaging_to_groin_minutes")
+  imagingToMechanicalThrombectomyMinutes Int?  @map("imaging_to_mechanical_thrombectomy_minutes")
   
   // Clinical Assessments Timeline  
   dysphagiaScreeningMinutes       Int?        @map("dysphagia_screening_minutes") // From admission
@@ -87,7 +87,7 @@ model StrokeCase {
   physiotherapyHours              Int?        @map("physiotherapy_hours")
   occupationalTherapyHours        Int?        @map("occupational_therapy_hours")
   
-  // Imaging Results
+  // CT Scan Results
   ctResults                       String?     @map("ct_results")
   ctaResults                      String?     @map("cta_results")
   ctpResults                      String?     @map("ctp_results")
@@ -148,7 +148,7 @@ model StrokeCase {
   metKpi5                         Boolean?    @map("met_kpi5") // Proportion of acute ischemic stroke patients who received IV thrombolysis ≥5%
   metKpi6                         Boolean?    @map("met_kpi6") // Proportion of acute stroke patients admitted directly to stroke unit ≥80%
   metKpi7                         Boolean?    @map("met_kpi7") // Median transfer time (door-in to door-out) ≤20min (no CT), ≤40min (with CT)
-  metKpi8                         Boolean?    @map("met_kpi8") // Median time interval from registration to groin puncture ≤120min
+  metKpi8                         Boolean?    @map("met_kpi8") // Median time interval from registration to mechanical thrombectomy puncture ≤120min
   metKpi9                         Boolean?    @map("met_kpi9") // Median time interval from SRCA call to hospital arrival ≤60min
   metKpi10                        Boolean?    @map("met_kpi10") // Percentage of acute stroke patients who received swallowing screening within 4 hours ≥85%
   metKpi11                        Boolean?    @map("met_kpi11") // Percentage of patients with 3-month follow-up using modified Rankin Scale ≥80%
@@ -157,7 +157,7 @@ model StrokeCase {
   doorToPhysicianMinutes          Int?        @map("door_to_physician_minutes")
   registrationToCtMinutes         Int?        @map("registration_to_ct_minutes")
   registrationToThrombolysisMinutes Int?      @map("registration_to_thrombolysis_minutes")
-  registrationToGroinMinutes      Int?        @map("registration_to_groin_minutes")
+  registrationToMechanicalThrombectomyMinutes Int? @map("registration_to_mechanical_thrombectomy_minutes")
   srcaCallToArrivalMinutes        Int?        @map("srca_call_to_arrival_minutes")
   transferActivationToDepartureMinutes Int?   @map("transfer_activation_to_departure_minutes")
   swallowingScreeningWithin4Hours  Boolean?    @map("swallowing_screening_within_4_hours")

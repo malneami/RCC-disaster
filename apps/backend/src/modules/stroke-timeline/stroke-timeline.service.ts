@@ -369,7 +369,7 @@ export class StrokeTimelineService {
       ARRIVAL: null,
       TRIAGE: 10, // 10 minutes for triage
       ASSESSMENT: 15, // 15 minutes for initial assessment
-      IMAGING: 25, // 25 minutes for imaging
+      IMAGING: 25, // 25 minutes for CT scan
       LABORATORY: 30, // 30 minutes for lab results
       TREATMENT_START: 60, // 60 minutes for treatment start (door to needle)
       TREATMENT_COMPLETE: 90, // 90 minutes for treatment completion

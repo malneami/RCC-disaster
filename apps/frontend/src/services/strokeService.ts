@@ -94,7 +94,7 @@ export interface StrokeCase {
   ivThrombolysisGiven?: IVThrombolysisGiven;
   reasonForNotAdministeringIV?: string;
   candidateForMechanicalThrombectomy?: CandidateAssessment;
-  timeOfGroinPuncture?: string;
+  timeOfMechanicalThrombectomyPuncture?: string;
   mechanicalThrombectomyPerformed?: boolean;
   timeOfThrombectomyComplete?: string;
   
@@ -118,12 +118,12 @@ export interface StrokeCase {
   pathwayCompleted?: string;
   strokeUnitAdmissionTime?: string;
   symptomNeedleMinutes?: number;
-  symptomGroinMinutes?: number;
+  symptomToMechanicalThrombectomyMinutes?: number;
   imagingToNeedleMinutes?: number;
-  imagingToGroinMinutes?: number;
-  doorToImagingMinutes?: number;
+  imagingToMechanicalThrombectomyMinutes?: number;
+  doorToCtScanMinutes?: number;
   doorToNeedleMinutes?: number;
-  doorToGroinMinutes?: number;
+  doorToMechanicalThrombectomyMinutes?: number;
   
   // Clinical Assessments Timeline
   dysphagiaScreeningMinutes?: number;
@@ -132,7 +132,7 @@ export interface StrokeCase {
   physiotherapyHours?: number;
   occupationalTherapyHours?: number;
   
-  // Imaging Results
+  // CT Scan Results
   ctResults?: string;
   ctaResults?: string;
   ctpResults?: string;
@@ -175,7 +175,7 @@ export interface StrokeCase {
   doorToCtReportMinutes?: number;
   doorToThrombolysisOrderMinutes?: number;
   registrationToThrombolysisMinutes?: number;
-  registrationToGroinMinutes?: number;
+  registrationToMechanicalThrombectomyMinutes?: number;
   srcaCallToArrivalMinutes?: number;
   transferActivationToDepartureMinutes?: number;
   
@@ -328,12 +328,12 @@ export interface CreateStrokeCaseData {
   pathwayCompleted?: string;
   strokeUnitAdmissionTime?: string;
   symptomNeedleMinutes?: number;
-  symptomGroinMinutes?: number;
+  symptomToMechanicalThrombectomyMinutes?: number;
   imagingToNeedleMinutes?: number;
-  imagingToGroinMinutes?: number;
-  doorToImagingMinutes?: number;
+  imagingToMechanicalThrombectomyMinutes?: number;
+  doorToCtScanMinutes?: number;
   doorToNeedleMinutes?: number;
-  doorToGroinMinutes?: number;
+  doorToMechanicalThrombectomyMinutes?: number;
   
   // Clinical Assessments
   nihssBaseline?: number;
@@ -402,7 +402,7 @@ export interface CreateStrokeCaseData {
   ivThrombolysisGiven?: IVThrombolysisGiven;
   reasonForNotAdministeringIV?: string;
   candidateForMechanicalThrombectomy?: CandidateAssessment;
-  timeOfGroinPuncture?: string;
+  timeOfMechanicalThrombectomyPuncture?: string;
   mechanicalThrombectomyPerformed?: boolean;
   timeOfThrombectomyComplete?: string;
 
@@ -440,7 +440,7 @@ export interface CreateStrokeCaseData {
   doorToCtReportMinutes?: number;
   doorToThrombolysisOrderMinutes?: number;
   registrationToThrombolysisMinutes?: number;
-  registrationToGroinMinutes?: number;
+  registrationToMechanicalThrombectomyMinutes?: number;
   srcaCallToArrivalMinutes?: number;
   transferActivationToDepartureMinutes?: number;
   swallowingScreeningWithin4Hours?: boolean;
@@ -502,7 +502,7 @@ export interface StrokeKPISummary {
     doorToPhysician: number;
     registrationToCt: number;
     registrationToThrombolysis: number;
-    registrationToGroin: number;
+    registrationToMechanicalThrombectomy: number;
     srcaCallToArrival: number;
     transferActivationToDeparture: number;
   };
@@ -562,7 +562,7 @@ export class StrokeService {
       ivThrombolysisGiven: data.ivThrombolysisGiven,
       reasonForNotAdministeringIV: data.reasonForNotAdministeringIV,
       candidateForMechanicalThrombectomy: data.candidateForMechanicalThrombectomy,
-      timeOfGroinPuncture: data.timeOfGroinPuncture,
+      timeOfMechanicalThrombectomyPuncture: data.timeOfMechanicalThrombectomyPuncture,
       mechanicalThrombectomyPerformed: data.mechanicalThrombectomyPerformed,
       timeOfThrombectomyComplete: data.timeOfThrombectomyComplete,
       
@@ -687,8 +687,8 @@ export class StrokeService {
     const labels: Record<StrokeStatus, string> = {
       SUSPECTED: 'Suspected',
       CONFIRMED: 'Confirmed',
-      IMAGING_PENDING: 'Imaging Pending',
-      IMAGING_COMPLETE: 'Imaging Complete',
+      IMAGING_PENDING: 'CT Scan Pending',
+      IMAGING_COMPLETE: 'CT Scan Complete',
       TREATMENT_EVALUATION: 'Treatment Evaluation',
       THROMBOLYSIS_STARTED: 'Thrombolysis Started',
       THROMBECTOMY_STARTED: 'Thrombectomy Started',
@@ -718,7 +718,7 @@ export class StrokeService {
       ARRIVAL: 'Arrival',
       TRIAGE: 'Triage',
       ASSESSMENT: 'Assessment',
-      IMAGING: 'Imaging',
+      IMAGING: 'CT Scan',
       LABORATORY: 'Laboratory',
       TREATMENT_START: 'Treatment Start',
       TREATMENT_COMPLETE: 'Treatment Complete',
@@ -739,7 +739,7 @@ export class StrokeService {
       5: 'IV Thrombolysis Rate ≥5%',
       6: 'Direct Stroke Unit Admission ≥80%',
       7: 'Transfer Time ≤20min (no CT), ≤40min (with CT)',
-      8: 'Registration to Groin Puncture ≤120min',
+      8: 'Registration to Mechanical Thrombectomy Puncture ≤120min',
       9: 'SRCA Call to Arrival ≤60min',
       10: 'Swallowing Screening ≤4hr ≥85%',
       11: '3-month Follow-up with mRS ≥80%',
