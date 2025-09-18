@@ -92,45 +92,45 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({ kpiSummary }) => 
     </Card>
   );
 
-  const InfoCard: React.FC<{
-    title: string;
-    total: number;
-    subset: number;
-    percentage: number;
-    status: string;
-    subsetLabel: string;
-  }> = ({ title, total, subset, percentage, status, subsetLabel }) => (
-    <Card>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" component="div">
-            {title}
-          </Typography>
-          <Chip
-            label={status}
-            color={getStatusColor(status) as any}
-            size="small"
-          />
-        </Box>
+  // const InfoCard: React.FC<{
+  //   title: string;
+  //   total: number;
+  //   subset: number;
+  //   percentage: number;
+  //   status: string;
+  //   subsetLabel: string;
+  // }> = ({ title, total, subset, percentage, status, subsetLabel }) => (
+  //   <Card>
+  //     <CardContent>
+  //       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+  //         <Typography variant="h6" component="div">
+  //           {title}
+  //         </Typography>
+  //         <Chip
+  //           label={status}
+  //           color={getStatusColor(status) as any}
+  //           size="small"
+  //         />
+  //       </Box>
         
-        <Box mb={2}>
-          <Typography variant="h4" component="div">
-            {percentage.toFixed(1)}%
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {subset} {subsetLabel} of {total} total
-          </Typography>
-        </Box>
+  //       <Box mb={2}>
+  //         <Typography variant="h4" component="div">
+  //           {percentage.toFixed(1)}%
+  //         </Typography>
+  //         <Typography variant="body2" color="textSecondary">
+  //           {subset} {subsetLabel} of {total} total
+  //         </Typography>
+  //       </Box>
         
-        <LinearProgress
-          variant="determinate"
-          value={getProgressValue(percentage)}
-          color={getStatusColor(status) as any}
-          sx={{ height: 8, borderRadius: 4 }}
-        />
-      </CardContent>
-    </Card>
-  );
+  //       <LinearProgress
+  //         variant="determinate"
+  //         value={getProgressValue(percentage)}
+  //         color={getStatusColor(status) as any}
+  //         sx={{ height: 8, borderRadius: 4 }}
+  //       />
+  //     </CardContent>
+  //   </Card>
+  // );
 
   return (
     <Box>
