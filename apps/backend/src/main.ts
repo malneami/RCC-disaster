@@ -38,6 +38,7 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:5173',
       'http://localhost:5175',
+      'https://rcc-front.onrender.com',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
