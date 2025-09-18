@@ -254,7 +254,7 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({ kpiSummary }) => 
       </Grid>
 
       {/* Transfer and Outcome KPIs */}
-      <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+      {/* <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
         Transfer and Outcome KPIs
       </Typography>
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -308,7 +308,7 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({ kpiSummary }) => 
             subsetLabel="follow-up calls completed"
           />
         </Grid>
-      </Grid>
+      </Grid> */}
 
       {/* Performance Summary */}
       <Card sx={{ mt: 3 }}>

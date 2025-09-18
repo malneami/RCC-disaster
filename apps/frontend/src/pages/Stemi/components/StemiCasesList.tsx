@@ -33,9 +33,12 @@ import {
   Search as SearchIcon,
   FilterList as FilterIcon,
   Add as AddIcon,
+  Assignment as OutcomeFormIcon,
 } from '@mui/icons-material';
 import { StemiCase, StemiFilterParams } from '../services/stemiService';
 import LiveFilterDialog from './LiveFilterDialog';
+import StemiOutcomeForm from './StemiOutcomeForm';
+import StemiOutcomeFormCompleteness from './StemiOutcomeFormCompleteness';
 
 interface StemiCasesListProps {
   cases: StemiCase[];
@@ -44,6 +47,7 @@ interface StemiCasesListProps {
   onViewCase: (case_: StemiCase) => void;
   onDeleteCase: (id: string) => void;
   onCreateCase: () => void;
+  onOutcomeFormUpdate?: (caseId: string, updatedData: any) => void;
 }
 
 const StemiCasesList: React.FC<StemiCasesListProps> = ({
@@ -53,6 +57,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   onViewCase,
   onDeleteCase,
   onCreateCase,
+  onOutcomeFormUpdate,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -75,6 +80,8 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
+  const [outcomeFormDialogOpen, setOutcomeFormDialogOpen] = useState(false);
+  const [outcomeFormCaseId, setOutcomeFormCaseId] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<{
     field: keyof StemiCase | 'patient';
     direction: 'asc' | 'desc';
@@ -324,6 +331,24 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
     }
   };
 
+  const handleOpenOutcomeForm = (case_: StemiCase) => {
+    setSelectedCase(case_); // Set the selected case for the outcome form
+    setOutcomeFormCaseId(case_.id);
+    setOutcomeFormDialogOpen(true);
+  };
+
+  const handleOutcomeFormClose = () => {
+    setOutcomeFormDialogOpen(false);
+    setOutcomeFormCaseId(null);
+  };
+
+  const handleOutcomeFormSuccess = (updatedData?: any) => {
+    // Call the parent callback to update the cases list
+    if (outcomeFormCaseId && onOutcomeFormUpdate) {
+      onOutcomeFormUpdate(outcomeFormCaseId, updatedData);
+    }
+  };
+
   const handleSort = (field: keyof StemiCase | 'patient') => {
     setSortConfig(prev => ({
       field,
@@ -457,19 +482,20 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                 <TableCell>Status</TableCell>
                 <TableCell>Origin Hospital</TableCell>
                 <TableCell>Destination Hospital</TableCell>
+                <TableCell>Outcome Form</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={7} align="center">
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : cases.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={7} align="center">
                     <Alert severity="info">No STEMI cases found</Alert>
                   </TableCell>
                 </TableRow>
@@ -518,6 +544,20 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                       <Typography variant="caption" color="textSecondary">
                         {case_.destinationHospital?.cluster || ''}
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <StemiOutcomeFormCompleteness stemiCase={case_ as any} />
+                        <Tooltip title="Open Outcome Form">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenOutcomeForm(case_)}
+                            color="primary"
+                          >
+                            <OutcomeFormIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                     </TableCell>
                     <TableCell align="right">
                       <Box display="flex" gap={1} justifyContent="flex-end">
@@ -623,6 +663,17 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
         applyButtonText="Close"
         resetButtonText="Reset All"
       />
+
+      {/* Outcome Form Dialog */}
+      {outcomeFormCaseId && (
+        <StemiOutcomeForm
+          open={outcomeFormDialogOpen}
+          onClose={handleOutcomeFormClose}
+          stemiCaseId={outcomeFormCaseId}
+          stemiCaseData={selectedCase}
+          onSuccess={handleOutcomeFormSuccess}
+        />
+      )}
     </Box>
   );
 };

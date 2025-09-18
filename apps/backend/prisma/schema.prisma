@@ -1288,6 +1288,24 @@ model StemiCase {
   thrombolyticGiven               Boolean?    @map("thrombolytic_given")
   thrombolyticAdminTime           DateTime?   @map("thrombolytic_admin_time")
   
+  // PCI Procedure Phase
+  cathLabActivationTime           DateTime?   @map("cath_lab_activation_time")
+  cathLabArrivalTime              DateTime?   @map("cath_lab_arrival_time")
+  pciProcedureStartTime           DateTime?   @map("pci_procedure_start_time")
+  pciProcedureCompleteTime        DateTime?   @map("pci_procedure_complete_time")
+  
+  // Post-PCI Management Phase
+  postPciComplications            String?     @map("post_pci_complications")
+  dischargeStatus                 String?     @map("discharge_status") // STABLE, COMPLICATIONS, TRANSFERRED, etc.
+  dischargeMedications            String?     @map("discharge_medications")
+  followUpAppointmentDate         DateTime?   @map("follow_up_appointment_date")
+  followUpAppointmentProvider     String?     @map("follow_up_appointment_provider")
+  
+  // Outcome Form Management
+  outcomeFormCompleted            Boolean     @default(false) @map("outcome_form_completed")
+  outcomeFormCompletionDate       DateTime?   @map("outcome_form_completion_date")
+  outcomePercentageCompleteness   Int?        @map("outcome_percentage_completeness")
+  
   // Outcomes
   successful                      Boolean?    @map("successful")
   complications                   String?     @map("complications")
@@ -1791,6 +1809,7 @@ model GPSValidationLog {
   @@index([timestamp])
   @@index([isValid])
 }
+
 
 
 

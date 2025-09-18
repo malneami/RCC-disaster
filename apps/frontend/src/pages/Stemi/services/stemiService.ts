@@ -106,6 +106,24 @@ export interface StemiCase {
   followUpCallCompleted: boolean;
   followUpCallDate?: string;
   
+  // PCI Procedure Phase
+  cathLabActivationTime?: string;
+  cathLabArrivalTime?: string;
+  pciProcedureStartTime?: string;
+  pciProcedureCompleteTime?: string;
+  
+  // Post-PCI Management Phase
+  postPciComplications?: string;
+  dischargeStatus?: string;
+  dischargeMedications?: string;
+  followUpAppointmentDate?: string;
+  followUpAppointmentProvider?: string;
+  
+  // Outcome Form Management
+  outcomeFormCompleted?: boolean;
+  outcomeFormCompletionDate?: string;
+  outcomePercentageCompleteness?: number;
+  
   // Quality Metrics
   doorToEcgMinutes?: number;
   rccActivationToDoorOutMinutes?: number;

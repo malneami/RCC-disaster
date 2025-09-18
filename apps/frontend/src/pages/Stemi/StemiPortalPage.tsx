@@ -379,6 +379,33 @@ const StemiPortalPage: React.FC = () => {
     setViewDialogOpen(true);
   };
 
+  const handleOutcomeFormUpdate = (caseId: string, updatedData: any) => {
+    // Update the specific case in the local state
+    setStemiCases(prev => prev.map(c => 
+      c.id === caseId 
+        ? { 
+            ...c, 
+            // Update outcome form related fields
+            cathLabActivationTime: updatedData.cathLabActivationTime,
+            cathLabArrivalTime: updatedData.cathLabArrivalTime,
+            pciProcedureStartTime: updatedData.pciProcedureStartTime,
+            pciProcedureCompleteTime: updatedData.pciProcedureCompleteTime,
+            postPciComplications: updatedData.postPciComplications,
+            dischargeStatus: updatedData.dischargeStatus,
+            dischargeMedications: updatedData.dischargeMedications,
+            followUpAppointmentDate: updatedData.followUpAppointmentDate,
+            followUpAppointmentProvider: updatedData.followUpAppointmentProvider,
+            outcomeFormCompleted: updatedData.outcomeFormCompleted,
+            outcomeFormCompletionDate: updatedData.outcomeFormCompletionDate,
+            outcomePercentageCompleteness: updatedData.outcomePercentageCompleteness,
+          }
+        : c
+    ));
+    
+    // Refresh KPIs to reflect any changes
+    loadData();
+  };
+
   const handleExportToExcel = async () => {
     try {
       setExportLoading(true);
@@ -525,6 +552,7 @@ const StemiPortalPage: React.FC = () => {
             onViewCase={handleViewCase}
             onDeleteCase={handleDeleteCase}
             onCreateCase={() => setCreateDialogOpen(true)}
+            onOutcomeFormUpdate={handleOutcomeFormUpdate}
           />
         </TabPanel>
 
