@@ -72,16 +72,6 @@ export const useTicketForm = ({ open, onSubmit }: UseTicketFormProps) => {
       return false;
     }
 
-    if (!formData.chiefComplaint) {
-      setError('Chief complaint is required');
-      return false;
-    }
-
-    if (!formData.symptoms?.symptoms || formData.symptoms.symptoms.length === 0) {
-      setError('At least one symptom is required');
-      return false;
-    }
-
     return true;
   };
 
@@ -99,8 +89,6 @@ export const useTicketForm = ({ open, onSubmit }: UseTicketFormProps) => {
         ...formData,
         patientId: formData.patientId!,
         originHospitalId: formData.originHospitalId!,
-        chiefComplaint: formData.chiefComplaint!,
-        symptoms: formData.symptoms!,
         priority: formData.priority!,
         pathway: formData.pathway!,
       } as CreateTicketData;

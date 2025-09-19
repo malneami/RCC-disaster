@@ -30,10 +30,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
     }
   };
 
-  const formatSymptoms = (symptoms: any) => {
-    if (!symptoms?.symptoms) return 'None specified';
-    return symptoms.symptoms.join(', ');
-  };
 
   const formatRequiredResources = (resources: any) => {
     if (!resources) return 'None specified';
@@ -145,26 +141,10 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                     {formData.pathway}
                   </Typography>
                 </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Chief Complaint
-                  </Typography>
-                  <Typography variant="body1">
-                    {formData.chiefComplaint}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Symptoms
-                  </Typography>
-                  <Typography variant="body1">
-                    {formatSymptoms(formData.symptoms)}
-                  </Typography>
-                </Grid>
                 {formData.treatmentPlan && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="text.secondary">
-                      Treatment Plan
+                      Note
                     </Typography>
                     <Typography variant="body1">
                       {formData.treatmentPlan}

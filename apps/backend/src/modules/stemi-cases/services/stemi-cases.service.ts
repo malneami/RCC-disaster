@@ -74,7 +74,6 @@ export class StemiCasesService {
             priority: 'CRITICAL',
             status: 'PENDING',
             pathway: 'STEMI',
-            chiefComplaint: clinicalAssessment.presentingSymptoms || 'Chest pain - suspected STEMI',
             vitals: JSON.stringify({}), // Will be populated later
             isEmergency: true,
             emergencyType: 'STEMI',

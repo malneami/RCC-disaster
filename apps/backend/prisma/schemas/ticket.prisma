@@ -16,8 +16,6 @@ model Ticket {
   pathway             TicketPathway  @default(GENERAL)
   
   // Medical Details
-  chiefComplaint      String          @map("chief_complaint")
-  symptoms            String?         // JSON string of symptoms
   vitals              String?         // JSON string of vital signs
   diagnostics         String?         // JSON string of diagnostic results
   treatmentPlan       String?         @map("treatment_plan")

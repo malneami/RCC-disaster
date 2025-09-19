@@ -12,8 +12,6 @@ import {
   FormControlLabel,
   Checkbox,
   FormGroup,
-  Chip,
-  Autocomplete,
 } from '@mui/material';
 import { Ticket, UpdateTicketData } from '../../../services/ticketService';
 import MultiStepDialog from '../../../components/Common/MultiStepDialog';
@@ -163,29 +161,16 @@ const BasicInfoStep: React.FC<{
           </FormControl>
         </Grid>
 
-        {/* Chief Complaint */}
+        {/* Note */}
         <Grid item xs={12}>
           <TextField
             fullWidth
-            label="Chief Complaint"
-            multiline
-            rows={3}
-            value={formData.chiefComplaint || ''}
-            onChange={(e) => handleInputChange('chiefComplaint', e.target.value)}
-            placeholder="Describe the primary reason for transfer..."
-          />
-        </Grid>
-
-        {/* Treatment Plan */}
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Treatment Plan"
+            label="Note"
             multiline
             rows={3}
             value={formData.treatmentPlan || ''}
             onChange={(e) => handleInputChange('treatmentPlan', e.target.value)}
-            placeholder="Describe the treatment plan..."
+            placeholder="Add any additional notes or comments..."
           />
         </Grid>
 
@@ -226,13 +211,6 @@ const MedicalInfoStep: React.FC<{
     });
   };
 
-  const handleSymptomsChange = (symptoms: string[]) => {
-    onDataChange({
-      symptoms: { symptoms }
-    });
-  };
-
-  const currentSymptoms = (formData.symptoms as any)?.symptoms || [];
   const currentVitals = formData.vitals || {};
 
   return (
@@ -245,34 +223,6 @@ const MedicalInfoStep: React.FC<{
       </Typography>
 
       <Grid container spacing={3}>
-        {/* Symptoms */}
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" gutterBottom>
-            Symptoms
-          </Typography>
-          <Autocomplete
-            multiple
-            options={[
-              'Chest Pain', 'Shortness of Breath', 'Dizziness', 'Nausea', 'Vomiting',
-              'Headache', 'Fever', 'Cough', 'Abdominal Pain', 'Back Pain',
-              'Weakness', 'Confusion', 'Seizure', 'Loss of Consciousness',
-              'Bleeding', 'Swelling', 'Rash', 'Fatigue'
-            ]}
-            value={currentSymptoms}
-            onChange={(_, newValue) => handleSymptomsChange(newValue)}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-              ))
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                placeholder="Select symptoms"
-              />
-            )}
-          />
-        </Grid>
 
         {/* Vital Signs */}
         <Grid item xs={12}>
@@ -534,9 +484,6 @@ const ReviewStep: React.FC<{
           </Typography>
           <Typography variant="body2">
             <strong>Pathway:</strong> {formData.pathway || ticket.pathway}
-          </Typography>
-          <Typography variant="body2">
-            <strong>Chief Complaint:</strong> {formData.chiefComplaint || ticket.chiefComplaint}
           </Typography>
           {formData.transportMode && (
             <Typography variant="body2">

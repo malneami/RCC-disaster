@@ -34,6 +34,8 @@ export class TicketsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
     @Request() req?: any
   ) {
     const pageNum = page ? parseInt(page) : 1;
@@ -51,6 +53,8 @@ export class TicketsController {
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
     if (search) filters.search = search;
+    if (sortBy) filters.sortBy = sortBy;
+    if (sortOrder) filters.sortOrder = sortOrder;
     
     return this.ticketsService.findAll(
       pageNum,

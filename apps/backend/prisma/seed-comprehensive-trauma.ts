@@ -117,13 +117,6 @@ export async function seedComprehensiveTraumaCases() {
           originHospitalId: hospital.id,
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'TRAUMA',
-          chiefComplaint: getRandomItem([
-            'Motor vehicle accident with multiple injuries',
-            'Fall from height with head injury',
-            'Penetrating trauma to chest',
-            'Blunt trauma to abdomen',
-            'Burn injury with inhalation'
-          ]),
           priority: scenario.criticalCase ? 'CRITICAL' : getRandomItem(['HIGH', 'EMERGENCY']),
           emergencyType: 'TRAUMA',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),

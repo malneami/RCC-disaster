@@ -50,10 +50,8 @@ const MedicalInfoStep: React.FC<MedicalInfoStepProps> = ({
               label="Priority Level *"
               onChange={(e) => handleInputChange('priority', e.target.value)}
             >
-              <MenuItem value="LOW">Low Priority</MenuItem>
-              <MenuItem value="MEDIUM">Medium Priority</MenuItem>
-              <MenuItem value="HIGH">High Priority</MenuItem>
-              <MenuItem value="CRITICAL">Critical Priority</MenuItem>
+              <MenuItem value="MEDIUM">Medium</MenuItem>
+              <MenuItem value="CRITICAL">Critical</MenuItem>
               <MenuItem value="EMERGENCY">Emergency</MenuItem>
             </Select>
           </FormControl>
@@ -80,47 +78,46 @@ const MedicalInfoStep: React.FC<MedicalInfoStepProps> = ({
           </FormControl>
         </Grid>
 
-        {/* Chief Complaint */}
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            required
-            label="Chief Complaint *"
-            multiline
-            rows={3}
-            value={formData.chiefComplaint || ''}
-            onChange={(e) => handleInputChange('chiefComplaint', e.target.value)}
-            placeholder="Describe the primary reason for transfer..."
-            helperText="Provide a clear description of the patient's main complaint"
-          />
-        </Grid>
+        {/* Conditional Time Inputs */}
+        {formData.pathway === 'STEMI' && (
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Triage Time"
+              type="datetime-local"
+              value={formData.triageTime || ''}
+              onChange={(e) => handleInputChange('triageTime', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+          </Grid>
+        )}
 
-        {/* Symptoms */}
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            required
-            label="Symptoms *"
-            multiline
-            rows={3}
-            value={formData.symptoms?.symptoms?.join(', ') || ''}
-            onChange={(e) => handleInputChange('symptoms', { symptoms: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
-            placeholder="List symptoms separated by commas..."
-            helperText="Enter symptoms separated by commas (e.g., chest pain, shortness of breath, fever)"
-          />
-        </Grid>
+        {formData.pathway === 'STROKE' && (
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Symptom Onset Time"
+              type="datetime-local"
+              value={formData.symptomOnsetTime || ''}
+              onChange={(e) => handleInputChange('symptomOnsetTime', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+          </Grid>
+        )}
 
-        {/* Treatment Plan */}
+        {/* Note */}
         <Grid item xs={12}>
           <TextField
             fullWidth
-            label="Treatment Plan"
+            label="Note"
             multiline
             rows={3}
             value={formData.treatmentPlan || ''}
             onChange={(e) => handleInputChange('treatmentPlan', e.target.value)}
-            placeholder="Describe current treatment plan..."
-            helperText="Current treatment being provided to the patient"
+            placeholder="Add any additional notes or comments..."
+            helperText="Additional notes or comments about the transfer"
           />
         </Grid>
 

@@ -126,9 +126,9 @@ export class TicketsService {
     const ticketNumber = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
     // Create ticket with audit trail
-    const { requiredResources, ...ticketData } = createTicketDto;
+    const { requiredResources, triageTime, symptomOnsetTime, ...ticketData } = createTicketDto;
     
-    // Convert emsContactTime string to Date object if provided
+    // Convert datetime strings to Date objects if provided
     const processedData = {
       ...ticketData,
       emsContactTime: ticketData.emsContactTime ? new Date(ticketData.emsContactTime) : undefined,
@@ -138,7 +138,6 @@ export class TicketsService {
       data: {
         ...processedData,
         ticketNumber,
-        symptoms: createTicketDto.symptoms ? JSON.stringify(createTicketDto.symptoms) : null,
         vitals: createTicketDto.vitals ? JSON.stringify(createTicketDto.vitals) : null,
         diagnostics: createTicketDto.diagnostics ? JSON.stringify(createTicketDto.diagnostics) : null,
         requiredResources: requiredResources ? JSON.stringify(requiredResources) : null,
@@ -256,6 +255,21 @@ export class TicketsService {
     return ticket;
   }
 
+  private buildOrderBy(sortBy?: string, sortOrder?: string): any[] {
+    const order = sortOrder === 'asc' ? 'asc' : 'desc';
+    
+    if (sortBy === 'priority') {
+      return [{ priority: order }, { createdAt: 'desc' }];
+    } else if (sortBy === 'status') {
+      return [{ status: order }, { createdAt: 'desc' }];
+    } else if (sortBy === 'updatedAt') {
+      return [{ updatedAt: order }, { createdAt: 'desc' }];
+    } else {
+      // Default: sort by createdAt (newest first)
+      return [{ createdAt: order }];
+    }
+  }
+
   // Enhanced find all with filtering
   async findAll(
     page = 1,
@@ -297,7 +311,6 @@ export class TicketsService {
       if (filters.search) {
         where.OR = [
           { ticketNumber: { contains: filters.search, mode: 'insensitive' } },
-          { chiefComplaint: { contains: filters.search, mode: 'insensitive' } },
           { patient: { 
             OR: [
               { firstName: { contains: filters.search, mode: 'insensitive' } },
@@ -361,10 +374,7 @@ export class TicketsService {
             },
           },
         },
-        orderBy: [
-          { priority: 'desc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: this.buildOrderBy(filters?.sortBy, filters?.sortOrder),
       }),
       this.prisma.ticket.count({ where }),
     ]);
@@ -454,7 +464,6 @@ export class TicketsService {
       where: { id },
       data: {
         ...processedUpdateData,
-        symptoms: updateTicketDto.symptoms ? JSON.stringify(updateTicketDto.symptoms) : undefined,
         vitals: updateTicketDto.vitals ? JSON.stringify(updateTicketDto.vitals) : undefined,
         diagnostics: updateTicketDto.diagnostics ? JSON.stringify(updateTicketDto.diagnostics) : undefined,
         requiredResources: requiredResources ? JSON.stringify(requiredResources) : undefined,

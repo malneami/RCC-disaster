@@ -99,7 +99,7 @@ export const convertToUnifiedTicket = (ticket: Ticket | HospitalTicket): Unified
       id: ticket.id,
       type: 'TRANSFER',
       title: `Transfer: ${ticket.patient?.firstName} ${ticket.patient?.lastName}`,
-      description: ticket.chiefComplaint,
+      description: ticket.chiefComplaint || 'No description available',
       status: ticket.status,
       priority: ticket.priority,
       createdAt: ticket.createdAt,

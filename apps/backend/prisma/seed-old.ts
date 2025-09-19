@@ -1216,7 +1216,7 @@ async function seedComprehensiveCases() {
           originHospitalId: hospital.id,
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'STEMI',
-          chiefComplaint: 'Chest pain - suspected STEMI',
+          
           priority: getRandomItem(['CRITICAL', 'HIGH', 'EMERGENCY']),
           emergencyType: 'STEMI',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),
@@ -1274,7 +1274,7 @@ async function seedComprehensiveCases() {
           originHospitalId: hospital.id,
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'STROKE',
-          chiefComplaint: 'Acute neurological deficit',
+          
           priority: getRandomItem(['CRITICAL', 'HIGH', 'EMERGENCY']),
           emergencyType: 'STROKE',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),
@@ -1340,7 +1340,7 @@ async function seedComprehensiveCases() {
           originHospitalId: hospital.id,
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'TRAUMA',
-          chiefComplaint: 'Multiple trauma injuries',
+          
           priority: getRandomItem(['CRITICAL', 'HIGH', 'EMERGENCY']),
           emergencyType: 'TRAUMA',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),

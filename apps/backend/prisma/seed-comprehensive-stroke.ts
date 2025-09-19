@@ -76,13 +76,6 @@ export async function seedComprehensiveStrokeCases() {
           originHospitalId: hospital.id,
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'STROKE',
-          chiefComplaint: getRandomItem([
-            'Sudden onset left-sided weakness',
-            'Acute speech difficulty',
-            'Sudden vision loss',
-            'Acute facial droop',
-            'Sudden onset confusion'
-          ]),
           priority: getRandomItem(['CRITICAL', 'HIGH', 'EMERGENCY']),
           emergencyType: 'STROKE',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),

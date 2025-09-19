@@ -28,8 +28,6 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
         destinationHospitalId: ticket.destinationHospitalId || '',
         priority: ticket.priority,
         pathway: ticket.pathway,
-        chiefComplaint: ticket.chiefComplaint,
-        symptoms: parseJsonField(ticket.symptoms),
         vitals: parseJsonField(ticket.vitals),
         diagnostics: parseJsonField(ticket.diagnostics),
         treatmentPlan: ticket.treatmentPlan || '',
@@ -60,11 +58,6 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
   };
 
   const validateForm = (): boolean => {
-    if (!formData.chiefComplaint) {
-      setError('Chief complaint is required');
-      return false;
-    }
-
     return true;
   };
 

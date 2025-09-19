@@ -24,11 +24,6 @@ export class VitalsDto {
   respiratoryRate?: number;
 }
 
-export class SymptomsDto {
-  @IsArray()
-  @IsString({ each: true })
-  symptoms!: string[];
-}
 
 export class DiagnosticsDto {
   @IsOptional()
@@ -92,21 +87,20 @@ export class CreateTicketDto {
   destinationHospitalId?: string;
 
   @IsNotEmpty()
-  @IsEnum(TicketPriority)
-  priority!: TicketPriority;
+  @IsEnum(['MEDIUM', 'CRITICAL', 'EMERGENCY'])
+  priority!: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
 
   @IsNotEmpty()
   @IsEnum(TicketPathway)
   pathway!: TicketPathway;
 
-  @IsNotEmpty()
-  @IsString()
-  chiefComplaint!: string;
+  @IsOptional()
+  @IsDateString()
+  triageTime?: string;
 
   @IsOptional()
-  @ValidateNested()
-  @Type(() => SymptomsDto)
-  symptoms?: SymptomsDto;
+  @IsDateString()
+  symptomOnsetTime?: string;
 
   @IsOptional()
   @ValidateNested()

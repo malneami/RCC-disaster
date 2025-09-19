@@ -1,7 +1,7 @@
 import { IsString, IsOptional, IsEnum, IsBoolean, IsDateString, IsUUID, ValidateNested, IsNumber, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TicketPriority, TicketStatus, TicketPathway } from '@prisma/client';
-import { VitalsDto, SymptomsDto, DiagnosticsDto, RequiredResourcesDto } from './create-ticket.dto';
+import { VitalsDto, DiagnosticsDto, RequiredResourcesDto } from './create-ticket.dto';
 
 export class UpdateTicketDto {
   @IsOptional()
@@ -9,21 +9,20 @@ export class UpdateTicketDto {
   destinationHospitalId?: string;
 
   @IsOptional()
-  @IsEnum(TicketPriority)
-  priority?: TicketPriority;
+  @IsEnum(['MEDIUM', 'CRITICAL', 'EMERGENCY'])
+  priority?: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
 
   @IsOptional()
   @IsEnum(TicketPathway)
   pathway?: TicketPathway;
 
   @IsOptional()
-  @IsString()
-  chiefComplaint?: string;
+  @IsDateString()
+  triageTime?: string;
 
   @IsOptional()
-  @ValidateNested()
-  @Type(() => SymptomsDto)
-  symptoms?: SymptomsDto;
+  @IsDateString()
+  symptomOnsetTime?: string;
 
   @IsOptional()
   @ValidateNested()

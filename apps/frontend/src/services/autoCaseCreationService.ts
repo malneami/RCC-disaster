@@ -17,7 +17,8 @@ class AutoCaseCreationService {
    */
   async createCaseFromTicket(
     ticket: Ticket,
-    patient: Patient
+    patient: Patient,
+    timeFields?: { triageTime?: string; symptomOnsetTime?: string }
   ): Promise<AutoCaseCreationResult> {
     try {
       const pathway = ticket.pathway?.toUpperCase();
@@ -26,9 +27,9 @@ class AutoCaseCreationService {
         case 'TRAUMA':
           return await this.createTraumaCase(ticket, patient);
         case 'STROKE':
-          return await this.createStrokeCase(ticket, patient);
+          return await this.createStrokeCase(ticket, patient, timeFields);
         case 'STEMI':
-          return await this.createStemiCase(ticket, patient);
+          return await this.createStemiCase(ticket, patient, timeFields);
         default:
           return {
             success: false,
@@ -100,7 +101,8 @@ class AutoCaseCreationService {
    */
   private async createStrokeCase(
     ticket: Ticket,
-    patient: Patient
+    patient: Patient,
+    timeFields?: { triageTime?: string; symptomOnsetTime?: string }
   ): Promise<AutoCaseCreationResult> {
     try {
       const strokeData: CreateStrokeCaseData = {
@@ -115,6 +117,7 @@ class AutoCaseCreationService {
         
         // Optional fields from ticket data
         chiefComplaint: ticket.chiefComplaint,
+        timeOfSymptomOnset: timeFields?.symptomOnsetTime ? new Date(timeFields.symptomOnsetTime).toISOString() : undefined,
         
         // Patient information for auto-creation
         patientInfo: {
@@ -153,7 +156,8 @@ class AutoCaseCreationService {
    */
   private async createStemiCase(
     ticket: Ticket,
-    patient: Patient
+    patient: Patient,
+    timeFields?: { triageTime?: string; symptomOnsetTime?: string }
   ): Promise<AutoCaseCreationResult> {
     try {
       const stemiData: CreateStemiCaseData = {
@@ -180,7 +184,7 @@ class AutoCaseCreationService {
         
         // Critical timestamps - will be filled as pathway progresses
         criticalTimestamps: {
-          triageTime: new Date().toISOString(),
+          triageTime: timeFields?.triageTime ? new Date(timeFields.triageTime).toISOString() : new Date().toISOString(),
         },
         
         // Interventions and treatments - will be filled as pathway progresses
@@ -191,7 +195,7 @@ class AutoCaseCreationService {
         // Clinical assessment - will be filled as pathway progresses
         clinicalAssessment: {
           presentingSymptoms: ticket.chiefComplaint,
-          symptomOnset: new Date().toISOString(), // Default to now, can be updated
+          symptomOnset: timeFields?.symptomOnsetTime ? new Date(timeFields.symptomOnsetTime).toISOString() : new Date().toISOString(), // Use from timeFields or default to now
         },
         
         // Initial status

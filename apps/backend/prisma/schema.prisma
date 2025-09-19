@@ -814,8 +814,6 @@ model Ticket {
   pathway             TicketPathway  @default(GENERAL)
   
   // Medical Details
-  chiefComplaint      String          @map("chief_complaint")
-  symptoms            String?         // JSON string of symptoms
   vitals              String?         // JSON string of vital signs
   diagnostics         String?         // JSON string of diagnostic results
   treatmentPlan       String?         @map("treatment_plan")
@@ -1262,6 +1260,8 @@ model StemiCase {
   presentingSymptoms              String?     @map("presenting_symptoms")
   symptomOnset                    DateTime?   @map("symptom_onset")
   symptomDuration                 Int?        @map("symptom_duration") // in minutes
+  miType                          String?     @map("mi_type") // STEMI, NON_STEMI
+  outcome                         String?     @map("outcome") // TRANSFERRED_TO_PCI_CAPABLE_HOSPITAL, DAMA_FROM_ED, etc.
   
   // Pathway Execution
   currentStatus                   String      @map("current_status") // SUSPECTED, ECG_PENDING, STEMI_CONFIRMED, etc.
@@ -1815,7 +1815,6 @@ model GPSValidationLog {
   @@index([timestamp])
   @@index([isValid])
 }
-
 
 
 

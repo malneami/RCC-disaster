@@ -51,55 +51,67 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
     formData: CreatePatientData,
     onDataChange: (data: Partial<CreatePatientData>) => void,
     isEditing: boolean
-  ) => [
-    {
-      label: 'Personal Info',
-      content: (
-        <PersonalInfoStep
-          formData={formData}
-          onDataChange={onDataChange}
-          onViewDuplicate={onViewDuplicate}
-          onPatientSelected={handlePatientSelected}
-          isEditing={isEditing}
-        />
-      ),
-    },
-    {
-      label: 'Contact Info',
-      content: (
-        <ContactInfoStep
-          formData={formData}
-          onDataChange={onDataChange}
-        />
-      ),
-    },
-    {
-      label: 'Medical Info',
-      content: (
-        <MedicalInfoStep
-          formData={formData}
-          onDataChange={onDataChange}
-        />
-      ),
-    },
-    {
-      label: 'Insurance & Privacy',
-      content: (
-        <InsurancePrivacyStep
-          formData={formData}
-          onDataChange={onDataChange}
-        />
-      ),
-    },
-    {
-      label: 'Review',
-      content: (
-        <ReviewStep
-          formData={formData}
-        />
-      ),
-    },
-  ];
+  ) => {
+    const steps = [
+      {
+        label: 'Personal Info',
+        content: (
+          <PersonalInfoStep
+            formData={formData}
+            onDataChange={onDataChange}
+            onViewDuplicate={onViewDuplicate}
+            onPatientSelected={handlePatientSelected}
+            isEditing={isEditing}
+          />
+        ),
+      },
+    ];
+
+    // Only include Contact Info step in edit mode
+    if (isEditing) {
+      steps.push({
+        label: 'Contact Info',
+        content: (
+          <ContactInfoStep
+            formData={formData}
+            onDataChange={onDataChange}
+          />
+        ),
+      });
+    }
+
+    // Add remaining steps
+    steps.push(
+      {
+        label: 'Medical Info',
+        content: (
+          <MedicalInfoStep
+            formData={formData}
+            onDataChange={onDataChange}
+          />
+        ),
+      },
+      {
+        label: 'Insurance & Privacy',
+        content: (
+          <InsurancePrivacyStep
+            formData={formData}
+            onDataChange={onDataChange}
+          />
+        ),
+      },
+      {
+        label: 'Review',
+        content: (
+          <ReviewStep
+            formData={formData}
+          />
+        ),
+      }
+    );
+
+    return steps;
+  };
 
   const steps = createStepsConfig(formData, handleDataChange, !!selectedPatient);
 

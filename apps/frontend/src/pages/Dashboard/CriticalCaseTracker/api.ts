@@ -4,7 +4,7 @@ export interface CriticalCase {
   id: string;
   ticketNumber: string;
   pathway: 'GENERAL' | 'STEMI' | 'STROKE' | 'TRAUMA';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  priority: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
   status: 'PENDING' | 'ASSIGNED' | 'IN_TRANSPORT' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   updatedAt: string;
@@ -24,6 +24,12 @@ export interface CriticalCase {
     status: string;
   };
   chiefComplaint: string;
+  createdBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   estimatedArrival?: string;
   actualArrival?: string;
   transportMode?: string;
@@ -36,12 +42,8 @@ export interface CriticalCase {
 export const criticalCaseApi = {
   async getCriticalCases(): Promise<CriticalCase[]> {
     try {
-      const params = new URLSearchParams({
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      });
-      const response = await apiClient.get(`/tickets/critical-cases?${params}`);
-      return response.data?.data || response.data || [];
+      const response = await apiClient.get('/critical-cases/active');
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching critical cases:', error);
       // Return mock data for development
@@ -79,6 +81,12 @@ export const criticalCaseApi = {
           status: 'ACTIVE',
         },
         chiefComplaint: 'Chest pain with ST elevation on ECG',
+        createdBy: {
+          id: 'user-1',
+          firstName: 'Dr. Sarah',
+          lastName: 'Wilson',
+          email: 'sarah.wilson@hospital.com',
+        },
         estimatedArrival: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
         transportMode: 'Ambulance',
         emsUnit: 'EMS-001',
@@ -110,6 +118,12 @@ export const criticalCaseApi = {
           status: 'ACTIVE',
         },
         chiefComplaint: 'Sudden onset left-sided weakness and speech difficulty',
+        createdBy: {
+          id: 'user-2',
+          firstName: 'Dr. Michael',
+          lastName: 'Chen',
+          email: 'michael.chen@hospital.com',
+        },
         estimatedArrival: new Date(now.getTime() + 45 * 60 * 1000).toISOString(),
         transportMode: 'Helicopter',
         emsUnit: 'HELI-002',

@@ -117,14 +117,7 @@ export async function seedComprehensiveStemiCases() {
           originHospitalId: hospital.id,
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'STEMI',
-          chiefComplaint: getRandomItem([
-            'Chest pain radiating to left arm',
-            'Severe chest pain with diaphoresis',
-            'Acute chest pain with nausea',
-            'Crushing chest pain',
-            'Chest pain with shortness of breath'
-          ]),
-          priority: getRandomItem(['CRITICAL', 'HIGH', 'EMERGENCY']),
+          priority: getRandomItem(['CRITICAL', 'EMERGENCY']),
           emergencyType: 'STEMI',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),
           notes: `STEMI case: ${scenario.name} scenario`,

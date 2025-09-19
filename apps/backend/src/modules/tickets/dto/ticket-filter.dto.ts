@@ -41,4 +41,12 @@ export class TicketFilterDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsEnum(['createdAt', 'updatedAt', 'priority', 'status'])
+  sortBy?: 'createdAt' | 'updatedAt' | 'priority' | 'status';
+
+  @IsOptional()
+  @IsEnum(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc';
 }

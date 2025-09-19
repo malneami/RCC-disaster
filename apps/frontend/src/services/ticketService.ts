@@ -10,9 +10,6 @@ export interface Vitals {
   respiratoryRate?: number;
 }
 
-export interface Symptoms {
-  symptoms: string[];
-}
 
 export interface Diagnostics {
   ecg?: string;
@@ -35,10 +32,10 @@ export interface CreateTicketData {
   patientId: string;
   originHospitalId: string;
   destinationHospitalId?: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  priority: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
   pathway: string;
-  chiefComplaint: string;
-  symptoms?: Symptoms;
+  triageTime?: string;
+  symptomOnsetTime?: string;
   vitals?: Vitals;
   diagnostics?: Diagnostics;
   treatmentPlan?: string;
@@ -55,10 +52,10 @@ export interface CreateTicketData {
 
 export interface UpdateTicketData {
   destinationHospitalId?: string;
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  priority?: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
   pathway?: string;
-  chiefComplaint?: string;
-  symptoms?: Symptoms;
+  triageTime?: string;
+  symptomOnsetTime?: string;
   vitals?: Vitals;
   diagnostics?: Diagnostics;
   treatmentPlan?: string;
@@ -95,10 +92,12 @@ export interface Ticket {
   patientId: string;
   originHospitalId: string;
   destinationHospitalId?: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  priority: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
   status: 'PENDING' | 'ASSIGNED' | 'IN_TRANSPORT' | 'COMPLETED' | 'CANCELLED';
   pathway: string;
-  chiefComplaint: string;
+  chiefComplaint?: string;
+  triageTime?: string;
+  symptomOnsetTime?: string;
   symptoms?: string;
   vitals?: string;
   diagnostics?: string;
@@ -210,7 +209,11 @@ class TicketService {
         // Create the appropriate case
         const caseResult = await autoCaseCreationService.createCaseFromTicket(
           ticket,
-          patient
+          patient,
+          {
+            triageTime: data.triageTime,
+            symptomOnsetTime: data.symptomOnsetTime
+          }
         );
         
         if (caseResult.success) {
