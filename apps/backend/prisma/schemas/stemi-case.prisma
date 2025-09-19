@@ -12,6 +12,8 @@ model StemiCase {
   presentingSymptoms              String?     @map("presenting_symptoms")
   symptomOnset                    DateTime?   @map("symptom_onset")
   symptomDuration                 Int?        @map("symptom_duration") // in minutes
+  miType                          String?     @map("mi_type") // STEMI, NON_STEMI
+  outcome                         String?     @map("outcome") // TRANSFERRED_TO_PCI_CAPABLE_HOSPITAL, DAMA_FROM_ED, etc.
   
   // Pathway Execution
   currentStatus                   String      @map("current_status") // SUSPECTED, ECG_PENDING, STEMI_CONFIRMED, etc.
@@ -33,11 +35,14 @@ model StemiCase {
   
   // Interventions and Treatments
   eligibleForPrimaryPci           Boolean?    @map("eligible_for_primary_pci")
+  pciType                         String?     @map("pci_type") // PRIMARY, NON_PRIMARY, RESCUE_PCI
   pciLocation                     String?     @map("pci_location")
   doorOutTime                     DateTime?   @map("door_out_time")
   balloonInflationTime            DateTime?   @map("balloon_inflation_time")
   thrombolyticGiven               Boolean?    @map("thrombolytic_given")
   thrombolyticAdminTime           DateTime?   @map("thrombolytic_admin_time")
+  fibrinolyticAbsoluteContraindications String? @map("fibrinolytic_absolute_contraindications")
+  fibrinolyticRelativeContraindications String? @map("fibrinolytic_relative_contraindications")
   
   // PCI Procedure Phase
   cathLabActivationTime           DateTime?   @map("cath_lab_activation_time")

@@ -60,6 +60,24 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
       </Typography>
 
       <Grid container spacing={3}>
+        {/* MI Type */}
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>MI Type</InputLabel>
+            <Select
+              value={data.miType || ''}
+              onChange={handleChange('miType')}
+              label="MI Type"
+            >
+              <MenuItem value="">Select MI Type</MenuItem>
+              <MenuItem value="STEMI">STEMI</MenuItem>
+              <MenuItem value="NON_STEMI">Non STEMI</MenuItem>
+            </Select>
+          </FormControl>
+          <Typography variant="caption" display="block" color="textSecondary">
+            Type of myocardial infarction
+          </Typography>
+        </Grid>
 
         {/* Symptom Onset */}
         <Grid item xs={12} sm={6}>
@@ -201,6 +219,29 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
             rows={3}
             helperText="Any additional clinical notes or observations"
           />
+        </Grid>
+
+        {/* Outcome */}
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Out Come</InputLabel>
+            <Select
+              value={data.outcome || ''}
+              onChange={handleChange('outcome')}
+              label="Out Come"
+            >
+              <MenuItem value="">Select Outcome</MenuItem>
+              <MenuItem value="TRANSFERRED_TO_PCI_CAPABLE_HOSPITAL">Transferred to PCI Capable Hospital</MenuItem>
+              <MenuItem value="DAMA_FROM_ED">DAMA from ED</MenuItem>
+              <MenuItem value="DISCHARGED_ALIVE">Discharged a live</MenuItem>
+              <MenuItem value="DAMA">DAMA</MenuItem>
+              <MenuItem value="STILL_ADMITTED">Still Admitted</MenuItem>
+              <MenuItem value="DIED">Died</MenuItem>
+            </Select>
+          </FormControl>
+          <Typography variant="caption" display="block" color="textSecondary">
+            Patient outcome after treatment
+          </Typography>
         </Grid>
       </Grid>
     </Box>

@@ -26,11 +26,14 @@ export interface CriticalTimestamps {
 
 export interface InterventionsAndTreatments {
   eligibleForPrimaryPci?: boolean;
+  pciType?: 'PRIMARY' | 'NON_PRIMARY' | 'RESCUE_PCI';
   pciLocation?: string;
   doorOutTime?: string;
   balloonInflationTime?: string;
   thrombolyticGiven?: boolean;
   thrombolyticAdminTime?: string;
+  fibrinolyticAbsoluteContraindications?: string;
+  fibrinolyticRelativeContraindications?: string;
 }
 
 export interface ClinicalAssessment {
@@ -39,6 +42,8 @@ export interface ClinicalAssessment {
   presentingSymptoms?: string;
   symptomOnset?: string;
   symptomDuration?: number;
+  miType?: 'STEMI' | 'NON_STEMI';
+  outcome?: 'TRANSFERRED_TO_PCI_CAPABLE_HOSPITAL' | 'DAMA_FROM_ED' | 'DISCHARGED_ALIVE' | 'DAMA' | 'STILL_ADMITTED' | 'DIED';
 }
 
 export interface StemiCase {
@@ -74,6 +79,8 @@ export interface StemiCase {
   presentingSymptoms?: string;
   symptomOnset?: string;
   symptomDuration?: number;
+  miType?: 'STEMI' | 'NON_STEMI';
+  outcome?: 'TRANSFERRED_TO_PCI_CAPABLE_HOSPITAL' | 'DAMA_FROM_ED' | 'DISCHARGED_ALIVE' | 'DAMA' | 'STILL_ADMITTED' | 'DIED';
   
   // Pathway Execution
   currentStatus: 'SUSPECTED' | 'ECG_PENDING' | 'STEMI_CONFIRMED' | 'NSTEMI_CONFIRMED' | 'UNSTABLE_ANGINA' | 'RCC_ACTIVATED' | 'IN_TRANSIT' | 'PCI_READY' | 'BALLOON_INFLATED' | 'CCU_ADMITTED' | 'DISCHARGED' | 'EXPIRED';
@@ -93,11 +100,14 @@ export interface StemiCase {
   
   // Interventions and Treatments
   eligibleForPrimaryPci?: boolean;
+  pciType?: 'PRIMARY' | 'NON_PRIMARY' | 'RESCUE_PCI';
   pciLocation?: string;
   doorOutTime?: string;
   balloonInflationTime?: string;
   thrombolyticGiven?: boolean;
   thrombolyticAdminTime?: string;
+  fibrinolyticAbsoluteContraindications?: string;
+  fibrinolyticRelativeContraindications?: string;
   
   // Outcomes
   successful?: boolean;

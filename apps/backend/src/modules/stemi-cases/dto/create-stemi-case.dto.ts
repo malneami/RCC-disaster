@@ -75,6 +75,10 @@ export class InterventionsAndTreatmentsDto {
   eligibleForPrimaryPci?: boolean;
 
   @IsOptional()
+  @IsEnum(['PRIMARY', 'NON_PRIMARY', 'RESCUE_PCI'])
+  pciType?: 'PRIMARY' | 'NON_PRIMARY' | 'RESCUE_PCI';
+
+  @IsOptional()
   @IsString()
   pciLocation?: string;
 
@@ -93,6 +97,14 @@ export class InterventionsAndTreatmentsDto {
   @IsOptional()
   @IsDateString()
   thrombolyticAdminTime?: string;
+
+  @IsOptional()
+  @IsString()
+  fibrinolyticAbsoluteContraindications?: string;
+
+  @IsOptional()
+  @IsString()
+  fibrinolyticRelativeContraindications?: string;
 }
 
 export class ClinicalAssessmentDto {
@@ -115,6 +127,14 @@ export class ClinicalAssessmentDto {
   @IsOptional()
   @IsNumber()
   symptomDuration?: number;
+
+  @IsOptional()
+  @IsEnum(['STEMI', 'NON_STEMI'])
+  miType?: 'STEMI' | 'NON_STEMI';
+
+  @IsOptional()
+  @IsEnum(['TRANSFERRED_TO_PCI_CAPABLE_HOSPITAL', 'DAMA_FROM_ED', 'DISCHARGED_ALIVE', 'DAMA', 'STILL_ADMITTED', 'DIED'])
+  outcome?: 'TRANSFERRED_TO_PCI_CAPABLE_HOSPITAL' | 'DAMA_FROM_ED' | 'DISCHARGED_ALIVE' | 'DAMA' | 'STILL_ADMITTED' | 'DIED';
 }
 
 export class CreateStemiCaseDto {

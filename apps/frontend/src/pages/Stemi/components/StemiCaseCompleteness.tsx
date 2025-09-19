@@ -24,6 +24,7 @@ interface StemiCaseCompletenessProps {
     thrombolyticGiven?: boolean;
     
     // Dependent fields for eligibleForPrimaryPci = true
+    pciType?: string;
     pciLocation?: string;
     doorOutTime?: string;
     balloonInflationTime?: string;
@@ -99,7 +100,7 @@ function calculateCaseDataCompleteness(stemiCase: StemiCaseCompletenessProps['st
   
   // If eligibleForPrimaryPci is true, check dependent fields
   if (stemiCase.eligibleForPrimaryPci === true) {
-    const dependentFields = ['pciLocation', 'doorOutTime', 'balloonInflationTime'];
+    const dependentFields = ['pciType', 'pciLocation', 'doorOutTime', 'balloonInflationTime'];
     let dependentCompleted = 0;
     
     dependentFields.forEach(field => {

@@ -125,6 +125,8 @@ export class StemiCasesService {
           presentingSymptoms: clinicalAssessment.presentingSymptoms,
           symptomOnset: clinicalAssessment.symptomOnset ? new Date(clinicalAssessment.symptomOnset) : null,
           symptomDuration: clinicalAssessment.symptomDuration,
+          miType: clinicalAssessment.miType,
+          outcome: clinicalAssessment.outcome,
           
           // Pathway Execution
           currentStatus: stemiData.currentStatus || 'SUSPECTED',
@@ -143,11 +145,14 @@ export class StemiCasesService {
           
           // Interventions and Treatments
           eligibleForPrimaryPci: interventionsAndTreatments.eligibleForPrimaryPci,
+          pciType: interventionsAndTreatments.pciType,
           pciLocation: interventionsAndTreatments.pciLocation,
           doorOutTime: interventionsAndTreatments.doorOutTime ? new Date(interventionsAndTreatments.doorOutTime) : null,
           balloonInflationTime: interventionsAndTreatments.balloonInflationTime ? new Date(interventionsAndTreatments.balloonInflationTime) : null,
           thrombolyticGiven: interventionsAndTreatments.thrombolyticGiven,
           thrombolyticAdminTime: interventionsAndTreatments.thrombolyticAdminTime ? new Date(interventionsAndTreatments.thrombolyticAdminTime) : null,
+          fibrinolyticAbsoluteContraindications: interventionsAndTreatments.fibrinolyticAbsoluteContraindications,
+          fibrinolyticRelativeContraindications: interventionsAndTreatments.fibrinolyticRelativeContraindications,
           
           // Additional STEMI-specific fields (removed non-existent fields)
           
@@ -253,6 +258,8 @@ export class StemiCasesService {
         presentingSymptoms: stemiCase.presentingSymptoms,
         symptomOnset: stemiCase.symptomOnset,
         symptomDuration: stemiCase.symptomDuration,
+        miType: stemiCase.miType,
+        outcome: stemiCase.outcome,
       },
       criticalTimestamps: {
         triageTime: stemiCase.triageTime,
@@ -260,11 +267,14 @@ export class StemiCasesService {
       },
       interventionsAndTreatments: {
         eligibleForPrimaryPci: stemiCase.eligibleForPrimaryPci,
+        pciType: stemiCase.pciType,
         pciLocation: stemiCase.pciLocation,
         doorOutTime: stemiCase.doorOutTime,
         balloonInflationTime: stemiCase.balloonInflationTime,
         thrombolyticGiven: stemiCase.thrombolyticGiven,
         thrombolyticAdminTime: stemiCase.thrombolyticAdminTime,
+        fibrinolyticAbsoluteContraindications: stemiCase.fibrinolyticAbsoluteContraindications,
+        fibrinolyticRelativeContraindications: stemiCase.fibrinolyticRelativeContraindications,
       },
     };
   }
@@ -346,6 +356,8 @@ export class StemiCasesService {
             presentingSymptoms: stemiData.clinicalAssessment.presentingSymptoms,
             symptomOnset: stemiData.clinicalAssessment.symptomOnset ? new Date(stemiData.clinicalAssessment.symptomOnset) : undefined,
             symptomDuration: stemiData.clinicalAssessment.symptomDuration,
+            miType: stemiData.clinicalAssessment.miType,
+            outcome: stemiData.clinicalAssessment.outcome,
           }),
           
           // Update critical timestamps if provided
@@ -357,11 +369,14 @@ export class StemiCasesService {
           // Update interventions and treatments if provided
           ...(stemiData.interventionsAndTreatments && {
             eligibleForPrimaryPci: stemiData.interventionsAndTreatments.eligibleForPrimaryPci,
+            pciType: stemiData.interventionsAndTreatments.pciType,
             pciLocation: stemiData.interventionsAndTreatments.pciLocation,
             doorOutTime: stemiData.interventionsAndTreatments.doorOutTime ? new Date(stemiData.interventionsAndTreatments.doorOutTime) : undefined,
             balloonInflationTime: stemiData.interventionsAndTreatments.balloonInflationTime ? new Date(stemiData.interventionsAndTreatments.balloonInflationTime) : undefined,
             thrombolyticGiven: stemiData.interventionsAndTreatments.thrombolyticGiven,
             thrombolyticAdminTime: stemiData.interventionsAndTreatments.thrombolyticAdminTime ? new Date(stemiData.interventionsAndTreatments.thrombolyticAdminTime) : undefined,
+            fibrinolyticAbsoluteContraindications: stemiData.interventionsAndTreatments.fibrinolyticAbsoluteContraindications,
+            fibrinolyticRelativeContraindications: stemiData.interventionsAndTreatments.fibrinolyticRelativeContraindications,
           }),
         }
       });

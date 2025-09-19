@@ -156,6 +156,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         balloonInflationTime: stemiCase.balloonInflationTime ? StemiDatetimeService.formatForLocal(stemiCase.balloonInflationTime) : '',
         thrombolyticGiven: stemiCase.thrombolyticGiven || false,
         thrombolyticAdminTime: stemiCase.thrombolyticAdminTime ? StemiDatetimeService.formatForLocal(stemiCase.thrombolyticAdminTime) : '',
+        pciType: stemiCase.pciType || undefined,
       });
 
       setClinicalAssessment({
@@ -210,6 +211,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           balloonInflationTime: interventionsAndTreatments.balloonInflationTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.balloonInflationTime) : undefined,
           thrombolyticGiven: interventionsAndTreatments.thrombolyticGiven,
           thrombolyticAdminTime: interventionsAndTreatments.thrombolyticAdminTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.thrombolyticAdminTime) : undefined,
+          pciType: interventionsAndTreatments.pciType || undefined,
         },
         clinicalAssessment: {
           heartScore: clinicalAssessment.heartScore || undefined,

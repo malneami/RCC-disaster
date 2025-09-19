@@ -478,7 +478,7 @@ model User {
   deletedAt         DateTime?   @map("deleted_at")
   
   // Relations
-  hospital          Hospital?   @relation(fields: [hospitalId], references: [id])
+  hospital          Hospital?   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   
   // Ticket Relations
   createdTickets    Ticket[]    @relation("TicketCreator")
@@ -860,8 +860,8 @@ model Ticket {
   
   // Relations
   patient             Patient         @relation(fields: [patientId], references: [id])
-  originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
+  destinationHospital Hospital?       @relation("DestinationHospital", fields: [destinationHospitalId], references: [id], onDelete: Cascade)
   createdBy           User            @relation("TicketCreator", fields: [createdById], references: [id])
   assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
   completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
@@ -914,7 +914,7 @@ model CriticalCase {
   deletedAt       DateTime?           @map("deleted_at")
   
   // Relations
-  hospital        Hospital            @relation(fields: [hospitalId], references: [id])
+  hospital        Hospital            @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   createdBy       User                @relation("CriticalCaseCreator", fields: [createdById], references: [id])
   
   @@map("critical_cases")
@@ -944,7 +944,7 @@ model HospitalTicket {
   deletedAt       DateTime?             @map("deleted_at")
   
   // Relations
-  hospital        Hospital              @relation(fields: [hospitalId], references: [id])
+  hospital        Hospital              @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   createdBy       User                  @relation("HospitalTicketCreator", fields: [createdById], references: [id])
   assignedTo      User?                 @relation("HospitalTicketAssignee", fields: [assignedToId], references: [id])
   
@@ -1176,8 +1176,8 @@ model StrokeCase {
   // Relations
   ticket                          Ticket?      @relation(fields: [ticketId], references: [id])
   patient                         Patient     @relation(fields: [patientId], references: [id])
-  originHospital                  Hospital    @relation("StrokeOriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital             Hospital?   @relation("StrokeDestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital                  Hospital    @relation("StrokeOriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
+  destinationHospital             Hospital?   @relation("StrokeDestinationHospital", fields: [destinationHospitalId], references: [id], onDelete: Cascade)
   createdBy                       User        @relation("StrokeCaseCreator", fields: [createdById], references: [id])
   
   // Related Models
@@ -1283,11 +1283,14 @@ model StemiCase {
   
   // Interventions and Treatments
   eligibleForPrimaryPci           Boolean?    @map("eligible_for_primary_pci")
+  pciType                         String?     @map("pci_type") // PRIMARY, NON_PRIMARY, RESCUE_PCI
   pciLocation                     String?     @map("pci_location")
   doorOutTime                     DateTime?   @map("door_out_time")
   balloonInflationTime            DateTime?   @map("balloon_inflation_time")
   thrombolyticGiven               Boolean?    @map("thrombolytic_given")
   thrombolyticAdminTime           DateTime?   @map("thrombolytic_admin_time")
+  fibrinolyticAbsoluteContraindications String? @map("fibrinolytic_absolute_contraindications")
+  fibrinolyticRelativeContraindications String? @map("fibrinolytic_relative_contraindications")
   
   // PCI Procedure Phase
   cathLabActivationTime           DateTime?   @map("cath_lab_activation_time")
@@ -1341,8 +1344,8 @@ model StemiCase {
   // Relations
   ticket                          Ticket?     @relation(fields: [ticketId], references: [id])
   patient                         Patient     @relation(fields: [patientId], references: [id])
-  originHospital                  Hospital    @relation("StemiOriginHospital", fields: [originHospitalId], references: [id])
-  destinationHospital             Hospital?   @relation("StemiDestinationHospital", fields: [destinationHospitalId], references: [id])
+  originHospital                  Hospital    @relation("StemiOriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
+  destinationHospital             Hospital?   @relation("StemiDestinationHospital", fields: [destinationHospitalId], references: [id], onDelete: Cascade)
   createdBy                       User        @relation("StemiCaseCreator", fields: [createdById], references: [id])
   
   @@map("stemi_cases")
@@ -1388,8 +1391,8 @@ model TraumaCase {
   extremitiesInjury       String?                 @map("extremities_injury")
   externalInjury          String?                 @map("external_injury")
   createdBy               User                    @relation("TraumaCaseCreator", fields: [createdById], references: [id])
-  destinationHospital     Hospital?               @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id])
-  originHospital          Hospital                @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital     Hospital?               @relation("TraumaDestinationHospital", fields: [destinationHospitalId], references: [id], onDelete: Cascade)
+  originHospital          Hospital                @relation("TraumaOriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
   patient                 Patient                 @relation(fields: [patientId], references: [id])
   ticket                  Ticket?                 @relation(fields: [ticketId], references: [id])
 
@@ -1816,6 +1819,7 @@ model GPSValidationLog {
 
 
 
+
 // maintenance-record.prisma
 // Maintenance Record model for tracking vehicle and equipment maintenance
 model MaintenanceRecord {
@@ -2035,7 +2039,7 @@ model StrokeKpiSummary {
   updatedAt                      DateTime    @updatedAt @map("updated_at")
   
   // Relations
-  hospital                       Hospital    @relation(fields: [hospitalId], references: [id])
+  hospital                       Hospital    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   
   @@map("stroke_kpi_summary")
   @@index([hospitalId])
@@ -2121,7 +2125,7 @@ model StrokeRehabilitation {
   strokeCase              StrokeCase  @relation(fields: [strokeCaseId], references: [id])
   patient                 Patient     @relation(fields: [patientId], references: [id])
   therapist               User?       @relation("StrokeRehabilitationTherapist", fields: [therapistId], references: [id])
-  rehabilitationCenter    Hospital?   @relation("StrokeRehabilitationCenter", fields: [rehabilitationCenterId], references: [id])
+  rehabilitationCenter    Hospital?   @relation("StrokeRehabilitationCenter", fields: [rehabilitationCenterId], references: [id], onDelete: Cascade)
   createdBy               User        @relation("StrokeRehabilitationCreator", fields: [createdById], references: [id])
   
   @@map("stroke_rehabilitation")

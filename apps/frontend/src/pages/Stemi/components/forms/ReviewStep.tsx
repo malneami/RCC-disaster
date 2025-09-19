@@ -132,6 +132,11 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <Typography variant="body2">
                 <strong>Eligible for Primary PCI:</strong> {interventionsAndTreatments.eligibleForPrimaryPci ? 'Yes' : 'No'}
               </Typography>
+              {interventionsAndTreatments.pciType && (
+                <Typography variant="body2">
+                  <strong>Type of PCI:</strong> {interventionsAndTreatments.pciType.replace('_', ' ')}
+                </Typography>
+              )}
               {interventionsAndTreatments.pciLocation && (
                 <Typography variant="body2">
                   <strong>PCI Location:</strong> {interventionsAndTreatments.pciLocation}
@@ -148,6 +153,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               {interventionsAndTreatments.balloonInflationTime && (
                 <Typography variant="body2">
                   <strong>Balloon Inflation Time:</strong> {formatDateTime(interventionsAndTreatments.balloonInflationTime)}
+                </Typography>
+              )}
+              {interventionsAndTreatments.fibrinolyticAbsoluteContraindications && (
+                <Typography variant="body2">
+                  <strong>Fibrinolytic Absolute Contraindications:</strong> {interventionsAndTreatments.fibrinolyticAbsoluteContraindications.replace(/_/g, ' ')}
+                </Typography>
+              )}
+              {interventionsAndTreatments.fibrinolyticRelativeContraindications && (
+                <Typography variant="body2">
+                  <strong>Fibrinolytic Relative Contraindications:</strong> {interventionsAndTreatments.fibrinolyticRelativeContraindications}
                 </Typography>
               )}
             </CardContent>

@@ -27,7 +27,6 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
 }) => {
   const [hospitalsWithStemi, setHospitalsWithStemi] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
-
   // Fetch hospitals with STEMI service
   useEffect(() => {
     const fetchHospitalsWithStemi = async () => {
@@ -80,6 +79,26 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
           </Typography>
         </Grid>
 
+        {/* PCI Type */}
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Type of PCI</InputLabel>
+            <Select
+              value={data.pciType || ''}
+              onChange={handleChange('pciType')}
+              label="Type of PCI"
+            >
+              <MenuItem value="">Select PCI Type</MenuItem>
+              <MenuItem value="PRIMARY">Primary</MenuItem>
+              <MenuItem value="NON_PRIMARY">Non Primary</MenuItem>
+              <MenuItem value="RESCUE_PCI">Rescue PCI</MenuItem>
+            </Select>
+          </FormControl>
+          <Typography variant="caption" display="block" color="textSecondary">
+            Type of PCI procedure performed or planned
+          </Typography>
+        </Grid>
+
         {/* PCI Location */}
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth>
@@ -109,7 +128,7 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             </Select>
           </FormControl>
           <Typography variant="caption" display="block" color="textSecondary">
-            Where the Primary PCI was or will be performed
+            Where the PCI was or will be performed
           </Typography>
         </Grid>
 
@@ -119,7 +138,7 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             fullWidth
             label="Door Out Time"
             type="datetime-local"
-            value={data.doorOutTime || StemiDatetimeService.getCurrentLocalDateTime()}
+            value={data.doorOutTime || null}
             onChange={handleChange('doorOutTime')}
             InputLabelProps={{ shrink: true }}
             disabled={!data.eligibleForPrimaryPci}
@@ -133,7 +152,7 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             fullWidth
             label="Balloon Inflation Time"
             type="datetime-local"
-            value={data.balloonInflationTime || StemiDatetimeService.getCurrentLocalDateTime()}
+            value={data.balloonInflationTime || null}
             onChange={handleChange('balloonInflationTime')}
             InputLabelProps={{ shrink: true }}
             disabled={!data.eligibleForPrimaryPci}
@@ -168,6 +187,44 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             InputLabelProps={{ shrink: true }}
             disabled={!data.thrombolyticGiven}
             helperText="When the thrombolytic medication was administered"
+          />
+        </Grid>
+
+        {/* Fibrinolytic Absolute Contraindications */}
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Reason fibrinolytic therapy not given if no primary PCI offered - Absolute Contraindications</InputLabel>
+            <Select
+              value={data.fibrinolyticAbsoluteContraindications || ''}
+              onChange={handleChange('fibrinolyticAbsoluteContraindications')}
+              label="Reason fibrinolytic therapy not given if no primary PCI offered - Absolute Contraindications"
+            >
+              <MenuItem value="">Select contraindication</MenuItem>
+              <MenuItem value="ANY_PRIOR_INTRACRANIAL_HEMORRHAGE">Any Prior Intracranial hemorrhage</MenuItem>
+              <MenuItem value="KNOWN_STRUCTURAL_CEREBRAL_VASCULAR_LESION">Known structural cerebral vascular lesion</MenuItem>
+              <MenuItem value="KNOWN_MALIGNANT_INTRACRANIAL_NEOPLASM">Known malignant intracranial neoplasm (primary or metastatic)</MenuItem>
+              <MenuItem value="ISCHEMIC_STROKE_WITHIN_3_MONTHS">Ischemic stroke within 3 months EXCEPT acute ischemic stroke within 3 hours</MenuItem>
+              <MenuItem value="SUSPECTED_AORTIC_DISSECTION">Suspected aortic dissection</MenuItem>
+              <MenuItem value="ACTIVE_BLEEDING_OR_BLEEDING_DIATHESIS">Active bleeding or bleeding diathesis (excluding menses)</MenuItem>
+              <MenuItem value="SIGNIFICANT_CLOSED_HEAD_OR_FACIAL_TRAUMA">Significant closed-head or facial trauma within 3 months</MenuItem>
+              <MenuItem value="OFFERED_THROMBOLYSIS_FROM_OTHER_HOSPITAL">Offered thrombolysis from other hospital</MenuItem>
+            </Select>
+          </FormControl>
+          <Typography variant="caption" display="block" color="textSecondary">
+            Select the absolute contraindication for fibrinolytic therapy
+          </Typography>
+        </Grid>
+
+        {/* Fibrinolytic Relative Contraindications */}
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Reason fibrinolytic therapy not given if no primary PCI offered - Relative Contraindications"
+            multiline
+            rows={3}
+            value={data.fibrinolyticRelativeContraindications || ''}
+            onChange={handleChange('fibrinolyticRelativeContraindications')}
+            helperText="Describe any relative contraindications for fibrinolytic therapy"
           />
         </Grid>
       </Grid>
