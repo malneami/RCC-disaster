@@ -25,6 +25,8 @@ import {
   DialogContent,
   DialogActions,
   Card,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -34,6 +36,8 @@ import {
   FilterList as FilterIcon,
   Add as AddIcon,
   Assignment as OutcomeFormIcon,
+  ViewModule as CardsIcon,
+  TableChart as TableIcon,
 } from '@mui/icons-material';
 import { StemiCase, StemiFilterParams } from '../services/stemiService';
 import LiveFilterDialog from './LiveFilterDialog';
@@ -48,6 +52,7 @@ interface StemiCasesListProps {
   onDeleteCase: (id: string) => void;
   onCreateCase: () => void;
   onOutcomeFormUpdate?: (caseId: string, updatedData: any) => void;
+  onViewModeChange?: (mode: 'table' | 'cards') => void;
 }
 
 const StemiCasesList: React.FC<StemiCasesListProps> = ({
@@ -58,6 +63,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   onDeleteCase,
   onCreateCase,
   onOutcomeFormUpdate,
+  onViewModeChange,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -427,6 +433,21 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
           >
             Filters
           </Button>
+          {onViewModeChange && (
+            <ToggleButtonGroup
+              value="table"
+              exclusive
+              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
+              size="small"
+            >
+              <ToggleButton value="table">
+                <TableIcon />
+              </ToggleButton>
+              <ToggleButton value="cards">
+                <CardsIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
           <Button
             variant="contained"
             startIcon={<AddIcon />}

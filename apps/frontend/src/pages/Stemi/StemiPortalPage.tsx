@@ -4,6 +4,7 @@ import { Add, Assessment, Timeline, Dashboard, Warning, Schedule, FileDownload }
 import { Helmet } from 'react-helmet-async';
 
 import StemiCasesList from './components/StemiCasesList';
+import StemiCasesCards from './components/StemiCasesCards';
 import StemiKPIDashboard from './components/StemiKPIDashboard';
 import CreateStemiCaseDialog from './components/CreateStemiCaseDialog';
 import EditStemiCaseDialog from './components/EditStemiCaseDialog';
@@ -39,6 +40,7 @@ function TabPanel(props: TabPanelProps) {
 const StemiPortalPage: React.FC = () => {
   const { user: _user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [stemiCases, setStemiCases] = useState<StemiCase[]>([]);
   const [kpiSummary, setKpiSummary] = useState<StemiKpiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -545,15 +547,28 @@ const StemiPortalPage: React.FC = () => {
 
         {/* Tab Content */}
         <TabPanel value={activeTab} index={0}>
-          <StemiCasesList
-            cases={stemiCases}
-            loading={loading}
-            onEditCase={handleEditCase}
-            onViewCase={handleViewCase}
-            onDeleteCase={handleDeleteCase}
-            onCreateCase={() => setCreateDialogOpen(true)}
-            onOutcomeFormUpdate={handleOutcomeFormUpdate}
-          />
+          {viewMode === 'table' ? (
+            <StemiCasesList
+              cases={stemiCases}
+              loading={loading}
+              onEditCase={handleEditCase}
+              onViewCase={handleViewCase}
+              onDeleteCase={handleDeleteCase}
+              onCreateCase={() => setCreateDialogOpen(true)}
+              onOutcomeFormUpdate={handleOutcomeFormUpdate}
+              onViewModeChange={setViewMode}
+            />
+          ) : (
+            <StemiCasesCards
+              cases={stemiCases}
+              loading={loading}
+              onEditCase={handleEditCase}
+              onViewCase={handleViewCase}
+              onDeleteCase={handleDeleteCase}
+              onCreateCase={() => setCreateDialogOpen(true)}
+              onOutcomeFormUpdate={handleOutcomeFormUpdate}
+            />
+          )}
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>

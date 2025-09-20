@@ -25,6 +25,8 @@ import {
   Alert,
   CircularProgress,
   Avatar,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Search,
@@ -37,6 +39,8 @@ import {
   Warning,
   TransferWithinAStation,
   Edit,
+  ViewModule as CardsIcon,
+  TableChart as TableIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
@@ -51,6 +55,7 @@ interface TraumaCasesListProps {
   onDeleteCase: (id: string) => Promise<void>;
   onUpdateCase: (id: string, data: any) => Promise<void>;
   isAdmin: boolean;
+  onViewModeChange?: (mode: 'table' | 'cards') => void;
 }
 
 interface FilterOptions {
@@ -76,6 +81,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   onDeleteCase,
   onUpdateCase,
   isAdmin,
+  onViewModeChange,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -407,6 +413,21 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
           >
             Filters
           </Button>
+          {onViewModeChange && (
+            <ToggleButtonGroup
+              value="table"
+              exclusive
+              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
+              size="small"
+            >
+              <ToggleButton value="table">
+                <TableIcon />
+              </ToggleButton>
+              <ToggleButton value="cards">
+                <CardsIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
           <Button
             variant="contained"
             startIcon={<Add />}

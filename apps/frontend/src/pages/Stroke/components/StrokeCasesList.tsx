@@ -11,12 +11,16 @@ import {
   TextField,
   InputAdornment,
   IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Add as AddIcon,
   FilterList as FilterIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  ViewModule as CardsIcon,
+  TableChart as TableIcon,
 } from '@mui/icons-material';
 import { Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } from '@mui/material';
 
@@ -34,6 +38,7 @@ interface StrokeCasesListProps {
   onCreateCase: () => void;
   onDeleteCase?: (id: string) => Promise<void>;
   isAdmin?: boolean;
+  onViewModeChange?: (mode: 'table' | 'cards') => void;
 }
 
 const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
@@ -42,6 +47,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   onCreateCase,
   onDeleteCase,
   isAdmin = false,
+  onViewModeChange,
 }) => {
   const [selectedCase, setSelectedCase] = useState<StrokeCase | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -214,6 +220,21 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
           >
             Filter
           </Button>
+          {onViewModeChange && (
+            <ToggleButtonGroup
+              value="table"
+              exclusive
+              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
+              size="small"
+            >
+              <ToggleButton value="table">
+                <TableIcon />
+              </ToggleButton>
+              <ToggleButton value="cards">
+                <CardsIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
           <Button
             variant="contained"
             startIcon={<AddIcon />}

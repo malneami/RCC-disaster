@@ -4,8 +4,12 @@ import { Add, Assessment, Timeline, Dashboard, FileDownload } from '@mui/icons-m
 import { Helmet } from 'react-helmet-async';
 
 import StrokeCasesList from './components/StrokeCasesList';
+import StrokeCasesCards from './components/StrokeCasesCards';
 import StrokeKPIDashboard from './components/StrokeKPIDashboardMain';
 import CreateStrokeCaseDialog from './components/CreateStrokeCaseDialog';
+import StrokeCaseDetailsDialog from './components/StrokeCaseDetailsDialog';
+import EditStrokeCaseDialog from './components/EditStrokeCaseDialog';
+import StrokeOutcomeForm from './components/StrokeOutcomeForm';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { StrokeService, StrokeCase, StrokeKPISummary } from '../../services/strokeService';
@@ -37,11 +41,16 @@ function TabPanel(props: TabPanelProps) {
 const StrokePortalPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [strokeCases, setStrokeCases] = useState<StrokeCase[]>([]);
   const [kpiSummary, setKpiSummary] = useState<StrokeKPISummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<StrokeCase | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [outcomeFormDialogOpen, setOutcomeFormDialogOpen] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
 
@@ -339,13 +348,37 @@ const StrokePortalPage: React.FC = () => {
         </Box>
 
         <TabPanel value={activeTab} index={0}>
-          <StrokeCasesList
-            cases={strokeCases}
-            onUpdateCase={handleUpdateCase}
-            onCreateCase={() => setCreateDialogOpen(true)}
-            onDeleteCase={handleDeleteCase}
-            isAdmin={isAdmin}
-          />
+          {viewMode === 'table' ? (
+            <StrokeCasesList
+              cases={strokeCases}
+              onUpdateCase={handleUpdateCase}
+              onCreateCase={() => setCreateDialogOpen(true)}
+              onDeleteCase={handleDeleteCase}
+              isAdmin={isAdmin}
+              onViewModeChange={setViewMode}
+            />
+          ) : (
+            <StrokeCasesCards
+              cases={strokeCases}
+              loading={loading}
+              onUpdateCase={handleUpdateCase}
+              onCreateCase={() => setCreateDialogOpen(true)}
+              onDeleteCase={handleDeleteCase}
+              onViewDetails={(case_) => {
+                setSelectedCase(case_);
+                setDetailsDialogOpen(true);
+              }}
+              onEditCase={(case_) => {
+                setSelectedCase(case_);
+                setEditDialogOpen(true);
+              }}
+              onOpenOutcomeForm={(case_) => {
+                setSelectedCase(case_);
+                setOutcomeFormDialogOpen(true);
+              }}
+              isAdmin={isAdmin}
+            />
+          )}
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
@@ -372,6 +405,38 @@ const StrokePortalPage: React.FC = () => {
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
           onSubmit={handleCreateCase}
+        />
+
+        {/* View Case Dialog */}
+        <StrokeCaseDetailsDialog
+          open={detailsDialogOpen}
+          onClose={() => setDetailsDialogOpen(false)}
+          strokeCase={selectedCase}
+          onEdit={(case_) => {
+            setDetailsDialogOpen(false);
+            setSelectedCase(case_);
+            setEditDialogOpen(true);
+          }}
+        />
+
+        {/* Edit Case Dialog */}
+        <EditStrokeCaseDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          strokeCase={selectedCase}
+          onUpdate={handleUpdateCase}
+        />
+
+        {/* Outcome Form Dialog */}
+        <StrokeOutcomeForm
+          open={outcomeFormDialogOpen}
+          onClose={() => setOutcomeFormDialogOpen(false)}
+          strokeCaseId={selectedCase?.id || ''}
+          strokeCaseData={selectedCase}
+          onSuccess={() => {
+            setOutcomeFormDialogOpen(false);
+            setSelectedCase(null);
+          }}
         />
       </PortalSkeleton>
 

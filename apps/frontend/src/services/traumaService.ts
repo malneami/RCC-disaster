@@ -362,6 +362,42 @@ export class TraumaService {
     if (score >= 3) return 'Severe';
     return 'Critical';
   }
+
+  static getMechanismOfInjuryLabel(mechanism: string): string {
+    const labels: { [key: string]: string } = {
+      'MOTOR_VEHICLE_ACCIDENT': 'Motor Vehicle Accident',
+      'FALL': 'Fall',
+      'PENETRATING_INJURY': 'Penetrating Injury',
+      'BURN': 'Burn',
+      'ASSAULT': 'Assault',
+      'SPORTS_INJURY': 'Sports Injury',
+      'OTHER': 'Other',
+    };
+    return labels[mechanism] || mechanism;
+  }
+
+  static getModeOfArrivalLabel(mode: string): string {
+    const labels: { [key: string]: string } = {
+      'AMBULANCE': 'Ambulance',
+      'WALK_IN': 'Walk-in',
+      'PRIVATE_VEHICLE': 'Private Vehicle',
+      'HELICOPTER': 'Helicopter',
+      'POLICE': 'Police',
+      'OTHER': 'Other',
+    };
+    return labels[mode] || mode;
+  }
+
+  static getDispositionLabel(disposition: string): string {
+    const labels: { [key: string]: string } = {
+      'DISCHARGED': 'Discharged',
+      'ADMITTED': 'Admitted',
+      'TRANSFERRED': 'Transferred',
+      'LEFT_AMA': 'Left AMA',
+      'DECEASED': 'Deceased',
+    };
+    return labels[disposition] || disposition;
+  }
 }
 
 export default TraumaService;

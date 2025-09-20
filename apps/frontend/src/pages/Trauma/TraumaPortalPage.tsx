@@ -4,8 +4,11 @@ import { Add, Assessment, Timeline, Dashboard, Warning, TransferWithinAStation, 
 import { Helmet } from 'react-helmet-async';
 
 import TraumaCasesList from './components/TraumaCasesList';
+import TraumaCasesCards from './components/TraumaCasesCards';
 import TraumaKPIDashboard from './components/TraumaKPIDashboardMain';
 import CreateTraumaCaseDialog from './components/CreateTraumaCaseDialog';
+import ViewTraumaCaseDialog from './components/ViewTraumaCaseDialog';
+import EditTraumaCaseDialog from './components/EditTraumaCaseDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { TraumaService, TraumaCase } from '../../services/traumaService';
@@ -38,11 +41,15 @@ function TabPanel(props: TabPanelProps) {
 const TraumaPortalPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [traumaCases, setTraumaCases] = useState<TraumaCase[]>([]);
   const [kpiSummary, setKpiSummary] = useState<TraumaKPIsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<TraumaCase | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
 
@@ -325,13 +332,32 @@ const TraumaPortalPage: React.FC = () => {
         </Box>
 
         <TabPanel value={activeTab} index={0}>
-          <TraumaCasesList
-            cases={traumaCases}
-            onCreateCase={() => setCreateDialogOpen(true)}
-            onDeleteCase={handleDeleteCase}
-            onUpdateCase={handleUpdateCase}
-            isAdmin={isAdmin}
-          />
+          {viewMode === 'table' ? (
+            <TraumaCasesList
+              cases={traumaCases}
+              onCreateCase={() => setCreateDialogOpen(true)}
+              onDeleteCase={handleDeleteCase}
+              onUpdateCase={handleUpdateCase}
+              isAdmin={isAdmin}
+              onViewModeChange={setViewMode}
+            />
+          ) : (
+            <TraumaCasesCards
+              cases={traumaCases}
+              onCreateCase={() => setCreateDialogOpen(true)}
+              onDeleteCase={handleDeleteCase}
+              onUpdateCase={handleUpdateCase}
+              onViewDetails={(case_) => {
+                setSelectedCase(case_);
+                setViewDialogOpen(true);
+              }}
+              onEditCase={(case_) => {
+                setSelectedCase(case_);
+                setEditDialogOpen(true);
+              }}
+              isAdmin={isAdmin}
+            />
+          )}
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
@@ -390,6 +416,21 @@ const TraumaPortalPage: React.FC = () => {
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
           onSubmit={handleCreateCase}
+        />
+
+        {/* View Case Dialog */}
+        <ViewTraumaCaseDialog
+          open={viewDialogOpen}
+          onClose={() => setViewDialogOpen(false)}
+          traumaCase={selectedCase}
+        />
+
+        {/* Edit Case Dialog */}
+        <EditTraumaCaseDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          onSubmit={handleUpdateCase}
+          traumaCase={selectedCase}
         />
       </PortalSkeleton>
     </>
