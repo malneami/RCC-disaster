@@ -7,25 +7,17 @@ import {
   Box,
   Chip,
   Button,
-  IconButton,
   LinearProgress,
   Collapse,
-  Avatar,
-  Tooltip,
   Divider,
   Grid,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Visibility as ViewIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Assignment as NoteIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
@@ -109,7 +101,6 @@ export interface UnifiedCaseCardProps {
 
 const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
   patient,
-  caseId,
   caseType,
   status,
   severity,
@@ -121,7 +112,6 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
   caseDetails = {},
   actions,
   expandableContent,
-  variant = 'default',
   elevation = 1,
 }) => {
   const [expanded, setExpanded] = useState(false);
@@ -223,9 +213,6 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                 sx={{ textTransform: 'capitalize' }}
               />
             )}
-            <IconButton size="small">
-              <MoreVertIcon />
-            </IconButton>
           </Box>
         </Box>
 

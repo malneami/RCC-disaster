@@ -20,26 +20,18 @@ import {
   TableRow,
   TablePagination,
   TableSortLabel,
-  Avatar,
-  Chip,
   Tooltip,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Clear as ClearIcon,
-  FilterList as FilterIcon,
   Add as AddIcon,
   ViewModule as CardsIcon,
   TableChart as TableIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import UnifiedCaseCard, { 
-  UnifiedCaseCardProps, 
-  PatientInfo, 
-  TimeMetric, 
-  PerformanceIndicator, 
-  CaseAction 
+  UnifiedCaseCardProps
 } from './UnifiedCaseCard';
 
 export type ViewMode = 'table' | 'cards';
@@ -228,7 +220,7 @@ function UnifiedCasesList<T>({
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedCases.map((case_, index) => {
+              paginatedCases.map((case_) => {
                 const transformedCase = transformCase(case_);
                 return (
                   <TableRow key={transformedCase.caseId} hover>

@@ -1,22 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
   Button,
   Chip,
   Grid,
-  LinearProgress,
   Divider,
-  Collapse,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { StrokeCase } from '../../../services/strokeService';
 import UnifiedCaseCard, { 
   UnifiedCaseCardProps, 
@@ -41,19 +38,16 @@ interface StrokeCasesCardsProps {
 const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
   cases,
   loading,
-  onUpdateCase,
   onCreateCase,
   onDeleteCase,
   onViewDetails,
   onEditCase,
-  onOpenOutcomeForm,
-  isAdmin = false,
 }) => {
   const transformStrokeCase = (strokeCase: StrokeCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
       name: `${strokeCase.patient?.firstName || ''} ${strokeCase.patient?.lastName || ''}`.trim(),
       age: strokeCase.patient?.age || 0,
-      gender: strokeCase.patient?.gender || 'MALE',
+      gender: (strokeCase.patient?.gender as 'MALE' | 'FEMALE') || 'MALE',
       id: strokeCase.id,
       nationalId: strokeCase.patient?.nationalId,
       mrn: strokeCase.patient?.mrn,
@@ -73,7 +67,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       },
       {
         label: strokeCase.currentStatus.replace(/_/g, ' '),
-        met: strokeCase.currentStatus !== 'PENDING',
+        met: strokeCase.currentStatus !== 'SUSPECTED' && strokeCase.currentStatus !== 'IMAGING_PENDING',
         color: getStatusColor(strokeCase.currentStatus),
       },
     ];
@@ -90,11 +84,11 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       },
       {
         label: 'Door to CT',
-        value: strokeCase.doorToCtMinutes || 'N/A',
+        value: strokeCase.doorToCtScanMinutes || 'N/A',
         target: '≤25min',
         unit: 'min',
-        met: !strokeCase.doorToCtMinutes || strokeCase.doorToCtMinutes <= 25,
-        percentage: strokeCase.doorToCtMinutes ? (strokeCase.doorToCtMinutes / 25) * 100 : undefined,
+        met: !strokeCase.doorToCtScanMinutes || strokeCase.doorToCtScanMinutes <= 25,
+        percentage: strokeCase.doorToCtScanMinutes ? (strokeCase.doorToCtScanMinutes / 25) * 100 : undefined,
       },
       {
         label: 'Door to CT Report',
@@ -113,7 +107,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     const caseDetails = {
       'mRS Score': strokeCase.mrsBaseline || 'N/A',
       'NIHSS Score': strokeCase.nihssBaseline || 'N/A',
-      'Referral To': strokeCase.referralDestination || 'N/A',
+      'Discharge To': strokeCase.dischargeDestination || 'N/A',
     };
 
     // Actions
@@ -135,7 +129,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       {
         label: 'Delete Case',
         icon: <DeleteIcon />,
-        onClick: () => onDeleteCase(strokeCase.id),
+        onClick: () => onDeleteCase?.(strokeCase.id),
         color: 'error',
         variant: 'outlined',
       },
@@ -217,7 +211,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
 
     // Door to CT (≤25min)
     total++;
-    if (strokeCase.doorToCtMinutes && strokeCase.doorToCtMinutes <= 25) {
+    if (strokeCase.doorToCtScanMinutes && strokeCase.doorToCtScanMinutes <= 25) {
       met++;
     }
 
@@ -272,7 +266,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       case 'EXPIRED':
         return 'error';
       default:
-        return 'default';
+        return 'info';
     }
   };
 

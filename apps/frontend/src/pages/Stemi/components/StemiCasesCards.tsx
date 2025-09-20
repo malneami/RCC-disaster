@@ -1,22 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
   Button,
-  Chip,
   Grid,
-  LinearProgress,
   Divider,
-  Collapse,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { StemiCase } from '../services/stemiService';
 import UnifiedCaseCard, { 
   UnifiedCaseCardProps, 
@@ -43,7 +37,6 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
   onViewCase,
   onDeleteCase,
   onCreateCase,
-  onOutcomeFormUpdate,
 }) => {
   const transformStemiCase = (stemiCase: StemiCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
@@ -52,7 +45,7 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
       gender: stemiCase.patient?.gender || 'MALE',
       id: stemiCase.id,
       nationalId: stemiCase.patient?.nationalId,
-      mrn: stemiCase.patient?.mrn,
+      mrn: stemiCase.patient?.nationalId,
       admissionDate: stemiCase.createdAt,
       modeOfArrival: stemiCase.modeOfArrival,
     };
@@ -333,12 +326,12 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
       case 'EXPIRED':
         return 'error';
       default:
-        return 'default';
+        return 'info';
     }
   };
 
   const getEcgResultColor = (result: string | undefined): 'success' | 'warning' | 'error' | 'info' => {
-    if (!result) return 'default';
+    if (!result) return 'info';
     switch (result) {
       case 'NORMAL':
         return 'success';
@@ -353,19 +346,10 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
       case 'PENDING':
         return 'info';
       default:
-        return 'default';
+        return 'info';
     }
   };
 
-  const formatPatientName = (patient: StemiCase['patient']) => {
-    if (!patient) return 'Unknown Patient';
-    return `${patient.firstName} ${patient.lastName}`;
-  };
-
-  const formatNationalId = (nationalId: string) => {
-    // Format as XXX-XXXX-XXXX
-    return nationalId.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-  };
 
   if (loading) {
     return (

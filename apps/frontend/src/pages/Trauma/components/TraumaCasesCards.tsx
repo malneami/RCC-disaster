@@ -1,15 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
   Button,
   Chip,
   Grid,
-  LinearProgress,
   Divider,
-  Collapse,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -42,7 +38,6 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   onDeleteCase,
   onViewDetails,
   onEditCase,
-  isAdmin,
 }) => {
   const transformTraumaCase = (traumaCase: TraumaCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
@@ -69,7 +64,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       {
         label: traumaCase.edDisposition || 'Unknown',
         met: traumaCase.edDisposition !== null,
-        color: getDispositionColor(traumaCase.edDisposition),
+        color: getDispositionColor(traumaCase.edDisposition || null),
       },
     ];
 
@@ -269,7 +264,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   };
 
   const getDispositionColor = (disposition: string | null): 'success' | 'warning' | 'error' | 'info' => {
-    if (!disposition) return 'default';
+    if (!disposition) return 'info';
     switch (disposition) {
       case 'DISCHARGED':
         return 'success';
@@ -280,7 +275,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       case 'DECEASED':
         return 'error';
       default:
-        return 'default';
+        return 'info';
     }
   };
 
@@ -294,7 +289,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       traumaCase.extremitiesInjury,
       traumaCase.externalInjury,
       traumaCase.faceInjury,
-    ].filter(injury => injury && injury !== 'NONE');
+    ].filter(injury => injury);
 
     if (injuries.some(injury => injury === 'SEVERE' || injury === 'CRITICAL')) {
       return 'Severe';
@@ -308,22 +303,22 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   const getBodyRegionInjuries = (traumaCase: TraumaCase): string[] => {
     const injuries = [];
     
-    if (traumaCase.headAndNeckInjury && traumaCase.headAndNeckInjury !== 'NONE') {
+    if (traumaCase.headAndNeckInjury) {
       injuries.push(`Head/Neck: ${traumaCase.headAndNeckInjury}`);
     }
-    if (traumaCase.chestInjury && traumaCase.chestInjury !== 'NONE') {
+    if (traumaCase.chestInjury) {
       injuries.push(`Chest: ${traumaCase.chestInjury}`);
     }
-    if (traumaCase.abdomenInjury && traumaCase.abdomenInjury !== 'NONE') {
+    if (traumaCase.abdomenInjury) {
       injuries.push(`Abdomen: ${traumaCase.abdomenInjury}`);
     }
-    if (traumaCase.extremitiesInjury && traumaCase.extremitiesInjury !== 'NONE') {
+    if (traumaCase.extremitiesInjury) {
       injuries.push(`Extremities: ${traumaCase.extremitiesInjury}`);
     }
-    if (traumaCase.externalInjury && traumaCase.externalInjury !== 'NONE') {
+    if (traumaCase.externalInjury) {
       injuries.push(`External: ${traumaCase.externalInjury}`);
     }
-    if (traumaCase.faceInjury && traumaCase.faceInjury !== 'NONE') {
+    if (traumaCase.faceInjury) {
       injuries.push(`Face: ${traumaCase.faceInjury}`);
     }
 
