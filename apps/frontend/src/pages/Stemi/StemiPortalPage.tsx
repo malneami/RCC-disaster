@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab, Button, Tooltip } from '@mui/material';
-import { Add, Assessment, Timeline, Dashboard, Warning, Schedule, FileDownload } from '@mui/icons-material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Tabs, Tab, CircularProgress, Fab, Button, Tooltip, TablePagination, Paper, Typography, TextField, InputAdornment, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Add as AddIcon, Assessment, Timeline, Dashboard, Warning, Schedule, FileDownload, Search as SearchIcon, FilterList as FilterIcon, ViewModule as CardsIcon, TableChart as TableIcon } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import StemiCasesList from './components/StemiCasesList';
@@ -9,6 +9,7 @@ import StemiKPIDashboard from './components/StemiKPIDashboard';
 import CreateStemiCaseDialog from './components/CreateStemiCaseDialog';
 import EditStemiCaseDialog from './components/EditStemiCaseDialog';
 import ViewStemiCaseDialog from './components/ViewStemiCaseDialog';
+import LiveFilterDialog from './components/LiveFilterDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { StemiService, StemiCase, StemiKpiResponse, StemiFilterParams } from './services/stemiService';
@@ -49,7 +50,6 @@ const StemiPortalPage: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
-  const [filters] = useState<StemiFilterParams>({});
   const [kpiFilters, setKpiFilters] = useState<{
     hospitalId?: string;
     startDate?: string;
@@ -59,6 +59,22 @@ const StemiPortalPage: React.FC = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [hospitals, setHospitals] = useState<Array<{id: string, name: string}>>([]);
+  
+  // Unified filters state for both views
+  const [unifiedFilters, setUnifiedFilters] = useState<StemiFilterParams>({
+    search: '',
+    modeOfArrival: '',
+    currentStatus: '',
+    selectedTreatment: '',
+    ecgResult: '',
+    rccActivated: undefined,
+    originHospitalId: '',
+    destinationHospitalId: '',
+    startDate: '',
+    endDate: '',
+  });
 
   // const isAdmin = user?.role === 'ADMIN';
 
@@ -71,7 +87,21 @@ const StemiPortalPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, unifiedFilters]);
+
+  // Load hospitals on component mount
+  useEffect(() => {
+    const loadHospitals = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/v1/hospitals');
+        const hospitalsData = await response.json();
+        setHospitals(hospitalsData);
+      } catch (error) {
+        console.error('Error loading hospitals:', error);
+      }
+    };
+    loadHospitals();
+  }, []);
 
   useEffect(() => {
     if (stemiCases.length > 0) {
@@ -322,13 +352,121 @@ const StemiPortalPage: React.FC = () => {
     }
   };
 
+  // Filter fields configuration
+  const filterFields = useMemo(() => [
+    {
+      key: 'search',
+      label: 'Search',
+      type: 'text' as const,
+      placeholder: 'Search by patient name, ID, or symptoms...',
+    },
+    {
+      key: 'modeOfArrival',
+      label: 'Mode of Arrival',
+      type: 'select' as const,
+      options: [
+        { value: 'AMBULANCE', label: 'Ambulance' },
+        { value: 'PRIVATE_VEHICLE', label: 'Private Vehicle' },
+        { value: 'AIR_TRANSPORT', label: 'Air Transport' },
+        { value: 'WALK_IN', label: 'Walk-in' },
+        { value: 'POLICE', label: 'Police' },
+        { value: 'TRANSFERRED_FROM_HOSPITAL', label: 'Hospital Transfer' },
+        { value: 'OTHER', label: 'Other' },
+      ],
+    },
+    {
+      key: 'currentStatus',
+      label: 'Current Status',
+      type: 'select' as const,
+      options: [
+        { value: 'SUSPECTED', label: 'Suspected' },
+        { value: 'ECG_PENDING', label: 'ECG Pending' },
+        { value: 'STEMI_CONFIRMED', label: 'STEMI Confirmed' },
+        { value: 'NSTEMI_CONFIRMED', label: 'NSTEMI Confirmed' },
+        { value: 'UNSTABLE_ANGINA', label: 'Unstable Angina' },
+        { value: 'RCC_ACTIVATED', label: 'RCC Activated' },
+        { value: 'IN_TRANSIT', label: 'In Transit' },
+        { value: 'PCI_READY', label: 'PCI Ready' },
+        { value: 'BALLOON_INFLATED', label: 'Balloon Inflated' },
+        { value: 'CCU_ADMITTED', label: 'CCU Admitted' },
+        { value: 'DISCHARGED', label: 'Discharged' },
+        { value: 'EXPIRED', label: 'Expired' },
+      ],
+    },
+    {
+      key: 'selectedTreatment',
+      label: 'Selected Treatment',
+      type: 'select' as const,
+      options: [
+        { value: 'PRIMARY_PCI', label: 'Primary PCI' },
+        { value: 'RESCUE_PCI', label: 'Rescue PCI' },
+        { value: 'FIBRINOLYSIS', label: 'Fibrinolysis' },
+        { value: 'TRANSFER_FOR_PRIMARY_PCI', label: 'Transfer for Primary PCI' },
+        { value: 'MEDICAL_MANAGEMENT', label: 'Medical Management' },
+      ],
+    },
+    {
+      key: 'ecgResult',
+      label: 'ECG Result',
+      type: 'select' as const,
+      options: [
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'NORMAL', label: 'Normal' },
+        { value: 'STEMI_ANTERIOR', label: 'STEMI Anterior' },
+        { value: 'STEMI_INFERIOR', label: 'STEMI Inferior' },
+        { value: 'STEMI_LATERAL', label: 'STEMI Lateral' },
+        { value: 'STEMI_POSTERIOR', label: 'STEMI Posterior' },
+        { value: 'NSTEMI_CHANGES', label: 'NSTEMI Changes' },
+        { value: 'UNSTABLE_PATTERN', label: 'Unstable Pattern' },
+        { value: 'TECHNICAL_ISSUE', label: 'Technical Issue' },
+      ],
+    },
+    {
+      key: 'rccActivated',
+      label: 'RCC Activated',
+      type: 'select' as const,
+      options: [
+        { value: 'true', label: 'Yes' },
+        { value: 'false', label: 'No' },
+      ],
+    },
+    {
+      key: 'originHospitalId',
+      label: 'Origin Hospital',
+      type: 'select' as const,
+      options: hospitals.map(hospital => ({
+        value: hospital.id,
+        label: hospital.name
+      })),
+    },
+    {
+      key: 'destinationHospitalId',
+      label: 'Destination Hospital',
+      type: 'select' as const,
+      options: hospitals.map(hospital => ({
+        value: hospital.id,
+        label: hospital.name
+      })),
+    },
+    {
+      key: 'startDate',
+      label: 'From Date',
+      type: 'date' as const,
+    },
+    {
+      key: 'endDate',
+      label: 'To Date',
+      type: 'date' as const,
+    },
+  ], [hospitals]);
+
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
 
       const paginationParams = {
-        ...filters,
+        ...unifiedFilters,
         limit: rowsPerPage,
         offset: page * rowsPerPage,
       };
@@ -459,6 +597,35 @@ const StemiPortalPage: React.FC = () => {
     setPage(0); // Reset to first page when changing rows per page
   };
 
+  // Unified filter handlers
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setUnifiedFilters(prev => ({ ...prev, search: value }));
+    setPage(0); // Reset to first page when searching
+  };
+
+  const handleFilterChange = (newFilters: StemiFilterParams) => {
+    setUnifiedFilters(newFilters);
+    setPage(0); // Reset to first page when filtering
+  };
+
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      search: '',
+      modeOfArrival: '',
+      currentStatus: '',
+      selectedTreatment: '',
+      ecgResult: '',
+      rccActivated: undefined,
+      originHospitalId: '',
+      destinationHospitalId: '',
+      startDate: '',
+      endDate: '',
+    };
+    setUnifiedFilters(clearedFilters);
+    setPage(0);
+  };
+
 
   if (loading) {
     return (
@@ -582,20 +749,72 @@ const StemiPortalPage: React.FC = () => {
 
         {/* Tab Content */}
         <TabPanel value={activeTab} index={0}>
+          {/* Unified Header for Cases Tab */}
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box>
+              <Typography variant="h4" component="h1" gutterBottom>
+                STEMI Cases
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {stemiCases.length} of {kpiSummary?.totalCases || 0} cases
+              </Typography>
+            </Box>
+            <Box display="flex" gap={2}>
+              <Button
+                variant="outlined"
+                startIcon={<FilterIcon />}
+                onClick={() => setFilterDialogOpen(true)}
+              >
+                Filters
+              </Button>
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, newMode) => newMode && setViewMode(newMode)}
+                size="small"
+              >
+                <ToggleButton value="table">
+                  <TableIcon />
+                </ToggleButton>
+                <ToggleButton value="cards">
+                  <CardsIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateDialogOpen(true)}
+              >
+                Create Case
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Search Bar */}
+          <Box mb={3}>
+            <TextField
+              fullWidth
+              placeholder="Search STEMI cases..."
+              value={unifiedFilters.search}
+              onChange={handleSearch}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+
           {viewMode === 'table' ? (
             <StemiCasesList
             cases={stemiCases}
-            totalCases={kpiSummary?.totalCases || 0}
             loading={loading}
-            page={page}
-            rowsPerPage={rowsPerPage}
             onEditCase={handleEditCase}
             onViewCase={handleViewCase}
             onDeleteCase={handleDeleteCase}
-            onCreateCase={() => setCreateDialogOpen(true)}
             onOutcomeFormUpdate={handleOutcomeFormUpdate}
-            onPageChange={handlePageChange}
-            onRowsPerPageChange={handleRowsPerPageChange}
           />
           ) : (
             <StemiCasesCards
@@ -604,12 +823,30 @@ const StemiPortalPage: React.FC = () => {
               onEditCase={handleEditCase}
               onViewCase={handleViewCase}
               onDeleteCase={handleDeleteCase}
-              onCreateCase={() => setCreateDialogOpen(true)}
-              onOutcomeFormUpdate={handleOutcomeFormUpdate}
-              onViewModeChange={setViewMode}
             />
           )}
         </TabPanel>
+
+        {/* Global Pagination for Cases Tab */}
+        {activeTab === 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+              <TablePagination
+                rowsPerPageOptions={[10, 20, 50]}
+                component="div"
+                count={kpiSummary?.totalCases || 0}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={(_event, newPage) => handlePageChange(newPage)}
+                onRowsPerPageChange={(event) => handleRowsPerPageChange(parseInt(event.target.value, 10))}
+                labelRowsPerPage="Rows per page:"
+                labelDisplayedRows={({ from, to, count }) => 
+                  `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
+                }
+              />
+            </Paper>
+          </Box>
+        )}
 
         <TabPanel value={activeTab} index={1}>
           <StemiKPIDashboard 
@@ -667,7 +904,7 @@ const StemiPortalPage: React.FC = () => {
               height: 56,
             }}
           >
-            <Add />
+            <AddIcon />
           </Fab>
         </Tooltip>
       </Box>
@@ -696,6 +933,21 @@ const StemiPortalPage: React.FC = () => {
           setSelectedCase(null);
         }}
         stemiCase={selectedCase}
+      />
+
+      {/* Unified Filter Dialog */}
+      <LiveFilterDialog
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        onApply={(newFilters) => {
+          handleFilterChange(newFilters);
+          setFilterDialogOpen(false);
+        }}
+        onReset={handleClearFilters}
+        fields={filterFields}
+        values={unifiedFilters}
+        applyButtonText="Close"
+        resetButtonText="Reset All"
       />
     </>
   );

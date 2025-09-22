@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Card,
   CardContent,
-  CardActions,
   Typography,
   Box,
   Chip,
@@ -11,15 +10,22 @@ import {
   Collapse,
   Divider,
   Grid,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
+  MoreVert as MoreVertIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
+import html2canvas from 'html2canvas';
 
 export interface TimeMetric {
   label: string;
@@ -115,6 +121,48 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
   elevation = 1,
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleActionClick = (action: CaseAction) => {
+    action.onClick();
+    handleMenuClose();
+  };
+
+  const handleDownloadPNG = async () => {
+    if (!cardRef.current) return;
+    
+    setIsDownloading(true);
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        background: '#ffffff',
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        width: cardRef.current.offsetWidth,
+        height: cardRef.current.offsetHeight,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `${patient.name.replace(/\s+/g, '_')}_${caseType}_case.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error downloading card as PNG:', error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const getCaseTypeIcon = () => {
     switch (caseType) {
@@ -172,12 +220,14 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
 
   return (
     <Card 
+      ref={cardRef}
       elevation={elevation}
       sx={{ 
         mb: 2,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         borderRadius: 2,
         border: `1px solid ${getCaseTypeColor()}20`,
@@ -301,6 +351,21 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                 }}
               />
             )}
+            {actions.length > 0 && (
+              <IconButton
+                size="small"
+                onClick={handleMenuClick}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                    color: 'text.primary',
+                  },
+                }}
+              >
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
         </Box>
 
@@ -331,36 +396,13 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                   </Box>
                 </Box>
               )}
-              {overallScore && (
-                <Typography variant="body2" color="text.secondary">
-                  Overall Score: {overallScore}
-                </Typography>
-              )}
             </Box>
-            {performanceIndicators.length > 0 && (
-              <Box display="flex" gap={1} flexWrap="wrap">
-                {performanceIndicators.map((indicator, index) => (
-                  <Chip
-                    key={index}
-                    label={indicator.label}
-                    size="small"
-                    color={indicator.color || 'default'}
-                    icon={indicator.met ? <CheckCircleIcon /> : <CancelIcon />}
-                  />
-                ))}
-              </Box>
-            )}
           </Box>
         )}
 
         {/* Patient Details */}
         <Box mb={2}>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Typography variant="body2" color="text.secondary">
-                ID/Iqamah: {patient.id}
-              </Typography>
-            </Grid>
             <Grid item xs={6}>
               <Typography variant="body2" color="text.secondary">
                 Mode of Arrival: {patient.modeOfArrival || 'N/A'}
@@ -370,13 +412,6 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
               <Grid item xs={6}>
                 <Typography variant="body2" color="text.secondary">
                   National ID: {patient.nationalId}
-                </Typography>
-              </Grid>
-            )}
-            {patient.mrn && (
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
-                  MRN: {patient.mrn}
                 </Typography>
               </Grid>
             )}
@@ -470,34 +505,99 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
         )}
       </CardContent>
 
-      {/* Actions */}
-      <CardActions sx={{ pt: 0, pb: 1 }}>
-        <Box display="flex" gap={1} flexWrap="wrap">
-          {actions.map((action, index) => (
-            <Button
-              key={index}
-              size="small"
-              startIcon={action.icon}
-              onClick={action.onClick}
-              color={action.color || 'primary'}
-              variant={action.variant || 'outlined'}
-              disabled={action.disabled}
-            >
-              {action.label}
-            </Button>
-          ))}
-        </Box>
-      </CardActions>
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        PaperProps={{
+          sx: {
+            minWidth: 160,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            borderRadius: 2,
+          },
+        }}
+      >
+        {actions.map((action, index) => (
+          <MenuItem
+            key={index}
+            onClick={() => handleActionClick(action)}
+            disabled={action.disabled}
+            sx={{
+              py: 1,
+              px: 2,
+              '&:hover': {
+                backgroundColor: action.color === 'error' ? 'error.light' : 'primary.light',
+                color: action.color === 'error' ? 'error.contrastText' : 'primary.contrastText',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              {action.icon}
+            </ListItemIcon>
+            <ListItemText 
+              primary={action.label}
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            />
+          </MenuItem>
+        ))}
+      </Menu>
 
       {/* Expandable Content */}
       {expandableContent && (
         <>
           <Divider />
-          <Box display="flex" justifyContent="center" py={1}>
+          <Box 
+            display="flex" 
+            justifyContent="center" 
+            gap={1}
+            py={1}
+            sx={{
+              position: expanded ? 'relative' : 'absolute',
+              bottom: expanded ? 'auto' : 0,
+              left: 0,
+              right: 0,
+              backgroundColor: expanded ? 'transparent' : 'background.paper',
+              borderTop: expanded ? 'none' : '1px solid',
+              borderColor: 'divider',
+              borderRadius: expanded ? 0 : '0 0 8px 8px',
+              zIndex: 1,
+            }}
+          >
+            <Button
+              size="small"
+              onClick={handleDownloadPNG}
+              startIcon={<DownloadIcon />}
+              disabled={isDownloading}
+              variant="outlined"
+              sx={{ 
+                fontSize: '0.75rem',
+                py: 0.5,
+                px: 1,
+              }}
+            >
+              {isDownloading ? 'Downloading...' : 'Download PNG'}
+            </Button>
             <Button
               size="small"
               onClick={() => setExpanded(!expanded)}
               endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              sx={{ 
+                fontSize: '0.75rem',
+                py: 0.5,
+                px: 1,
+              }}
             >
               {expanded ? 'Hide Details' : 'Show Details'}
             </Button>

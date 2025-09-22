@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -8,13 +8,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TablePagination,
   TableSortLabel,
   IconButton,
   Chip,
   Typography,
-  TextField,
-  InputAdornment,
   Button,
   Tooltip,
   Alert,
@@ -25,41 +22,26 @@ import {
   DialogContent,
   DialogActions,
   Card,
-  ToggleButton,
-  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Visibility as ViewIcon,
   Delete as DeleteIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  Add as AddIcon,
   Assignment as OutcomeFormIcon,
-  ViewModule as CardsIcon,
-  TableChart as TableIcon,
   CheckCircle as CheckIcon,
   Cancel as CrossIcon,
 } from '@mui/icons-material';
-import { StemiCase, StemiFilterParams } from '../services/stemiService';
-import LiveFilterDialog from './LiveFilterDialog';
+import { StemiCase } from '../services/stemiService';
 import StemiOutcomeForm from './StemiOutcomeForm';
 import StemiCaseCompleteness from './StemiCaseCompleteness';
 
 interface StemiCasesListProps {
   cases: StemiCase[];
-  totalCases: number;
   loading: boolean;
-  page: number;
-  rowsPerPage: number;
   onEditCase: (case_: StemiCase) => void;
   onViewCase: (case_: StemiCase) => void;
   onDeleteCase: (id: string) => void;
-  onCreateCase: () => void;
   onOutcomeFormUpdate?: (caseId: string, updatedData: any) => void;
-  onViewModeChange?: (mode: 'table' | 'cards') => void;
-  onPageChange: (page: number) => void;
-  onRowsPerPageChange: (rowsPerPage: number) => void;
 }
 
 // Helper functions to calculate KPI status
@@ -122,35 +104,12 @@ const KpiIcon: React.FC<{ met: boolean; applicable: boolean; minutes?: number | 
 
 const StemiCasesList: React.FC<StemiCasesListProps> = ({
   cases,
-  totalCases,
   loading,
-  page,
-  rowsPerPage,
   onEditCase,
   onViewCase,
   onDeleteCase,
-  onCreateCase,
   onOutcomeFormUpdate,
-  onViewModeChange,
-  onPageChange,
-  onRowsPerPageChange,
 }) => {
-  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
-  const [hospitals, setHospitals] = useState<Array<{id: string, name: string}>>([]);
-  
-  // Local filters state (like trauma portal)
-  const [filters, setFilters] = useState<StemiFilterParams>({
-    search: '',
-    modeOfArrival: '',
-    currentStatus: '',
-    selectedTreatment: '',
-    ecgResult: '',
-    rccActivated: undefined,
-    originHospitalId: '',
-    destinationHospitalId: '',
-    startDate: '',
-    endDate: '',
-  });
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
@@ -161,64 +120,9 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
     direction: 'asc' | 'desc';
   }>({ field: 'createdAt', direction: 'desc' });
 
-  // Load hospitals on component mount
-  useEffect(() => {
-    const loadHospitals = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/v1/hospitals');
-        const hospitalsData = await response.json();
-        setHospitals(hospitalsData);
-      } catch (error) {
-        console.error('Error loading hospitals:', error);
-      }
-    };
-    loadHospitals();
-  }, []);
-
-  // Client-side filtering and sorting (like trauma portal)
-  const filteredAndSortedCases = useMemo(() => {
-    let filtered = cases.filter((case_) => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch = 
-          case_.patient?.firstName?.toLowerCase().includes(searchLower) ||
-          case_.patient?.lastName?.toLowerCase().includes(searchLower) ||
-          case_.patient?.nationalId?.toLowerCase().includes(searchLower) ||
-          case_.presentingSymptoms?.toLowerCase().includes(searchLower) ||
-          case_.originHospital?.name?.toLowerCase().includes(searchLower) ||
-          case_.ticketId?.toLowerCase().includes(searchLower);
-        
-        if (!matchesSearch) return false;
-      }
-
-      // Other filters
-      if (filters.currentStatus && case_.currentStatus !== filters.currentStatus) return false;
-      if (filters.modeOfArrival && case_.modeOfArrival !== filters.modeOfArrival) return false;
-      if (filters.selectedTreatment && case_.selectedTreatment !== filters.selectedTreatment) return false;
-      if (filters.ecgResult && case_.ecgResult !== filters.ecgResult) return false;
-      if (filters.rccActivated !== undefined && case_.rccActivated !== filters.rccActivated) return false;
-      if (filters.originHospitalId && case_.originHospitalId !== filters.originHospitalId) return false;
-      if (filters.destinationHospitalId && case_.destinationHospitalId !== filters.destinationHospitalId) return false;
-
-      // Date filters
-      if (filters.startDate) {
-        const caseDate = new Date(case_.createdAt);
-        const fromDate = new Date(filters.startDate);
-        if (caseDate < fromDate) return false;
-      }
-      if (filters.endDate) {
-        const caseDate = new Date(case_.createdAt);
-        const toDate = new Date(filters.endDate);
-        toDate.setHours(23, 59, 59, 999); // End of day
-        if (caseDate > toDate) return false;
-      }
-
-      return true;
-    });
-
-    // Sort
-    filtered.sort((a, b) => {
+  // Client-side sorting only (filtering is now server-side)
+  const sortedCases = useMemo(() => {
+    const sorted = [...cases].sort((a, b) => {
       let aValue: any, bValue: any;
       
       if (sortConfig.field === 'patient') {
@@ -234,152 +138,9 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
       return 0;
     });
 
-    return filtered;
-  }, [cases, filters, sortConfig]);
+    return sorted;
+  }, [cases, sortConfig]);
 
-  // Use cases directly since pagination is now server-side
-  const paginatedCases = filteredAndSortedCases;
-
-  // Filter fields configuration (same design as trauma portal)
-  const filterFields = useMemo(() => [
-    {
-      key: 'search',
-      label: 'Search',
-      type: 'text' as const,
-      placeholder: 'Search by patient name, ID, or symptoms...',
-    },
-    {
-      key: 'modeOfArrival',
-      label: 'Mode of Arrival',
-      type: 'select' as const,
-      options: [
-        { value: 'AMBULANCE', label: 'Ambulance' },
-        { value: 'PRIVATE_VEHICLE', label: 'Private Vehicle' },
-        { value: 'AIR_TRANSPORT', label: 'Air Transport' },
-        { value: 'WALK_IN', label: 'Walk-in' },
-        { value: 'POLICE', label: 'Police' },
-        { value: 'TRANSFERRED_FROM_HOSPITAL', label: 'Hospital Transfer' },
-        { value: 'OTHER', label: 'Other' },
-      ],
-    },
-    {
-      key: 'currentStatus',
-      label: 'Current Status',
-      type: 'select' as const,
-      options: [
-        { value: 'SUSPECTED', label: 'Suspected' },
-        { value: 'ECG_PENDING', label: 'ECG Pending' },
-        { value: 'STEMI_CONFIRMED', label: 'STEMI Confirmed' },
-        { value: 'NSTEMI_CONFIRMED', label: 'NSTEMI Confirmed' },
-        { value: 'UNSTABLE_ANGINA', label: 'Unstable Angina' },
-        { value: 'RCC_ACTIVATED', label: 'RCC Activated' },
-        { value: 'IN_TRANSIT', label: 'In Transit' },
-        { value: 'PCI_READY', label: 'PCI Ready' },
-        { value: 'BALLOON_INFLATED', label: 'Balloon Inflated' },
-        { value: 'CCU_ADMITTED', label: 'CCU Admitted' },
-        { value: 'DISCHARGED', label: 'Discharged' },
-        { value: 'EXPIRED', label: 'Expired' },
-      ],
-    },
-    {
-      key: 'selectedTreatment',
-      label: 'Selected Treatment',
-      type: 'select' as const,
-      options: [
-        { value: 'PRIMARY_PCI', label: 'Primary PCI' },
-        { value: 'RESCUE_PCI', label: 'Rescue PCI' },
-        { value: 'FIBRINOLYSIS', label: 'Fibrinolysis' },
-        { value: 'TRANSFER_FOR_PRIMARY_PCI', label: 'Transfer for Primary PCI' },
-        { value: 'MEDICAL_MANAGEMENT', label: 'Medical Management' },
-      ],
-    },
-    {
-      key: 'ecgResult',
-      label: 'ECG Result',
-      type: 'select' as const,
-      options: [
-        { value: 'PENDING', label: 'Pending' },
-        { value: 'NORMAL', label: 'Normal' },
-        { value: 'STEMI_ANTERIOR', label: 'STEMI Anterior' },
-        { value: 'STEMI_INFERIOR', label: 'STEMI Inferior' },
-        { value: 'STEMI_LATERAL', label: 'STEMI Lateral' },
-        { value: 'STEMI_POSTERIOR', label: 'STEMI Posterior' },
-        { value: 'NSTEMI_CHANGES', label: 'NSTEMI Changes' },
-        { value: 'UNSTABLE_PATTERN', label: 'Unstable Pattern' },
-        { value: 'TECHNICAL_ISSUE', label: 'Technical Issue' },
-      ],
-    },
-    {
-      key: 'rccActivated',
-      label: 'RCC Activated',
-      type: 'select' as const,
-      options: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-    },
-    {
-      key: 'originHospitalId',
-      label: 'Origin Hospital',
-      type: 'select' as const,
-      options: hospitals.map(hospital => ({
-        value: hospital.id,
-        label: hospital.name
-      })),
-    },
-    {
-      key: 'destinationHospitalId',
-      label: 'Destination Hospital',
-      type: 'select' as const,
-      options: hospitals.map(hospital => ({
-        value: hospital.id,
-        label: hospital.name
-      })),
-    },
-    {
-      key: 'startDate',
-      label: 'From Date',
-      type: 'date' as const,
-    },
-    {
-      key: 'endDate',
-      label: 'To Date',
-      type: 'date' as const,
-    },
-  ], [hospitals]);
-
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    onPageChange(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newRowsPerPage = parseInt(event.target.value, 10);
-    onRowsPerPageChange(newRowsPerPage);
-  };
-
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setFilters(prev => ({ ...prev, search: value }));
-    onPageChange(0); // Reset to first page when searching
-  };
-
-
-  const handleClearFilters = () => {
-    const clearedFilters = {
-      search: '',
-      modeOfArrival: '',
-      currentStatus: '',
-      selectedTreatment: '',
-      ecgResult: '',
-      rccActivated: undefined,
-      originHospitalId: '',
-      destinationHospitalId: '',
-      startDate: '',
-      endDate: '',
-    };
-    setFilters(clearedFilters);
-    onPageChange(0);
-  };
 
   const handleDeleteClick = (case_: StemiCase) => {
     setSelectedCase(case_);
@@ -479,67 +240,6 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
 
   return (
     <Box>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            STEMI Cases
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {filteredAndSortedCases.length} of {totalCases} cases
-          </Typography>
-        </Box>
-        <Box display="flex" gap={2}>
-          <Button
-            variant="outlined"
-            startIcon={<FilterIcon />}
-            onClick={() => setFilterDialogOpen(true)}
-          >
-            Filters
-          </Button>
-          {onViewModeChange && (
-            <ToggleButtonGroup
-              value="table"
-              exclusive
-              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
-              size="small"
-            >
-              <ToggleButton value="table">
-                <TableIcon />
-              </ToggleButton>
-              <ToggleButton value="cards">
-                <CardsIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
-          )}
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={onCreateCase}
-          >
-            Create Case
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Search Bar */}
-      <Box mb={3}>
-        <TextField
-          fullWidth
-          placeholder="Search STEMI cases..."
-          value={filters.search}
-          onChange={handleSearch}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
-
-
       {/* Cases Table */}
       <Card elevation={0}>
         <TableContainer component={Paper} elevation={0}>
@@ -620,7 +320,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedCases.map((case_) => {
+                sortedCases.map((case_) => {
                   const kpis = calculateKpiStatus(case_);
                   return (
                     <TableRow key={case_.id} hover>
@@ -760,17 +460,6 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
         </Table>
       </TableContainer>
 
-        {/* Pagination */}
-        <TablePagination
-          rowsPerPageOptions={[10, 20, 50]}
-          component="div"
-          count={totalCases}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Rows per page:"
-        />
       </Card>
 
       {/* Delete Confirmation Dialog */}
@@ -807,20 +496,6 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* Filter Dialog */}
-      <LiveFilterDialog
-        open={filterDialogOpen}
-        onClose={() => setFilterDialogOpen(false)}
-        onApply={(newFilters) => {
-          setFilters(newFilters);
-          onPageChange(0);
-        }}
-        onReset={handleClearFilters}
-        fields={filterFields}
-        values={filters}
-        applyButtonText="Close"
-        resetButtonText="Reset All"
-      />
 
       {/* Outcome Form Dialog */}
       {outcomeFormCaseId && (
