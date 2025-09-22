@@ -101,6 +101,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
     presentingSymptoms: '',
     symptomOnset: '',
     symptomDuration: undefined,
+    miType: undefined,
+    outcome: undefined,
   });
 
   const [additionalData, setAdditionalData] = useState({
@@ -165,6 +167,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         presentingSymptoms: stemiCase.presentingSymptoms || '',
         symptomOnset: stemiCase.symptomOnset ? StemiDatetimeService.formatForLocal(stemiCase.symptomOnset) : '',
         symptomDuration: stemiCase.symptomDuration || undefined,
+        miType: stemiCase.miType || undefined,
+        outcome: stemiCase.outcome || undefined,
       });
 
       setAdditionalData({
@@ -219,6 +223,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           presentingSymptoms: clinicalAssessment.presentingSymptoms || undefined,
           symptomOnset: clinicalAssessment.symptomOnset ? StemiDatetimeService.formatForUTC(clinicalAssessment.symptomOnset) : undefined,
           symptomDuration: clinicalAssessment.symptomDuration || undefined,
+          miType: clinicalAssessment.miType || undefined,
+          outcome: clinicalAssessment.outcome || undefined,
         },
         currentStatus: additionalData.currentStatus as any,
         selectedTreatment: additionalData.selectedTreatment,

@@ -38,6 +38,8 @@ import {
   Assignment as OutcomeFormIcon,
   ViewModule as CardsIcon,
   TableChart as TableIcon,
+  CheckCircle as CheckIcon,
+  Cancel as CrossIcon,
 } from '@mui/icons-material';
 import { StemiCase, StemiFilterParams } from '../services/stemiService';
 import LiveFilterDialog from './LiveFilterDialog';
@@ -46,27 +48,93 @@ import StemiCaseCompleteness from './StemiCaseCompleteness';
 
 interface StemiCasesListProps {
   cases: StemiCase[];
+  totalCases: number;
   loading: boolean;
+  page: number;
+  rowsPerPage: number;
   onEditCase: (case_: StemiCase) => void;
   onViewCase: (case_: StemiCase) => void;
   onDeleteCase: (id: string) => void;
   onCreateCase: () => void;
   onOutcomeFormUpdate?: (caseId: string, updatedData: any) => void;
   onViewModeChange?: (mode: 'table' | 'cards') => void;
+  onPageChange: (page: number) => void;
+  onRowsPerPageChange: (rowsPerPage: number) => void;
 }
+
+// Helper functions to calculate KPI status
+const calculateKpiStatus = (case_: StemiCase) => {
+  const kpis = {
+    doorToEcg: false,
+    doorToBalloon: false,
+    doorToNeedle: false,
+    rccActivation: false,
+    doorInDoorOut: false,
+  };
+
+  // KPI 1: Door to ECG ≤10 min
+  if (case_.doorToEcgMinutes !== null && case_.doorToEcgMinutes !== undefined) {
+    kpis.doorToEcg = case_.doorToEcgMinutes <= 10;
+  }
+
+  // KPI 2: Door to Balloon - Direct ≤90min, Transfer ≤120min
+  if (case_.doorToBalloonMinutes !== null && case_.doorToBalloonMinutes !== undefined) {
+    const target = case_.caseType === 'TRANSFER' ? 120 : 90;
+    kpis.doorToBalloon = case_.doorToBalloonMinutes <= target;
+  }
+
+  // KPI 3: Door to Needle ≤30min (Transfer cases only)
+  if (case_.caseType === 'TRANSFER' && case_.doorToNeedleMinutes !== null && case_.doorToNeedleMinutes !== undefined) {
+    kpis.doorToNeedle = case_.doorToNeedleMinutes <= 30;
+  }
+
+  // KPI 4: RCC Activation ≤15min (Transfer cases only)
+  if (case_.caseType === 'TRANSFER' && case_.rccActivationToDoorOutMinutes !== null && case_.rccActivationToDoorOutMinutes !== undefined) {
+    kpis.rccActivation = case_.rccActivationToDoorOutMinutes <= 15;
+  }
+
+  // KPI 5: Door In Door Out ≤30min (Transfer cases only)
+  if (case_.caseType === 'TRANSFER' && case_.doorInDoorOutMinutes !== null && case_.doorInDoorOutMinutes !== undefined) {
+    kpis.doorInDoorOut = case_.doorInDoorOutMinutes <= 30;
+  }
+
+  return kpis;
+};
+
+const KpiIcon: React.FC<{ met: boolean; applicable: boolean; minutes?: number | null }> = ({ met, applicable, minutes }) => {
+  if (!applicable) {
+    return <Typography variant="caption" color="textSecondary">-</Typography>;
+  }
+  
+  return (
+    <Box display="flex" alignItems="center" gap={0.5}>
+      {met ? (
+        <CheckIcon color="success" fontSize="small" />
+      ) : (
+        <CrossIcon color="error" fontSize="small" />
+      )}
+      <Typography variant="caption" color="textSecondary">
+        {minutes !== null && minutes !== undefined ? `${minutes}m` : 'N/A'}
+      </Typography>
+    </Box>
+  );
+};
 
 const StemiCasesList: React.FC<StemiCasesListProps> = ({
   cases,
+  totalCases,
   loading,
+  page,
+  rowsPerPage,
   onEditCase,
   onViewCase,
   onDeleteCase,
   onCreateCase,
   onOutcomeFormUpdate,
   onViewModeChange,
+  onPageChange,
+  onRowsPerPageChange,
 }) => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [hospitals, setHospitals] = useState<Array<{id: string, name: string}>>([]);
   
@@ -169,11 +237,8 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
     return filtered;
   }, [cases, filters, sortConfig]);
 
-  // Pagination logic
-  const paginatedCases = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filteredAndSortedCases.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredAndSortedCases, page, rowsPerPage]);
+  // Use cases directly since pagination is now server-side
+  const paginatedCases = filteredAndSortedCases;
 
   // Filter fields configuration (same design as trauma portal)
   const filterFields = useMemo(() => [
@@ -284,19 +349,18 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   ], [hospitals]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
+    onPageChange(newPage);
   };
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newRowsPerPage = parseInt(event.target.value, 10);
-    setRowsPerPage(newRowsPerPage);
-    setPage(0);
+    onRowsPerPageChange(newRowsPerPage);
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setFilters(prev => ({ ...prev, search: value }));
-    setPage(0); // Reset to first page when searching
+    onPageChange(0); // Reset to first page when searching
   };
 
 
@@ -314,7 +378,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
       endDate: '',
     };
     setFilters(clearedFilters);
-    setPage(0);
+    onPageChange(0);
   };
 
   const handleDeleteClick = (case_: StemiCase) => {
@@ -422,7 +486,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
             STEMI Cases
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {filteredAndSortedCases.length} of {cases.length} cases
+            {filteredAndSortedCases.length} of {totalCases} cases
           </Typography>
         </Box>
         <Box display="flex" gap={2}>
@@ -503,6 +567,41 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                 <TableCell>Status</TableCell>
                 <TableCell>Origin Hospital</TableCell>
                 <TableCell>Destination Hospital</TableCell>
+                <TableCell align="center">
+                  <Tooltip title="Door to ECG ≤10 min">
+                    <Typography variant="caption" fontWeight="bold">
+                      Door to ECG
+                    </Typography>
+                  </Tooltip>
+                </TableCell>
+                <TableCell align="center">
+                  <Tooltip title="Door to Balloon: Direct ≤90min, Transfer ≤120min">
+                    <Typography variant="caption" fontWeight="bold">
+                      Door to Balloon
+                    </Typography>
+                  </Tooltip>
+                </TableCell>
+                <TableCell align="center">
+                  <Tooltip title="Door to Needle ≤30 min (Transfer cases only)">
+                    <Typography variant="caption" fontWeight="bold">
+                      Door to Needle
+                    </Typography>
+                  </Tooltip>
+                </TableCell>
+                <TableCell align="center">
+                  <Tooltip title="RCC Activation ≤15 min (Transfer cases only)">
+                    <Typography variant="caption" fontWeight="bold">
+                      RCC Activation
+                    </Typography>
+                  </Tooltip>
+                </TableCell>
+                <TableCell align="center">
+                  <Tooltip title="Door In Door Out ≤30 min (Transfer cases only)">
+                    <Typography variant="caption" fontWeight="bold">
+                      Door In Door Out
+                    </Typography>
+                  </Tooltip>
+                </TableCell>
                 <TableCell>Completeness</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -510,114 +609,152 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={12} align="center">
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : cases.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={12} align="center">
                     <Alert severity="info">No STEMI cases found</Alert>
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedCases.map((case_) => (
-                  <TableRow key={case_.id} hover>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={2}>
-                        <Avatar sx={{ bgcolor: 'primary.main' }}>
-                          {case_.patient?.firstName?.[0] || 'P'}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2">
-                            {formatPatientName(case_.patient)}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary" fontFamily="monospace">
-                            {case_.patient?.nationalId ? formatNationalId(case_.patient.nationalId) : 'N/A'}
-                          </Typography>
+                paginatedCases.map((case_) => {
+                  const kpis = calculateKpiStatus(case_);
+                  return (
+                    <TableRow key={case_.id} hover>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            {case_.patient?.firstName?.[0] || 'P'}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle2">
+                              {formatPatientName(case_.patient)}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary" fontFamily="monospace">
+                              {case_.patient?.nationalId ? formatNationalId(case_.patient.nationalId) : 'N/A'}
+                            </Typography>
+                          </Box>
                         </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatDate(case_.createdAt)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={case_.currentStatus.replace(/_/g, ' ')}
-                        color={getStatusColor(case_.currentStatus) as any}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {case_.originHospital.name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {case_.originHospital.cluster}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {case_.destinationHospital?.name || 'N/A'}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {case_.destinationHospital?.cluster || ''}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <StemiCaseCompleteness stemiCase={case_ as any} />
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box display="flex" gap={1} justifyContent="flex-end">
-                        <Tooltip title="Open Outcome Form">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleOpenOutcomeForm(case_)}
-                            color="primary"
-                          >
-                            <OutcomeFormIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="View Details">
-                          <IconButton
-                            size="small"
-                            onClick={() => onViewCase(case_)}
-                            color="primary"
-                          >
-                            <ViewIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edit Case">
-                          <IconButton
-                            size="small"
-                            onClick={() => onEditCase(case_)}
-                            color="primary"
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete Case">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteClick(case_)}
-                            color="error"
-                            disabled={deletingId === case_.id}
-                          >
-                            {deletingId === case_.id ? (
-                              <CircularProgress size={16} />
-                            ) : (
-                              <DeleteIcon />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {formatDate(case_.createdAt)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={case_.currentStatus.replace(/_/g, ' ')}
+                          color={getStatusColor(case_.currentStatus) as any}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {case_.originHospital.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {case_.originHospital.cluster}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {case_.destinationHospital?.name || 'N/A'}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {case_.destinationHospital?.cluster || ''}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <KpiIcon 
+                          met={kpis.doorToEcg} 
+                          applicable={case_.doorToEcgMinutes !== null && case_.doorToEcgMinutes !== undefined}
+                          minutes={case_.doorToEcgMinutes}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <KpiIcon 
+                          met={kpis.doorToBalloon} 
+                          applicable={case_.doorToBalloonMinutes !== null && case_.doorToBalloonMinutes !== undefined}
+                          minutes={case_.doorToBalloonMinutes}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <KpiIcon 
+                          met={kpis.doorToNeedle} 
+                          applicable={case_.caseType === 'TRANSFER' && case_.doorToNeedleMinutes !== null && case_.doorToNeedleMinutes !== undefined}
+                          minutes={case_.doorToNeedleMinutes}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <KpiIcon 
+                          met={kpis.rccActivation} 
+                          applicable={case_.caseType === 'TRANSFER' && case_.rccActivationToDoorOutMinutes !== null && case_.rccActivationToDoorOutMinutes !== undefined}
+                          minutes={case_.rccActivationToDoorOutMinutes}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <KpiIcon 
+                          met={kpis.doorInDoorOut} 
+                          applicable={case_.caseType === 'TRANSFER' && case_.doorInDoorOutMinutes !== null && case_.doorInDoorOutMinutes !== undefined}
+                          minutes={case_.doorInDoorOutMinutes}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <StemiCaseCompleteness stemiCase={case_ as any} />
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box display="flex" gap={1} justifyContent="flex-end">
+                          <Tooltip title="Open Outcome Form">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenOutcomeForm(case_)}
+                              color="primary"
+                            >
+                              <OutcomeFormIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="View Details">
+                            <IconButton
+                              size="small"
+                              onClick={() => onViewCase(case_)}
+                              color="primary"
+                            >
+                              <ViewIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edit Case">
+                            <IconButton
+                              size="small"
+                              onClick={() => onEditCase(case_)}
+                              color="primary"
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete Case">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteClick(case_)}
+                              color="error"
+                              disabled={deletingId === case_.id}
+                            >
+                              {deletingId === case_.id ? (
+                                <CircularProgress size={16} />
+                              ) : (
+                                <DeleteIcon />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
         </Table>
@@ -625,9 +762,9 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
 
         {/* Pagination */}
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
+          rowsPerPageOptions={[10, 20, 50]}
           component="div"
-          count={filteredAndSortedCases.length}
+          count={totalCases}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -676,7 +813,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
         onClose={() => setFilterDialogOpen(false)}
         onApply={(newFilters) => {
           setFilters(newFilters);
-          setPage(0);
+          onPageChange(0);
         }}
         onReset={handleClearFilters}
         fields={filterFields}

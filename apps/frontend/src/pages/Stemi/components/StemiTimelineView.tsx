@@ -321,9 +321,9 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
                   {stemiCase.doorToBalloonMinutes} min
                 </Typography>
                 <Chip
-                  label="≤90 min"
+                  label={stemiCase.destinationHospital ? "≤120 min" : "≤90 min"}
                   size="small"
-                  color={getKpiStatus(stemiCase.doorToBalloonMinutes, 90).status}
+                  color={stemiCase.destinationHospital ? getKpiStatus(stemiCase.doorToBalloonMinutes, 120).status : getKpiStatus(stemiCase.doorToBalloonMinutes, 90).status}
                 />
               </Box>
             </CardContent>
@@ -363,9 +363,9 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
                   {stemiCase.doorInDoorOutMinutes} min
                 </Typography>
                 <Chip
-                  label="≤120 min"
+                  label="≤30 min"
                   size="small"
-                  color={getKpiStatus(stemiCase.doorInDoorOutMinutes, 120).status}
+                  color={getKpiStatus(stemiCase.doorInDoorOutMinutes, 30).status}
                 />
               </Box>
             </CardContent>
@@ -377,42 +377,21 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
           <Card>
             <CardContent>
               <Typography variant="subtitle2" gutterBottom>
-                Cath Lab Activation to Arrival
+                Cath Lab Activation to Departure
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="h6">
                   {Math.round((new Date(stemiCase.cathLabArrivalTime).getTime() - new Date(stemiCase.cathLabActivationTime).getTime()) / (1000 * 60))} min
                 </Typography>
                 <Chip
-                  label="≤30 min"
+                  label="≤15 min"
                   size="small"
-                  color={getKpiStatus(Math.round((new Date(stemiCase.cathLabArrivalTime).getTime() - new Date(stemiCase.cathLabActivationTime).getTime()) / (1000 * 60)), 30).status}
+                  color={getKpiStatus(Math.round((new Date(stemiCase.cathLabArrivalTime).getTime() - new Date(stemiCase.cathLabActivationTime).getTime()) / (1000 * 60)), 15).status}
                 />
               </Box>
             </CardContent>
           </Card>
-        )}
-
-        {/* PCI Procedure Duration KPI */}
-        {(stemiCase.pciProcedureStartTime && stemiCase.pciProcedureCompleteTime) && (
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" gutterBottom>
-                PCI Procedure Duration
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h6">
-                  {Math.round((new Date(stemiCase.pciProcedureCompleteTime).getTime() - new Date(stemiCase.pciProcedureStartTime).getTime()) / (1000 * 60))} min
-                </Typography>
-                <Chip
-                  label="≤60 min"
-                  size="small"
-                  color={getKpiStatus(Math.round((new Date(stemiCase.pciProcedureCompleteTime).getTime() - new Date(stemiCase.pciProcedureStartTime).getTime()) / (1000 * 60)), 60).status}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        )}
+        )}    
 
         {/* Outcome Form Completion */}
         {stemiCase.outcomeFormCompleted && (

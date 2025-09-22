@@ -50,8 +50,15 @@ const StemiPortalPage: React.FC = () => {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
   const [filters] = useState<StemiFilterParams>({});
+  const [kpiFilters, setKpiFilters] = useState<{
+    hospitalId?: string;
+    startDate?: string;
+    endDate?: string;
+  }>({});
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
 
   // const isAdmin = user?.role === 'ADMIN';
 
@@ -64,7 +71,7 @@ const StemiPortalPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [page, rowsPerPage]);
 
   useEffect(() => {
     if (stemiCases.length > 0) {
@@ -320,9 +327,15 @@ const StemiPortalPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      const paginationParams = {
+        ...filters,
+        limit: rowsPerPage,
+        offset: page * rowsPerPage,
+      };
+
       const [casesResponse, kpiResponse] = await Promise.all([
-        StemiService.getStemiCases(filters),
-        StemiService.getKpiSummary(),
+        StemiService.getStemiCases(paginationParams),
+        StemiService.getKpiSummary(kpiFilters.hospitalId, kpiFilters.startDate, kpiFilters.endDate),
       ]);
 
       setStemiCases(casesResponse.cases);
@@ -334,6 +347,7 @@ const StemiPortalPage: React.FC = () => {
       setLoading(false);
     }
   };
+
 
   const handleCreateCase = async (caseData: any) => {
     try {
@@ -422,6 +436,27 @@ const StemiPortalPage: React.FC = () => {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+  };
+
+  const handleKpiFilterChange = async (newFilters: { hospitalId?: string; startDate?: string; endDate?: string }) => {
+    setKpiFilters(newFilters);
+    // Load KPI data with the new filters directly instead of relying on state
+    try {
+      const kpiResponse = await StemiService.getKpiSummary(newFilters.hospitalId, newFilters.startDate, newFilters.endDate);
+      setKpiSummary(kpiResponse);
+    } catch (err: any) {
+      console.error('Error loading KPI data:', err);
+      setError(err.response?.data?.message || 'Failed to load KPI data');
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleRowsPerPageChange = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
+    setPage(0); // Reset to first page when changing rows per page
   };
 
 
@@ -549,15 +584,19 @@ const StemiPortalPage: React.FC = () => {
         <TabPanel value={activeTab} index={0}>
           {viewMode === 'table' ? (
             <StemiCasesList
-              cases={stemiCases}
-              loading={loading}
-              onEditCase={handleEditCase}
-              onViewCase={handleViewCase}
-              onDeleteCase={handleDeleteCase}
-              onCreateCase={() => setCreateDialogOpen(true)}
-              onOutcomeFormUpdate={handleOutcomeFormUpdate}
-              onViewModeChange={setViewMode}
-            />
+            cases={stemiCases}
+            totalCases={kpiSummary?.totalCases || 0}
+            loading={loading}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onEditCase={handleEditCase}
+            onViewCase={handleViewCase}
+            onDeleteCase={handleDeleteCase}
+            onCreateCase={() => setCreateDialogOpen(true)}
+            onOutcomeFormUpdate={handleOutcomeFormUpdate}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleRowsPerPageChange}
+          />
           ) : (
             <StemiCasesCards
               cases={stemiCases}
@@ -572,7 +611,11 @@ const StemiPortalPage: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
-          <StemiKPIDashboard kpiSummary={kpiSummary} />
+          <StemiKPIDashboard 
+            kpiSummary={kpiSummary} 
+            filters={kpiFilters}
+            onFilterChange={handleKpiFilterChange}
+          />
         </TabPanel>
 
         <TabPanel value={activeTab} index={2}>

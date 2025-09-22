@@ -135,8 +135,9 @@ export class StemiKpiService {
       ? doorToBalloonTimes.reduce((sum, time) => sum + time, 0) / doorToBalloonTimes.length 
       : 0;
 
-    // Calculate door-to-needle times
+    // Calculate door-to-needle times (only for transfer cases)
     const doorToNeedleTimes = allCases
+      .filter(c => c.caseType === 'TRANSFER') // Only transfer cases
       .map(c => this.calculateDoorToNeedleTime(c.triageTime, c.thrombolyticAdminTime))
       .filter(time => time > 0);
 
@@ -173,6 +174,8 @@ export class StemiKpiService {
     const kpi2Cases = kpi2DirectCases + kpi2TransferCases;
 
     const kpi3Cases = allCases.filter(c => {
+      // Only calculate for transfer cases
+      if (c.caseType !== 'TRANSFER') return false;
       const doorToNeedle = this.calculateDoorToNeedleTime(c.triageTime, c.thrombolyticAdminTime);
       return doorToNeedle > 0 && doorToNeedle <= 30;
     }).length;
@@ -195,9 +198,9 @@ export class StemiKpiService {
     }).length;
 
     // Door In Door Out - cases where door out time is within 30 minutes of triage
-    // Only include cases where patient is eligible for primary PCI
+    // Only include transfer cases
     const kpi5Cases = allCases.filter(c => {
-      if (!c.triageTime || !c.doorOutTime || !c.eligibleForPrimaryPci) return false;
+      if (!c.triageTime || !c.doorOutTime || c.caseType !== 'TRANSFER') return false;
       const triage = new Date(c.triageTime);
       const doorOut = new Date(c.doorOutTime);
       const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
@@ -271,13 +274,16 @@ export class StemiKpiService {
                 (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi3: {
-        name: 'Door to Needle ≤30min',
+        name: 'Door to Needle ≤30min (Transfer Cases Only)',
         target: '≤30 minutes',
-        totalCases,
+        totalCases: allCases.filter(c => c.caseType === 'TRANSFER').length,
         withinTarget: kpi3Cases,
-        percentage: totalCases > 0 ? Math.round((kpi3Cases / totalCases) * 100 * 10) / 10 : 0,
-        status: totalCases > 0 && (kpi3Cases / totalCases) >= 0.9 ? 'GREEN' : 
-                totalCases > 0 && (kpi3Cases / totalCases) >= 0.75 ? 'YELLOW' : 'RED',
+        percentage: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 ? 
+                   Math.round((kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) * 100 * 10) / 10 : 0,
+        status: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
+                (kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.9 ? 'GREEN' : 
+                allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
+                (kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi4: {
         name: 'RCC Activation ≤15min',
@@ -292,16 +298,16 @@ export class StemiKpiService {
                 (kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi5: {
-        name: 'Door In Door Out ≤30min (Primary PCI Eligible)',
+        name: 'Door In Door Out ≤30min (Transfer Cases Only)',
         target: '≤30 minutes',
-        totalCases: allCases.filter(c => c.eligibleForPrimaryPci === true).length,
+        totalCases: allCases.filter(c => c.caseType === 'TRANSFER').length,
         withinTarget: kpi5Cases,
-        percentage: allCases.filter(c => c.eligibleForPrimaryPci === true).length > 0 ? 
-                   Math.round((kpi5Cases / allCases.filter(c => c.eligibleForPrimaryPci === true).length) * 100 * 10) / 10 : 0,
-        status: allCases.filter(c => c.eligibleForPrimaryPci === true).length > 0 && 
-                (kpi5Cases / allCases.filter(c => c.eligibleForPrimaryPci === true).length) >= 0.9 ? 'GREEN' : 
-                allCases.filter(c => c.eligibleForPrimaryPci === true).length > 0 && 
-                (kpi5Cases / allCases.filter(c => c.eligibleForPrimaryPci === true).length) >= 0.75 ? 'YELLOW' : 'RED',
+        percentage: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 ? 
+                   Math.round((kpi5Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) * 100 * 10) / 10 : 0,
+        status: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
+                (kpi5Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.9 ? 'GREEN' : 
+                allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
+                (kpi5Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi6: {
         name: 'Primary PCI Success',

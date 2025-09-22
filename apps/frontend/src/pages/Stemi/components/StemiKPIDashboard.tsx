@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -8,14 +8,154 @@ import {
   Chip,
   LinearProgress,
   Alert,
+  Button,
+  TextField,
+  MenuItem,
+  Paper,
+  Collapse,
+  CircularProgress,
 } from '@mui/material';
+import { 
+  FilterList as FilterIcon,
+  Clear as ClearIcon,
+  CalendarToday as CalendarIcon,
+  LocationOn as LocationIcon,
+} from '@mui/icons-material';
 import { StemiKpiResponse } from '../services/stemiService';
 
 interface StemiKPIDashboardProps {
   kpiSummary: StemiKpiResponse | null;
+  filters?: {
+    hospitalId?: string;
+    startDate?: string;
+    endDate?: string;
+  };
+  onFilterChange?: (filters: { hospitalId?: string; startDate?: string; endDate?: string }) => void;
 }
 
-const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({ kpiSummary }) => {
+const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({ 
+  kpiSummary, 
+  filters = {}, 
+  onFilterChange 
+}) => {
+  const [localFilters, setLocalFilters] = useState(filters);
+  const [hospitals, setHospitals] = useState<Array<{id: string, name: string}>>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hospitalsLoading, setHospitalsLoading] = useState(true);
+  const [dateError, setDateError] = useState<string>('');
+
+  // Load hospitals on component mount
+  useEffect(() => {
+    const loadHospitals = async () => {
+      try {
+        setHospitalsLoading(true);
+        const response = await fetch('http://localhost:3001/api/v1/hospitals');
+        const hospitalsData = await response.json();
+        setHospitals(hospitalsData);
+      } catch (error) {
+        console.error('Error loading hospitals:', error);
+      } finally {
+        setHospitalsLoading(false);
+      }
+    };
+    loadHospitals();
+  }, []);
+
+  // Update local filters when props change
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
+  const validateDateRange = (startDate?: string, endDate?: string): string => {
+    if (!startDate || !endDate) return '';
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (end < start) {
+      return 'To Date cannot be earlier than From Date';
+    }
+    
+    return '';
+  };
+
+  const handleFilterChange = async (key: string, value: string) => {
+    const newFilters = { ...localFilters, [key]: value };
+    
+    // Validate date range
+    const error = validateDateRange(
+      key === 'startDate' ? value : newFilters.startDate,
+      key === 'endDate' ? value : newFilters.endDate
+    );
+    
+    setDateError(error);
+    
+    // Only apply filters if there's no date error
+    if (!error) {
+      setLocalFilters(newFilters);
+      if (onFilterChange) {
+        setIsLoading(true);
+        try {
+          await onFilterChange(newFilters);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    } else {
+      // Update local state even with error for UI feedback
+      setLocalFilters(newFilters);
+    }
+  };
+
+  const handleClearFilters = async () => {
+    // Clear local state first
+    const clearedFilters = {};
+    setLocalFilters(clearedFilters);
+    setDateError('');
+    
+    // Then apply the cleared filters
+    if (onFilterChange) {
+      setIsLoading(true);
+      try {
+        await onFilterChange(clearedFilters);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const getActiveFiltersCount = () => {
+    return Object.values(localFilters).filter(value => value && value !== '').length;
+  };
+
+  const getFilterChips = () => {
+    const chips = [];
+    if (localFilters.hospitalId) {
+      const hospital = hospitals.find(h => h.id === localFilters.hospitalId);
+      chips.push({
+        label: hospital ? hospital.name : 'Unknown Hospital',
+        key: 'hospitalId',
+        icon: <LocationIcon fontSize="small" />,
+      });
+    }
+    if (localFilters.startDate) {
+      chips.push({
+        label: `From: ${new Date(localFilters.startDate).toLocaleDateString()}`,
+        key: 'startDate',
+        icon: <CalendarIcon fontSize="small" />,
+      });
+    }
+    if (localFilters.endDate) {
+      chips.push({
+        label: `To: ${new Date(localFilters.endDate).toLocaleDateString()}`,
+        key: 'endDate',
+        icon: <CalendarIcon fontSize="small" />,
+      });
+    }
+    return chips;
+  };
+
   if (!kpiSummary) {
     return (
       <Alert severity="info">
@@ -134,6 +274,142 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({ kpiSummary }) => 
 
   return (
     <Box>
+      {/* Filter Section */}
+      <Box sx={{ mb: 3 }}>
+        {/* Filter Header */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h6">KPI Filters</Typography>
+          <Box display="flex" gap={1}>
+            {getActiveFiltersCount() > 0 && (
+              <Chip
+                label={`${getActiveFiltersCount()} active`}
+                color="primary"
+                size="small"
+              />
+            )}
+            <Button
+              variant="outlined"
+              startIcon={<FilterIcon />}
+              onClick={() => setShowFilters(!showFilters)}
+              size="small"
+            >
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Active Filter Chips */}
+        {getActiveFiltersCount() > 0 && (
+          <Box mb={2}>
+            <Box display="flex" flexWrap="wrap" gap={1}>
+              {getFilterChips().map((chip) => (
+                <Chip
+                  key={chip.key}
+                  icon={chip.icon}
+                  label={chip.label}
+                  onDelete={() => handleFilterChange(chip.key, '')}
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {/* Filter Controls */}
+        <Collapse in={showFilters}>
+          <Paper sx={{ p: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Hospital"
+                  value={localFilters.hospitalId || ''}
+                  onChange={(e) => handleFilterChange('hospitalId', e.target.value)}
+                  disabled={hospitalsLoading || isLoading}
+                  InputProps={{
+                    startAdornment: hospitalsLoading ? (
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                    ) : (
+                      <LocationIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
+                  }}
+                >
+                  <MenuItem value="">All Hospitals</MenuItem>
+                  {hospitals.map((hospital) => (
+                    <MenuItem key={hospital.id} value={hospital.id}>
+                      {hospital.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              
+              <Grid item xs={12} md={4}>
+                <TextField
+                  type="date"
+                  fullWidth
+                  label="From Date"
+                  value={localFilters.startDate || ''}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  disabled={isLoading}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{
+                    max: localFilters.endDate || undefined,
+                  }}
+                  InputProps={{
+                    startAdornment: <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                  helperText={dateError && localFilters.startDate && localFilters.endDate ? dateError : ''}
+                  error={!!(dateError && localFilters.startDate && localFilters.endDate)}
+                />
+              </Grid>
+              
+              <Grid item xs={12} md={4}>
+                <TextField
+                  type="date"
+                  fullWidth
+                  label="To Date"
+                  value={localFilters.endDate || ''}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  disabled={isLoading}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{
+                    min: localFilters.startDate || undefined,
+                  }}
+                  InputProps={{
+                    startAdornment: <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                  helperText={dateError && localFilters.startDate && localFilters.endDate ? dateError : ''}
+                  error={!!(dateError && localFilters.startDate && localFilters.endDate)}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Action Buttons */}
+            <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+              <Button
+                variant="outlined"
+                startIcon={<ClearIcon />}
+                onClick={handleClearFilters}
+                disabled={isLoading || getActiveFiltersCount() === 0}
+              >
+                Clear All
+              </Button>
+              {isLoading && (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CircularProgress size={16} />
+                  <Typography variant="caption" color="text.secondary">
+                    Applying filters...
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Paper>
+        </Collapse>
+      </Box>
+
       {/* Overview Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>

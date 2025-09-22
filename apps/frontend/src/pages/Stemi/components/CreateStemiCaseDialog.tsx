@@ -92,6 +92,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     presentingSymptoms: '',
     symptomOnset: '',
     symptomDuration: undefined,
+    miType: undefined,
+    outcome: undefined,
   });
 
   const [additionalData, setAdditionalData] = useState({
@@ -185,6 +187,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         presentingSymptoms: '',
         symptomOnset: '',
         symptomDuration: undefined,
+        miType: undefined,
+        outcome: undefined,
       });
       setAdditionalData({
         currentStatus: 'SUSPECTED',
