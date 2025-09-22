@@ -200,7 +200,7 @@ export class StrokeCasesService {
         patientId: patientId,
         originHospitalId: createStrokeCaseDto.originHospitalId,
         destinationHospitalId: createStrokeCaseDto.destinationHospitalId,
-        priority: TicketPriority.HIGH,
+        priority: TicketPriority.CRITICAL,
         pathway: TicketPathway.STROKE,
         chiefComplaint: createStrokeCaseDto.chiefComplaint || 'Stroke symptoms',
         isEmergency: true,

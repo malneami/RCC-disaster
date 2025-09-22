@@ -6,7 +6,6 @@ import { UpdateTicketDto, UpdateTicketStatusDto, AssignTicketDto } from './dto/u
 import { TicketFilterDto } from './dto/ticket-filter.dto';
 import { TicketsGateway } from './tickets.gateway';
 import { EmsAssignmentsService } from '../ems-assignments/ems-assignments.service';
-import { AmbulancesService } from '../ambulances/ambulances.service';
 import { StatusMappingService } from '../../common/services/status-mapping.service';
 
 @Injectable()
@@ -17,7 +16,6 @@ export class TicketsService {
     private prisma: PrismaService,
     private ticketsGateway: TicketsGateway,
     private emsAssignmentsService: EmsAssignmentsService,
-    private ambulancesService: AmbulancesService,
   ) {}
 
   // Priority calculation algorithm
@@ -65,45 +63,6 @@ export class TicketsService {
     return allowedTransitions[userRole]?.includes(newStatus) || false;
   }
 
-  // Find available ambulance and driver for EMS assignment
-  private async findAvailableAmbulanceAndDriver(): Promise<{ ambulanceId: string; driverId: string } | null> {
-    try {
-      // Get available ambulances
-      const availableAmbulances = await this.ambulancesService.getAvailableAmbulances();
-      
-      if (availableAmbulances.length === 0) {
-        this.logger.warn('No available ambulances found for automatic EMS assignment');
-        return null;
-      }
-
-      // Find an ambulance with an available driver
-      for (const ambulance of availableAmbulances) {
-        if (ambulance.driverId) {
-          // Check if driver is not already assigned to another active assignment
-          const activeAssignment = await this.prisma.eMSAssignment.findFirst({
-            where: {
-              driverId: ambulance.driverId,
-              status: { in: ['EMS_CONTACT', 'EMS_ARRIVAL', 'DEPARTED'] },
-              deletedAt: null,
-            },
-          });
-
-          if (!activeAssignment) {
-            return {
-              ambulanceId: ambulance.id,
-              driverId: ambulance.driverId,
-            };
-          }
-        }
-      }
-
-      this.logger.warn('No available drivers found for automatic EMS assignment');
-      return null;
-    } catch (error) {
-      this.logger.error('Error finding available ambulance and driver:', error);
-      return null;
-    }
-  }
 
   // Create ticket with workflow validation
   async create(createTicketDto: CreateTicketDto, userId: string, userRole: UserRole) {
@@ -181,57 +140,32 @@ export class TicketsService {
       this.ticketsGateway.emitEmergencyTicket(ticket);
     }
 
-    // Auto-create EMS assignment if transport mode is Ambulance
     if (createTicketDto.transportMode === 'AMBULANCE') {
       try {
-        const availableResources = await this.findAvailableAmbulanceAndDriver();
-        
-        if (availableResources) {
-          const emsAssignment = await this.emsAssignmentsService.create({
-            ticketId: ticket.id,
-            ambulanceId: availableResources.ambulanceId,
-            driverId: availableResources.driverId,
-            assignedAt: new Date().toISOString(),
-            status: AssignmentStatus.EMS_CONTACT,
-            emsContactTime: createTicketDto.emsContactTime,
-            notes: `Auto-assigned for ticket ${ticket.ticketNumber}`,
-          }, userId);
+        const emsAssignment = await this.emsAssignmentsService.create({
+          ticketId: ticket.id,
+          assignedAt: new Date().toISOString(),
+          status: AssignmentStatus.EMS_CONTACT,
+          emsContactTime: createTicketDto.emsContactTime,
+          notes: `Auto-created for ticket ${ticket.ticketNumber} - ambulance and driver to be assigned manually`,
+        }, userId);
 
-          this.logger.log(`Auto-created EMS assignment ${emsAssignment.id} for ticket ${ticket.ticketNumber}`);
-          
-          // Create activity log for EMS assignment
-          await this.prisma.activity.create({
-            data: {
-              type: ActivityType.TICKET_ASSIGNED,
-              description: `EMS assignment auto-created for ticket ${ticket.ticketNumber}`,
-              userId,
-              ticketId: ticket.id,
-              metadata: JSON.stringify({
-                assignmentId: emsAssignment.id,
-                ambulanceId: availableResources.ambulanceId,
-                driverId: availableResources.driverId,
-                autoAssigned: true,
-              }),
-            },
-          });
-        } else {
-          this.logger.warn(`No available ambulance/driver found for auto-assignment of ticket ${ticket.ticketNumber}`);
-          
-          // Create activity log for failed auto-assignment
-          await this.prisma.activity.create({
-            data: {
-              type: ActivityType.TICKET_CREATED,
-              description: `Ticket ${ticket.ticketNumber} created but no EMS resources available for auto-assignment`,
-              userId,
-              ticketId: ticket.id,
-              metadata: JSON.stringify({
-                transportMode: 'AMBULANCE',
-                autoAssignmentFailed: true,
-                reason: 'No available ambulance or driver',
-              }),
-            },
-          });
-        }
+        this.logger.log(`Auto-created EMS assignment ${emsAssignment.id} for ticket ${ticket.ticketNumber} (no ambulance/driver assigned)`);
+        
+        // Create activity log for EMS assignment
+        await this.prisma.activity.create({
+          data: {
+            type: ActivityType.TICKET_ASSIGNED,
+            description: `EMS assignment auto-created for ticket ${ticket.ticketNumber} (ambulance and driver to be assigned manually)`,
+            userId,
+            ticketId: ticket.id,
+            metadata: JSON.stringify({
+              assignmentId: emsAssignment.id,
+              autoAssigned: true,
+              manualAssignmentRequired: true,
+            }),
+          },
+        });
       } catch (error) {
         this.logger.error(`Failed to auto-create EMS assignment for ticket ${ticket.ticketNumber}:`, error);
         

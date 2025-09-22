@@ -7,13 +7,15 @@ export class CreateEmsAssignmentDto {
   @IsString()
   ticketId!: string;
 
-  @ApiProperty({ description: 'Ambulance ID to assign', example: 'ambulance-uuid' })
+  @ApiPropertyOptional({ description: 'Ambulance ID to assign', example: 'ambulance-uuid' })
+  @IsOptional()
   @IsString()
-  ambulanceId!: string;
+  ambulanceId?: string;
 
-  @ApiProperty({ description: 'Driver ID to assign', example: 'driver-uuid' })
+  @ApiPropertyOptional({ description: 'Driver ID to assign', example: 'driver-uuid' })
+  @IsOptional()
   @IsString()
-  driverId!: string;
+  driverId?: string;
 
   @ApiProperty({ description: 'Assignment timestamp', example: '2024-02-15T08:30:00Z' })
   @IsDateString()

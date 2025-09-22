@@ -4,8 +4,8 @@ model EMSAssignment {
   
   // Assignment Details
   ticketId                String          @map("ticket_id")
-  ambulanceId             String          @map("ambulance_id")
-  driverId                String          @map("driver_id")
+  ambulanceId             String?         @map("ambulance_id")
+  driverId                String?         @map("driver_id")
   
   // Timing Information
   assignedAt              DateTime        @map("assigned_at")
@@ -29,8 +29,8 @@ model EMSAssignment {
   
   // Relations
   ticket                  Ticket          @relation("EMSAssignmentTicket", fields: [ticketId], references: [id])
-  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
-  driver                  User            @relation("EMSAssignmentDriver", fields: [driverId], references: [id])
+  ambulance               Ambulance?      @relation(fields: [ambulanceId], references: [id])
+  driver                  User?           @relation("EMSAssignmentDriver", fields: [driverId], references: [id])
   createdByUser           User            @relation("EMSAssignmentCreator", fields: [createdBy], references: [id])
   
   @@map("ems_assignments")

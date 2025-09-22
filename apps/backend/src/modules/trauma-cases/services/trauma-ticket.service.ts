@@ -19,7 +19,7 @@ export class TraumaTicketService {
       patientId: patientId,
       originHospitalId: originHospitalId,
       destinationHospitalId: destinationHospitalId,
-      priority: TicketPriority.HIGH,
+      priority: TicketPriority.CRITICAL,
       pathway: TicketPathway.TRAUMA,
       ticketNumber: `TRAUMA-${Date.now()}`,
       chiefComplaint: chiefComplaint || 'Trauma case',

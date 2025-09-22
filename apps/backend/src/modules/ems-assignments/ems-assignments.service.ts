@@ -26,8 +26,14 @@ export class EmsAssignmentsService {
 
   async create(createAssignmentDto: CreateEmsAssignmentDto, createdBy: string): Promise<EMSAssignment> {
     await this.validateAssignmentEntities(createAssignmentDto);
-    await this.checkAmbulanceAvailability(createAssignmentDto.ambulanceId);
-    await this.checkDriverAvailability(createAssignmentDto.driverId);
+    
+    // Only check availability if ambulance and driver are provided
+    if (createAssignmentDto.ambulanceId) {
+      await this.checkAmbulanceAvailability(createAssignmentDto.ambulanceId);
+    }
+    if (createAssignmentDto.driverId) {
+      await this.checkDriverAvailability(createAssignmentDto.driverId);
+    }
 
     const assignment = await this.prisma.eMSAssignment.create({
       data: {
@@ -50,15 +56,18 @@ export class EmsAssignmentsService {
       include: this.getAssignmentInclude(),
     });
 
-    await this.prisma.ambulance.update({
-      where: { id: createAssignmentDto.ambulanceId },
-      data: { status: 'IN_USE' },
-    });
+    // Only update ambulance status if ambulance is assigned
+    if (createAssignmentDto.ambulanceId) {
+      await this.prisma.ambulance.update({
+        where: { id: createAssignmentDto.ambulanceId },
+        data: { status: 'IN_USE' },
+      });
+    }
 
     // Create timeline event for ambulance dispatch
     await this.timelineEventsService.createEMSEvent(
       'AMBULANCE_DISPATCHED',
-      `Ambulance dispatched for ticket ${assignment.ticket?.ticketNumber || createAssignmentDto.ticketId}`,
+      `EMS assignment created for ticket ${createAssignmentDto.ticketId}`,
       createdBy,
       {
         ticketId: createAssignmentDto.ticketId,
@@ -68,7 +77,7 @@ export class EmsAssignmentsService {
         metadata: {
           assignmentId: assignment.id,
           emsContactTime: createAssignmentDto.emsContactTime,
-          priority: assignment.ticket?.priority,
+          manualAssignmentRequired: !createAssignmentDto.ambulanceId || !createAssignmentDto.driverId,
         },
       }
     );
@@ -111,7 +120,7 @@ export class EmsAssignmentsService {
       include: this.getAssignmentInclude(),
     });
 
-    if (updateAssignmentDto.status) {
+    if (updateAssignmentDto.status && existingAssignment.ambulanceId) {
       await this.updateAmbulanceStatus(existingAssignment.ambulanceId, updateAssignmentDto.status);
       
       // Create timeline event for status change
@@ -135,10 +144,12 @@ export class EmsAssignmentsService {
       data: { deletedAt: new Date() },
     });
 
-    await this.prisma.ambulance.update({
-      where: { id: assignment.ambulanceId },
-      data: { status: 'AVAILABLE' },
-    });
+    if (assignment.ambulanceId) {
+      await this.prisma.ambulance.update({
+        where: { id: assignment.ambulanceId },
+        data: { status: 'AVAILABLE' },
+      });
+    }
 
     this.logger.log(`EMS assignment soft deleted: ${id}`);
   }
@@ -333,15 +344,20 @@ export class EmsAssignmentsService {
   }
 
   private async validateAssignmentEntities(dto: CreateEmsAssignmentDto): Promise<void> {
-    const [ticket, ambulance, driver] = await Promise.all([
-      this.prisma.ticket.findUnique({ where: { id: dto.ticketId } }),
-      this.prisma.ambulance.findUnique({ where: { id: dto.ambulanceId } }),
-      this.prisma.user.findUnique({ where: { id: dto.driverId } }),
-    ]);
-
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: dto.ticketId } });
     if (!ticket) throw new NotFoundException(`Ticket with ID ${dto.ticketId} not found`);
-    if (!ambulance) throw new NotFoundException(`Ambulance with ID ${dto.ambulanceId} not found`);
-    if (!driver) throw new NotFoundException(`Driver with ID ${dto.driverId} not found`);
+
+    // Only validate ambulance if provided
+    if (dto.ambulanceId) {
+      const ambulance = await this.prisma.ambulance.findUnique({ where: { id: dto.ambulanceId } });
+      if (!ambulance) throw new NotFoundException(`Ambulance with ID ${dto.ambulanceId} not found`);
+    }
+
+    // Only validate driver if provided
+    if (dto.driverId) {
+      const driver = await this.prisma.user.findUnique({ where: { id: dto.driverId } });
+      if (!driver) throw new NotFoundException(`Driver with ID ${dto.driverId} not found`);
+    }
   }
 
   private async checkAmbulanceAvailability(ambulanceId: string): Promise<void> {
@@ -415,8 +431,8 @@ export class EmsAssignmentsService {
       triggeredBy,
       {
         ticketId: assignment.ticketId,
-        ambulanceId: assignment.ambulanceId,
-        driverId: assignment.driverId,
+        ambulanceId: assignment.ambulanceId || undefined,
+        driverId: assignment.driverId || undefined,
         metadata: {
           assignmentId: assignment.id,
           previousStatus: fromStatus,

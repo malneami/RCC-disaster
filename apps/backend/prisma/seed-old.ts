@@ -1042,7 +1042,7 @@ async function seedHospitalTickets() {
       title: 'Equipment Maintenance Request',
       description: 'Scheduled maintenance for medical equipment unit #3 - Requires immediate attention',
       type: HospitalTicketType.MAINTENANCE,
-      priority: TicketPriority.HIGH,
+      priority: TicketPriority.CRITICAL,
       status: HospitalTicketStatus.OPEN,
       hospitalId: '1', // JGH
       createdById: users[2].id, // EMS Operator
@@ -1052,7 +1052,7 @@ async function seedHospitalTickets() {
       title: 'Cardiologist Consultation',
       description: 'Request for cardiologist consultation for complex case requiring expert opinion',
       type: HospitalTicketType.CONSULTATION,
-      priority: TicketPriority.HIGH,
+      priority: TicketPriority.CRITICAL,
       status: HospitalTicketStatus.OPEN,
       hospitalId: '3', // PMNH
       createdById: users[3].id, // Data Collector
@@ -1071,7 +1071,7 @@ async function seedHospitalTickets() {
       title: 'Patient Transfer Request - Trauma',
       description: 'Request to transfer trauma patient to specialized trauma center for advanced care',
       type: HospitalTicketType.TRANSFER,
-      priority: TicketPriority.HIGH,
+      priority: TicketPriority.CRITICAL,
       status: HospitalTicketStatus.OPEN,
       hospitalId: '4', // Samtah
       createdById: users[0].id, // Admin
@@ -1100,7 +1100,7 @@ async function seedHospitalTickets() {
       title: 'Network Connectivity Issue',
       description: 'Intermittent network connectivity issues affecting patient monitoring systems',
       type: HospitalTicketType.MAINTENANCE,
-      priority: TicketPriority.HIGH,
+      priority: TicketPriority.CRITICAL,
       status: HospitalTicketStatus.OPEN,
       hospitalId: '5', // Abu Arish
       createdById: users[1].id, // RCC Coordinator
@@ -1110,7 +1110,7 @@ async function seedHospitalTickets() {
       title: 'Equipment Calibration Complete',
       description: 'Annual calibration of medical equipment completed successfully',
       type: HospitalTicketType.MAINTENANCE,
-      priority: TicketPriority.LOW,
+      priority: TicketPriority.MEDIUM,
       status: HospitalTicketStatus.RESOLVED,
       hospitalId: '6', // Sabya
       createdById: users[3].id, // Data Collector
@@ -1217,7 +1217,7 @@ async function seedComprehensiveCases() {
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'STEMI',
           
-          priority: getRandomItem(['CRITICAL', 'HIGH', 'EMERGENCY']),
+          priority: getRandomItem(['CRITICAL', 'EMERGENCY']),
           emergencyType: 'STEMI',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),
           notes: `STEMI case: Chest pain with ST elevation`,
@@ -1275,7 +1275,7 @@ async function seedComprehensiveCases() {
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'STROKE',
           
-          priority: getRandomItem(['CRITICAL', 'HIGH', 'EMERGENCY']),
+          priority: getRandomItem(['CRITICAL', 'EMERGENCY']),
           emergencyType: 'STROKE',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),
           notes: `Stroke case: Acute neurological deficit`,
@@ -1341,7 +1341,7 @@ async function seedComprehensiveCases() {
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'TRAUMA',
           
-          priority: getRandomItem(['CRITICAL', 'HIGH', 'EMERGENCY']),
+          priority: getRandomItem(['CRITICAL', 'EMERGENCY']),
           emergencyType: 'TRAUMA',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),
           notes: `Trauma case: MVA with head and chest injuries`,

@@ -117,7 +117,7 @@ export async function seedComprehensiveTraumaCases() {
           originHospitalId: hospital.id,
           destinationHospitalId: hospitals[(i + 1) % hospitals.length].id,
           pathway: 'TRAUMA',
-          priority: scenario.criticalCase ? 'CRITICAL' : getRandomItem(['HIGH', 'EMERGENCY']),
+          priority: scenario.criticalCase ? 'CRITICAL' : getRandomItem(['CRITICAL', 'EMERGENCY']),
           emergencyType: 'TRAUMA',
           status: getRandomItem(['PENDING', 'ASSIGNED', 'COMPLETED']),
           notes: `Trauma case: ${scenario.name} scenario`,
