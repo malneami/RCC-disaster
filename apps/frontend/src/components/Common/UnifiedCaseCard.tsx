@@ -175,42 +175,130 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
       elevation={elevation}
       sx={{ 
         mb: 2,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        borderRadius: 2,
         border: `1px solid ${getCaseTypeColor()}20`,
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
         '&:hover': {
-          boxShadow: 4,
+          elevation: 8,
+          transform: 'translateY(-4px)',
+          boxShadow: `0 8px 25px ${getCaseTypeColor()}30`,
+          border: `1px solid ${getCaseTypeColor()}40`,
         },
       }}
     >
       <CardContent sx={{ pb: 1 }}>
         {/* Header */}
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography variant="h6" component="span">
+        <Box 
+          display="flex" 
+          justifyContent="space-between" 
+          alignItems="flex-start" 
+          mb={2}
+          sx={{
+            background: `linear-gradient(135deg, ${getCaseTypeColor()}10 0%, ${getCaseTypeColor()}05 100%)`,
+            borderRadius: 1,
+            p: 1.5,
+            border: `1px solid ${getCaseTypeColor()}15`,
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
+            gap: 1,
+          }}
+        >
+          <Box display="flex" alignItems="center" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${getCaseTypeColor()} 0%, ${getCaseTypeColor()}CC 100%)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.2rem',
+                color: 'white',
+                boxShadow: `0 2px 8px ${getCaseTypeColor()}40`,
+                flexShrink: 0,
+              }}
+            >
               {getCaseTypeIcon()}
-            </Typography>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+            </Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 700, 
+                  lineHeight: 1.2,
+                  color: 'text.primary',
+                  fontSize: { xs: '1rem', sm: '1.1rem' },
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {formatPatientName(patient.name)}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.85rem' },
+                  fontWeight: 500,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {patient.age}Y {patient.gender.toLowerCase()} • {format(new Date(patient.admissionDate), 'MMM dd, HH:mm')}
               </Typography>
             </Box>
           </Box>
           
-          <Box display="flex" alignItems="center" gap={1}>
+          <Box 
+            display="flex" 
+            alignItems="center" 
+            gap={1}
+            sx={{ 
+              flexWrap: 'wrap',
+              justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+              mt: { xs: 1, sm: 0 },
+            }}
+          >
             <Chip 
               label={status.replace(/_/g, ' ')} 
               size="small" 
               color={getStatusColor(status) as any}
-              sx={{ textTransform: 'capitalize' }}
+              sx={{ 
+                textTransform: 'capitalize',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                maxWidth: { xs: '120px', sm: 'none' },
+                '& .MuiChip-label': {
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                },
+              }}
             />
             {severity && (
               <Chip 
                 label={severity} 
                 size="small" 
                 variant="outlined"
-                sx={{ textTransform: 'capitalize' }}
+                sx={{ 
+                  textTransform: 'capitalize',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  borderColor: getCaseTypeColor(),
+                  color: getCaseTypeColor(),
+                  maxWidth: { xs: '120px', sm: 'none' },
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  },
+                }}
               />
             )}
           </Box>

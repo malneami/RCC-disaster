@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -6,6 +6,11 @@ import {
   Chip,
   Grid,
   Divider,
+  TextField,
+  InputAdornment,
+  IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -13,8 +18,15 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  Add as AddIcon,
+  FilterList as FilterIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  ViewModule as CardsIcon,
+  TableChart as TableIcon,
 } from '@mui/icons-material';
 import { StrokeCase } from '../../../services/strokeService';
+import StrokeCasesFilters from './StrokeCasesList/StrokeCasesFilters';
 import UnifiedCaseCard, { 
   UnifiedCaseCardProps, 
   PatientInfo, 
@@ -33,6 +45,7 @@ interface StrokeCasesCardsProps {
   onEditCase: (case_: StrokeCase) => void;
   onOpenOutcomeForm: (case_: StrokeCase) => void;
   isAdmin?: boolean;
+  onViewModeChange?: (mode: 'table' | 'cards') => void;
 }
 
 const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
@@ -42,7 +55,72 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
   onDeleteCase,
   onViewDetails,
   onEditCase,
+  onViewModeChange,
 }) => {
+  const [filteredCases, setFilteredCases] = useState<StrokeCase[]>(cases);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    strokeType: '',
+    status: '',
+    severity: '',
+  });
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [cases, searchQuery, filters]);
+
+  const applyFiltersAndSearch = () => {
+    let filtered = cases;
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(case_ => {
+        const patient = case_.patient;
+        if (!patient) return false;
+        
+        const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
+        const nationalId = patient.nationalId?.toLowerCase() || '';
+        const mrn = patient.mrn?.toLowerCase() || '';
+        
+        return fullName.includes(query) || 
+               nationalId.includes(query) || 
+               mrn.includes(query);
+      });
+    }
+
+    // Apply filters
+    if (filters.strokeType) {
+      filtered = filtered.filter(case_ => case_.strokeType === filters.strokeType);
+    }
+    if (filters.status) {
+      filtered = filtered.filter(case_ => case_.currentStatus === filters.status);
+    }
+    if (filters.severity) {
+      filtered = filtered.filter(case_ => case_.strokeSeverity === filters.severity);
+    }
+
+    setFilteredCases(filtered);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
+  const handleApplyFilters = () => {
+    applyFiltersAndSearch();
+  };
+
+  const handleClearFilters = () => {
+    setFilters({ strokeType: '', status: '', severity: '' });
+    setSearchQuery('');
+    applyFiltersAndSearch();
+  };
+
+  const handleFiltersChange = (newFilters: any) => {
+    setFilters(newFilters);
+  };
   const transformStrokeCase = (strokeCase: StrokeCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
       name: `${strokeCase.patient?.firstName || ''} ${strokeCase.patient?.lastName || ''}`.trim(),
@@ -100,8 +178,14 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       },
     ];
 
-    // Data completeness
-    const dataCompleteness = calculateDataCompleteness(strokeCase);
+    // Data completeness - use backend percentage if available
+    const dataCompleteness = strokeCase.outcomePercentageCompleteness !== undefined 
+      ? {
+          percentage: strokeCase.outcomePercentageCompleteness,
+          completed: Math.round((strokeCase.outcomePercentageCompleteness / 100) * 20), // Assuming 20 total fields
+          total: 20,
+        }
+      : calculateDataCompleteness(strokeCase);
 
     // Case details
     const caseDetails = {
@@ -289,6 +373,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
         </Typography>
         <Button
           variant="contained"
+          startIcon={<AddIcon />}
           onClick={onCreateCase}
         >
           Create Stroke Case
@@ -299,12 +384,76 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Stroke Cases ({cases.length})
-      </Typography>
+      {/* Header and Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6">
+          Stroke Cases ({filteredCases.length})
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<FilterIcon />}
+            onClick={() => setFilterDialogOpen(true)}
+          >
+            Filter
+          </Button>
+          {onViewModeChange && (
+            <ToggleButtonGroup
+              value="cards"
+              exclusive
+              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
+              size="small"
+            >
+              <ToggleButton value="table">
+                <TableIcon />
+              </ToggleButton>
+              <ToggleButton value="cards">
+                <CardsIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={onCreateCase}
+          >
+            New Case
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Search by patient name, MRN, or National ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="clear search"
+                  onClick={handleClearSearch}
+                  edge="end"
+                  size="small"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          size="small"
+        />
+      </Box>
       
       <Grid container spacing={2}>
-        {cases.map((strokeCase) => {
+        {filteredCases.map((strokeCase) => {
           const transformedCase = transformStrokeCase(strokeCase);
           return (
             <Grid item xs={12} md={6} lg={4} key={transformedCase.caseId}>
@@ -313,6 +462,16 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
           );
         })}
       </Grid>
+
+      {/* Filter Dialog */}
+      <StrokeCasesFilters
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
+      />
     </Box>
   );
 };

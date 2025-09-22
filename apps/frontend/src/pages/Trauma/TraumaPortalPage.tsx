@@ -356,6 +356,7 @@ const TraumaPortalPage: React.FC = () => {
                 setEditDialogOpen(true);
               }}
               isAdmin={isAdmin}
+              onViewModeChange={setViewMode}
             />
           )}
         </TabPanel>

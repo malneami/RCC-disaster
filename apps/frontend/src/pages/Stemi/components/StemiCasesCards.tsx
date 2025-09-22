@@ -1,17 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
   Button,
   Grid,
   Divider,
+  TextField,
+  InputAdornment,
+  IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Add as AddIcon,
+  FilterList as FilterIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  ViewModule as CardsIcon,
+  TableChart as TableIcon,
 } from '@mui/icons-material';
 import { StemiCase } from '../services/stemiService';
+import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
 import UnifiedCaseCard, { 
   UnifiedCaseCardProps, 
   PatientInfo, 
@@ -28,6 +40,7 @@ interface StemiCasesCardsProps {
   onDeleteCase: (id: string) => void;
   onCreateCase: () => void;
   onOutcomeFormUpdate?: (caseId: string, updatedData: any) => void;
+  onViewModeChange?: (mode: 'table' | 'cards') => void;
 }
 
 const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
@@ -37,7 +50,95 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
   onViewCase,
   onDeleteCase,
   onCreateCase,
+  onViewModeChange,
 }) => {
+  const [filteredCases, setFilteredCases] = useState<StemiCase[]>(cases);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    search: '',
+    modeOfArrival: '',
+    currentStatus: '',
+    selectedTreatment: '',
+    ecgResult: '',
+    rccActivated: null as boolean | null,
+    originHospitalId: '',
+    destinationHospitalId: '',
+    startDate: '',
+    endDate: '',
+  });
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [cases, filters]);
+
+  const applyFiltersAndSearch = () => {
+    let filtered = cases.filter((case_) => {
+      // Search filter (use filters.search instead of searchQuery)
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          case_.patient?.firstName?.toLowerCase().includes(searchLower) ||
+          case_.patient?.lastName?.toLowerCase().includes(searchLower) ||
+          case_.patient?.nationalId?.toLowerCase().includes(searchLower) ||
+          case_.presentingSymptoms?.toLowerCase().includes(searchLower) ||
+          case_.originHospital?.name?.toLowerCase().includes(searchLower);
+        
+        if (!matchesSearch) return false;
+      }
+
+      // Other filters (matching table view logic)
+      if (filters.modeOfArrival && case_.modeOfArrival !== filters.modeOfArrival) return false;
+      if (filters.currentStatus && case_.currentStatus !== filters.currentStatus) return false;
+      if (filters.selectedTreatment && case_.selectedTreatment !== filters.selectedTreatment) return false;
+      if (filters.ecgResult && case_.ecgResult !== filters.ecgResult) return false;
+      if (filters.rccActivated !== null && case_.rccActivated !== filters.rccActivated) return false;
+      if (filters.originHospitalId && case_.originHospitalId !== filters.originHospitalId) return false;
+      if (filters.destinationHospitalId && case_.destinationHospitalId !== filters.destinationHospitalId) return false;
+
+      // Date filters
+      if (filters.startDate) {
+        const caseDate = new Date(case_.ticket.createdAt);
+        const fromDate = new Date(filters.startDate);
+        if (caseDate < fromDate) return false;
+      }
+      if (filters.endDate) {
+        const caseDate = new Date(case_.ticket.createdAt);
+        const toDate = new Date(filters.endDate);
+        toDate.setHours(23, 59, 59, 999); // End of day
+        if (caseDate > toDate) return false;
+      }
+
+      return true;
+    });
+
+    setFilteredCases(filtered);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      search: '',
+      modeOfArrival: '',
+      currentStatus: '',
+      selectedTreatment: '',
+      ecgResult: '',
+      rccActivated: null,
+      originHospitalId: '',
+      destinationHospitalId: '',
+      startDate: '',
+      endDate: '',
+    });
+    setSearchQuery('');
+    applyFiltersAndSearch();
+  };
+
+  const handleFiltersChange = (newFilters: any) => {
+    setFilters(newFilters);
+  };
   const transformStemiCase = (stemiCase: StemiCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
       name: `${stemiCase.patient?.firstName || ''} ${stemiCase.patient?.lastName || ''}`.trim(),
@@ -96,8 +197,14 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
       },
     ];
 
-    // Data completeness
-    const dataCompleteness = calculateDataCompleteness(stemiCase);
+    // Data completeness - use backend percentage if available
+    const dataCompleteness = stemiCase.outcomePercentageCompleteness !== undefined 
+      ? {
+          percentage: stemiCase.outcomePercentageCompleteness,
+          completed: Math.round((stemiCase.outcomePercentageCompleteness / 100) * 20), // Assuming 20 total fields
+          total: 20,
+        }
+      : calculateDataCompleteness(stemiCase);
 
     // Case details
     const caseDetails = {
@@ -350,6 +457,107 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
     }
   };
 
+  // Filter fields configuration (matching table view)
+  const filterFields = [
+    {
+      key: 'search',
+      label: 'Search',
+      type: 'text' as const,
+      placeholder: 'Search by patient name, ID, or symptoms...',
+    },
+    {
+      key: 'modeOfArrival',
+      label: 'Mode of Arrival',
+      type: 'select' as const,
+      options: [
+        { value: 'AMBULANCE', label: 'Ambulance' },
+        { value: 'PRIVATE_VEHICLE', label: 'Private Vehicle' },
+        { value: 'AIR_TRANSPORT', label: 'Air Transport' },
+        { value: 'WALK_IN', label: 'Walk-in' },
+        { value: 'POLICE', label: 'Police' },
+        { value: 'TRANSFERRED_FROM_HOSPITAL', label: 'Hospital Transfer' },
+        { value: 'OTHER', label: 'Other' },
+      ],
+    },
+    {
+      key: 'currentStatus',
+      label: 'Current Status',
+      type: 'select' as const,
+      options: [
+        { value: 'SUSPECTED', label: 'Suspected' },
+        { value: 'ECG_PENDING', label: 'ECG Pending' },
+        { value: 'STEMI_CONFIRMED', label: 'STEMI Confirmed' },
+        { value: 'NSTEMI_CONFIRMED', label: 'NSTEMI Confirmed' },
+        { value: 'UNSTABLE_ANGINA', label: 'Unstable Angina' },
+        { value: 'RCC_ACTIVATED', label: 'RCC Activated' },
+        { value: 'IN_TRANSIT', label: 'In Transit' },
+        { value: 'PCI_READY', label: 'PCI Ready' },
+        { value: 'BALLOON_INFLATED', label: 'Balloon Inflated' },
+        { value: 'CCU_ADMITTED', label: 'CCU Admitted' },
+        { value: 'DISCHARGED', label: 'Discharged' },
+        { value: 'EXPIRED', label: 'Expired' },
+      ],
+    },
+    {
+      key: 'selectedTreatment',
+      label: 'Selected Treatment',
+      type: 'select' as const,
+      options: [
+        { value: 'PRIMARY_PCI', label: 'Primary PCI' },
+        { value: 'RESCUE_PCI', label: 'Rescue PCI' },
+        { value: 'FIBRINOLYSIS', label: 'Fibrinolysis' },
+        { value: 'TRANSFER_FOR_PRIMARY_PCI', label: 'Transfer for Primary PCI' },
+        { value: 'MEDICAL_MANAGEMENT', label: 'Medical Management' },
+      ],
+    },
+    {
+      key: 'ecgResult',
+      label: 'ECG Result',
+      type: 'select' as const,
+      options: [
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'NORMAL', label: 'Normal' },
+        { value: 'STEMI_ANTERIOR', label: 'STEMI Anterior' },
+        { value: 'STEMI_INFERIOR', label: 'STEMI Inferior' },
+        { value: 'STEMI_LATERAL', label: 'STEMI Lateral' },
+        { value: 'STEMI_POSTERIOR', label: 'STEMI Posterior' },
+        { value: 'NSTEMI_CHANGES', label: 'NSTEMI Changes' },
+        { value: 'UNSTABLE_PATTERN', label: 'Unstable Pattern' },
+        { value: 'TECHNICAL_ISSUE', label: 'Technical Issue' },
+      ],
+    },
+    {
+      key: 'rccActivated',
+      label: 'RCC Activated',
+      type: 'select' as const,
+      options: [
+        { value: 'true', label: 'Yes' },
+        { value: 'false', label: 'No' },
+      ],
+    },
+    {
+      key: 'originHospitalId',
+      label: 'Origin Hospital',
+      type: 'select' as const,
+      options: [], // Will be populated dynamically
+    },
+    {
+      key: 'destinationHospitalId',
+      label: 'Destination Hospital',
+      type: 'select' as const,
+      options: [], // Will be populated dynamically
+    },
+    {
+      key: 'startDate',
+      label: 'From Date',
+      type: 'date' as const,
+    },
+    {
+      key: 'endDate',
+      label: 'To Date',
+      type: 'date' as const,
+    },
+  ];
 
   if (loading) {
     return (
@@ -370,6 +578,7 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
         </Typography>
         <Button
           variant="contained"
+          startIcon={<AddIcon />}
           onClick={onCreateCase}
         >
           Create STEMI Case
@@ -380,12 +589,76 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        STEMI Cases ({cases.length})
-      </Typography>
+      {/* Header and Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6">
+          STEMI Cases ({filteredCases.length})
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<FilterIcon />}
+            onClick={() => setFilterDialogOpen(true)}
+          >
+            Filter
+          </Button>
+          {onViewModeChange && (
+            <ToggleButtonGroup
+              value="cards"
+              exclusive
+              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
+              size="small"
+            >
+              <ToggleButton value="table">
+                <TableIcon />
+              </ToggleButton>
+              <ToggleButton value="cards">
+                <CardsIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={onCreateCase}
+          >
+            New Case
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Search by patient name, MRN, or National ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="clear search"
+                  onClick={handleClearSearch}
+                  edge="end"
+                  size="small"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          size="small"
+        />
+      </Box>
       
       <Grid container spacing={2}>
-        {cases.map((stemiCase) => {
+        {filteredCases.map((stemiCase) => {
           const transformedCase = transformStemiCase(stemiCase);
           return (
             <Grid item xs={12} md={6} lg={4} key={transformedCase.caseId}>
@@ -394,6 +667,19 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
           );
         })}
       </Grid>
+
+      {/* Filter Dialog */}
+      <GenericFilterDialog
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        onApply={(newFilters) => {
+          handleFiltersChange(newFilters);
+          setFilterDialogOpen(false);
+        }}
+        onReset={handleClearFilters}
+        fields={filterFields}
+        values={filters}
+      />
     </Box>
   );
 };

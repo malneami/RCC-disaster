@@ -377,6 +377,7 @@ const StrokePortalPage: React.FC = () => {
                 setOutcomeFormDialogOpen(true);
               }}
               isAdmin={isAdmin}
+              onViewModeChange={setViewMode}
             />
           )}
         </TabPanel>

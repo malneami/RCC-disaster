@@ -606,6 +606,7 @@ const StemiPortalPage: React.FC = () => {
               onDeleteCase={handleDeleteCase}
               onCreateCase={() => setCreateDialogOpen(true)}
               onOutcomeFormUpdate={handleOutcomeFormUpdate}
+              onViewModeChange={setViewMode}
             />
           )}
         </TabPanel>

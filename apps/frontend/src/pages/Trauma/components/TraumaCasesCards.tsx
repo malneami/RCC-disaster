@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -6,14 +6,26 @@ import {
   Chip,
   Grid,
   Divider,
+  TextField,
+  InputAdornment,
+  IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Add as AddIcon,
+  FilterList as FilterIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  ViewModule as CardsIcon,
+  TableChart as TableIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
+import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
 import UnifiedCaseCard, { 
   UnifiedCaseCardProps, 
   PatientInfo, 
@@ -30,6 +42,7 @@ interface TraumaCasesCardsProps {
   onViewDetails: (case_: TraumaCase) => void;
   onEditCase: (case_: TraumaCase) => void;
   isAdmin: boolean;
+  onViewModeChange?: (mode: 'table' | 'cards') => void;
 }
 
 const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
@@ -38,7 +51,92 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   onDeleteCase,
   onViewDetails,
   onEditCase,
+  onViewModeChange,
 }) => {
+  const [filteredCases, setFilteredCases] = useState<TraumaCase[]>(cases);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    search: '',
+    modeOfArrival: '',
+    mechanismOfInjury: '',
+    edDisposition: '',
+    criticalCase: null as boolean | null,
+    transferCase: null as boolean | null,
+    dateFrom: '',
+    dateTo: '',
+    hospitalId: '',
+  });
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [cases, filters]);
+
+  const applyFiltersAndSearch = () => {
+    let filtered = cases.filter((case_) => {
+      // Search filter (use filters.search instead of searchQuery)
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          case_.patient?.firstName?.toLowerCase().includes(searchLower) ||
+          case_.patient?.lastName?.toLowerCase().includes(searchLower) ||
+          case_.patient?.nationalId?.toLowerCase().includes(searchLower) ||
+          case_.chiefComplaint?.toLowerCase().includes(searchLower) ||
+          case_.originHospital?.name?.toLowerCase().includes(searchLower);
+        
+        if (!matchesSearch) return false;
+      }
+
+      // Other filters (matching table view logic)
+      if (filters.modeOfArrival && case_.modeOfArrival !== filters.modeOfArrival) return false;
+      if (filters.mechanismOfInjury && case_.mechanismOfInjury !== filters.mechanismOfInjury) return false;
+      if (filters.edDisposition && case_.edDisposition !== filters.edDisposition) return false;
+      if (filters.criticalCase !== null && case_.criticalCase !== filters.criticalCase) return false;
+      if (filters.transferCase !== null && case_.transferCase !== filters.transferCase) return false;
+      if (filters.hospitalId && case_.originHospitalId !== filters.hospitalId) return false;
+
+      // Date filters
+      if (filters.dateFrom) {
+        const caseDate = new Date(case_.arrivalDateTime);
+        const fromDate = new Date(filters.dateFrom);
+        if (caseDate < fromDate) return false;
+      }
+      if (filters.dateTo) {
+        const caseDate = new Date(case_.arrivalDateTime);
+        const toDate = new Date(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999); // End of day
+        if (caseDate > toDate) return false;
+      }
+
+      return true;
+    });
+
+    setFilteredCases(filtered);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      search: '',
+      modeOfArrival: '',
+      mechanismOfInjury: '',
+      edDisposition: '',
+      criticalCase: null,
+      transferCase: null,
+      dateFrom: '',
+      dateTo: '',
+      hospitalId: '',
+    });
+    setSearchQuery('');
+    applyFiltersAndSearch();
+  };
+
+  const handleFiltersChange = (newFilters: any) => {
+    setFilters(newFilters);
+  };
   const transformTraumaCase = (traumaCase: TraumaCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
       name: `${traumaCase.patient?.firstName || ''} ${traumaCase.patient?.lastName || ''}`.trim(),
@@ -330,6 +428,82 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
     return `${days} days ago`;
   };
 
+  // Filter fields configuration (matching table view)
+  const filterFields = [
+    {
+      key: 'search',
+      label: 'Search',
+      type: 'text' as const,
+      placeholder: 'Search by patient name, ID, or complaint...',
+    },
+    {
+      key: 'modeOfArrival',
+      label: 'Mode of Arrival',
+      type: 'select' as const,
+      options: [
+        { value: 'AMBULANCE', label: 'Ambulance' },
+        { value: 'WALK_IN', label: 'Walk-in' },
+        { value: 'PRIVATE_VEHICLE', label: 'Private Vehicle' },
+        { value: 'HELICOPTER', label: 'Helicopter' },
+        { value: 'POLICE', label: 'Police' },
+      ],
+    },
+    {
+      key: 'mechanismOfInjury',
+      label: 'Mechanism of Injury',
+      type: 'select' as const,
+      options: [
+        { value: 'MOTOR_VEHICLE_ACCIDENT', label: 'Motor Vehicle Accident' },
+        { value: 'FALL', label: 'Fall' },
+        { value: 'PENETRATING_INJURY', label: 'Penetrating Injury' },
+        { value: 'BURN', label: 'Burn' },
+        { value: 'ASSAULT', label: 'Assault' },
+        { value: 'SPORTS_INJURY', label: 'Sports Injury' },
+        { value: 'OTHER', label: 'Other' },
+      ],
+    },
+    {
+      key: 'edDisposition',
+      label: 'ED Disposition',
+      type: 'select' as const,
+      options: [
+        { value: 'DISCHARGED', label: 'Discharged' },
+        { value: 'ADMITTED', label: 'Admitted' },
+        { value: 'TRANSFERRED', label: 'Transferred' },
+        { value: 'LEFT_AMA', label: 'Left AMA' },
+        { value: 'DECEASED', label: 'Deceased' },
+      ],
+    },
+    {
+      key: 'criticalCase',
+      label: 'Critical Case',
+      type: 'select' as const,
+      options: [
+        { value: 'true', label: 'Yes' },
+        { value: 'false', label: 'No' },
+      ],
+    },
+    {
+      key: 'transferCase',
+      label: 'Transfer Case',
+      type: 'select' as const,
+      options: [
+        { value: 'true', label: 'Yes' },
+        { value: 'false', label: 'No' },
+      ],
+    },
+    {
+      key: 'dateFrom',
+      label: 'From Date',
+      type: 'date' as const,
+    },
+    {
+      key: 'dateTo',
+      label: 'To Date',
+      type: 'date' as const,
+    },
+  ];
+
   if (cases.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -341,6 +515,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
         </Typography>
         <Button
           variant="contained"
+          startIcon={<AddIcon />}
           onClick={onCreateCase}
         >
           Create Trauma Case
@@ -351,12 +526,76 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Trauma Cases ({cases.length})
-      </Typography>
+      {/* Header and Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6">
+          Trauma Cases ({filteredCases.length})
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<FilterIcon />}
+            onClick={() => setFilterDialogOpen(true)}
+          >
+            Filter
+          </Button>
+          {onViewModeChange && (
+            <ToggleButtonGroup
+              value="cards"
+              exclusive
+              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
+              size="small"
+            >
+              <ToggleButton value="table">
+                <TableIcon />
+              </ToggleButton>
+              <ToggleButton value="cards">
+                <CardsIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={onCreateCase}
+          >
+            New Case
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Search by patient name, MRN, or National ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="clear search"
+                  onClick={handleClearSearch}
+                  edge="end"
+                  size="small"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          size="small"
+        />
+      </Box>
       
       <Grid container spacing={2}>
-        {cases.map((traumaCase) => {
+        {filteredCases.map((traumaCase) => {
           const transformedCase = transformTraumaCase(traumaCase);
           return (
             <Grid item xs={12} md={6} lg={4} key={transformedCase.caseId}>
@@ -365,6 +604,19 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
           );
         })}
       </Grid>
+
+      {/* Filter Dialog */}
+      <GenericFilterDialog
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        onApply={(newFilters) => {
+          handleFiltersChange(newFilters);
+          setFilterDialogOpen(false);
+        }}
+        onReset={handleClearFilters}
+        fields={filterFields}
+        values={filters}
+      />
     </Box>
   );
 };
