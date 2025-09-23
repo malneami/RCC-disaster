@@ -27,7 +27,7 @@ model StrokeCase {
   srcaCallTime                    DateTime?   @map("srca_call_time")
   timeOfSymptomOnset              DateTime?   @map("time_of_symptom_onset")
   lastKnownNormal                 DateTime?   @map("last_known_normal")
-  timeOfRegistration              DateTime?   @map("time_of_registration")
+  dateOfAdmission              DateTime?   @map("time_of_registration")
   timeOfTriage                    DateTime?   @map("time_of_triage")
   timeOfPhysicianAssessment       DateTime?   @map("time_of_physician_assessment")
   

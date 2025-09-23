@@ -109,11 +109,11 @@ export class StrokeKPICalculatorService {
    * KPI 1: Calculate door to physician time in minutes
    */
   private calculateDoorToPhysicianMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfRegistration || !strokeCase.timeOfPhysicianAssessment) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.timeOfPhysicianAssessment) {
       return undefined;
     }
 
-    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
     const physicianTime = new Date(strokeCase.timeOfPhysicianAssessment);
     
     return Math.round((physicianTime.getTime() - registrationTime.getTime()) / (1000 * 60));
@@ -134,11 +134,11 @@ export class StrokeKPICalculatorService {
    * KPI 3: Calculate registration to CT scan time in minutes
    */
   private calculateRegistrationToCtMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfRegistration || !strokeCase.timeOfCtScanStart) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.timeOfCtScanStart) {
       return undefined;
     }
 
-    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
     const ctTime = new Date(strokeCase.timeOfCtScanStart);
     
     return Math.round((ctTime.getTime() - registrationTime.getTime()) / (1000 * 60));
@@ -148,11 +148,11 @@ export class StrokeKPICalculatorService {
    * Calculate door to CT report time in minutes
    */
   private calculateDoorToCtReportMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfRegistration || !strokeCase.timeOfCtReportFinal) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.timeOfCtReportFinal) {
       return undefined;
     }
 
-    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
     const ctReportTime = new Date(strokeCase.timeOfCtReportFinal);
     
     return Math.round((ctReportTime.getTime() - registrationTime.getTime()) / (1000 * 60));
@@ -162,11 +162,11 @@ export class StrokeKPICalculatorService {
    * Calculate door to thrombolysis order time in minutes
    */
   private calculateDoorToThrombolysisOrderMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfRegistration || !strokeCase.thrombolysisOrderTime) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.thrombolysisOrderTime) {
       return undefined;
     }
 
-    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
     const thrombolysisOrderTime = new Date(strokeCase.thrombolysisOrderTime);
     
     return Math.round((thrombolysisOrderTime.getTime() - registrationTime.getTime()) / (1000 * 60));
@@ -176,11 +176,11 @@ export class StrokeKPICalculatorService {
    * Calculate door to needle time in minutes (same as registration to thrombolysis)
    */
   private calculateDoorToNeedleMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfRegistration || !strokeCase.ivThrombolysisAdministrationTime) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.ivThrombolysisAdministrationTime) {
       return undefined;
     }
 
-    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
     const thrombolysisTime = new Date(strokeCase.ivThrombolysisAdministrationTime);
     
     return Math.round((thrombolysisTime.getTime() - registrationTime.getTime()) / (1000 * 60));
@@ -190,11 +190,11 @@ export class StrokeKPICalculatorService {
    * KPI 4: Calculate registration to IV thrombolysis time in minutes
    */
   private calculateRegistrationToThrombolysisMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfRegistration || !strokeCase.ivThrombolysisAdministrationTime) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.ivThrombolysisAdministrationTime) {
       return undefined;
     }
 
-    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
     const thrombolysisTime = new Date(strokeCase.ivThrombolysisAdministrationTime);
     
     return Math.round((thrombolysisTime.getTime() - registrationTime.getTime()) / (1000 * 60));
@@ -253,11 +253,11 @@ export class StrokeKPICalculatorService {
    * KPI 8: Calculate registration to mechanical thrombectomy puncture time in minutes
    */
   private calculateRegistrationToMechanicalThrombectomyMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfRegistration || !strokeCase.timeOfMechanicalThrombectomyPuncture) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.timeOfMechanicalThrombectomyPuncture) {
       return undefined;
     }
 
-    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
     const mechanicalThrombectomyTime = new Date(strokeCase.timeOfMechanicalThrombectomyPuncture);
     
     return Math.round((mechanicalThrombectomyTime.getTime() - registrationTime.getTime()) / (1000 * 60));
@@ -267,12 +267,12 @@ export class StrokeKPICalculatorService {
    * KPI 9: Calculate SRCA call to arrival time in minutes
    */
   private calculateSrcaCallToArrivalMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.srcaCallTime || !strokeCase.timeOfRegistration) {
+    if (!strokeCase.srcaCallTime || !strokeCase.dateOfAdmission) {
       return undefined;
     }
 
     const callTime = new Date(strokeCase.srcaCallTime);
-    const arrivalTime = new Date(strokeCase.timeOfRegistration);
+    const arrivalTime = new Date(strokeCase.dateOfAdmission);
     
     return Math.round((arrivalTime.getTime() - callTime.getTime()) / (1000 * 60));
   }
@@ -281,11 +281,11 @@ export class StrokeKPICalculatorService {
    * KPI 10: Check if swallowing screening was performed within 4 hours
    */
   private calculateSwallowingScreeningWithin4Hours(strokeCase: StrokeCase): boolean {
-    if (!strokeCase.swallowingScreeningPerformed || !strokeCase.timeOfSwallowingScreening || !strokeCase.timeOfRegistration) {
+    if (!strokeCase.swallowingScreeningPerformed || !strokeCase.timeOfSwallowingScreening || !strokeCase.dateOfAdmission) {
       return false;
     }
 
-    const registrationTime = new Date(strokeCase.timeOfRegistration);
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
     const screeningTime = new Date(strokeCase.timeOfSwallowingScreening);
     const minutesDiff = Math.round((screeningTime.getTime() - registrationTime.getTime()) / (1000 * 60));
     

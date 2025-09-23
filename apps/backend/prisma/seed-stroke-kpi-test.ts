@@ -96,7 +96,7 @@ async function main() {
         srcaCallTime: addMinutes(admissionTime, -45), // 45 min before arrival
         timeOfSymptomOnset: addMinutes(admissionTime, -120), // 2 hours before arrival
         lastKnownNormal: addMinutes(admissionTime, -120),
-        timeOfRegistration: admissionTime,
+        dateOfAdmission: admissionTime,
         timeOfTriage: addMinutes(admissionTime, 2), // 2 min after registration
         timeOfPhysicianAssessment: addMinutes(admissionTime, 10), // 10 min after registration
         
@@ -182,7 +182,7 @@ async function main() {
         srcaCallTime: addMinutes(admissionTime, -50), // 50 min before arrival
         timeOfSymptomOnset: addMinutes(admissionTime, -180), // 3 hours before arrival
         lastKnownNormal: addMinutes(admissionTime, -180),
-        timeOfRegistration: admissionTime,
+        dateOfAdmission: admissionTime,
         timeOfTriage: addMinutes(admissionTime, 5), // 5 min after registration
         timeOfPhysicianAssessment: addMinutes(admissionTime, 18), // 18 min after registration
         
@@ -267,7 +267,7 @@ async function main() {
         srcaCallTime: null, // No SRCA call
         timeOfSymptomOnset: addMinutes(admissionTime, -300), // 5 hours before arrival
         lastKnownNormal: addMinutes(admissionTime, -300),
-        timeOfRegistration: admissionTime,
+        dateOfAdmission: admissionTime,
         timeOfTriage: addMinutes(admissionTime, 15), // 15 min after registration
         timeOfPhysicianAssessment: addMinutes(admissionTime, 45), // 45 min after registration
         
@@ -352,7 +352,7 @@ async function main() {
         srcaCallTime: randomBoolean(0.7) ? addMinutes(admissionTime, -60) : null,
         timeOfSymptomOnset: addMinutes(admissionTime, -180), // 3 hours before arrival
         lastKnownNormal: addMinutes(admissionTime, -180),
-        timeOfRegistration: admissionTime,
+        dateOfAdmission: admissionTime,
         timeOfTriage: addMinutes(admissionTime, 5), // 5 min after registration
         timeOfPhysicianAssessment: addMinutes(admissionTime, 20), // 20 min after registration
         
@@ -442,8 +442,8 @@ async function main() {
     const kpiData: any = {};
     
     // KPI 1: Door to physician (registration to physician assessment)
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.timeOfPhysicianAssessment) {
-      const doorToPhysicianMs = updatedStrokeCase.timeOfPhysicianAssessment.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+    if (updatedStrokeCase.dateOfAdmission && updatedStrokeCase.timeOfPhysicianAssessment) {
+      const doorToPhysicianMs = updatedStrokeCase.timeOfPhysicianAssessment.getTime() - updatedStrokeCase.dateOfAdmission.getTime();
       kpiData.doorToPhysicianMinutes = Math.round(doorToPhysicianMs / (1000 * 60));
       kpiData.metKpi1 = kpiData.doorToPhysicianMinutes <= 15;
     }
@@ -452,34 +452,34 @@ async function main() {
     kpiData.metKpi2 = updatedStrokeCase.prehospitalNotificationBySrca || updatedStrokeCase.prehospitalNotificationByUccPhc;
     
     // KPI 3: Registration to CT scan
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.timeOfCtScanStart) {
-      const registrationToCtMs = updatedStrokeCase.timeOfCtScanStart.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+    if (updatedStrokeCase.dateOfAdmission && updatedStrokeCase.timeOfCtScanStart) {
+      const registrationToCtMs = updatedStrokeCase.timeOfCtScanStart.getTime() - updatedStrokeCase.dateOfAdmission.getTime();
       kpiData.registrationToCtMinutes = Math.round(registrationToCtMs / (1000 * 60));
       kpiData.metKpi3 = kpiData.registrationToCtMinutes <= 20;
     }
     
     // Door to CT Report
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.timeOfCtReportFinal) {
-      const doorToCtReportMs = updatedStrokeCase.timeOfCtReportFinal.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+    if (updatedStrokeCase.dateOfAdmission && updatedStrokeCase.timeOfCtReportFinal) {
+      const doorToCtReportMs = updatedStrokeCase.timeOfCtReportFinal.getTime() - updatedStrokeCase.dateOfAdmission.getTime();
       kpiData.doorToCtReportMinutes = Math.round(doorToCtReportMs / (1000 * 60));
     }
     
     // Door to Thrombolysis Order
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.thrombolysisOrderTime) {
-      const doorToThrombolysisOrderMs = updatedStrokeCase.thrombolysisOrderTime.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+    if (updatedStrokeCase.dateOfAdmission && updatedStrokeCase.thrombolysisOrderTime) {
+      const doorToThrombolysisOrderMs = updatedStrokeCase.thrombolysisOrderTime.getTime() - updatedStrokeCase.dateOfAdmission.getTime();
       kpiData.doorToThrombolysisOrderMinutes = Math.round(doorToThrombolysisOrderMs / (1000 * 60));
     }
     
     // KPI 4: Registration to IV thrombolysis
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.ivThrombolysisAdministrationTime) {
-      const registrationToThrombolysisMs = updatedStrokeCase.ivThrombolysisAdministrationTime.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+    if (updatedStrokeCase.dateOfAdmission && updatedStrokeCase.ivThrombolysisAdministrationTime) {
+      const registrationToThrombolysisMs = updatedStrokeCase.ivThrombolysisAdministrationTime.getTime() - updatedStrokeCase.dateOfAdmission.getTime();
       kpiData.registrationToThrombolysisMinutes = Math.round(registrationToThrombolysisMs / (1000 * 60));
       kpiData.metKpi4 = kpiData.registrationToThrombolysisMinutes <= 60;
     }
     
     // Door to Needle Minutes (for table display - same as registration to thrombolysis)
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.ivThrombolysisAdministrationTime) {
-      const doorToNeedleMs = updatedStrokeCase.ivThrombolysisAdministrationTime.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+    if (updatedStrokeCase.dateOfAdmission && updatedStrokeCase.ivThrombolysisAdministrationTime) {
+      const doorToNeedleMs = updatedStrokeCase.ivThrombolysisAdministrationTime.getTime() - updatedStrokeCase.dateOfAdmission.getTime();
       kpiData.doorToNeedleMinutes = Math.round(doorToNeedleMs / (1000 * 60));
     }
     
@@ -501,22 +501,22 @@ async function main() {
     }
     
     // KPI 8: Registration to mechanical thrombectomy puncture
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.timeOfMechanicalThrombectomyPuncture) {
-      const registrationToMechanicalThrombectomyMs = updatedStrokeCase.timeOfMechanicalThrombectomyPuncture.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+    if (updatedStrokeCase.dateOfAdmission && updatedStrokeCase.timeOfMechanicalThrombectomyPuncture) {
+      const registrationToMechanicalThrombectomyMs = updatedStrokeCase.timeOfMechanicalThrombectomyPuncture.getTime() - updatedStrokeCase.dateOfAdmission.getTime();
       kpiData.registrationToMechanicalThrombectomyMinutes = Math.round(registrationToMechanicalThrombectomyMs / (1000 * 60));
       kpiData.metKpi8 = kpiData.registrationToMechanicalThrombectomyMinutes <= 120;
     }
     
     // KPI 9: SRCA call to arrival
-    if (updatedStrokeCase.srcaCallTime && updatedStrokeCase.timeOfRegistration) {
-      const srcaCallToArrivalMs = updatedStrokeCase.timeOfRegistration.getTime() - updatedStrokeCase.srcaCallTime.getTime();
+    if (updatedStrokeCase.srcaCallTime && updatedStrokeCase.dateOfAdmission) {
+      const srcaCallToArrivalMs = updatedStrokeCase.dateOfAdmission.getTime() - updatedStrokeCase.srcaCallTime.getTime();
       kpiData.srcaCallToArrivalMinutes = Math.round(srcaCallToArrivalMs / (1000 * 60));
       kpiData.metKpi9 = kpiData.srcaCallToArrivalMinutes <= 60;
     }
     
     // KPI 10: Swallowing screening within 4 hours
-    if (updatedStrokeCase.timeOfRegistration && updatedStrokeCase.timeOfSwallowingScreening) {
-      const screeningMs = updatedStrokeCase.timeOfSwallowingScreening.getTime() - updatedStrokeCase.timeOfRegistration.getTime();
+    if (updatedStrokeCase.dateOfAdmission && updatedStrokeCase.timeOfSwallowingScreening) {
+      const screeningMs = updatedStrokeCase.timeOfSwallowingScreening.getTime() - updatedStrokeCase.dateOfAdmission.getTime();
       const screeningMinutes = Math.round(screeningMs / (1000 * 60));
       kpiData.swallowingScreeningWithin4Hours = screeningMinutes <= 240; // 4 hours = 240 minutes
       kpiData.metKpi10 = kpiData.swallowingScreeningWithin4Hours;

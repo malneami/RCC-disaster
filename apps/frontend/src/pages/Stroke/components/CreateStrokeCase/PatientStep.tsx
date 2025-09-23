@@ -13,7 +13,7 @@ import {
   Divider,
 } from '@mui/material';
 
-import { CreateStrokeCaseData, StrokeType } from '../../../../services/strokeService';
+import { CreateStrokeCaseData } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
 import NationalIdInput from '../../../../components/Common/NationalIdInput';
 import PortalPatientEdit from '../../../../components/Common/PortalPatientEdit';
@@ -333,27 +333,21 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
         </FormControl>
       </Grid>
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth required>
-          <InputLabel>Stroke Type</InputLabel>
+        <FormControl fullWidth>
+          <InputLabel>Mode of Arrival</InputLabel>
           <Select
-            value={formData.strokeType}
-            label="Stroke Type"
-            onChange={(e) => updateFormData('strokeType', e.target.value as StrokeType)}
+            value={formData.modeOfArrival || ''}
+            onChange={(e) => updateFormData('modeOfArrival', e.target.value)}
           >
-            <MenuItem value="ISCHEMIC">Ischemic</MenuItem>
-            <MenuItem value="HEMORRHAGIC">Hemorrhagic</MenuItem>
-            <MenuItem value="TIA">TIA</MenuItem>
-            <MenuItem value="UNKNOWN">Unknown</MenuItem>
+            <MenuItem value="AMBULANCE">Ambulance</MenuItem>
+            <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
+            <MenuItem value="AIR_TRANSPORT">Air Transport</MenuItem>
+            <MenuItem value="WALK_IN">Walk In</MenuItem>
+            <MenuItem value="POLICE">Police</MenuItem>
+            <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
+            <MenuItem value="OTHER">Other</MenuItem>
           </Select>
         </FormControl>
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Chief Complaint"
-          value={formData.chiefComplaint || ''}
-          onChange={(e) => updateFormData('chiefComplaint', e.target.value)}
-        />
       </Grid>
 
 

@@ -9,13 +9,13 @@ async function testKPICalculations() {
     // Get a stroke case with timing data
     const strokeCase = await prisma.strokeCase.findFirst({
       where: {
-        timeOfRegistration: { not: null },
+        dateOfAdmission: { not: null },
         timeOfCtReportFinal: { not: null },
         thrombolysisOrderTime: { not: null }
       },
       select: {
         id: true,
-        timeOfRegistration: true,
+        dateOfAdmission: true,
         timeOfCtReportFinal: true,
         thrombolysisOrderTime: true,
         doorToCtReportMinutes: true,
@@ -30,7 +30,7 @@ async function testKPICalculations() {
       const allCases = await prisma.strokeCase.findMany({
         select: {
           id: true,
-          timeOfRegistration: true,
+          dateOfAdmission: true,
           timeOfCtReportFinal: true,
           thrombolysisOrderTime: true,
           doorToCtReportMinutes: true,
@@ -43,7 +43,7 @@ async function testKPICalculations() {
       allCases.forEach((case_, index) => {
         console.log(`Case ${index + 1}:`, {
           id: case_.id,
-          hasRegistration: !!case_.timeOfRegistration,
+          hasRegistration: !!case_.dateOfAdmission,
           hasCtReport: !!case_.timeOfCtReportFinal,
           hasThrombolysisOrder: !!case_.thrombolysisOrderTime,
           doorToCtReportMinutes: case_.doorToCtReportMinutes,
@@ -56,7 +56,7 @@ async function testKPICalculations() {
     
     console.log('✅ Found stroke case with timing data:', {
       id: strokeCase.id,
-      timeOfRegistration: strokeCase.timeOfRegistration,
+      dateOfAdmission: strokeCase.dateOfAdmission,
       timeOfCtReportFinal: strokeCase.timeOfCtReportFinal,
       thrombolysisOrderTime: strokeCase.thrombolysisOrderTime,
       doorToCtReportMinutes: strokeCase.doorToCtReportMinutes,
@@ -64,16 +64,16 @@ async function testKPICalculations() {
     });
     
     // Test manual calculation
-    if (strokeCase.timeOfRegistration && strokeCase.timeOfCtReportFinal) {
-      const registrationTime = new Date(strokeCase.timeOfRegistration);
+    if (strokeCase.dateOfAdmission && strokeCase.timeOfCtReportFinal) {
+      const registrationTime = new Date(strokeCase.dateOfAdmission);
       const ctReportTime = new Date(strokeCase.timeOfCtReportFinal);
       const manualDoorToCtReport = Math.round((ctReportTime.getTime() - registrationTime.getTime()) / (1000 * 60));
       
       console.log('🧮 Manual calculation - Door to CT Report:', manualDoorToCtReport, 'minutes');
     }
     
-    if (strokeCase.timeOfRegistration && strokeCase.thrombolysisOrderTime) {
-      const registrationTime = new Date(strokeCase.timeOfRegistration);
+    if (strokeCase.dateOfAdmission && strokeCase.thrombolysisOrderTime) {
+      const registrationTime = new Date(strokeCase.dateOfAdmission);
       const thrombolysisOrderTime = new Date(strokeCase.thrombolysisOrderTime);
       const manualDoorToThrombolysisOrder = Math.round((thrombolysisOrderTime.getTime() - registrationTime.getTime()) / (1000 * 60));
       

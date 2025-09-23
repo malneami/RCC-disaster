@@ -88,7 +88,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         srcaCallTime: strokeCase.srcaCallTime,
         timeOfSymptomOnset: strokeCase.timeOfSymptomOnset,
         lastKnownNormal: strokeCase.lastKnownNormal,
-        timeOfRegistration: strokeCase.timeOfRegistration,
+        dateOfAdmission: strokeCase.dateOfAdmission,
         timeOfTriage: strokeCase.timeOfTriage,
         timeOfPhysicianAssessment: strokeCase.timeOfPhysicianAssessment,
         

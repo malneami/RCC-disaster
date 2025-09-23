@@ -74,7 +74,7 @@ export interface StrokeCase {
   srcaCallTime?: string;
   timeOfSymptomOnset?: string;
   lastKnownNormal?: string;
-  timeOfRegistration?: string;
+  dateOfAdmission?: string;
   timeOfTriage?: string;
   timeOfPhysicianAssessment?: string;
   
@@ -382,7 +382,7 @@ export interface CreateStrokeCaseData {
   srcaCallTime?: string;
   timeOfSymptomOnset?: string;
   lastKnownNormal?: string;
-  timeOfRegistration?: string;
+  dateOfAdmission?: string;
   timeOfTriage?: string;
   timeOfPhysicianAssessment?: string;
 
@@ -542,7 +542,7 @@ export class StrokeService {
       srcaCallTime: data.srcaCallTime,
       timeOfSymptomOnset: data.timeOfSymptomOnset,
       lastKnownNormal: data.lastKnownNormal,
-      timeOfRegistration: data.timeOfRegistration,
+      dateOfAdmission: data.dateOfAdmission,
       timeOfTriage: data.timeOfTriage,
       timeOfPhysicianAssessment: data.timeOfPhysicianAssessment,
       

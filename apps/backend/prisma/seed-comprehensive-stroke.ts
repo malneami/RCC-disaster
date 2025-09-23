@@ -110,7 +110,7 @@ export async function seedComprehensiveStrokeCases() {
         srcaCallTime: Math.random() > 0.5 ? addMinutes(arrivalTime, -Math.random() * 30 - 10) : null,
         timeOfSymptomOnset: new Date(Date.now() - Math.random() * 7200000),
         lastKnownNormal: new Date(Date.now() - Math.random() * 7200000),
-        timeOfRegistration: registrationTime,
+        dateOfAdmission: registrationTime,
         timeOfTriage: triageTime,
         timeOfPhysicianAssessment: physicianAssessmentTime,
         

@@ -120,11 +120,10 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           formData.patientInfo?.firstName && 
           formData.patientInfo?.lastName && 
           formData.patientInfo?.nationalId && 
-          formData.originHospitalId && 
-          formData.strokeType
+          formData.originHospitalId
         );
       case 1:
-        return true; // Assessment fields are mostly optional
+        return !!(formData.strokeType); // Stroke type is now required in Assessment step
       case 2:
         return true; // Diagnosis fields are mostly optional
       case 3:

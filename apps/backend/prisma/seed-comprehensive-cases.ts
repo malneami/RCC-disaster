@@ -153,7 +153,7 @@ export async function seedComprehensiveCases() {
         
         // Timing
         timeOfSymptomOnset: new Date(Date.now() - Math.random() * 3600000),
-        timeOfRegistration: new Date(Date.now() - Math.random() * 1800000),
+        dateOfAdmission: new Date(Date.now() - Math.random() * 1800000),
         timeOfTriage: new Date(Date.now() - Math.random() * 900000),
         
         // Assessment

@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import { CreateStrokeCaseData, StrokeModeOfArrival } from '../../../../services/strokeService';
+import { CreateStrokeCaseData } from '../../../../services/strokeService';
 import { formatForDateTimeLocal, formatForUTC } from '../../../../helpers';
 
 interface AssessmentStepProps {
@@ -44,21 +44,27 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
       </Grid>
 
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth>
-          <InputLabel>Mode of Arrival</InputLabel>
+        <FormControl fullWidth required>
+          <InputLabel>Stroke Type</InputLabel>
           <Select
-            value={formData.modeOfArrival || ''}
-            onChange={(e) => updateFormData('modeOfArrival', e.target.value as StrokeModeOfArrival)}
+            value={formData.strokeType}
+            label="Stroke Type"
+            onChange={(e) => updateFormData('strokeType', e.target.value)}
           >
-           <MenuItem value="AMBULANCE">Ambulance</MenuItem>
-              <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
-              <MenuItem value="AIR_TRANSPORT">Air Transport</MenuItem>
-              <MenuItem value="WALK_IN">Walk In</MenuItem>
-              <MenuItem value="POLICE">Police</MenuItem>
-              <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
-              <MenuItem value="OTHER">Other</MenuItem>
+            <MenuItem value="ISCHEMIC">Ischemic</MenuItem>
+            <MenuItem value="HEMORRHAGIC">Hemorrhagic</MenuItem>
+            <MenuItem value="TIA">TIA</MenuItem>
+            <MenuItem value="UNKNOWN">Unknown</MenuItem>
           </Select>
         </FormControl>
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Chief Complaint"
+          value={formData.chiefComplaint || ''}
+          onChange={(e) => updateFormData('chiefComplaint', e.target.value)}
+        />
       </Grid>
       
       {formData.modeOfArrival === 'BY_AMBULANCE_RED_CRESCENT' && (
@@ -86,24 +92,14 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           helperText="When symptoms first appeared"
         />
       </Grid>
+      
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
-          label="Last Known Normal"
+          label="Date of Admission"
           type="datetime-local"
-          value={formatForDateTimeLocal(formData.lastKnownNormal || '')}
-          onChange={(e) => handleDateTimeChange('lastKnownNormal', e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          helperText="Last time patient was known to be normal"
-        />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Time of Registration"
-          type="datetime-local"
-          value={formatForDateTimeLocal(formData.timeOfRegistration || '')}
-          onChange={(e) => handleDateTimeChange('timeOfRegistration', e.target.value)}
+          value={formatForDateTimeLocal(formData.dateOfAdmission || '')}
+          onChange={(e) => handleDateTimeChange('dateOfAdmission', e.target.value)}
           InputLabelProps={{ shrink: true }}
           helperText="When patient was registered at hospital"
         />

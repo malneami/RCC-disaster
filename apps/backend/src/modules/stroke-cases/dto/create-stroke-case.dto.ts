@@ -192,7 +192,7 @@ export class CreateStrokeCaseDto {
 
   @IsOptional()
   @IsDateString()
-  timeOfRegistration?: string;
+  dateOfAdmission?: string;
 
   @IsOptional()
   @IsDateString()

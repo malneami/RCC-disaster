@@ -64,7 +64,7 @@ export class UpdateStrokeCaseV2Dto {
 
   @IsOptional()
   @IsDateString()
-  timeOfRegistration?: string | null;
+  dateOfAdmission?: string | null;
 
   @IsOptional()
   @IsDateString()

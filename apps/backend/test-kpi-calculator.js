@@ -13,13 +13,13 @@ async function testKPICalculator() {
     const thrombolysisOrderTime = new Date(now.getTime() - 15 * 60 * 1000); // 15 minutes ago
     
     const testStrokeCase = {
-      timeOfRegistration: registrationTime,
+      dateOfAdmission: registrationTime,
       timeOfCtReportFinal: ctReportTime,
       thrombolysisOrderTime: thrombolysisOrderTime,
     };
     
     console.log('📊 Test data:');
-    console.log('  - Registration:', testStrokeCase.timeOfRegistration);
+    console.log('  - Registration:', testStrokeCase.dateOfAdmission);
     console.log('  - CT Report Final:', testStrokeCase.timeOfCtReportFinal);
     console.log('  - Thrombolysis Order:', testStrokeCase.thrombolysisOrderTime);
     

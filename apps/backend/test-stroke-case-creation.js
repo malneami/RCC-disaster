@@ -43,7 +43,7 @@ async function testStrokeCaseCreation() {
         currentStatus: 'CONFIRMED',
         
         // Timing fields
-        timeOfRegistration: registrationTime,
+        dateOfAdmission: registrationTime,
         timeOfCtReportFinal: ctReportTime,
         thrombolysisOrderTime: thrombolysisOrderTime,
         
@@ -54,7 +54,7 @@ async function testStrokeCaseCreation() {
     
     console.log('✅ Created stroke case:', strokeCase.id);
     console.log('📊 Timing data:');
-    console.log('  - Registration:', strokeCase.timeOfRegistration);
+    console.log('  - Registration:', strokeCase.dateOfAdmission);
     console.log('  - CT Report Final:', strokeCase.timeOfCtReportFinal);
     console.log('  - Thrombolysis Order:', strokeCase.thrombolysisOrderTime);
     
@@ -64,13 +64,13 @@ async function testStrokeCaseCreation() {
     console.log('  - Door to Thrombolysis Order Minutes:', strokeCase.doorToThrombolysisOrderMinutes);
     
     // Manual calculation verification
-    if (strokeCase.timeOfRegistration && strokeCase.timeOfCtReportFinal) {
-      const manualDoorToCtReport = Math.round((strokeCase.timeOfCtReportFinal.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+    if (strokeCase.dateOfAdmission && strokeCase.timeOfCtReportFinal) {
+      const manualDoorToCtReport = Math.round((strokeCase.timeOfCtReportFinal.getTime() - strokeCase.dateOfAdmission.getTime()) / (1000 * 60));
       console.log('  - Manual Door to CT Report calculation:', manualDoorToCtReport, 'minutes');
     }
     
-    if (strokeCase.timeOfRegistration && strokeCase.thrombolysisOrderTime) {
-      const manualDoorToThrombolysisOrder = Math.round((strokeCase.thrombolysisOrderTime.getTime() - strokeCase.timeOfRegistration.getTime()) / (1000 * 60));
+    if (strokeCase.dateOfAdmission && strokeCase.thrombolysisOrderTime) {
+      const manualDoorToThrombolysisOrder = Math.round((strokeCase.thrombolysisOrderTime.getTime() - strokeCase.dateOfAdmission.getTime()) / (1000 * 60));
       console.log('  - Manual Door to Thrombolysis Order calculation:', manualDoorToThrombolysisOrder, 'minutes');
     }
     
