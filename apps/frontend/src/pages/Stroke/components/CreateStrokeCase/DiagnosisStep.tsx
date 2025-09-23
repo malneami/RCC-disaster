@@ -15,7 +15,8 @@ import {
 import { 
   CreateStrokeCaseData, 
   SwallowingScreeningResult,
-  CTFindings
+  CTFindings,
+  ModifiedRankinScale
 } from '../../../../services/strokeService';
 import { formatForDateTimeLocal, formatForUTC } from '../../../../helpers';
 
@@ -109,18 +110,6 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
         </>
       )}
 
-      <Grid item xs={12} sm={6}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={formData.lvoDetected || false}
-              onChange={(e) => updateFormData('lvoDetected', e.target.checked)}
-            />
-          }
-          label="LVO Detected"
-        />
-      </Grid>
-
       <Grid item xs={12}>
         <Divider sx={{ my: 2 }} />
       </Grid>
@@ -171,6 +160,24 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
                 <MenuItem value="PASS">Pass</MenuItem>
                 <MenuItem value="FAIL">Fail</MenuItem>
                 <MenuItem value="NOT_APPLICABLE">Not Applicable</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Modified Rankin Scale at 90 days</InputLabel>
+              <Select
+                value={formData.modifiedRankinScaleAt90Days || ''}
+                onChange={(e) => updateFormData('modifiedRankinScaleAt90Days', e.target.value as ModifiedRankinScale)}
+              >
+                <MenuItem value="SCORE_0">Score 0 - No symptoms</MenuItem>
+                <MenuItem value="SCORE_1">Score 1 - No significant disability</MenuItem>
+                <MenuItem value="SCORE_2">Score 2 - Slight disability</MenuItem>
+                <MenuItem value="SCORE_3">Score 3 - Moderate disability</MenuItem>
+                <MenuItem value="SCORE_4">Score 4 - Moderately severe disability</MenuItem>
+                <MenuItem value="SCORE_5">Score 5 - Severe disability</MenuItem>
+                <MenuItem value="SCORE_6_DEAD">Score 6 - Dead</MenuItem>
               </Select>
             </FormControl>
           </Grid>

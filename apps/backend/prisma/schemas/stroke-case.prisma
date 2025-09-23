@@ -21,6 +21,7 @@ model StrokeCase {
   barthelDischarge                Int?        @map("barthel_discharge")
   aspectsScore                    Int?        @map("aspects_score") // 0-10 scale
   gcsBaseline                     Int?        @map("gcs_baseline") // 3-15 scale
+  chiefComplaint                  String?     @map("chief_complaint")
   
   // Patient Arrival & Timing (Step 1)
   modeOfArrival                   StrokeModeOfArrival? @map("mode_of_arrival")
