@@ -65,8 +65,8 @@ const calculateKpiStatus = (case_: StemiCase) => {
     kpis.doorToBalloon = case_.doorToBalloonMinutes <= target;
   }
 
-  // KPI 3: Door to Needle ≤30min (Transfer cases only)
-  if (case_.caseType === 'TRANSFER' && case_.doorToNeedleMinutes !== null && case_.doorToNeedleMinutes !== undefined) {
+  // KPI 3: Door to Needle ≤30min (Only for thrombolytic cases)
+  if (case_.thrombolyticGiven && case_.doorToNeedleMinutes !== null && case_.doorToNeedleMinutes !== undefined) {
     kpis.doorToNeedle = case_.doorToNeedleMinutes <= 30;
   }
 
@@ -282,7 +282,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                   </Tooltip>
                 </TableCell>
                 <TableCell align="center">
-                  <Tooltip title="Door to Needle ≤30 min (Transfer cases only)">
+                  <Tooltip title="Door to Needle ≤30 min (Thrombolytic cases only)">
                     <Typography variant="caption" fontWeight="bold">
                       Door to Needle
                     </Typography>
@@ -384,7 +384,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                       <TableCell align="center">
                         <KpiIcon 
                           met={kpis.doorToNeedle} 
-                          applicable={case_.caseType === 'TRANSFER' && case_.doorToNeedleMinutes !== null && case_.doorToNeedleMinutes !== undefined}
+                          applicable={!!(case_.thrombolyticGiven && case_.doorToNeedleMinutes !== null && case_.doorToNeedleMinutes !== undefined)}
                           minutes={case_.doorToNeedleMinutes}
                         />
                       </TableCell>

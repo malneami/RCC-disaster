@@ -112,6 +112,14 @@ export class EmsAssignmentsService {
   async update(id: string, updateAssignmentDto: UpdateEmsAssignmentDto, updatedBy?: string): Promise<EMSAssignment> {
     const existingAssignment = await this.findById(id);
 
+    // Validate ambulance and driver if being assigned
+    if (updateAssignmentDto.ambulanceId) {
+      await this.checkAmbulanceAvailability(updateAssignmentDto.ambulanceId);
+    }
+    if (updateAssignmentDto.driverId) {
+      await this.checkDriverAvailability(updateAssignmentDto.driverId);
+    }
+
     const updateData = this.buildUpdateData(updateAssignmentDto);
 
     const assignment = await this.prisma.eMSAssignment.update({
@@ -120,15 +128,44 @@ export class EmsAssignmentsService {
       include: this.getAssignmentInclude(),
     });
 
-    if (updateAssignmentDto.status && existingAssignment.ambulanceId) {
+    // Update ambulance status if ambulance is being assigned or status is changing
+    if (updateAssignmentDto.ambulanceId && updateAssignmentDto.status) {
+      await this.updateAmbulanceStatus(updateAssignmentDto.ambulanceId, updateAssignmentDto.status);
+    } else if (updateAssignmentDto.status && existingAssignment.ambulanceId) {
       await this.updateAmbulanceStatus(existingAssignment.ambulanceId, updateAssignmentDto.status);
-      
-      // Create timeline event for status change
+    } else if (updateAssignmentDto.ambulanceId) {
+      // If only ambulance is being assigned, set it to IN_USE
+      await this.prisma.ambulance.update({
+        where: { id: updateAssignmentDto.ambulanceId },
+        data: { status: 'IN_USE' },
+      });
+    }
+    
+    // Create timeline event for status change or assignment
+    if (updateAssignmentDto.status) {
       await this.createStatusChangeEvent(
         existingAssignment.status,
         updateAssignmentDto.status,
         assignment,
         updatedBy || 'system'
+      );
+    } else if (updateAssignmentDto.ambulanceId || updateAssignmentDto.driverId) {
+      // Create timeline event for ambulance/driver assignment
+      await this.timelineEventsService.createEMSEvent(
+        'AMBULANCE_DISPATCHED',
+        `Ambulance and driver assigned to assignment ${assignment.id}`,
+        updatedBy || 'system',
+        {
+          ticketId: assignment.ticketId,
+          ambulanceId: updateAssignmentDto.ambulanceId || existingAssignment.ambulanceId || undefined,
+          driverId: updateAssignmentDto.driverId || existingAssignment.driverId || undefined,
+          metadata: {
+            assignmentId: assignment.id,
+            assignedAmbulance: updateAssignmentDto.ambulanceId,
+            assignedDriver: updateAssignmentDto.driverId,
+            timestamp: new Date().toISOString(),
+          },
+        }
       );
     }
 
@@ -303,6 +340,14 @@ export class EmsAssignmentsService {
 
   private buildUpdateData(updateAssignmentDto: UpdateEmsAssignmentDto): Prisma.EMSAssignmentUpdateInput {
     const updateData: Prisma.EMSAssignmentUpdateInput = {};
+
+    if (updateAssignmentDto.ambulanceId !== undefined) {
+      (updateData as any).ambulanceId = updateAssignmentDto.ambulanceId;
+    }
+
+    if (updateAssignmentDto.driverId !== undefined) {
+      (updateData as any).driverId = updateAssignmentDto.driverId;
+    }
 
     if (updateAssignmentDto.status !== undefined) {
       updateData.status = updateAssignmentDto.status;

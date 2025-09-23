@@ -160,30 +160,49 @@ export class StemiKpiService {
       return doorToEcg > 0 && doorToEcg <= 10;
     }).length;
 
-    // KPI 2: Door to Balloon - Direct cases (≤90min) and Transfer cases (≤120min)
+    // KPI 2: Door to Balloon - Only for cases eligible for primary PCI
     const kpi2DirectCases = allCases.filter(c => {
+      if (!c.eligibleForPrimaryPci) return false; // Only PCI-eligible cases
       const doorToBalloon = this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime);
       return doorToBalloon > 0 && doorToBalloon <= 90 && c.caseType === 'DIRECT';
     }).length;
 
     const kpi2TransferCases = allCases.filter(c => {
+      if (!c.eligibleForPrimaryPci) return false; // Only PCI-eligible cases
       const doorToBalloon = this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime);
       return doorToBalloon > 0 && doorToBalloon <= 120 && c.caseType === 'TRANSFER';
     }).length;
 
     const kpi2Cases = kpi2DirectCases + kpi2TransferCases;
 
+    // KPI 3: Door to Needle - Only for cases where thrombolytic was given
     const kpi3Cases = allCases.filter(c => {
+      if (!c.thrombolyticGiven) return false; // Only thrombolytic cases
       // Only calculate for transfer cases
       if (c.caseType !== 'TRANSFER') return false;
       const doorToNeedle = this.calculateDoorToNeedleTime(c.triageTime, c.thrombolyticAdminTime);
       return doorToNeedle > 0 && doorToNeedle <= 30;
     }).length;
 
+    // Debug logging
+    console.log('KPI Debug Info:');
+    console.log(`Total cases: ${totalCases}`);
+    console.log(`KPI2 Direct cases: ${kpi2DirectCases}`);
+    console.log(`KPI2 Transfer cases: ${kpi2TransferCases}`);
+    console.log(`KPI2 Total cases: ${kpi2Cases}`);
+    console.log(`KPI3 Cases: ${kpi3Cases}`);
+    
+    // Count cases by eligibility
+    const pciEligibleCases = allCases.filter(c => c.eligibleForPrimaryPci).length;
+    const thrombolyticCases = allCases.filter(c => c.thrombolyticGiven).length;
+    const transferCases = allCases.filter(c => c.caseType === 'TRANSFER').length;
+    
+    console.log(`PCI eligible cases: ${pciEligibleCases}`);
+    console.log(`Thrombolytic cases: ${thrombolyticCases}`);
+    console.log(`Transfer cases: ${transferCases}`);
+
     // RCC Activation - only for transfer cases: EMS contact to door out ≤15 minutes
     const kpi4Cases = allCases.filter(c => {
-      if (!c.rccActivated) return false;
-      
       // Only calculate for transfer cases
       if (c.caseType === 'TRANSFER' && c.ticketId) {
         if (!c.ticket?.emsContactTime || !c.doorOutTime) return false;
@@ -192,7 +211,7 @@ export class StemiKpiService {
         const diffMinutes = (doorOut.getTime() - emsContact.getTime()) / (1000 * 60);
         return diffMinutes <= 15;
       }
-      
+
       // Exclude direct cases from RCC Activation KPI
       return false;
     }).length;
@@ -264,26 +283,26 @@ export class StemiKpiService {
       kpi2Transfer: {
         name: 'Door to Balloon (Transfer)',
         target: '≤120 minutes',
-        totalCases: allCases.filter(c => c.caseType === 'TRANSFER').length,
+        totalCases: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length,
         withinTarget: kpi2TransferCases,
-        percentage: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 ? 
-                   Math.round((kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER').length) * 100 * 10) / 10 : 0,
-        status: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
-                (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.9 ? 'GREEN' : 
-                allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
-                (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.75 ? 'YELLOW' : 'RED',
+        percentage: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 ? 
+                   Math.round((kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) * 100 * 10) / 10 : 0,
+        status: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 && 
+                (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) >= 0.9 ? 'GREEN' : 
+                allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 && 
+                (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi3: {
         name: 'Door to Needle ≤30min (Transfer Cases Only)',
         target: '≤30 minutes',
-        totalCases: allCases.filter(c => c.caseType === 'TRANSFER').length,
+        totalCases: allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length,
         withinTarget: kpi3Cases,
-        percentage: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 ? 
-                   Math.round((kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) * 100 * 10) / 10 : 0,
-        status: allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
-                (kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.9 ? 'GREEN' : 
-                allCases.filter(c => c.caseType === 'TRANSFER').length > 0 && 
-                (kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER').length) >= 0.75 ? 'YELLOW' : 'RED',
+        percentage: allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length > 0 ? 
+                   Math.round((kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length) * 100 * 10) / 10 : 0,
+        status: allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length > 0 && 
+                (kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length) >= 0.9 ? 'GREEN' : 
+                allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length > 0 && 
+                (kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi4: {
         name: 'RCC Activation ≤15min',

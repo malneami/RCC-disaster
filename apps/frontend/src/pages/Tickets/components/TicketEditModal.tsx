@@ -16,6 +16,7 @@ import {
 import { Ticket, UpdateTicketData } from '../../../services/ticketService';
 import MultiStepDialog from '../../../components/Common/MultiStepDialog';
 import { useTicketEditForm } from '../hooks/useTicketEditForm';
+import { formatForDateTimeLocal } from '@/helpers';
 
 interface TicketEditModalProps {
   open: boolean;
@@ -363,7 +364,7 @@ const TransportInfoStep: React.FC<{
   const handleInputChange = (field: string, value: any) => {
     onDataChange({ [field]: value });
   };
-
+  
   return (
     <Box sx={{ py: 2 }}>
       <Typography variant="h6" gutterBottom>
@@ -410,20 +411,8 @@ const TransportInfoStep: React.FC<{
             fullWidth
             label="EMS Contact Time"
             type="datetime-local"
-            value={formData.emsContactTime ? new Date(formData.emsContactTime).toISOString().slice(0, 16) : ''}
+            value={formData.emsContactTime ? formatForDateTimeLocal(formData.emsContactTime) : ''}
             onChange={(e) => handleInputChange('emsContactTime', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-
-        {/* Actual Arrival */}
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            label="Actual Arrival"
-            type="datetime-local"
-            value={formData.actualArrival ? new Date(formData.actualArrival).toISOString().slice(0, 16) : ''}
-            onChange={(e) => handleInputChange('actualArrival', e.target.value)}
             InputLabelProps={{ shrink: true }}
           />
         </Grid>

@@ -50,15 +50,13 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
             value={formData.modeOfArrival || ''}
             onChange={(e) => updateFormData('modeOfArrival', e.target.value as StrokeModeOfArrival)}
           >
-            <MenuItem value="AMBULANCE">Ambulance</MenuItem>
-            <MenuItem value="BY_AMBULANCE_RED_CRESCENT">By Ambulance (Red Crescent)</MenuItem>
-            <MenuItem value="TRANSFERRED_FROM_PHC_UCC">Transferred from PHC/UCC</MenuItem>
-            <MenuItem value="WALK_IN">Walk In</MenuItem>
-            <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
-            <MenuItem value="AIR_TRANSPORT">Air Transport</MenuItem>
-            <MenuItem value="POLICE">Police</MenuItem>
-            <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
-            <MenuItem value="OTHER">Other</MenuItem>
+           <MenuItem value="AMBULANCE">Ambulance</MenuItem>
+              <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
+              <MenuItem value="AIR_TRANSPORT">Air Transport</MenuItem>
+              <MenuItem value="WALK_IN">Walk In</MenuItem>
+              <MenuItem value="POLICE">Police</MenuItem>
+              <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
+              <MenuItem value="OTHER">Other</MenuItem>
           </Select>
         </FormControl>
       </Grid>

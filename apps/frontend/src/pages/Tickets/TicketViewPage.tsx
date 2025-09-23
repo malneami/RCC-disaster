@@ -625,18 +625,6 @@ const TicketViewPage: React.FC = () => {
                           />
                         </ListItem>
                       )}
-                      
-                      {ticket.actualArrival && (
-                        <ListItem>
-                          <ListItemIcon>
-                            <ScheduleIcon />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary="Actual Arrival"
-                            secondary={formatDate(ticket.actualArrival)}
-                          />
-                        </ListItem>
-                      )}
                     </List>
                   </Grid>
                   

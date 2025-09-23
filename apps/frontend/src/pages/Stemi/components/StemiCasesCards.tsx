@@ -82,14 +82,32 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
         met: !stemiCase.doorInDoorOutMinutes || stemiCase.doorInDoorOutMinutes <= 30,
         percentage: stemiCase.doorInDoorOutMinutes ? (stemiCase.doorInDoorOutMinutes / 30) * 100 : undefined,
       },
-      {
+      ...(stemiCase.caseType === 'TRANSFER' && stemiCase.rccActivationToDoorOutMinutes !== null && stemiCase.rccActivationToDoorOutMinutes !== undefined ? [{
+        label: 'RCC Activation',
+        value: stemiCase.rccActivationToDoorOutMinutes,
+        target: '≤15min',
+        unit: 'min',
+        met: stemiCase.rccActivationToDoorOutMinutes <= 15,
+        percentage: (stemiCase.rccActivationToDoorOutMinutes / 15) * 100,
+      }] : []),
+      // Door to Balloon - only for PCI-eligible cases
+      ...(stemiCase.eligibleForPrimaryPci ? [{
         label: 'Door to Balloon',
         value: stemiCase.doorToBalloonMinutes || 'N/A',
         target: stemiCase.caseType === 'TRANSFER' ? '≤120min' : '≤90min',
         unit: 'min',
         met: !stemiCase.doorToBalloonMinutes || stemiCase.doorToBalloonMinutes <= (stemiCase.caseType === 'TRANSFER' ? 120 : 90),
         percentage: stemiCase.doorToBalloonMinutes ? (stemiCase.doorToBalloonMinutes / (stemiCase.caseType === 'TRANSFER' ? 120 : 90)) * 100 : undefined,
-      },
+      }] : []),
+      // Door to Needle - only for thrombolytic cases
+      ...(stemiCase.thrombolyticGiven ? [{
+        label: 'Door to Needle',
+        value: stemiCase.doorToNeedleMinutes || 'N/A',
+        target: '≤30min',
+        unit: 'min',
+        met: !stemiCase.doorToNeedleMinutes || stemiCase.doorToNeedleMinutes <= 30,
+        percentage: stemiCase.doorToNeedleMinutes ? (stemiCase.doorToNeedleMinutes / 30) * 100 : undefined,
+      }] : []),
     ];
 
     // Data completeness - use backend percentage if available
@@ -258,17 +276,29 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
       met++;
     }
 
-    // Door In-Door Out (≤30min)
-    total++;
-    if (stemiCase.doorInDoorOutMinutes && stemiCase.doorInDoorOutMinutes <= 30) {
-      met++;
+    // Door In-Door Out (≤30min) - only for transfer cases
+    if (stemiCase.caseType === 'TRANSFER') {
+      total++;
+      if (stemiCase.doorInDoorOutMinutes && stemiCase.doorInDoorOutMinutes <= 30) {
+        met++;
+      }
     }
 
-    // Door to Balloon - Direct ≤90min, Transfer ≤120min
-    total++;
-    const doorToBalloonTarget = stemiCase.caseType === 'TRANSFER' ? 120 : 90;
-    if (stemiCase.doorToBalloonMinutes && stemiCase.doorToBalloonMinutes <= doorToBalloonTarget) {
-      met++;
+    // Door to Balloon - only for PCI-eligible cases
+    if (stemiCase.eligibleForPrimaryPci) {
+      total++;
+      const doorToBalloonTarget = stemiCase.caseType === 'TRANSFER' ? 120 : 90;
+      if (stemiCase.doorToBalloonMinutes && stemiCase.doorToBalloonMinutes <= doorToBalloonTarget) {
+        met++;
+      }
+    }
+
+    // Door to Needle (≤30min) - only for thrombolytic cases
+    if (stemiCase.thrombolyticGiven) {
+      total++;
+      if (stemiCase.doorToNeedleMinutes && stemiCase.doorToNeedleMinutes <= 30) {
+        met++;
+      }
     }
 
     return `${met}/${total}`;
@@ -378,10 +408,17 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
     );
   }
 
+  // Sort cases by newest first (createdAt descending)
+  const sortedCases = [...cases].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateB - dateA; // Descending order (newest first)
+  });
+
   return (
     <Box>
       <Grid container spacing={2}>
-        {cases.map((stemiCase) => {
+        {sortedCases.map((stemiCase) => {
           const transformedCase = transformStemiCase(stemiCase);
           return (
             <Grid item xs={12} md={6} lg={4} key={transformedCase.caseId}>

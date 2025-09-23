@@ -223,6 +223,8 @@ export interface CreateEMSAssignmentDto {
 }
 
 export interface UpdateEMSAssignmentDto {
+  ambulanceId?: string;
+  driverId?: string;
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
   status?: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
   estimatedArrivalTime?: string;

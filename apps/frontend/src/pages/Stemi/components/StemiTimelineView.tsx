@@ -372,6 +372,27 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
           </Card>
         )}
 
+        {/* RCC Activation KPI - only for transfer cases */}
+        {(stemiCase.caseType === 'TRANSFER' && stemiCase.rccActivationToDoorOutMinutes !== null && stemiCase.rccActivationToDoorOutMinutes !== undefined) && (
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2" gutterBottom>
+                RCC Activation
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6">
+                  {stemiCase.rccActivationToDoorOutMinutes} min
+                </Typography>
+                <Chip
+                  label="≤15 min"
+                  size="small"
+                  color={getKpiStatus(stemiCase.rccActivationToDoorOutMinutes, 15).status}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Cath Lab Activation to Arrival KPI */}
         {(stemiCase.cathLabActivationTime && stemiCase.cathLabArrivalTime) && (
           <Card>

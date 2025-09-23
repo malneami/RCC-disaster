@@ -445,8 +445,8 @@ export class StemiCasesService {
         updateData.metKpi1 = updateData.doorToEcgMinutes <= 10; // Door to ECG ≤10min
       }
 
-      // Calculate Door to Balloon (triage to balloon inflation)
-      if (stemiCase.triageTime && stemiCase.balloonInflationTime) {
+      // Calculate Door to Balloon (triage to balloon inflation) - only for PCI-eligible cases
+      if (stemiCase.triageTime && stemiCase.balloonInflationTime && stemiCase.eligibleForPrimaryPci) {
         updateData.doorToBalloonMinutes = this.calculateTimeDifference(stemiCase.triageTime, stemiCase.balloonInflationTime);
         
         // Set KPI based on case type
@@ -466,23 +466,22 @@ export class StemiCasesService {
         }
       }
 
-      // Calculate Door to Needle (triage to thrombolytic administration)
-      if (stemiCase.triageTime && stemiCase.thrombolyticAdminTime) {
+      // Calculate Door to Needle (triage to thrombolytic administration) - only for thrombolytic cases
+      if (stemiCase.triageTime && stemiCase.thrombolyticAdminTime && stemiCase.thrombolyticGiven) {
         updateData.doorToNeedleMinutes = this.calculateTimeDifference(stemiCase.triageTime, stemiCase.thrombolyticAdminTime);
         updateData.metKpi3 = updateData.doorToNeedleMinutes <= 30; // Door to Needle ≤30min
       }
 
-      // Calculate Door In Door Out (admission to door out) - only for primary PCI eligible cases
-      if (admissionTime && stemiCase.doorOutTime) {
-        updateData.doorInDoorOutMinutes = this.calculateTimeDifference(admissionTime, stemiCase.doorOutTime);
-        // Only set KPI5 for cases eligible for primary PCI
+      // Calculate Door In Door Out (triage to door out) - only for transfer cases
+      if (stemiCase.triageTime && stemiCase.doorOutTime && stemiCase.caseType === 'TRANSFER') {
+        updateData.doorInDoorOutMinutes = this.calculateTimeDifference(stemiCase.triageTime, stemiCase.doorOutTime);
         if (stemiCase.eligibleForPrimaryPci) {
           updateData.metKpi5 = updateData.doorInDoorOutMinutes <= 30; // Door In Door Out ≤30min
         }
       }
 
       // Calculate RCC Activation KPI (KPI4) - only for transfer cases
-      if (stemiCase.rccActivated && stemiCase.caseType === 'TRANSFER' && stemiCase.ticketId) {
+      if (stemiCase.caseType === 'TRANSFER' && stemiCase.ticketId) {
         // For transfer cases: EMS contact to door out ≤15 minutes
         const ticket = await this.prisma.ticket.findUnique({
           where: { id: stemiCase.ticketId },
@@ -493,8 +492,11 @@ export class StemiCasesService {
           const emsContact = new Date(ticket.emsContactTime);
           const doorOut = new Date(stemiCase.doorOutTime);
           const diffMinutes = (doorOut.getTime() - emsContact.getTime()) / (1000 * 60);
+          updateData.rccActivationToDoorOutMinutes = diffMinutes;
           updateData.metKpi4 = diffMinutes <= 15;
-        }
+        } 
+      } else {
+        console.log(`Skipping RCC activation calculation - caseType: ${stemiCase.caseType}, ticketId: ${stemiCase.ticketId}`);
       }
       // Direct cases are excluded from RCC Activation KPI calculation
 

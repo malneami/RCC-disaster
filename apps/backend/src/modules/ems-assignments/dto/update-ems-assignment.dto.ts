@@ -1,8 +1,18 @@
-import { IsOptional, IsEnum, IsDateString, IsNumber, Min, IsString, ValidateIf } from 'class-validator';
+import { IsOptional, IsEnum, IsDateString, IsNumber, Min, IsString, ValidateIf, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AssignmentStatus } from '@prisma/client';
 
 export class UpdateEmsAssignmentDto {
+  @ApiPropertyOptional({ description: 'Ambulance ID to assign', example: 'ambulance-uuid' })
+  @IsOptional()
+  @IsUUID()
+  ambulanceId?: string;
+
+  @ApiPropertyOptional({ description: 'Driver ID to assign', example: 'driver-uuid' })
+  @IsOptional()
+  @IsUUID()
+  driverId?: string;
+
   @ApiPropertyOptional({ enum: AssignmentStatus, description: 'Assignment status' })
   @IsOptional()
   @IsEnum(AssignmentStatus)

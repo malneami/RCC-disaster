@@ -25,9 +25,11 @@ import {
   faStop,
   faEdit,
   faTrash,
+  faUserPlus,
 } from '@fortawesome/free-solid-svg-icons';
 import { alpha } from '@mui/material/styles';
 import { EMSAssignment } from '../types/ems';
+import AmbulanceDriverAssignmentModal from './AmbulanceDriverAssignmentModal';
 
 interface AssignmentCardProps {
   assignment: EMSAssignment;
@@ -57,6 +59,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   onCompleteAssignment,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [ambulanceDriverModalOpen, setAmbulanceDriverModalOpen] = React.useState(false);
   const [loadingStates, setLoadingStates] = React.useState<{
     startAssignment: boolean;
     markArrived: boolean;
@@ -116,6 +119,19 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     } finally {
       setLoading('delete', false);
     }
+  };
+
+  const handleAmbulanceDriverAssignment = () => {
+    setAmbulanceDriverModalOpen(true);
+  };
+
+  const handleAmbulanceDriverModalClose = () => {
+    setAmbulanceDriverModalOpen(false);
+  };
+
+  const handleAmbulanceDriverSuccess = () => {
+    // Optionally refresh the assignment data or show a success message
+    console.log('Ambulance and driver assigned successfully');
   };
 
   const getTimelineSteps = (): TimelineStep[] => {
@@ -197,6 +213,20 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
     switch (assignment.status) {
       case 'EMS_CONTACT':
+        // Add ambulance & driver assignment button if not already assigned
+          buttons.push(
+            <Button
+              key="assign"
+              variant="outlined"
+              color="secondary"
+              startIcon={<FontAwesomeIcon icon={faUserPlus} />}
+              onClick={handleAmbulanceDriverAssignment}
+              sx={{ minWidth: 140 }}
+            >
+              Assign Crew
+            </Button>
+          );
+        
         buttons.push(
           <Button
             key="start"
@@ -204,7 +234,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             color="primary"
             startIcon={loadingStates.startAssignment ? <CircularProgress size={16} color="inherit" /> : <FontAwesomeIcon icon={faPlay} />}
             onClick={handleStartAssignment}
-            disabled={loadingStates.startAssignment}
+            disabled={loadingStates.startAssignment || !assignment.ambulance}
             sx={{ minWidth: 120 }}
           >
             {loadingStates.startAssignment ? 'Processing...' : 'EMS Arrival'}
@@ -482,6 +512,14 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           </Box>
         )}
       </CardContent>
+      
+      {/* Ambulance & Driver Assignment Modal */}
+      <AmbulanceDriverAssignmentModal
+        open={ambulanceDriverModalOpen}
+        onClose={handleAmbulanceDriverModalClose}
+        assignment={assignment}
+        onSuccess={handleAmbulanceDriverSuccess}
+      />
     </Card>
   );
 };
