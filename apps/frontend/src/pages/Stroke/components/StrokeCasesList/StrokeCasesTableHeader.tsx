@@ -80,12 +80,12 @@ const StrokeCasesTableHeader: React.FC = () => {
         </TableCell>
         <TableCell>
           <Typography variant="subtitle2" fontWeight="bold">
-            Outcome Form
+            Completeness
           </Typography>
         </TableCell>
         <TableCell>
           <Typography variant="subtitle2" fontWeight="bold">
-            Actions
+            Outcome
           </Typography>
         </TableCell>
       </TableRow>

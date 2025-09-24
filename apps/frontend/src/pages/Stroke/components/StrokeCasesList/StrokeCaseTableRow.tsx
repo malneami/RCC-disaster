@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   TableRow,
   TableCell,
@@ -7,6 +7,8 @@ import {
   Tooltip,
   Box,
   Typography,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -15,12 +17,13 @@ import {
   Assignment as OutcomeFormIcon,
   CheckCircle as CheckIcon,
   Cancel as CrossIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faUser, faHospital } from '@fortawesome/free-solid-svg-icons';
 
 import { StrokeCase, StrokeService, StrokeStatus } from '../../../../services/strokeService';
-import OutcomeFormCompleteness from '../OutcomeFormCompleteness';
+import StrokeCaseCompleteness from '../StrokeCaseCompleteness';
 
 interface StrokeCaseTableRowProps {
   strokeCase: StrokeCase;
@@ -104,7 +107,34 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
   onOpenOutcomeForm,
   isAdmin = false,
 }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
   const kpis = calculateKpiStatus(strokeCase);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleViewDetails = () => {
+    onViewDetails(strokeCase);
+    handleMenuClose();
+  };
+
+  const handleEditCase = () => {
+    onEditCase(strokeCase);
+    handleMenuClose();
+  };
+
+  const handleDeleteCase = () => {
+    if (onDeleteCase) {
+      onDeleteCase(strokeCase);
+    }
+    handleMenuClose();
+  };
 
   const getStatusColor = (status: StrokeStatus): string => {
     const colors: Record<StrokeStatus, string> = {
@@ -133,21 +163,58 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
   return (
     <TableRow hover>
       <TableCell>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FontAwesomeIcon icon={faUser} style={{ color: '#1976d2', fontSize: '14px' }} />
-          <Box>
-            <div style={{ fontWeight: 'bold' }}>
-              {strokeCase.patient?.firstName} {strokeCase.patient?.lastName}
-            </div>
-            <div style={{ fontSize: '0.8rem', color: '#666' }}>
-              National ID: {strokeCase.patient?.nationalId || 'Not set'}
-              {strokeCase.patient?.mrn && (
-                <span style={{ marginLeft: '12px' }}>
-                  MRN: {strokeCase.patient.mrn}
-                </span>
-              )}
-            </div>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', flex: 1 }} onClick={handleViewDetails}>
+            <FontAwesomeIcon icon={faUser} style={{ color: '#1976d2', fontSize: '14px' }} />
+            <Box>
+              <div style={{ fontWeight: 'bold', color: '#1976d2' }}>
+                {strokeCase.patient?.firstName} {strokeCase.patient?.lastName}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                National ID: {strokeCase.patient?.nationalId || 'Not set'}
+                {strokeCase.patient?.mrn && (
+                  <span style={{ marginLeft: '12px' }}>
+                    MRN: {strokeCase.patient.mrn}
+                  </span>
+                )}
+              </div>
+            </Box>
           </Box>
+          <IconButton
+            size="small"
+            onClick={handleMenuClick}
+            sx={{ ml: 1 }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem onClick={handleViewDetails}>
+              <ViewIcon fontSize="small" sx={{ mr: 1 }} />
+              View Details
+            </MenuItem>
+            <MenuItem onClick={handleEditCase}>
+              <EditIcon fontSize="small" sx={{ mr: 1 }} />
+              Edit Case
+            </MenuItem>
+            {isAdmin && onDeleteCase && (
+              <MenuItem onClick={handleDeleteCase} sx={{ color: 'error.main' }}>
+                <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                Delete Case
+              </MenuItem>
+            )}
+          </Menu>
         </Box>
       </TableCell>
       
@@ -234,8 +301,11 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
       </TableCell>
       
       <TableCell>
+        <StrokeCaseCompleteness strokeCase={strokeCase} />
+      </TableCell>
+      
+      <TableCell>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <OutcomeFormCompleteness strokeCase={strokeCase} />
           {onOpenOutcomeForm && (
             <Tooltip title="Open Outcome Form">
               <IconButton
@@ -244,40 +314,6 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
                 color="primary"
               >
                 <OutcomeFormIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
-      </TableCell>
-      
-      <TableCell>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title="View Details">
-            <IconButton
-              size="small"
-              onClick={() => onViewDetails(strokeCase)}
-              color="primary"
-            >
-              <ViewIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Edit Case">
-            <IconButton
-              size="small"
-              onClick={() => onEditCase(strokeCase)}
-              color="secondary"
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          {isAdmin && onDeleteCase && (
-            <Tooltip title="Delete Case (Admin Only)">
-              <IconButton
-                size="small"
-                onClick={() => onDeleteCase(strokeCase)}
-                color="error"
-              >
-                <DeleteIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}
