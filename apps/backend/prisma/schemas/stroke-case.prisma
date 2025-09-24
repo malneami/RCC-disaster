@@ -156,6 +156,8 @@ model StrokeCase {
   
   // KPI Timing Calculations (in minutes)
   doorToPhysicianMinutes          Int?        @map("door_to_physician_minutes")
+  doorToCtReportMinutes           Int?        @map("door_to_ct_report_minutes")
+  doorToThrombolysisOrderMinutes  Int?        @map("door_to_thrombolysis_order_minutes")
   registrationToCtMinutes         Int?        @map("registration_to_ct_minutes")
   registrationToThrombolysisMinutes Int?      @map("registration_to_thrombolysis_minutes")
   registrationToMechanicalThrombectomyMinutes Int? @map("registration_to_mechanical_thrombectomy_minutes")

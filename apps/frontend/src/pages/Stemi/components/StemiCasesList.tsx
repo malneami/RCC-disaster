@@ -22,6 +22,8 @@ import {
   DialogContent,
   DialogActions,
   Card,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -30,6 +32,7 @@ import {
   Assignment as OutcomeFormIcon,
   CheckCircle as CheckIcon,
   Cancel as CrossIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { StemiCase } from '../services/stemiService';
 import StemiOutcomeForm from './StemiOutcomeForm';
@@ -115,6 +118,8 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
   const [outcomeFormDialogOpen, setOutcomeFormDialogOpen] = useState(false);
   const [outcomeFormCaseId, setOutcomeFormCaseId] = useState<string | null>(null);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedCaseForMenu, setSelectedCaseForMenu] = useState<StemiCase | null>(null);
   const [sortConfig, setSortConfig] = useState<{
     field: keyof StemiCase | 'patient';
     direction: 'asc' | 'desc';
@@ -185,6 +190,37 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
       field,
       direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
+  };
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, case_: StemiCase) => {
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedCaseForMenu(case_);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setSelectedCaseForMenu(null);
+  };
+
+  const handleViewDetails = () => {
+    if (selectedCaseForMenu) {
+      onViewCase(selectedCaseForMenu);
+    }
+    handleMenuClose();
+  };
+
+  const handleEditCase = () => {
+    if (selectedCaseForMenu) {
+      onEditCase(selectedCaseForMenu);
+    }
+    handleMenuClose();
+  };
+
+  const handleDeleteCase = () => {
+    if (selectedCaseForMenu) {
+      handleDeleteClick(selectedCaseForMenu);
+    }
+    handleMenuClose();
   };
 
   const getStatusColor = (status: string) => {
@@ -303,7 +339,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                   </Tooltip>
                 </TableCell>
                 <TableCell>Completeness</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell align="right">Outcome</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -325,18 +361,32 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                   return (
                     <TableRow key={case_.id} hover>
                       <TableCell>
-                        <Box display="flex" alignItems="center" gap={2}>
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
-                            {case_.patient?.firstName?.[0] || 'P'}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2">
-                              {formatPatientName(case_.patient)}
-                            </Typography>
-                            <Typography variant="caption" color="textSecondary" fontFamily="monospace">
-                              {case_.patient?.nationalId ? formatNationalId(case_.patient.nationalId) : 'N/A'}
-                            </Typography>
+                        <Box display="flex" alignItems="center" gap={1} justifyContent="space-between">
+                          <Box 
+                            display="flex" 
+                            alignItems="center" 
+                            gap={2} 
+                            flex={1}
+                          >
+                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                              {case_.patient?.firstName?.[0] || 'P'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle2" sx={{ color: '#1976d2', cursor: 'pointer' }} onClick={() => onViewCase(case_)}>
+                                {formatPatientName(case_.patient)}
+                              </Typography>
+                              <Typography variant="caption" color="textSecondary" fontFamily="monospace">
+                                {case_.patient?.nationalId ? formatNationalId(case_.patient.nationalId) : 'N/A'}
+                              </Typography>
+                            </Box>
                           </Box>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuClick(e, case_)}
+                            sx={{ ml: 1 }}
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
                         </Box>
                       </TableCell>
                       <TableCell>
@@ -418,38 +468,6 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                               <OutcomeFormIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="View Details">
-                            <IconButton
-                              size="small"
-                              onClick={() => onViewCase(case_)}
-                              color="primary"
-                            >
-                              <ViewIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Edit Case">
-                            <IconButton
-                              size="small"
-                              onClick={() => onEditCase(case_)}
-                              color="primary"
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete Case">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeleteClick(case_)}
-                              color="error"
-                              disabled={deletingId === case_.id}
-                            >
-                              {deletingId === case_.id ? (
-                                <CircularProgress size={16} />
-                              ) : (
-                                <DeleteIcon />
-                              )}
-                            </IconButton>
-                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -461,6 +479,34 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
       </TableContainer>
 
       </Card>
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={handleViewDetails}>
+          <ViewIcon fontSize="small" sx={{ mr: 1 }} />
+          View Details
+        </MenuItem>
+        <MenuItem onClick={handleEditCase}>
+          <EditIcon fontSize="small" sx={{ mr: 1 }} />
+          Edit Case
+        </MenuItem>
+        <MenuItem onClick={handleDeleteCase} sx={{ color: 'error.main' }}>
+          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+          Delete Case
+        </MenuItem>
+      </Menu>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>

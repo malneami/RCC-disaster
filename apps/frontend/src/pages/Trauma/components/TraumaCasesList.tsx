@@ -27,6 +27,8 @@ import {
   Avatar,
   ToggleButton,
   ToggleButtonGroup,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Search,
@@ -41,6 +43,7 @@ import {
   Edit,
   ViewModule as CardsIcon,
   TableChart as TableIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
@@ -96,6 +99,8 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   const [selectedCase, setSelectedCase] = useState<TraumaCase | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedCaseForMenu, setSelectedCaseForMenu] = useState<TraumaCase | null>(null);
 
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
@@ -286,6 +291,37 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, case_: TraumaCase) => {
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedCaseForMenu(case_);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setSelectedCaseForMenu(null);
+  };
+
+  const handleViewDetailsFromMenu = () => {
+    if (selectedCaseForMenu) {
+      handleViewDetails(selectedCaseForMenu);
+    }
+    handleMenuClose();
+  };
+
+  const handleEditCaseFromMenu = () => {
+    if (selectedCaseForMenu) {
+      handleEditCase(selectedCaseForMenu);
+    }
+    handleMenuClose();
+  };
+
+  const handleDeleteCaseFromMenu = () => {
+    if (selectedCaseForMenu) {
+      handleDeleteClick(selectedCaseForMenu);
+    }
+    handleMenuClose();
   };
 
   const getSeverityColor = (severity: string | undefined) => {
@@ -498,18 +534,32 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
               {paginatedCases.map((case_) => (
                 <TableRow key={case_.id} hover>
                   <TableCell>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>
-                        {case_.patient?.firstName?.[0] || 'P'}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2">
-                          {case_.patient?.firstName} {case_.patient?.lastName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ID: {case_.patient?.nationalId || 'N/A'}
-                        </Typography>
+                    <Box display="flex" alignItems="center" gap={1} justifyContent="space-between">
+                      <Box 
+                        display="flex" 
+                        alignItems="center" 
+                        gap={2} 
+                        flex={1}
+                      >
+                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                          {case_.patient?.firstName?.[0] || 'P'}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ color: '#1976d2', cursor: 'pointer' }} onClick={() => handleViewDetails(case_)}>
+                            {case_.patient?.firstName} {case_.patient?.lastName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ID: {case_.patient?.nationalId || 'N/A'}
+                          </Typography>
+                        </Box>
                       </Box>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleMenuClick(e, case_)}
+                        sx={{ ml: 1 }}
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
                     </Box>
                   </TableCell>
                   <TableCell>
@@ -576,35 +626,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
                   </TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Tooltip title="View Details">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewDetails(case_)}
-                          color="primary"
-                        >
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit Case">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditCase(case_)}
-                          color="secondary"
-                        >
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      {isAdmin && (
-                        <Tooltip title="Delete Case (Admin Only)">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteClick(case_)}
-                            color="error"
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
+                      {/* Actions moved to 3-dots menu */}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -623,6 +645,36 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Card>
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={handleViewDetailsFromMenu}>
+          <Visibility fontSize="small" sx={{ mr: 1 }} />
+          View Details
+        </MenuItem>
+        <MenuItem onClick={handleEditCaseFromMenu}>
+          <Edit fontSize="small" sx={{ mr: 1 }} />
+          Edit Case
+        </MenuItem>
+        {isAdmin && (
+          <MenuItem onClick={handleDeleteCaseFromMenu} sx={{ color: 'error.main' }}>
+            <Delete fontSize="small" sx={{ mr: 1 }} />
+            Delete Case
+          </MenuItem>
+        )}
+      </Menu>
 
 
       {/* Delete Confirmation Dialog */}

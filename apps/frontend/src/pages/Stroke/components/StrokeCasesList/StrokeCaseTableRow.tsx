@@ -38,11 +38,11 @@ interface StrokeCaseTableRowProps {
 const calculateKpiStatus = (case_: StrokeCase) => {
   const kpis = {
     doorToPhysician: false,
-    registrationToCt: false,
+    doorToCtScan: false,
     doorToCtReport: false,
     doorToThrombolysisOrder: false,
     doorToNeedle: false,
-    registrationToThrombectomy: false,
+    doorToMechanicalThrombectomy: false,
   };
 
   // KPI 1: Door to Physician ≤15min
@@ -51,8 +51,8 @@ const calculateKpiStatus = (case_: StrokeCase) => {
   }
 
   // KPI 3: Registration to CT ≤20min
-  if (case_.registrationToCtMinutes !== null && case_.registrationToCtMinutes !== undefined) {
-    kpis.registrationToCt = case_.registrationToCtMinutes <= 20;
+  if (case_.doorToCtScanMinutes !== null && case_.doorToCtScanMinutes !== undefined) {
+    kpis.doorToCtScan = case_.doorToCtScanMinutes <= 20;
   }
 
   // Door to CT Report (no specific KPI target, but we can show the time)
@@ -71,8 +71,8 @@ const calculateKpiStatus = (case_: StrokeCase) => {
   }
 
   // KPI 8: Registration to Mechanical Thrombectomy Puncture ≤120min
-  if (case_.registrationToMechanicalThrombectomyMinutes !== null && case_.registrationToMechanicalThrombectomyMinutes !== undefined) {
-    kpis.registrationToThrombectomy = case_.registrationToMechanicalThrombectomyMinutes <= 120;
+  if (case_.doorToMechanicalThrombectomyMinutes !== null && case_.doorToMechanicalThrombectomyMinutes !== undefined) {
+    kpis.doorToMechanicalThrombectomy = case_.doorToMechanicalThrombectomyMinutes <= 120;
   }
 
   return kpis;
@@ -260,9 +260,9 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
       
       <TableCell>
         <KpiIcon 
-          met={kpis.registrationToCt} 
-          applicable={strokeCase.registrationToCtMinutes !== null && strokeCase.registrationToCtMinutes !== undefined}
-          minutes={strokeCase.registrationToCtMinutes}
+          met={kpis.doorToCtScan} 
+          applicable={strokeCase.doorToCtScanMinutes !== null && strokeCase.doorToCtScanMinutes !== undefined}
+          minutes={strokeCase.doorToCtScanMinutes}
         />
       </TableCell>
       
@@ -271,7 +271,6 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
           met={kpis.doorToCtReport} 
           applicable={strokeCase.doorToCtReportMinutes !== null && strokeCase.doorToCtReportMinutes !== undefined}
           minutes={strokeCase.doorToCtReportMinutes}
-          isInformational={true}
         />
       </TableCell>
       
@@ -280,7 +279,6 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
           met={kpis.doorToThrombolysisOrder} 
           applicable={strokeCase.doorToThrombolysisOrderMinutes !== null && strokeCase.doorToThrombolysisOrderMinutes !== undefined}
           minutes={strokeCase.doorToThrombolysisOrderMinutes}
-          isInformational={true}
         />
       </TableCell>
       
@@ -294,9 +292,9 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
       
       <TableCell>
         <KpiIcon 
-          met={kpis.registrationToThrombectomy} 
-          applicable={strokeCase.registrationToMechanicalThrombectomyMinutes !== null && strokeCase.registrationToMechanicalThrombectomyMinutes !== undefined}
-          minutes={strokeCase.registrationToMechanicalThrombectomyMinutes}
+          met={kpis.doorToMechanicalThrombectomy} 
+          applicable={strokeCase.doorToMechanicalThrombectomyMinutes !== null && strokeCase.doorToMechanicalThrombectomyMinutes !== undefined}
+          minutes={strokeCase.doorToMechanicalThrombectomyMinutes}
         />
       </TableCell>
       

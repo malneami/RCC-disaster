@@ -14,9 +14,11 @@ export interface StrokeKPICalculations {
   metKpi3?: boolean;
 
   // Additional timing calculations for table display
+  doorToCtScanMinutes?: number;
   doorToCtReportMinutes?: number;
   doorToThrombolysisOrderMinutes?: number;
   doorToNeedleMinutes?: number;
+  doorToMechanicalThrombectomyMinutes?: number;
 
   // KPI 4: Median time interval from registration to IV thrombolysis ≤60min
   registrationToThrombolysisMinutes?: number;
@@ -69,9 +71,11 @@ export class StrokeKPICalculatorService {
     calculations.metKpi3 = calculations.registrationToCtMinutes !== undefined && calculations.registrationToCtMinutes <= 20;
 
     // Additional timing calculations for table display
+    calculations.doorToCtScanMinutes = this.calculateDoorToCtScanMinutes(strokeCase);
     calculations.doorToCtReportMinutes = this.calculateDoorToCtReportMinutes(strokeCase);
     calculations.doorToThrombolysisOrderMinutes = this.calculateDoorToThrombolysisOrderMinutes(strokeCase);
     calculations.doorToNeedleMinutes = this.calculateDoorToNeedleMinutes(strokeCase);
+    calculations.doorToMechanicalThrombectomyMinutes = this.calculateDoorToMechanicalThrombectomyMinutes(strokeCase);
 
     // KPI 4: Registration to IV thrombolysis ≤60min
     calculations.registrationToThrombolysisMinutes = this.calculateRegistrationToThrombolysisMinutes(strokeCase);
@@ -145,6 +149,20 @@ export class StrokeKPICalculatorService {
   }
 
   /**
+   * Calculate door to CT scan time in minutes
+   */
+  private calculateDoorToCtScanMinutes(strokeCase: StrokeCase): number | undefined {
+    if (!strokeCase.dateOfAdmission || !strokeCase.timeOfCtScanStart) {
+      return undefined;
+    }
+
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
+    const ctScanTime = new Date(strokeCase.timeOfCtScanStart);
+    
+    return Math.round((ctScanTime.getTime() - registrationTime.getTime()) / (1000 * 60));
+  }
+
+  /**
    * Calculate door to CT report time in minutes
    */
   private calculateDoorToCtReportMinutes(strokeCase: StrokeCase): number | undefined {
@@ -184,6 +202,20 @@ export class StrokeKPICalculatorService {
     const thrombolysisTime = new Date(strokeCase.ivThrombolysisAdministrationTime);
     
     return Math.round((thrombolysisTime.getTime() - registrationTime.getTime()) / (1000 * 60));
+  }
+
+  /**
+   * Calculate door to mechanical thrombectomy time in minutes
+   */
+  private calculateDoorToMechanicalThrombectomyMinutes(strokeCase: StrokeCase): number | undefined {
+    if (!strokeCase.dateOfAdmission || !strokeCase.timeOfMechanicalThrombectomyPuncture) {
+      return undefined;
+    }
+
+    const registrationTime = new Date(strokeCase.dateOfAdmission);
+    const mechanicalThrombectomyTime = new Date(strokeCase.timeOfMechanicalThrombectomyPuncture);
+    
+    return Math.round((mechanicalThrombectomyTime.getTime() - registrationTime.getTime()) / (1000 * 60));
   }
 
   /**

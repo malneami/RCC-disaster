@@ -636,8 +636,22 @@ export class StrokeCasesService {
       const strokeCaseUpdateData = { ...updateStrokeCaseDto };
       console.log('Preparing update data...');
 
+      // Extract hospital IDs for relation handling
+      const { originHospitalId, destinationHospitalId, ...restUpdateData } = strokeCaseUpdateData;
+
       const updateData = {
-        ...strokeCaseUpdateData,
+        ...restUpdateData,
+        // Handle hospital relations properly using Prisma relation syntax
+        ...(originHospitalId && { 
+          originHospital: { 
+            connect: { id: originHospitalId } 
+          } 
+        }),
+        ...(destinationHospitalId && { 
+          destinationHospital: { 
+            connect: { id: destinationHospitalId } 
+          } 
+        }),
         // Convert date strings to Date objects for new fields
         srcaCallTime: updateStrokeCaseDto.srcaCallTime ? new Date(updateStrokeCaseDto.srcaCallTime) : undefined,
         timeOfSymptomOnset: updateStrokeCaseDto.timeOfSymptomOnset ? new Date(updateStrokeCaseDto.timeOfSymptomOnset) : undefined,
@@ -656,7 +670,7 @@ export class StrokeCasesService {
         timeOfTransferDeparture: updateStrokeCaseDto.timeOfTransferDeparture ? new Date(updateStrokeCaseDto.timeOfTransferDeparture) : undefined,
         updatedAt: new Date(),
         ...kpiData,
-      };
+      } as any; // Type assertion to handle Prisma's complex relation types
       
       console.log('Final update data:', JSON.stringify(updateData, null, 2));
       console.log('Performing database update...');
@@ -843,9 +857,11 @@ export class StrokeCasesService {
       
       // KPI timing calculations
       doorToPhysicianMinutes: kpiCalculations.doorToPhysicianMinutes,
+      doorToCtScanMinutes: kpiCalculations.doorToCtScanMinutes,
       doorToCtReportMinutes: kpiCalculations.doorToCtReportMinutes,
       doorToThrombolysisOrderMinutes: kpiCalculations.doorToThrombolysisOrderMinutes,
       doorToNeedleMinutes: kpiCalculations.doorToNeedleMinutes,
+      doorToMechanicalThrombectomyMinutes: kpiCalculations.doorToMechanicalThrombectomyMinutes,
       registrationToThrombolysisMinutes: kpiCalculations.registrationToThrombolysisMinutes,
       srcaCallToArrivalMinutes: kpiCalculations.srcaCallToArrivalMinutes,
       transferActivationToDepartureMinutes: kpiCalculations.transferActivationToDepartureMinutes,
@@ -931,9 +947,11 @@ export class StrokeCasesService {
       
       // KPI timing calculations
       doorToPhysicianMinutes: kpiCalculations.doorToPhysicianMinutes,
+      doorToCtScanMinutes: kpiCalculations.doorToCtScanMinutes,
       doorToCtReportMinutes: kpiCalculations.doorToCtReportMinutes,
       doorToThrombolysisOrderMinutes: kpiCalculations.doorToThrombolysisOrderMinutes,
       doorToNeedleMinutes: kpiCalculations.doorToNeedleMinutes,
+      doorToMechanicalThrombectomyMinutes: kpiCalculations.doorToMechanicalThrombectomyMinutes,
       registrationToThrombolysisMinutes: kpiCalculations.registrationToThrombolysisMinutes,
       srcaCallToArrivalMinutes: kpiCalculations.srcaCallToArrivalMinutes,
       transferActivationToDepartureMinutes: kpiCalculations.transferActivationToDepartureMinutes,
