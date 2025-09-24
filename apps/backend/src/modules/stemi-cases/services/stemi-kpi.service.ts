@@ -91,6 +91,7 @@ export class StemiKpiService {
         doorOutTime: true,
         pathwayStarted: true,
         rccActivated: true,
+        dischargeStatus: true,
         successful: true,
         thirtyDayReadmission: true,
         followUpCallCompleted: true,
@@ -204,7 +205,7 @@ export class StemiKpiService {
     // RCC Activation - only for transfer cases: EMS contact to door out ≤15 minutes
     const kpi4Cases = allCases.filter(c => {
       // Only calculate for transfer cases
-      if (c.caseType === 'TRANSFER' && c.ticketId) {
+      if (c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci) {
         if (!c.ticket?.emsContactTime || !c.doorOutTime) return false;
         const emsContact = new Date(c.ticket.emsContactTime);
         const doorOut = new Date(c.doorOutTime);
@@ -219,7 +220,7 @@ export class StemiKpiService {
     // Door In Door Out - cases where door out time is within 30 minutes of triage
     // Only include transfer cases
     const kpi5Cases = allCases.filter(c => {
-      if (!c.triageTime || !c.doorOutTime || c.caseType !== 'TRANSFER') return false;
+      if (!c.triageTime || !c.doorOutTime || c.caseType !== 'TRANSFER' || !c.eligibleForPrimaryPci) return false;
       const triage = new Date(c.triageTime);
       const doorOut = new Date(c.doorOutTime);
       const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
@@ -232,9 +233,8 @@ export class StemiKpiService {
     ).length;
 
     // Calculate mortality rate (cases that are not successful)
-    const successfulCases = allCases.filter(c => c.successful === true).length;
-    const mortalityCases = totalCases - successfulCases;
-    const mortalityRate = totalCases > 0 ? (mortalityCases / totalCases) * 100 : 0;
+    const deceasedCases = allCases.filter(c => c.dischargeStatus=== 'DECEASED').length;
+    const mortalityRate = totalCases > 0 ? (deceasedCases / totalCases) * 100 : 0;
 
     // Calculate readmission rate
     const readmissionCases = allCases.filter(c => c.thirtyDayReadmission === true).length;

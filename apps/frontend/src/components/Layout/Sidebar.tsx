@@ -25,6 +25,7 @@ import {
   faAmbulance,
   faShieldAlt,
   faBell,
+  faChartLine,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -116,6 +117,13 @@ const Sidebar: React.FC = () => {
       text: 'STEMI Portal',
       icon: <FontAwesomeIcon icon={faHeart} />,
       path: '/portals/stemi',
+      roles: ['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR'],
+      color: 'error',
+    },
+    {
+      text: 'STEMI Command Center',
+      icon: <FontAwesomeIcon icon={faChartLine} />,
+      path: '/portals/stemi/command-center',
       roles: ['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR'],
       color: 'error',
     },

@@ -12,6 +12,7 @@ import PatientDetailsPage from './pages/Patients/PatientDetailsPage';
 import HospitalsPage from './pages/Hospitals/HospitalsPage';
 import HospitalDashboardPage from './pages/Hospitals/HospitalDashboardPage';
 import StemiPortalPage from './pages/Stemi/StemiPortalPage';
+import CommandCenterPage from './pages/Stemi/CommandCenterPage';
 import StrokePortal from './pages/Portals/StrokePortal';
 import TraumaPortalPage from './pages/Trauma/TraumaPortalPage';
 import EMSPortal from './pages/EMS/EMSPortal';
@@ -55,6 +56,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR']}>
                 <StemiPortalPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portals/stemi/command-center"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR']}>
+                <CommandCenterPage />
               </ProtectedRoute>
             }
           />
