@@ -3,7 +3,7 @@
  * Read-only view of STEMI case details
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -25,6 +25,8 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faComment } from '@fortawesome/free-solid-svg-icons';
 import {
   Person,
   LocalHospital,
@@ -37,6 +39,8 @@ import {
 
 import { StemiCase } from '../services/stemiService';
 import StemiTimelineView from './StemiTimelineView';
+import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../services/notificationService';
 
 interface ViewStemiCaseDialogProps {
   open: boolean;
@@ -50,8 +54,28 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
   stemiCase,
 }) => {
   const [activeTab, setActiveTab] = React.useState(0);
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
 
   if (!stemiCase) return null;
+
+  const handleAddCaseNote = () => {
+    setShowCaseNoteModal(true);
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      // You could add a success notification here
+    } catch (error) {
+      console.error('Error creating case note:', error);
+      // You could add an error notification here
+    }
+  };
+
+  const handleCaseNoteClose = () => {
+    setShowCaseNoteModal(false);
+  };
 
   const getStatusColor = (status: string): string => {
     const statusMap: Record<string, string> = {
@@ -381,6 +405,26 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
               </CardContent>
             </Card>
           </Grid>
+
+          {/* Quick Case Note Section */}
+          <Grid item xs={12}>
+            <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <FontAwesomeIcon icon={faComment} />
+                  <Typography variant="h6">Quick Case Note</Typography>
+                </Box>
+                <Button 
+                  onClick={handleAddCaseNote} 
+                  variant="outlined" 
+                  startIcon={<FontAwesomeIcon icon={faComment} />}
+                  fullWidth
+                >
+                  Add Case Note
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
         )}
 
@@ -394,6 +438,18 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
           Close
         </Button>
       </DialogActions>
+
+      {/* Case Note Modal */}
+      <CaseNoteModal
+        open={showCaseNoteModal}
+        onClose={handleCaseNoteClose}
+        onSubmit={handleCaseNoteSubmit}
+        patientName={`${stemiCase.patient?.firstName || ''} ${stemiCase.patient?.lastName || ''}`.trim()}
+        caseType="STEMI"
+        caseId={stemiCase.id}
+        patientId={stemiCase.patientId}
+        ticketId={stemiCase.ticketId}
+      />
     </Dialog>
   );
 };

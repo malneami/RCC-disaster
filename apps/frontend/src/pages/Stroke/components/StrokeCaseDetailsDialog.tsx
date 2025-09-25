@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -7,7 +7,12 @@ import {
   Button,
   Grid,
   Box,
+  Card,
+  CardContent,
+  Typography,
 } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faComment } from '@fortawesome/free-solid-svg-icons';
 
 import { StrokeCase } from '../../../services/strokeService';
 import PatientInformationCard from './StrokeCaseDetails/PatientInformationCard';
@@ -17,6 +22,8 @@ import PerformanceTimingsCard from './StrokeCaseDetails/PerformanceTimingsCard';
 import KPIPerformanceCard from './StrokeCaseDetails/KPIPerformanceCard';
 import TreatmentInformationCard from './StrokeCaseDetails/TreatmentInformationCard';
 import HospitalInformationCard from './StrokeCaseDetails/HospitalInformationCard';
+import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../services/notificationService';
 
 interface StrokeCaseDetailsDialogProps {
   open: boolean;
@@ -31,12 +38,33 @@ const StrokeCaseDetailsDialog: React.FC<StrokeCaseDetailsDialogProps> = ({
   strokeCase,
   onEdit,
 }) => {
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
+
   if (!strokeCase) return null;
 
   const handleEdit = () => {
     if (onEdit) {
       onEdit(strokeCase);
     }
+  };
+
+  const handleAddCaseNote = () => {
+    setShowCaseNoteModal(true);
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      // You could add a success notification here
+    } catch (error) {
+      console.error('Error creating case note:', error);
+      // You could add an error notification here
+    }
+  };
+
+  const handleCaseNoteClose = () => {
+    setShowCaseNoteModal(false);
   };
 
   return (
@@ -84,6 +112,26 @@ const StrokeCaseDetailsDialog: React.FC<StrokeCaseDetailsDialogProps> = ({
             <Grid item xs={12} md={6}>
               <HospitalInformationCard strokeCase={strokeCase} />
             </Grid>
+
+            {/* Fifth Row - Case Notes Section */}
+            <Grid item xs={12}>
+              <Card sx={{ mt: 2 }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={2}>
+                    <FontAwesomeIcon icon={faComment} />
+                    <Typography variant="h6">Quick Case Note</Typography>
+                  </Box>
+                  <Button 
+                    onClick={handleAddCaseNote} 
+                    variant="outlined" 
+                    startIcon={<FontAwesomeIcon icon={faComment} />}
+                    fullWidth
+                  >
+                    Add Case Note
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
         </Box>
       </DialogContent>
@@ -102,6 +150,18 @@ const StrokeCaseDetailsDialog: React.FC<StrokeCaseDetailsDialogProps> = ({
           </Button>
         )}
       </DialogActions>
+
+      {/* Case Note Modal */}
+      <CaseNoteModal
+        open={showCaseNoteModal}
+        onClose={handleCaseNoteClose}
+        onSubmit={handleCaseNoteSubmit}
+        patientName={`${strokeCase.patient?.firstName || ''} ${strokeCase.patient?.lastName || ''}`.trim()}
+        caseType="STROKE"
+        caseId={strokeCase.id}
+        patientId={strokeCase.patientId}
+        ticketId={strokeCase.ticketId}
+      />
     </Dialog>
   );
 };

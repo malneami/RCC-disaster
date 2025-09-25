@@ -80,11 +80,38 @@ export class TraumaQueryService {
     ]);
 
     // Parse JSON fields for each case
-    const parsedCases = cases.map(case_ => ({
-      ...case_,
-      vitalSigns: case_.vitalSigns ? JSON.parse(case_.vitalSigns) : null,
-      disposition: case_.disposition ? JSON.parse(case_.disposition) : null,
-    }));
+    const parsedCases = cases.map(case_ => {
+      let vitalSigns = null;
+      let disposition = null;
+      
+      // Handle vitalSigns - could be JSON string or plain text
+      if (case_.vitalSigns) {
+        try {
+          // Try to parse as JSON first
+          vitalSigns = JSON.parse(case_.vitalSigns);
+        } catch (e) {
+          // If not valid JSON, treat as plain text
+          vitalSigns = case_.vitalSigns;
+        }
+      }
+      
+      // Handle disposition - could be JSON string or plain text
+      if (case_.disposition) {
+        try {
+          // Try to parse as JSON first
+          disposition = JSON.parse(case_.disposition);
+        } catch (e) {
+          // If not valid JSON, treat as plain text
+          disposition = case_.disposition;
+        }
+      }
+      
+      return {
+        ...case_,
+        vitalSigns,
+        disposition,
+      };
+    });
 
     return { cases: parsedCases, total };
   }
@@ -108,10 +135,35 @@ export class TraumaQueryService {
     }
 
     // Parse JSON fields
+    let vitalSigns = null;
+    let disposition = null;
+    
+    // Handle vitalSigns - could be JSON string or plain text
+    if (traumaCase.vitalSigns) {
+      try {
+        // Try to parse as JSON first
+        vitalSigns = JSON.parse(traumaCase.vitalSigns);
+      } catch (e) {
+        // If not valid JSON, treat as plain text
+        vitalSigns = traumaCase.vitalSigns;
+      }
+    }
+    
+    // Handle disposition - could be JSON string or plain text
+    if (traumaCase.disposition) {
+      try {
+        // Try to parse as JSON first
+        disposition = JSON.parse(traumaCase.disposition);
+      } catch (e) {
+        // If not valid JSON, treat as plain text
+        disposition = traumaCase.disposition;
+      }
+    }
+    
     return {
       ...traumaCase,
-      vitalSigns: traumaCase.vitalSigns ? JSON.parse(traumaCase.vitalSigns) : null,
-      disposition: traumaCase.disposition ? JSON.parse(traumaCase.disposition) : null,
+      vitalSigns,
+      disposition,
     };
   }
 }

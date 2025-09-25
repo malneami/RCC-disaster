@@ -3,7 +3,7 @@
  * Read-only view of trauma case details
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -25,6 +25,8 @@ import {
   TableRow,
   Paper,
 } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faComment } from '@fortawesome/free-solid-svg-icons';
 import {
   Person,
   LocalHospital,
@@ -35,6 +37,8 @@ import {
 } from '@mui/icons-material';
 
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
+import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../services/notificationService';
 
 interface ViewTraumaCaseDialogProps {
   open: boolean;
@@ -47,7 +51,28 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
   onClose,
   traumaCase,
 }) => {
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
+
   if (!traumaCase) return null;
+
+  const handleAddCaseNote = () => {
+    setShowCaseNoteModal(true);
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      // You could add a success notification here
+    } catch (error) {
+      console.error('Error creating case note:', error);
+      // You could add an error notification here
+    }
+  };
+
+  const handleCaseNoteClose = () => {
+    setShowCaseNoteModal(false);
+  };
 
   const getSeverityColor = (severity: string | undefined): string => {
     if (!severity) return '#757575';
@@ -474,6 +499,26 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
               </CardContent>
             </Card>
           </Grid>
+
+          {/* Quick Case Note Section */}
+          <Grid item xs={12}>
+            <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <FontAwesomeIcon icon={faComment} />
+                  <Typography variant="h6">Quick Case Note</Typography>
+                </Box>
+                <Button 
+                  onClick={handleAddCaseNote} 
+                  variant="outlined" 
+                  startIcon={<FontAwesomeIcon icon={faComment} />}
+                  fullWidth
+                >
+                  Add Case Note
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       </DialogContent>
 
@@ -482,6 +527,18 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
           Close
         </Button>
       </DialogActions>
+
+      {/* Case Note Modal */}
+      <CaseNoteModal
+        open={showCaseNoteModal}
+        onClose={handleCaseNoteClose}
+        onSubmit={handleCaseNoteSubmit}
+        patientName={`${traumaCase.patient?.firstName || ''} ${traumaCase.patient?.lastName || ''}`.trim()}
+        caseType="TRAUMA"
+        caseId={traumaCase.id}
+        patientId={traumaCase.patientId}
+        ticketId={traumaCase.ticketId}
+      />
     </Dialog>
   );
 };
