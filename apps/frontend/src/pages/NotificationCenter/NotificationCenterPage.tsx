@@ -139,23 +139,30 @@ const NotificationCenterPage: React.FC = () => {
   }
 
   return (
-    <Box>
-      <GenericPageHeader
-        title="Notification Center"
-        subtitle="View and manage all notifications across the RCC platform"
-        actions={[
-          {
-            tooltip: 'Refresh',
-            onClick: handleRefresh,
-            icon: <FontAwesomeIcon icon={faRefresh} />,
-          },
-          {
-            tooltip: showFilters ? 'Hide Filters' : 'Show Filters',
-            onClick: () => setShowFilters(!showFilters),
-            icon: <FontAwesomeIcon icon={faFilter} />,
-          },
-        ]}
-      />
+    <Box sx={{ 
+      minHeight: '100vh',
+      backgroundColor: '#f8fafc',
+      p: { xs: 1, sm: 2, md: 3 }
+    }}>
+      {/* Header */}
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+        <GenericPageHeader
+          title="Notification Center"
+          subtitle="View and manage all notifications across the RCC platform"
+          actions={[
+            {
+              tooltip: 'Refresh',
+              onClick: handleRefresh,
+              icon: <FontAwesomeIcon icon={faRefresh} />,
+            },
+            {
+              tooltip: showFilters ? 'Hide Filters' : 'Show Filters',
+              onClick: () => setShowFilters(!showFilters),
+              icon: <FontAwesomeIcon icon={faFilter} />,
+            },
+          ]}
+        />
+      </Box>
 
       {/* Summary Cards */}
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
@@ -165,9 +172,9 @@ const NotificationCenterPage: React.FC = () => {
       {/* Filters */}
       {showFilters && (
         <Card sx={{ 
-          mt: { xs: 1, sm: 2 }, 
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          mb: { xs: 2, sm: 3 }, 
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}>
           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
             <NotificationFilters
@@ -180,25 +187,73 @@ const NotificationCenterPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Main Content */}
-      <Grid container spacing={3} sx={{ mt: 1 }}>
-        {/* Notifications Panel */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <FontAwesomeIcon icon={faBell} style={{ marginRight: '8px' }} />
-                <Typography variant="h6" component="h2">
-                  Notifications
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+      {/* Main Content - Responsive Layout */}
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
+        {/* Notifications Panel - Full width on mobile, 8/12 on desktop */}
+        <Grid item xs={12} lg={8}>
+          <Card sx={{ 
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            height: 'fit-content'
+          }}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              {/* Header */}
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                mb: 3,
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: { xs: 1, sm: 2 }
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <FontAwesomeIcon 
+                    icon={faBell} 
+                    style={{ 
+                      marginRight: '8px', 
+                      fontSize: '1.2rem',
+                      color: '#1976d2'
+                    }} 
+                  />
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
+                    Notifications
+                  </Typography>
+                </Box>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: { xs: '0.875rem', sm: '0.9rem' },
+                    textAlign: { xs: 'center', sm: 'left' }
+                  }}
+                >
                   Recent notifications and alerts
                 </Typography>
               </Box>
 
-              {/* Filter Tabs */}
-              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <Tabs value={activeTab} onChange={handleTabChange} aria-label="notification tabs">
+              {/* Filter Tabs - Responsive */}
+              <Box sx={{ 
+                borderBottom: 1, 
+                borderColor: 'divider', 
+                mb: 3,
+                overflowX: 'auto',
+                '& .MuiTabs-scrollButtons': {
+                  display: { xs: 'block', sm: 'none' }
+                }
+              }}>
+                <Tabs 
+                  value={activeTab} 
+                  onChange={handleTabChange} 
+                  aria-label="notification tabs"
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    '& .MuiTab-root': {
+                      minWidth: { xs: 'auto', sm: '120px' },
+                      fontSize: { xs: '0.875rem', sm: '0.9rem' },
+                      px: { xs: 1, sm: 2 }
+                    }
+                  }}
+                >
                   <Tab label="All" onClick={() => handleCategoryFilter('All')} />
                   <Tab label="Emergency" onClick={() => handlePriorityFilter('HIGH')} />
                   <Tab label="Transfers" onClick={() => handleCategoryFilter('CASE_ASSIGNMENT')} />
@@ -208,9 +263,19 @@ const NotificationCenterPage: React.FC = () => {
                 </Tabs>
               </Box>
 
-              {/* Priority Filter */}
-              <Box sx={{ mb: 2 }}>
-                <FormControl size="small" sx={{ minWidth: 150 }}>
+              {/* Priority Filter - Responsive */}
+              <Box sx={{ 
+                mb: 3,
+                display: 'flex',
+                justifyContent: { xs: 'center', sm: 'flex-start' }
+              }}>
+                <FormControl 
+                  size="small" 
+                  sx={{ 
+                    minWidth: { xs: 140, sm: 160 },
+                    width: { xs: '100%', sm: 'auto' }
+                  }}
+                >
                   <InputLabel>Priority</InputLabel>
                   <Select
                     value={filters.priority || 'All'}
@@ -227,27 +292,57 @@ const NotificationCenterPage: React.FC = () => {
 
               {/* Notification List */}
               <NotificationList 
-          filters={filters} 
-          onNotificationChange={() => setRefreshTrigger(prev => prev + 1)}
-        />
+                filters={filters} 
+                onNotificationChange={() => setRefreshTrigger(prev => prev + 1)}
+              />
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Notification Categories Panel */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <FontAwesomeIcon icon={faBell} style={{ marginRight: '8px' }} />
-                <Typography variant="h6" component="h2">
-                  Notification Categories
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                  Distribution by notification type
+        {/* Notification Categories Panel - Full width on mobile, 4/12 on desktop */}
+        <Grid item xs={12} lg={4}>
+          <Card sx={{ 
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            height: 'fit-content',
+            position: { lg: 'sticky' },
+            top: { lg: 20 }
+          }}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              {/* Header */}
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                mb: 3,
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: { xs: 1, sm: 2 }
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <FontAwesomeIcon 
+                    icon={faBell} 
+                    style={{ 
+                      marginRight: '8px', 
+                      fontSize: '1.2rem',
+                      color: '#1976d2'
+                    }} 
+                  />
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
+                    Categories
+                  </Typography>
+                </Box>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: { xs: '0.875rem', sm: '0.9rem' },
+                    textAlign: { xs: 'center', sm: 'left' }
+                  }}
+                >
+                  Distribution by type
                 </Typography>
               </Box>
 
+              {/* Categories List */}
               {categories.length === 0 ? (
                 <EmptyState
                   icon={<FontAwesomeIcon icon={faBell} size="2x" />}
@@ -256,7 +351,11 @@ const NotificationCenterPage: React.FC = () => {
                   size="small"
                 />
               ) : (
-                <Box>
+                <Box sx={{ 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1
+                }}>
                   {categories.map((category) => (
                     <Box
                       key={category.type}
@@ -264,14 +363,33 @@ const NotificationCenterPage: React.FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        py: 1,
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
+                        p: 2,
+                        borderRadius: 1,
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: '#f1f5f9',
+                          borderColor: '#cbd5e1'
+                        }
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <FontAwesomeIcon icon={faBell} style={{ marginRight: '8px', opacity: 0.7 }} />
-                        <Typography variant="body2">
+                        <FontAwesomeIcon 
+                          icon={faBell} 
+                          style={{ 
+                            marginRight: '12px', 
+                            opacity: 0.7,
+                            fontSize: '0.9rem'
+                          }} 
+                        />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontWeight: 500,
+                            fontSize: { xs: '0.875rem', sm: '0.9rem' }
+                          }}
+                        >
                           {category.type.replace('_', ' ')}
                         </Typography>
                       </Box>
@@ -279,7 +397,11 @@ const NotificationCenterPage: React.FC = () => {
                         label={category.count}
                         size="small"
                         color="primary"
-                        variant="outlined"
+                        variant="filled"
+                        sx={{ 
+                          fontWeight: 600,
+                          minWidth: '32px'
+                        }}
                       />
                     </Box>
                   ))}

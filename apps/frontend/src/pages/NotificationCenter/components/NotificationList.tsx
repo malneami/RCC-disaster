@@ -3,9 +3,6 @@ import {
   Box,
   List,
   ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
   Chip,
   IconButton,
   Typography,
@@ -237,82 +234,173 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
           <ListItem
             key={notification.id}
             sx={{
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              backgroundColor: notification.isRead ? 'transparent' : 'action.hover',
+              border: '1px solid #e2e8f0',
               borderRadius: 2,
-              mb: 1,
-              px: { xs: 1, sm: 2 },
-              py: { xs: 1, sm: 1.5 },
+              mb: 2,
+              p: 0,
+              backgroundColor: notification.isRead ? '#ffffff' : '#f8fafc',
               transition: 'all 0.2s ease',
               '&:hover': {
-                backgroundColor: 'action.selected',
-                transform: { xs: 'none', sm: 'translateX(4px)' },
+                backgroundColor: notification.isRead ? '#f8fafc' : '#f1f5f9',
+                transform: 'translateY(-1px)',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                borderColor: '#cbd5e1'
               },
             }}
           >
-            <ListItemIcon>
-              {getNotificationIcon(notification.type, notification.priority)}
-            </ListItemIcon>
-            <ListItemText
-              primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body1" component="span">
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'flex-start', 
+              width: '100%',
+              p: { xs: 2, sm: 2.5, md: 3 },
+              gap: 2
+            }}>
+              {/* Icon */}
+              <Box sx={{ 
+                flexShrink: 0,
+                mt: 0.5
+              }}>
+                {getNotificationIcon(notification.type, notification.priority)}
+              </Box>
+
+              {/* Content */}
+              <Box sx={{ 
+                flex: 1,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1
+              }}>
+                {/* Title and Priority */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  flexWrap: 'wrap'
+                }}>
+                  <Typography 
+                    variant="body1" 
+                    component="span"
+                    sx={{ 
+                      fontWeight: notification.isRead ? 500 : 600,
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                      color: notification.isRead ? 'text.secondary' : 'text.primary',
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
                     {notification.title}
                   </Typography>
                   <Chip
                     label={notification.priority}
                     size="small"
                     color={getPriorityColor(notification.priority) as any}
-                    variant="outlined"
+                    variant="filled"
+                    sx={{ 
+                      fontSize: '0.75rem',
+                      height: 20,
+                      fontWeight: 600
+                    }}
                   />
                 </Box>
-              }
-              secondary={
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {notification.message}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatTimeAgo(notification.createdAt)}
-                  </Typography>
-                </Box>
-              }
-            />
-            <ListItemSecondaryAction>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+
+                {/* Message */}
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    lineHeight: 1.4,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  {notification.message}
+                </Typography>
+
+                {/* Time */}
+                <Typography 
+                  variant="caption" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: '0.75rem',
+                    opacity: 0.7
+                  }}
+                >
+                  {formatTimeAgo(notification.createdAt)}
+                </Typography>
+              </Box>
+
+              {/* Actions */}
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 0.5,
+                flexShrink: 0,
+                alignItems: 'center'
+              }}>
                 {!notification.isRead && (
                   <IconButton
                     size="small"
                     onClick={() => handleMarkAsRead(notification.id)}
                     title="Mark as read"
+                    sx={{
+                      backgroundColor: '#e3f2fd',
+                      color: '#1976d2',
+                      '&:hover': {
+                        backgroundColor: '#bbdefb'
+                      }
+                    }}
                   >
-                    <FontAwesomeIcon icon={faCheck} />
+                    <FontAwesomeIcon icon={faCheck} style={{ fontSize: '0.8rem' }} />
                   </IconButton>
                 )}
                 <IconButton
                   size="small"
                   onClick={() => handleDeleteNotification(notification.id)}
                   title="Delete"
+                  sx={{
+                    backgroundColor: '#ffebee',
+                    color: '#d32f2f',
+                    '&:hover': {
+                      backgroundColor: '#ffcdd2'
+                    }
+                  }}
                 >
-                  <FontAwesomeIcon icon={faTrash} />
+                  <FontAwesomeIcon icon={faTrash} style={{ fontSize: '0.8rem' }} />
                 </IconButton>
               </Box>
-            </ListItemSecondaryAction>
+            </Box>
           </ListItem>
         ))}
       </List>
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          mt: 3,
+          pt: 2,
+          borderTop: '1px solid #e2e8f0'
+        }}>
           <Pagination
             count={pagination.totalPages}
             page={pagination.page}
             onChange={handlePageChange}
             color="primary"
             size="small"
+            sx={{
+              '& .MuiPaginationItem-root': {
+                fontSize: '0.875rem'
+              }
+            }}
           />
         </Box>
       )}

@@ -37,63 +37,75 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
     <Card 
       sx={{ 
         height: '100%',
-        borderRadius: 3,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        transition: 'all 0.3s ease',
+        borderRadius: 2,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        transition: 'all 0.2s ease',
+        border: '1px solid #e2e8f0',
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          transform: 'translateY(-2px)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          borderColor: '#cbd5e1'
         }
       }}
     >
-      <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+      <CardContent sx={{ 
+        p: { xs: 2, sm: 2.5, md: 3 },
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}>
+        {/* Header with Icon and Value */}
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center', 
-          mb: 2,
-          flexDirection: { xs: 'column', sm: 'row' },
-          textAlign: { xs: 'center', sm: 'left' }
+          justifyContent: 'space-between',
+          mb: 2
         }}>
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: { xs: 48, sm: 56 },
-              height: { xs: 48, sm: 56 },
-              borderRadius: 3,
+              width: { xs: 40, sm: 44, md: 48 },
+              height: { xs: 40, sm: 44, md: 48 },
+              borderRadius: 2,
               backgroundColor: `${color}.light`,
               color: `${color}.main`,
-              mr: { xs: 0, sm: 2 },
-              mb: { xs: 1, sm: 0 },
-              fontSize: { xs: '1.2rem', sm: '1.5rem' },
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
             }}
           >
             {icon}
           </Box>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h4" component="div" sx={{ 
-              fontWeight: 700, 
-              color: 'text.primary',
-              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
-            }}>
-              {value}
-            </Typography>
-            <Typography variant="h6" sx={{ 
-              fontWeight: 600, 
-              color: 'text.secondary',
-              fontSize: { xs: '0.875rem', sm: '1rem' }
-            }}>
-              {title}
-            </Typography>
-          </Box>
+          <Typography variant="h4" component="div" sx={{ 
+            fontWeight: 700, 
+            color: 'text.primary',
+            fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' },
+            lineHeight: 1
+          }}>
+            {value}
+          </Typography>
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ 
-          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-          textAlign: { xs: 'center', sm: 'left' }
-        }}>
-          {description}
-        </Typography>
+        
+        {/* Title and Description */}
+        <Box>
+          <Typography variant="h6" sx={{ 
+            fontWeight: 600, 
+            color: 'text.primary',
+            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+            mb: 1,
+            lineHeight: 1.2
+          }}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ 
+            fontSize: { xs: '0.75rem', sm: '0.8rem', md: '0.875rem' },
+            lineHeight: 1.4,
+            opacity: 0.8
+          }}>
+            {description}
+          </Typography>
+        </Box>
       </CardContent>
     </Card>
   );
@@ -153,39 +165,39 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
   }
 
   return (
-    <Grid container spacing={2} sx={{ mt: 2 }}>
-      <Grid item xs={12} sm={6} md={3}>
+    <Grid container spacing={{ xs: 2, sm: 2, md: 3 }}>
+      <Grid item xs={6} sm={3} md={3}>
         <SummaryCard
-          title="Unread Notifications"
+          title="Unread"
           value={summary.unreadNotifications}
-          description="Notifications that need your attention"
+          description="Need attention"
           icon={<FontAwesomeIcon icon={faBell} />}
           color="primary"
         />
       </Grid>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid item xs={6} sm={3} md={3}>
         <SummaryCard
-          title="High Priority Unread"
+          title="High Priority"
           value={summary.highPriorityUnreadNotifications}
-          description="Time-sensitive and emergency alerts"
+          description="Emergency alerts"
           icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
           color="error"
         />
       </Grid>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid item xs={6} sm={3} md={3}>
         <SummaryCard
-          title="Email Notifications"
+          title="Email"
           value={summary.emailNotifications}
-          description="Total emails sent to recipients"
+          description="Emails sent"
           icon={<FontAwesomeIcon icon={faEnvelope} />}
           color="info"
         />
       </Grid>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid item xs={6} sm={3} md={3}>
         <SummaryCard
-          title="SMS Notifications"
+          title="SMS"
           value={summary.smsNotifications}
-          description="Total SMS messages sent to recipients"
+          description="SMS sent"
           icon={<FontAwesomeIcon icon={faSms} />}
           color="success"
         />
