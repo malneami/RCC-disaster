@@ -24,6 +24,7 @@ import {
   Clear as ClearIcon,
   ViewModule as CardsIcon,
   TableChart as TableIcon,
+  Comment as CommentIcon,
 } from '@mui/icons-material';
 import { StrokeCase } from '../../../services/strokeService';
 import StrokeCasesFilters from './StrokeCasesList/StrokeCasesFilters';
@@ -34,6 +35,8 @@ import UnifiedCaseCard, {
   PerformanceIndicator, 
   CaseAction 
 } from '../../../components/Common/UnifiedCaseCard';
+import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../services/notificationService';
 
 interface StrokeCasesCardsProps {
   cases: StrokeCase[];
@@ -65,6 +68,8 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     severity: '',
   });
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
+  const [selectedCaseForNote, setSelectedCaseForNote] = useState<StrokeCase | null>(null);
 
   useEffect(() => {
     applyFiltersAndSearch();
@@ -120,6 +125,28 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
 
   const handleFiltersChange = (newFilters: any) => {
     setFilters(newFilters);
+  };
+
+  const handleAddCaseNote = (strokeCase: StrokeCase) => {
+    setSelectedCaseForNote(strokeCase);
+    setShowCaseNoteModal(true);
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      setSelectedCaseForNote(null);
+      // You could add a success notification here
+    } catch (error) {
+      console.error('Error creating case note:', error);
+      // You could add an error notification here
+    }
+  };
+
+  const handleCaseNoteClose = () => {
+    setShowCaseNoteModal(false);
+    setSelectedCaseForNote(null);
   };
   const transformStrokeCase = (strokeCase: StrokeCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
@@ -200,6 +227,13 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
         label: 'View Details',
         icon: <ViewIcon />,
         onClick: () => onViewDetails(strokeCase),
+        color: 'primary',
+        variant: 'outlined',
+      },
+      {
+        label: 'Add Case Note',
+        icon: <CommentIcon />,
+        onClick: () => handleAddCaseNote(strokeCase),
         color: 'primary',
         variant: 'outlined',
       },
@@ -472,6 +506,20 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
         onApplyFilters={handleApplyFilters}
         onClearFilters={handleClearFilters}
       />
+
+      {/* Case Note Modal */}
+      {selectedCaseForNote && (
+        <CaseNoteModal
+          open={showCaseNoteModal}
+          onClose={handleCaseNoteClose}
+          onSubmit={handleCaseNoteSubmit}
+          patientName={`${selectedCaseForNote.patient?.firstName || ''} ${selectedCaseForNote.patient?.lastName || ''}`.trim()}
+          caseType="STROKE"
+          caseId={selectedCaseForNote.id}
+          patientId={selectedCaseForNote.patientId}
+          ticketId={selectedCaseForNote.ticketId}
+        />
+      )}
     </Box>
   );
 };

@@ -18,6 +18,7 @@ import EMSPortal from './pages/EMS/EMSPortal';
 import EMSDashboardPage from './pages/EMSDashboard';
 import AdminPage from './pages/Admin/AdminPage';
 import ProfilePage from './pages/Profile/ProfilePage';
+import NotificationCenterPage from './pages/NotificationCenter/NotificationCenterPage';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
@@ -45,6 +46,7 @@ function App() {
           <Route path="/hospitals" element={<HospitalsPage />} />
           <Route path="/hospitals/:hospitalId" element={<HospitalDashboardPage />} />
           <Route path="/ems-dashboard" element={<EMSDashboardPage />} />
+          <Route path="/notifications" element={<NotificationCenterPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           
           {/* Portal Routes */}

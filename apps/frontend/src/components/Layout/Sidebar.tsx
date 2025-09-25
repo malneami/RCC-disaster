@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -11,6 +11,7 @@ import {
   Typography,
   Divider,
   Chip,
+  Badge,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -23,14 +24,36 @@ import {
   faBrain,
   faAmbulance,
   faShieldAlt,
+  faBell,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
+import { notificationService } from '../../services/notificationService';
 
 const Sidebar: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      loadUnreadCount();
+      // Refresh unread count every 30 seconds
+      const interval = setInterval(loadUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const loadUnreadCount = async () => {
+    try {
+      const response = await notificationService.getNotifications({ isRead: false });
+      setUnreadCount(response.notifications.length);
+    } catch (error) {
+      console.error('Failed to load unread notifications count:', error);
+      setUnreadCount(0);
+    }
+  };
 
   const navigationItems = [
     {
@@ -62,6 +85,12 @@ const Sidebar: React.FC = () => {
       icon: <FontAwesomeIcon icon={faAmbulance} />,
       path: '/ems-dashboard',
       roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR'],
+    },
+    {
+      text: 'Notification Center',
+      icon: <FontAwesomeIcon icon={faBell} />,
+      path: '/notifications',
+      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER'],
     },
   ];
 
@@ -157,7 +186,13 @@ const Sidebar: React.FC = () => {
                     color: location.pathname === item.path ? 'inherit' : 'text.secondary',
                   }}
                 >
-                  {item.icon}
+                  {item.text === 'Notification Center' ? (
+                    <Badge badgeContent={unreadCount} color="error" max={99}>
+                      {item.icon}
+                    </Badge>
+                  ) : (
+                    item.icon
+                  )}
                 </ListItemIcon>
                 <ListItemText primary={item.text} />
               </ListItemButton>

@@ -22,6 +22,7 @@ import {
   Clear as ClearIcon,
   ViewModule as CardsIcon,
   TableChart as TableIcon,
+  Comment as CommentIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
@@ -33,6 +34,8 @@ import UnifiedCaseCard, {
   PerformanceIndicator, 
   CaseAction 
 } from '../../../components/Common/UnifiedCaseCard';
+import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../services/notificationService';
 
 interface TraumaCasesCardsProps {
   cases: TraumaCase[];
@@ -67,6 +70,8 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
     hospitalId: '',
   });
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
+  const [selectedCaseForNote, setSelectedCaseForNote] = useState<TraumaCase | null>(null);
 
   useEffect(() => {
     applyFiltersAndSearch();
@@ -137,6 +142,27 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   const handleFiltersChange = (newFilters: any) => {
     setFilters(newFilters);
   };
+
+  const handleAddCaseNote = (traumaCase: TraumaCase) => {
+    setSelectedCaseForNote(traumaCase);
+    setShowCaseNoteModal(true);
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      setSelectedCaseForNote(null);
+    } catch (error) {
+      console.error('Error creating case note:', error);
+    }
+  };
+
+  const handleCaseNoteClose = () => {
+    setShowCaseNoteModal(false);
+    setSelectedCaseForNote(null);
+  };
+
   const transformTraumaCase = (traumaCase: TraumaCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
       name: `${traumaCase.patient?.firstName || ''} ${traumaCase.patient?.lastName || ''}`.trim(),
@@ -204,6 +230,13 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
         label: 'View Details',
         icon: <ViewIcon />,
         onClick: () => onViewDetails(traumaCase),
+        color: 'primary',
+        variant: 'outlined',
+      },
+      {
+        label: 'Add Case Note',
+        icon: <CommentIcon />,
+        onClick: () => handleAddCaseNote(traumaCase),
         color: 'primary',
         variant: 'outlined',
       },
@@ -617,6 +650,20 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
         fields={filterFields}
         values={filters}
       />
+
+      {/* Case Note Modal */}
+      {selectedCaseForNote && (
+        <CaseNoteModal
+          open={showCaseNoteModal}
+          onClose={handleCaseNoteClose}
+          onSubmit={handleCaseNoteSubmit}
+          patientName={`${selectedCaseForNote.patient?.firstName || ''} ${selectedCaseForNote.patient?.lastName || ''}`.trim()}
+          caseType="TRAUMA"
+          caseId={selectedCaseForNote.id}
+          patientId={selectedCaseForNote.patientId}
+          ticketId={selectedCaseForNote.ticketId}
+        />
+      )}
     </Box>
   );
 };

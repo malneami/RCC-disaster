@@ -31,6 +31,7 @@ import { EmsDashboardModule } from './modules/ems-dashboard/ems-dashboard.module
 import { EmsGatewayModule } from './modules/ems-gateway/ems-gateway.module';
 import { GpsModule } from './modules/gps/gps.module';
 import { TimelineEventsModule } from './modules/timeline-events/timeline-events.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { TimelineEventsModule } from './modules/timeline-events/timeline-events.
     EmsGatewayModule,
     GpsModule,
     TimelineEventsModule,
+    NotificationsModule,
     
     AuthModule,
     UsersModule,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -9,6 +9,7 @@ import {
   Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Comment as CommentIcon,
 } from '@mui/icons-material';
 import { StemiCase } from '../services/stemiService';
 import UnifiedCaseCard, { 
@@ -18,6 +19,8 @@ import UnifiedCaseCard, {
   PerformanceIndicator, 
   CaseAction 
 } from '../../../components/Common/UnifiedCaseCard';
+import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../services/notificationService';
 
 interface StemiCasesCardsProps {
   cases: StemiCase[];
@@ -34,6 +37,28 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
   onViewCase,
   onDeleteCase,
 }) => {
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
+  const [selectedCaseForNote, setSelectedCaseForNote] = useState<StemiCase | null>(null);
+
+  const handleAddCaseNote = (stemiCase: StemiCase) => {
+    setSelectedCaseForNote(stemiCase);
+    setShowCaseNoteModal(true);
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      setSelectedCaseForNote(null);
+    } catch (error) {
+      console.error('Error creating case note:', error);
+    }
+  };
+
+  const handleCaseNoteClose = () => {
+    setShowCaseNoteModal(false);
+    setSelectedCaseForNote(null);
+  };
   const transformStemiCase = (stemiCase: StemiCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
       name: `${stemiCase.patient?.firstName || ''} ${stemiCase.patient?.lastName || ''}`.trim(),
@@ -131,6 +156,13 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
         label: 'View Details',
         icon: <ViewIcon />,
         onClick: () => onViewCase(stemiCase),
+        color: 'primary',
+        variant: 'outlined',
+      },
+      {
+        label: 'Add Case Note',
+        icon: <CommentIcon />,
+        onClick: () => handleAddCaseNote(stemiCase),
         color: 'primary',
         variant: 'outlined',
       },
@@ -427,6 +459,20 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
           );
         })}
       </Grid>
+
+      {/* Case Note Modal */}
+      {selectedCaseForNote && (
+        <CaseNoteModal
+          open={showCaseNoteModal}
+          onClose={handleCaseNoteClose}
+          onSubmit={handleCaseNoteSubmit}
+          patientName={`${selectedCaseForNote.patient?.firstName || ''} ${selectedCaseForNote.patient?.lastName || ''}`.trim()}
+          caseType="STEMI"
+          caseId={selectedCaseForNote.id}
+          patientId={selectedCaseForNote.patientId}
+          ticketId={selectedCaseForNote.ticketId}
+        />
+      )}
     </Box>
   );
 };
