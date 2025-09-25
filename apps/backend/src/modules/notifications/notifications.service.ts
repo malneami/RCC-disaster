@@ -93,6 +93,7 @@ export class NotificationsService {
       recipients: {
         some: {
           userId,
+          deletedAt: null, // Only show non-deleted notifications for this user
         },
       },
     };
@@ -107,6 +108,7 @@ export class NotificationsService {
         some: {
           userId,
           isRead,
+          deletedAt: null, // Only show non-deleted notifications for this user
         },
       };
     }
@@ -138,9 +140,13 @@ export class NotificationsService {
             },
           },
           recipients: {
-            where: { userId },
+            where: { 
+              userId,
+              deletedAt: null, // Only include non-deleted recipients
+            },
             select: {
               id: true,
+              userId: true,
               isRead: true,
               readAt: true,
               deliveryStatus: true,
@@ -164,8 +170,19 @@ export class NotificationsService {
       this.prisma.notification.count({ where }),
     ]);
 
+    // Transform notifications to include user-specific read status
+    const transformedNotifications = notifications.map(notification => {
+      const userRecipient = notification.recipients.find(r => r.userId === userId);
+      return {
+        ...notification,
+        isRead: userRecipient?.isRead || false,
+        readAt: userRecipient?.readAt || null,
+        recipients: undefined, // Remove recipients array to avoid confusion
+      };
+    });
+
     return {
-      notifications,
+      notifications: transformedNotifications,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -181,14 +198,30 @@ export class NotificationsService {
   async getNotificationSummary(userId: string) {
     const [
       totalNotifications,
+      unreadNotifications,
       highPriorityNotifications,
+      highPriorityUnreadNotifications,
       emailNotifications,
       smsNotifications,
     ] = await Promise.all([
       this.prisma.notification.count({
         where: {
           recipients: {
-            some: { userId },
+            some: { 
+              userId,
+              deletedAt: null, // Only count non-deleted notifications
+            },
+          },
+        },
+      }),
+      this.prisma.notification.count({
+        where: {
+          recipients: {
+            some: { 
+              userId,
+              isRead: false,
+              deletedAt: null, // Only count non-deleted notifications
+            },
           },
         },
       }),
@@ -196,7 +229,22 @@ export class NotificationsService {
         where: {
           priority: NotificationPriority.HIGH,
           recipients: {
-            some: { userId },
+            some: { 
+              userId,
+              deletedAt: null, // Only count non-deleted notifications
+            },
+          },
+        },
+      }),
+      this.prisma.notification.count({
+        where: {
+          priority: NotificationPriority.HIGH,
+          recipients: {
+            some: { 
+              userId,
+              isRead: false,
+              deletedAt: null, // Only count non-deleted notifications
+            },
           },
         },
       }),
@@ -216,7 +264,9 @@ export class NotificationsService {
 
     return {
       totalNotifications,
+      unreadNotifications,
       highPriorityNotifications,
+      highPriorityUnreadNotifications,
       emailNotifications,
       smsNotifications,
     };
@@ -232,6 +282,7 @@ export class NotificationsService {
       where: {
         notificationId: { in: notificationIds },
         userId,
+        deletedAt: null, // Only update non-deleted recipients
       },
       data: {
         isRead: true,
@@ -241,6 +292,25 @@ export class NotificationsService {
     });
 
     this.logger.log(`Marked ${result.count} notifications as read for user ${userId}`);
+    return { count: result.count };
+  }
+
+  /**
+   * Soft delete notification for a specific user
+   */
+  async deleteNotificationForUser(notificationId: string, userId: string) {
+    const result = await this.prisma.notificationRecipient.updateMany({
+      where: {
+        notificationId,
+        userId,
+        deletedAt: null, // Only soft delete non-deleted recipients
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    this.logger.log(`Soft deleted notification ${notificationId} for user ${userId}`);
     return { count: result.count };
   }
 

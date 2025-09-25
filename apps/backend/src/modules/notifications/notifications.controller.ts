@@ -65,6 +65,19 @@ export class NotificationsController {
   }
 
   /**
+   * Soft delete notification for current user
+   */
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async deleteNotificationForUser(
+    @Param('id') notificationId: string,
+    @Request() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.notificationsService.deleteNotificationForUser(notificationId, userId);
+  }
+
+  /**
    * Get notification categories distribution
    */
   @Get('categories')
