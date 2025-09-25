@@ -248,12 +248,12 @@ const NotificationCenterPage: React.FC = () => {
                     }
                   }}
                 >
-                  <Tab label="All" onClick={() => handleTabChange({} as React.SyntheticEvent, 0)} />
-                  <Tab label="Emergency" onClick={() => handleTabChange({} as React.SyntheticEvent, 1)} />
-                  <Tab label="Transfers" onClick={() => handleTabChange({} as React.SyntheticEvent, 2)} />
-                  <Tab label="STEMI" onClick={() => handleTabChange({} as React.SyntheticEvent, 3)} />
-                  <Tab label="Stroke" onClick={() => handleTabChange({} as React.SyntheticEvent, 4)} />
-                  <Tab label="Trauma" onClick={() => handleTabChange({} as React.SyntheticEvent, 5)} />
+                  <Tab label="All" />
+                  <Tab label="Emergency" />
+                  <Tab label="Transfers" />
+                  <Tab label="STEMI" />
+                  <Tab label="Stroke" />
+                  <Tab label="Trauma" />
                 </Tabs>
               </Box>
 
