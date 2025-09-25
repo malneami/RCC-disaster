@@ -67,7 +67,7 @@ const NotificationCenterPage: React.FC = () => {
     setActiveTab(newValue);
     
     // Map tab index to caseType filter
-    const tabCaseTypes = ['ALL', 'EMERGENCY', 'TRANSFERS', 'STEMI', 'STROKE', 'TRAUMA'];
+    const tabCaseTypes = ['ALL', 'EMERGENCY', 'STEMI', 'STROKE', 'TRAUMA'];
     const selectedTab = tabCaseTypes[newValue];
     
     if (selectedTab === 'ALL') {
@@ -77,9 +77,6 @@ const NotificationCenterPage: React.FC = () => {
     } else if (selectedTab === 'EMERGENCY') {
       // Set priority filter for EMERGENCY tab
       setFilters({ ...filters, priority: 'HIGH', caseType: undefined });
-    } else if (selectedTab === 'TRANSFERS') {
-      // Set type filter for TRANSFERS tab
-      setFilters({ ...filters, type: 'CASE_TRANSFER', caseType: undefined });
     } else {
       // Set caseType filter for STEMI, STROKE, TRAUMA tabs
       // Clear priority filter to show all priorities for portal-specific notifications
@@ -250,7 +247,6 @@ const NotificationCenterPage: React.FC = () => {
                 >
                   <Tab label="All" />
                   <Tab label="Emergency" />
-                  <Tab label="Transfers" />
                   <Tab label="STEMI" />
                   <Tab label="Stroke" />
                   <Tab label="Trauma" />
