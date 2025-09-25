@@ -226,12 +226,12 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth="lg"
+      maxWidth="sm"
       fullWidth
       PaperProps={{
         sx: { 
-          minHeight: '700px',
-          borderRadius: 3,
+          maxHeight: '85vh',
+          borderRadius: 2,
           boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
         }
       }}
@@ -240,7 +240,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
       <DialogTitle sx={{ 
         background: `linear-gradient(135deg, ${getCaseTypeColor(caseType)} 0%, ${alpha(getCaseTypeColor(caseType), 0.8)} 100%)`,
         color: 'white',
-        p: 3,
+        p: 2,
         position: 'relative',
         overflow: 'hidden'
       }}>
@@ -306,8 +306,8 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
         }} />
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3 }}>
-        <Stack spacing={3}>
+      <DialogContent sx={{ p: 2 }}>
+        <Stack spacing={2}>
           {/* Note Content Card */}
           <Card sx={{ 
             border: '2px solid',
@@ -319,7 +319,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
               boxShadow: `0 8px 25px ${alpha(getPriorityColor(formData.priority), 0.15)}`,
             }
           }}>
-            <CardContent>
+            <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <FontAwesomeIcon icon={faComment} color={getPriorityColor(formData.priority)} />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -329,14 +329,14 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
               <TextField
                 fullWidth
                 multiline
-                rows={4}
+                rows={3}
                 placeholder="Enter your case note or pathway update..."
                 value={formData.content}
                 onChange={(e) => handleInputChange('content', e.target.value)}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    fontSize: '1rem',
+                    fontSize: '0.9rem',
                     lineHeight: 1.6,
                   }
                 }}
@@ -346,7 +346,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
 
           {/* Priority and Notification Settings */}
           <Card sx={{ borderRadius: 2 }}>
-            <CardContent>
+            <CardContent sx={{ p: 2 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <FontAwesomeIcon icon={faBell} />
                 Notification Settings
@@ -423,7 +423,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
           {/* Enhanced Recipients Section */}
           {formData.notifyTeam && (
             <Card sx={{ borderRadius: 2 }}>
-              <CardContent>
+              <CardContent sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <FontAwesomeIcon icon={faUsers} />
@@ -564,7 +564,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, bgcolor: alpha(theme.palette.grey[100], 0.5) }}>
+      <DialogActions sx={{ p: 2, bgcolor: alpha(theme.palette.grey[100], 0.5) }}>
         <Button 
           onClick={handleClose} 
           disabled={loading}

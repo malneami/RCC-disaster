@@ -137,12 +137,18 @@ const NotificationCenterPage: React.FC = () => {
       />
 
       {/* Summary Cards */}
-      <NotificationSummaryCards />
+      <Box sx={{ mb: 3 }}>
+        <NotificationSummaryCards />
+      </Box>
 
       {/* Filters */}
       {showFilters && (
-        <Card sx={{ mt: 2 }}>
-          <CardContent>
+        <Card sx={{ 
+          mt: 2, 
+          borderRadius: 3,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        }}>
+          <CardContent sx={{ p: 3 }}>
             <NotificationFilters
               currentFilters={filters}
               onApplyFilters={handleFilterChange}

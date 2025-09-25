@@ -58,9 +58,22 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters }) => {
       });
       setNotifications(data.notifications);
       setPagination(data.pagination);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading notifications:', err);
-      setError('Failed to load notifications. Please try again.');
+      // More specific error handling
+      if (err.response?.status === 404) {
+        // No notifications found - show empty state instead of error
+        setNotifications([]);
+        setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 });
+        setError(null);
+        return;
+      } else if (err.response?.status === 401) {
+        setError('Authentication required. Please log in again.');
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('Network error. Please check your connection.');
+      } else {
+        setError('Failed to load notifications. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -179,8 +192,15 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters }) => {
               borderBottom: '1px solid',
               borderColor: 'divider',
               backgroundColor: notification.isRead ? 'transparent' : 'action.hover',
+              borderRadius: 2,
+              mb: 1,
+              px: 2,
+              py: 1.5,
+              transition: 'all 0.2s ease',
               '&:hover': {
                 backgroundColor: 'action.selected',
+                transform: 'translateX(4px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               },
             }}
           >
