@@ -41,14 +41,31 @@ const Sidebar: React.FC = () => {
       loadUnreadCount();
       // Refresh unread count every 30 seconds
       const interval = setInterval(loadUnreadCount, 30000);
-      return () => clearInterval(interval);
+      
+      // Listen for notification events
+      const handleNotificationRead = () => {
+        loadUnreadCount();
+      };
+      
+      const handleNotificationDeleted = () => {
+        loadUnreadCount();
+      };
+      
+      window.addEventListener('notificationRead', handleNotificationRead);
+      window.addEventListener('notificationDeleted', handleNotificationDeleted);
+      
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('notificationRead', handleNotificationRead);
+        window.removeEventListener('notificationDeleted', handleNotificationDeleted);
+      };
     }
   }, [user]);
 
   const loadUnreadCount = async () => {
     try {
-      const response = await notificationService.getNotifications({ isRead: false });
-      setUnreadCount(response.notifications.length);
+      const summary = await notificationService.getNotificationSummary();
+      setUnreadCount(summary.unreadNotifications);
     } catch (error) {
       console.error('Failed to load unread notifications count:', error);
       setUnreadCount(0);

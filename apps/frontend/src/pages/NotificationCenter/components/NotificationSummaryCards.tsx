@@ -46,34 +46,52 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
         }
       }}
     >
-      <CardContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          mb: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          textAlign: { xs: 'center', sm: 'left' }
+        }}>
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 56,
-              height: 56,
+              width: { xs: 48, sm: 56 },
+              height: { xs: 48, sm: 56 },
               borderRadius: 3,
               backgroundColor: `${color}.light`,
               color: `${color}.main`,
-              mr: 2,
-              fontSize: '1.5rem',
+              mr: { xs: 0, sm: 2 },
+              mb: { xs: 1, sm: 0 },
+              fontSize: { xs: '1.2rem', sm: '1.5rem' },
             }}
           >
             {icon}
           </Box>
-          <Box>
-            <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: 'text.primary' }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h4" component="div" sx={{ 
+              fontWeight: 700, 
+              color: 'text.primary',
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+            }}>
               {value}
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+            <Typography variant="h6" sx={{ 
+              fontWeight: 600, 
+              color: 'text.secondary',
+              fontSize: { xs: '0.875rem', sm: '1rem' }
+            }}>
               {title}
             </Typography>
           </Box>
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+        <Typography variant="body2" color="text.secondary" sx={{ 
+          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+          textAlign: { xs: 'center', sm: 'left' }
+        }}>
           {description}
         </Typography>
       </CardContent>
@@ -81,14 +99,18 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
   );
 };
 
-const NotificationSummaryCards: React.FC = () => {
+interface NotificationSummaryCardsProps {
+  refreshTrigger?: number;
+}
+
+const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ refreshTrigger }) => {
   const [summary, setSummary] = useState<NotificationSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadSummary();
-  }, []);
+  }, [refreshTrigger]);
 
   const loadSummary = async () => {
     try {
@@ -131,20 +153,20 @@ const NotificationSummaryCards: React.FC = () => {
   }
 
   return (
-    <Grid container spacing={3} sx={{ mt: 2 }}>
+    <Grid container spacing={2} sx={{ mt: 2 }}>
       <Grid item xs={12} sm={6} md={3}>
         <SummaryCard
-          title="Total Notifications"
-          value={summary.totalNotifications}
-          description="All notifications in the system"
+          title="Unread Notifications"
+          value={summary.unreadNotifications}
+          description="Notifications that need your attention"
           icon={<FontAwesomeIcon icon={faBell} />}
           color="primary"
         />
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         <SummaryCard
-          title="High Priority"
-          value={summary.highPriorityNotifications}
+          title="High Priority Unread"
+          value={summary.highPriorityUnreadNotifications}
           description="Time-sensitive and emergency alerts"
           icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
           color="error"

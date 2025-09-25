@@ -84,7 +84,9 @@ export interface CaseNote {
 
 export interface NotificationSummary {
   totalNotifications: number;
+  unreadNotifications: number;
   highPriorityNotifications: number;
+  highPriorityUnreadNotifications: number;
   emailNotifications: number;
   smsNotifications: number;
 }
@@ -200,8 +202,8 @@ export const notificationService = {
     return response.data;
   },
 
-  // Delete notification
-  async deleteNotification(id: string): Promise<{ success: boolean }> {
+  // Delete notification (soft delete for current user)
+  async deleteNotification(id: string): Promise<{ count: number }> {
     const response = await apiClient.delete(`/notifications/${id}`);
     return response.data;
   },

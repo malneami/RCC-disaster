@@ -30,9 +30,10 @@ import { notificationService, Notification, NotificationFilter } from '../../../
 
 interface NotificationListProps {
   filters: NotificationFilter;
+  onNotificationChange?: () => void;
 }
 
-const NotificationList: React.FC<NotificationListProps> = ({ filters }) => {
+const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotificationChange }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,15 +52,30 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters }) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await notificationService.getNotifications({
+      
+      const requestFilters = {
         ...filters,
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
-      });
+      };
+      
+      console.log('Loading notifications with filters:', requestFilters);
+      
+      const data = await notificationService.getNotifications(requestFilters);
+      console.log('Received notifications:', data.notifications.length);
+      console.log('Full response:', data);
+      
       setNotifications(data.notifications);
       setPagination(data.pagination);
     } catch (err: any) {
       console.error('Error loading notifications:', err);
+      console.error('Error details:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+        code: err.code
+      });
+      
       // More specific error handling
       if (err.response?.status === 404) {
         // No notifications found - show empty state instead of error
@@ -81,7 +97,10 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters }) => {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      await notificationService.markNotificationsAsRead([notificationId]);
+      console.log('Marking notification as read:', notificationId);
+      const result = await notificationService.markNotificationsAsRead([notificationId]);
+      console.log('Mark as read result:', result);
+      
       setNotifications(prev =>
         prev.map(notification =>
           notification.id === notificationId
@@ -89,15 +108,44 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters }) => {
             : notification
         )
       );
+      // Trigger refresh of summary cards
+      if (onNotificationChange) {
+        onNotificationChange();
+      }
+      
+      // Dispatch custom event to notify sidebar
+      window.dispatchEvent(new CustomEvent('notificationRead', { 
+        detail: { notificationId, count: result.count } 
+      }));
     } catch (err) {
       console.error('Error marking notification as read:', err);
+      // Revert the optimistic update
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === notificationId
+            ? { ...notification, isRead: false, readAt: undefined }
+            : notification
+        )
+      );
     }
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
     try {
-      await notificationService.deleteNotification(notificationId);
+      console.log('Deleting notification:', notificationId);
+      const result = await notificationService.deleteNotification(notificationId);
+      console.log('Delete result:', result);
+      
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      // Trigger refresh of summary cards
+      if (onNotificationChange) {
+        onNotificationChange();
+      }
+      
+      // Dispatch custom event to notify sidebar
+      window.dispatchEvent(new CustomEvent('notificationDeleted', { 
+        detail: { notificationId, count: result.count } 
+      }));
     } catch (err) {
       console.error('Error deleting notification:', err);
     }
@@ -194,12 +242,12 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters }) => {
               backgroundColor: notification.isRead ? 'transparent' : 'action.hover',
               borderRadius: 2,
               mb: 1,
-              px: 2,
-              py: 1.5,
+              px: { xs: 1, sm: 2 },
+              py: { xs: 1, sm: 1.5 },
               transition: 'all 0.2s ease',
               '&:hover': {
                 backgroundColor: 'action.selected',
-                transform: 'translateX(4px)',
+                transform: { xs: 'none', sm: 'translateX(4px)' },
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               },
             }}

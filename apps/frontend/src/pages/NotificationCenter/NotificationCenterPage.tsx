@@ -38,6 +38,7 @@ const NotificationCenterPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Load initial data
   useEffect(() => {
@@ -64,6 +65,25 @@ const NotificationCenterPage: React.FC = () => {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    
+    // Map tab index to caseType filter
+    const tabCaseTypes = ['ALL', 'EMERGENCY', 'TRANSFERS', 'STEMI', 'STROKE', 'TRAUMA'];
+    const selectedTab = tabCaseTypes[newValue];
+    
+    if (selectedTab === 'ALL') {
+      // Remove caseType filter for ALL tab
+      const { caseType: _, ...rest } = filters;
+      setFilters(rest);
+    } else if (selectedTab === 'EMERGENCY') {
+      // Set priority filter for EMERGENCY tab
+      setFilters({ ...filters, priority: 'HIGH', caseType: undefined });
+    } else if (selectedTab === 'TRANSFERS') {
+      // Set type filter for TRANSFERS tab
+      setFilters({ ...filters, type: 'CASE_TRANSFER', caseType: undefined });
+    } else {
+      // Set caseType filter for STEMI, STROKE, TRAUMA tabs
+      setFilters({ ...filters, caseType: selectedTab });
+    }
   };
 
   const handleFilterChange = (newFilters: NotificationFilter) => {
@@ -72,6 +92,7 @@ const NotificationCenterPage: React.FC = () => {
 
   const handleRefresh = () => {
     loadInitialData();
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handlePriorityFilter = (priority: string) => {
@@ -137,18 +158,18 @@ const NotificationCenterPage: React.FC = () => {
       />
 
       {/* Summary Cards */}
-      <Box sx={{ mb: 3 }}>
-        <NotificationSummaryCards />
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+        <NotificationSummaryCards refreshTrigger={refreshTrigger} />
       </Box>
 
       {/* Filters */}
       {showFilters && (
         <Card sx={{ 
-          mt: 2, 
+          mt: { xs: 1, sm: 2 }, 
           borderRadius: 3,
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         }}>
-          <CardContent sx={{ p: 3 }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
             <NotificationFilters
               currentFilters={filters}
               onApplyFilters={handleFilterChange}
@@ -205,7 +226,10 @@ const NotificationCenterPage: React.FC = () => {
               </Box>
 
               {/* Notification List */}
-              <NotificationList filters={filters} />
+              <NotificationList 
+          filters={filters} 
+          onNotificationChange={() => setRefreshTrigger(prev => prev + 1)}
+        />
             </CardContent>
           </Card>
         </Grid>
