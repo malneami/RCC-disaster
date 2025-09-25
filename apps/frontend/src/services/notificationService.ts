@@ -166,7 +166,13 @@ export const notificationService = {
       }
     });
 
-    const response = await apiClient.get(`/notifications?${params.toString()}`);
+    const url = `/notifications?${params.toString()}`;
+    console.log('Making API call to:', url);
+    console.log('Filter object:', filter);
+    console.log('URL params:', params.toString());
+
+    const response = await apiClient.get(url);
+    console.log('API response status:', response.status);
     return response.data;
   },
 

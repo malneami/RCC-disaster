@@ -82,7 +82,9 @@ const NotificationCenterPage: React.FC = () => {
       setFilters({ ...filters, type: 'CASE_TRANSFER', caseType: undefined });
     } else {
       // Set caseType filter for STEMI, STROKE, TRAUMA tabs
-      setFilters({ ...filters, caseType: selectedTab });
+      // Clear priority filter to show all priorities for portal-specific notifications
+      const { priority: _, ...rest } = filters;
+      setFilters({ ...rest, caseType: selectedTab });
     }
   };
 
@@ -104,14 +106,6 @@ const NotificationCenterPage: React.FC = () => {
     }
   };
 
-  const handleCategoryFilter = (category: string) => {
-    if (category === 'All') {
-      const { type: _, ...rest } = filters;
-      setFilters(rest);
-    } else {
-      setFilters({ ...filters, type: category });
-    }
-  };
 
   if (loading) {
     return <LoadingSpinner />;
@@ -254,12 +248,12 @@ const NotificationCenterPage: React.FC = () => {
                     }
                   }}
                 >
-                  <Tab label="All" onClick={() => handleCategoryFilter('All')} />
-                  <Tab label="Emergency" onClick={() => handlePriorityFilter('HIGH')} />
-                  <Tab label="Transfers" onClick={() => handleCategoryFilter('CASE_ASSIGNMENT')} />
-                  <Tab label="STEMI" onClick={() => handleCategoryFilter('STEMI')} />
-                  <Tab label="Stroke" onClick={() => handleCategoryFilter('STROKE')} />
-                  <Tab label="Trauma" onClick={() => handleCategoryFilter('TRAUMA')} />
+                  <Tab label="All" onClick={() => handleTabChange({} as React.SyntheticEvent, 0)} />
+                  <Tab label="Emergency" onClick={() => handleTabChange({} as React.SyntheticEvent, 1)} />
+                  <Tab label="Transfers" onClick={() => handleTabChange({} as React.SyntheticEvent, 2)} />
+                  <Tab label="STEMI" onClick={() => handleTabChange({} as React.SyntheticEvent, 3)} />
+                  <Tab label="Stroke" onClick={() => handleTabChange({} as React.SyntheticEvent, 4)} />
+                  <Tab label="Trauma" onClick={() => handleTabChange({} as React.SyntheticEvent, 5)} />
                 </Tabs>
               </Box>
 

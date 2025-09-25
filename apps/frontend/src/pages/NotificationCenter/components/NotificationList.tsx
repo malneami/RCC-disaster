@@ -46,21 +46,23 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
   }, [filters]);
 
   const loadNotifications = async () => {
+    const requestFilters = {
+      ...filters,
+      page: pagination.page.toString(),
+      limit: pagination.limit.toString(),
+    };
+    
     try {
       setLoading(true);
       setError(null);
       
-      const requestFilters = {
-        ...filters,
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-      };
-      
       console.log('Loading notifications with filters:', requestFilters);
+      console.log('Filter object keys and values:', Object.entries(requestFilters));
       
       const data = await notificationService.getNotifications(requestFilters);
       console.log('Received notifications:', data.notifications.length);
       console.log('Full response:', data);
+      console.log('API call successful for filters:', requestFilters);
       
       setNotifications(data.notifications);
       setPagination(data.pagination);
@@ -70,8 +72,11 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
         message: err.message,
         status: err.response?.status,
         data: err.response?.data,
-        code: err.code
+        code: err.code,
+        config: err.config,
+        request: err.request
       });
+      console.error('Failed request filters:', requestFilters);
       
       // More specific error handling
       if (err.response?.status === 404) {
