@@ -45,6 +45,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Form data state
   const [patientInfo, setPatientInfo] = useState<PatientInfo>({
@@ -107,7 +108,13 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   });
 
   const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    const errors = validateStep(activeStep);
+    setValidationErrors(errors);
+    
+    // Only proceed if there are no validation errors
+    if (Object.keys(errors).length === 0 && activeStep < steps.length - 1) {
+      setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    }
     setError(null);
   };
 
@@ -211,34 +218,58 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     if (!loading) {
       setActiveStep(0);
       setError(null);
+      setValidationErrors({});
       onClose();
     }
   };
 
-  const isStepValid = (step: number): boolean => {
+  const validateStep = (step: number): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    
     switch (step) {
       case 0: // Patient Information
-        return !!(
-          patientInfo.firstName &&
-          patientInfo.lastName &&
-          patientInfo.nationalId &&
-          patientInfo.age &&
-          patientInfo.gender &&
-          patientInfo.originHospitalId
-        );
+        if (!patientInfo.firstName) {
+          errors['patientInfo.firstName'] = 'Patient Name is required';
+        }
+        if (!patientInfo.lastName) {
+          errors['patientInfo.lastName'] = 'Patient Last Name is required';
+        }
+        if (!patientInfo.nationalId) {
+          errors['patientInfo.nationalId'] = 'National ID is required';
+        }
+        if (!patientInfo.age) {
+          errors['patientInfo.age'] = 'Age is required';
+        }
+        if (!patientInfo.gender) {
+          errors['patientInfo.gender'] = 'Gender is required';
+        }
+        if (!patientInfo.originHospitalId) {
+          errors['patientInfo.originHospitalId'] = 'Origin Hospital is required';
+        }
+        break;
       case 1: // Admission Details
-        return !!(admissionDetails.admissionTime && admissionDetails.modeOfArrival);
+        if (!admissionDetails.admissionTime) {
+          errors['admissionDetails.admissionTime'] = 'Admission Time is required';
+        }
+        if (!admissionDetails.modeOfArrival) {
+          errors['admissionDetails.modeOfArrival'] = 'Mode of Arrival is required';
+        }
+        break;
       case 2: // Critical Timestamps
-        return true; // Optional fields
+        // Optional fields
+        break;
       case 3: // Interventions & Treatments
-        return true; // Optional fields
+        // Optional fields
+        break;
       case 4: // Clinical Assessment
-        return true; // Optional fields
+        // Optional fields
+        break;
       case 5: // Review
-        return true;
-      default:
-        return false;
+        // Review step
+        break;
     }
+    
+    return errors;
   };
 
   const renderStepContent = (step: number) => {
@@ -248,6 +279,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           <PatientInfoStep
             data={patientInfo}
             onChange={setPatientInfo}
+            validationErrors={validationErrors}
           />
         );
       case 1:
@@ -255,6 +287,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           <AdmissionDetailsStep
             data={admissionDetails}
             onChange={setAdmissionDetails}
+            validationErrors={validationErrors}
           />
         );
       case 2:
@@ -352,7 +385,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           <Button
             onClick={handleNext}
             variant="contained"
-            disabled={!isStepValid(activeStep) || loading}
+            disabled={loading}
           >
             Next
           </Button>

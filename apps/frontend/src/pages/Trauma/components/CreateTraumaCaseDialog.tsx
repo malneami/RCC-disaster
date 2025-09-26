@@ -46,6 +46,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     patientInfo: {
       firstName: '',
@@ -114,6 +115,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       setError(null);
       setLoading(false);
       setStepErrors({});
+      setValidationErrors({});
     }
   }, [open]);
 
@@ -122,7 +124,13 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
   };
 
   const handleNext = () => {
-    setActiveStep(prev => prev + 1);
+    const errors = validateStep(activeStep);
+    setValidationErrors(errors);
+    
+    // Only proceed if there are no validation errors
+    if (Object.keys(errors).length === 0 && activeStep < TRAUMA_FORM_STEPS.length - 1) {
+      setActiveStep(prev => prev + 1);
+    }
   };
 
   const handleBack = () => {
@@ -180,25 +188,55 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
     }
   };
 
-  const isStepValid = (stepIndex: number): boolean => {
+  const validateStep = (stepIndex: number): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    
     switch (stepIndex) {
       case 0: // Patient Info
-        return !!(formData.patientInfo.firstName && formData.patientInfo.lastName && 
-                 formData.patientInfo.nationalId && formData.patientInfo.age &&
-                 formData.patientInfo.originHospitalId);
+        if (!formData.patientInfo.firstName) {
+          errors['patientInfo.firstName'] = 'Patient Name is required';
+        }
+        if (!formData.patientInfo.lastName) {
+          errors['patientInfo.lastName'] = 'Patient Last Name is required';
+        }
+        if (!formData.patientInfo.nationalId) {
+          errors['patientInfo.nationalId'] = 'National ID is required';
+        }
+        if (!formData.patientInfo.age) {
+          errors['patientInfo.age'] = 'Age is required';
+        }
+        if (!formData.patientInfo.gender) {
+          errors['patientInfo.gender'] = 'Gender is required';
+        }
+        if (!formData.patientInfo.originHospitalId) {
+          errors['patientInfo.originHospitalId'] = 'Origin Hospital is required';
+        }
+        break;
       case 1: // Incident Details
-        return !!(formData.incidentDetails.arrivalDateTime && 
-                 formData.incidentDetails.modeOfArrival && 
-                 formData.incidentDetails.mechanismOfInjury);
+        if (!formData.incidentDetails.arrivalDateTime) {
+          errors['incidentDetails.arrivalDateTime'] = 'Arrival Date Time is required';
+        }
+        if (!formData.incidentDetails.modeOfArrival) {
+          errors['incidentDetails.modeOfArrival'] = 'Mode of Arrival is required';
+        }
+        if (!formData.incidentDetails.mechanismOfInjury) {
+          errors['incidentDetails.mechanismOfInjury'] = 'Mechanism of Injury is required';
+        }
+        break;
       case 2: // Vitals Assessment
-        return true; // Optional step
+        // Optional step
+        break;
       case 3: // Injury Assessment
-        return true; // Optional step
+        // Optional step
+        break;
       case 4: // Disposition
-        return !!(formData.disposition.edDisposition);
-      default:
-        return false;
+        if (!formData.disposition.edDisposition) {
+          errors['disposition.edDisposition'] = 'ED Disposition is required';
+        }
+        break;
     }
+    
+    return errors;
   };
 
   const renderStepContent = () => {
@@ -209,6 +247,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             data={formData.patientInfo}
             onChange={(data) => handleStepDataChange({ patientInfo: { ...formData.patientInfo, ...data } })}
             errors={stepErrors}
+            validationErrors={validationErrors}
           />
         );
       case 1:
@@ -294,7 +333,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             <Button
               onClick={handleSubmit}
               variant="contained"
-              disabled={!isStepValid(activeStep) || loading}
+              disabled={loading}
               startIcon={loading ? <CircularProgress size={20} /> : null}
             >
               {loading ? 'Creating...' : 'Create Case'}
@@ -303,7 +342,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             <Button
               onClick={handleNext}
               variant="contained"
-              disabled={!isStepValid(activeStep) || loading}
+              disabled={loading}
             >
               Next
             </Button>

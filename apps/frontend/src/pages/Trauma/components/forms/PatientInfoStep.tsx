@@ -11,6 +11,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Typography,
 } from '@mui/material';
 import { GENDER_OPTIONS } from '../../constants/traumaConstants';
 import { PatientInfoFormData } from '../../types/traumaTypes';
@@ -22,6 +23,7 @@ interface PatientInfoStepProps {
   data: PatientInfoFormData;
   onChange: (data: Partial<PatientInfoFormData>) => void;
   errors: Record<string, string>;
+  validationErrors?: Record<string, string>;
   isAdmin?: boolean;
 }
 
@@ -29,6 +31,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
   data,
   onChange,
   errors,
+  validationErrors = {},
   isAdmin = true,
 }) => {
   const handleChange = (field: keyof PatientInfoFormData) => (
@@ -67,8 +70,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           label="First Name"
           value={data.firstName}
           onChange={handleChange('firstName')}
-          error={!!errors.firstName}
-          helperText={errors.firstName}
+          error={!!errors.firstName || !!validationErrors['patientInfo.firstName']}
+          helperText={errors.firstName || validationErrors['patientInfo.firstName']}
           required
           disabled={!isAdmin}
         />
@@ -80,8 +83,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           label="Last Name"
           value={data.lastName}
           onChange={handleChange('lastName')}
-          error={!!errors.lastName}
-          helperText={errors.lastName}
+          error={!!errors.lastName || !!validationErrors['patientInfo.lastName']}
+          helperText={errors.lastName || validationErrors['patientInfo.lastName']}
           required
           disabled={!isAdmin}
         />
@@ -94,8 +97,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onPatientSelect={handlePatientSelect}
           label="National ID"
           required
-          error={!!errors.nationalId}
-          helperText={errors.nationalId}
+          error={!!errors.nationalId || !!validationErrors['patientInfo.nationalId']}
+          helperText={errors.nationalId || validationErrors['patientInfo.nationalId']}
           portalType="trauma"
         />
       </Grid>
@@ -108,20 +111,19 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           value={data.age || ''}
           onChange={(e) => onChange({ age: parseInt(e.target.value) || undefined })}
           inputProps={{ min: 0, max: 150 }}
-          error={!!errors.age}
-          helperText={errors.age}
+          error={!!errors.age || !!validationErrors['patientInfo.age']}
+          helperText={errors.age || validationErrors['patientInfo.age']}
           required
           disabled={!isAdmin}
         />
       </Grid>
       
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth required>
+        <FormControl fullWidth required error={!!errors.gender || !!validationErrors['patientInfo.gender']}>
           <InputLabel>Gender</InputLabel>
           <Select
             value={data.gender}
             onChange={handleChange('gender')}
-            error={!!errors.gender}
             disabled={!isAdmin}
           >
             {GENDER_OPTIONS.map((option) => (
@@ -130,6 +132,11 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
               </MenuItem>
             ))}
           </Select>
+          {(errors.gender || validationErrors['patientInfo.gender']) && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {errors.gender || validationErrors['patientInfo.gender']}
+            </Typography>
+          )}
         </FormControl>
       </Grid>
       
@@ -233,8 +240,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={(value) => onChange({ originHospitalId: value })}
           label="Origin Hospital"
           required
-          error={!!errors.originHospitalId}
-          helperText={errors.originHospitalId}
+          error={!!errors.originHospitalId || !!validationErrors['patientInfo.originHospitalId']}
+          helperText={errors.originHospitalId || validationErrors['patientInfo.originHospitalId']}
         />
       </Grid>
 

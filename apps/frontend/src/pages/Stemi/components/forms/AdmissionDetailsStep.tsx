@@ -18,11 +18,13 @@ interface AdmissionDetails {
 interface AdmissionDetailsStepProps {
   data: AdmissionDetails;
   onChange: (data: AdmissionDetails) => void;
+  validationErrors?: Record<string, string>;
 }
 
 const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
   data,
   onChange,
+  validationErrors = {},
 }) => {
   const handleChange = (field: keyof AdmissionDetails) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -49,12 +51,13 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
             onChange={handleChange('admissionTime')}
             InputLabelProps={{ shrink: true }}
             required
-            helperText="When the patient arrived at the facility"
+            error={!!validationErrors['admissionDetails.admissionTime']}
+            helperText={validationErrors['admissionDetails.admissionTime'] || "When the patient arrived at the facility"}
           />
         </Grid>
 
         <Grid item xs={12} sm={6}>
-          <FormControl fullWidth required>
+          <FormControl fullWidth required error={!!validationErrors['admissionDetails.modeOfArrival']}>
             <InputLabel>Mode of Arrival</InputLabel>
             <Select
               value={data.modeOfArrival}
@@ -69,6 +72,11 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
               <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
               <MenuItem value="OTHER">Other</MenuItem>
             </Select>
+            {validationErrors['admissionDetails.modeOfArrival'] && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                {validationErrors['admissionDetails.modeOfArrival']}
+              </Typography>
+            )}
           </FormControl>
         </Grid>
       </Grid>

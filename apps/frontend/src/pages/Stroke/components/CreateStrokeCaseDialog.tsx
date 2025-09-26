@@ -41,6 +41,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<CreateStrokeCaseData>({
     originHospitalId: '',
     strokeType: 'ISCHEMIC',
@@ -69,11 +70,20 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       },
     });
     setError(null);
+    setValidationErrors({});
     onClose();
   };
 
   const updateFormData = (field: keyof CreateStrokeCaseData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   const renderStepContent = (step: number) => {
@@ -83,6 +93,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           <PatientStep
             formData={formData}
             updateFormData={updateFormData}
+            validationErrors={validationErrors}
           />
         );
       case 1:
@@ -90,6 +101,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           <AssessmentStep
             formData={formData}
             updateFormData={updateFormData}
+            validationErrors={validationErrors}
           />
         );
       case 2:
@@ -113,30 +125,58 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
     }
   };
 
-  const isStepValid = (step: number): boolean => {
+  const validateStep = (step: number): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    
     switch (step) {
       case 0:
-        return !!(
-          formData.patientInfo?.firstName && 
-          formData.patientInfo?.lastName && 
-          formData.patientInfo?.nationalId && 
-          formData.originHospitalId
-        );
+        if (!formData.patientInfo?.firstName) {
+          errors['patientInfo.firstName'] = 'Patient Name is required';
+        }
+        if (!formData.patientInfo?.lastName) {
+          errors['patientInfo.lastName'] = 'Patient Last Name is required';
+        }
+        if (!formData.patientInfo?.nationalId) {
+          errors['patientInfo.nationalId'] = 'National ID is required';
+        }
+        if (!formData.patientInfo?.age) {
+          errors['patientInfo.age'] = 'Age is required';
+        }
+        if (!formData.patientInfo?.gender) {
+          errors['patientInfo.gender'] = 'Gender is required';
+        }
+        if (!formData.originHospitalId) {
+          errors['originHospitalId'] = 'Origin Hospital is required';
+        }
+        if (!formData.modeOfArrival) {
+          errors['modeOfArrival'] = 'Mode of Arrival is required';
+        }
+        break;
       case 1:
-        return !!(formData.strokeType); // Stroke type is now required in Assessment step
+        if (!formData.strokeType) {
+          errors['strokeType'] = 'Stroke Type is required';
+        }
+        break;
       case 2:
-        return true; // Diagnosis fields are mostly optional
+        // Diagnosis fields are mostly optional
+        break;
       case 3:
-        return true; // Treatment fields are mostly optional
+        // Treatment fields are mostly optional
+        break;
       case 4:
-        return true; // Review step
-      default:
-        return false;
+        // Review step
+        break;
     }
+    
+    return errors;
   };
 
   const handleNext = () => {
-    if (activeStep < steps.length - 1) {
+    const errors = validateStep(activeStep);
+    setValidationErrors(errors);
+    
+    // Only proceed if there are no validation errors
+    if (Object.keys(errors).length === 0 && activeStep < steps.length - 1) {
       setActiveStep(prev => prev + 1);
     }
   };
@@ -200,7 +240,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           <Button
             onClick={handleNext}
             variant="contained"
-            disabled={!isStepValid(activeStep) || loading}
+            disabled={loading}
           >
             Next
           </Button>

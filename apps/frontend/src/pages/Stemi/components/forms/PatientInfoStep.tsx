@@ -17,11 +17,13 @@ import NationalIdInput from '../../../../components/Common/NationalIdInput';
 interface PatientInfoStepProps {
   data: PatientInfo;
   onChange: (data: PatientInfo) => void;
+  validationErrors?: Record<string, string>;
 }
 
 const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
   data,
   onChange,
+  validationErrors = {},
 }) => {
   const handleChange = (field: keyof PatientInfo) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -59,6 +61,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             value={data.firstName}
             onChange={handleChange('firstName')}
             required
+            error={!!validationErrors['patientInfo.firstName']}
+            helperText={validationErrors['patientInfo.firstName']}
           />
         </Grid>
 
@@ -69,6 +73,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             value={data.lastName}
             onChange={handleChange('lastName')}
             required
+            error={!!validationErrors['patientInfo.lastName']}
+            helperText={validationErrors['patientInfo.lastName']}
           />
         </Grid>
 
@@ -95,6 +101,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             }}
             label="National ID"
             required
+            error={!!validationErrors['patientInfo.nationalId']}
+            helperText={validationErrors['patientInfo.nationalId']}
             portalType="stemi"
           />
         </Grid>
@@ -108,11 +116,13 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             onChange={(e) => onChange({ ...data, age: parseInt(e.target.value) || undefined })}
             inputProps={{ min: 0, max: 150 }}
             required
+            error={!!validationErrors['patientInfo.age']}
+            helperText={validationErrors['patientInfo.age']}
           />
         </Grid>
 
         <Grid item xs={12} sm={6}>
-          <FormControl fullWidth required>
+          <FormControl fullWidth required error={!!validationErrors['patientInfo.gender']}>
             <InputLabel>Gender</InputLabel>
             <Select
               value={data.gender}
@@ -123,6 +133,11 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
               <MenuItem value="FEMALE">Female</MenuItem>
               <MenuItem value="OTHER">Other</MenuItem>
             </Select>
+            {validationErrors['patientInfo.gender'] && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                {validationErrors['patientInfo.gender']}
+              </Typography>
+            )}
           </FormControl>
         </Grid>
 
@@ -148,6 +163,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
                   value={data.originHospitalId}
                   onChange={handleHospitalChange('originHospitalId')}
                   required
+                  error={!!validationErrors['patientInfo.originHospitalId']}
+                  helperText={validationErrors['patientInfo.originHospitalId']}
                 />
               </Grid>
       

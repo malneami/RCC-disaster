@@ -22,11 +22,13 @@ import { Patient } from '../../../../services/patientService';
 interface PatientInformationStepProps {
   formData: CreateStrokeCaseData;
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
+  validationErrors?: Record<string, string>;
 }
 
 const PatientStep: React.FC<PatientInformationStepProps> = ({
   formData,
   updateFormData,
+  validationErrors = {},
 }) => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
@@ -134,6 +136,8 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             firstName: e.target.value 
           })}
           required
+          error={!!validationErrors['patientInfo.firstName']}
+          helperText={validationErrors['patientInfo.firstName']}
         />
       </Grid>
       <Grid item xs={12} sm={6}>
@@ -146,6 +150,8 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             lastName: e.target.value 
           })}
           required
+          error={!!validationErrors['patientInfo.lastName']}
+          helperText={validationErrors['patientInfo.lastName']}
         />
       </Grid>
       <Grid item xs={12} sm={6}>
@@ -158,6 +164,8 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
           onPatientSelect={handlePatientSelect}
           label="National ID"
           required
+          error={!!validationErrors['patientInfo.nationalId']}
+          helperText={validationErrors['patientInfo.nationalId']}
           portalType="stroke"
         />
       </Grid>
@@ -183,10 +191,13 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             ...formData.patientInfo, 
             age: parseInt(e.target.value) || undefined 
           })}
+          required
+          error={!!validationErrors['patientInfo.age']}
+          helperText={validationErrors['patientInfo.age']}
         />
       </Grid>
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth>
+        <FormControl fullWidth required error={!!validationErrors['patientInfo.gender']}>
           <InputLabel>Gender</InputLabel>
           <Select
             value={formData.patientInfo?.gender || ''}
@@ -199,6 +210,11 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             <MenuItem value="FEMALE">Female</MenuItem>
             <MenuItem value="UNKNOWN">Unknown</MenuItem>
           </Select>
+          {validationErrors['patientInfo.gender'] && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {validationErrors['patientInfo.gender']}
+            </Typography>
+          )}
         </FormControl>
       </Grid>
       <Grid item xs={12} sm={6}>
@@ -236,7 +252,7 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
       </Grid>
       
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth required>
+        <FormControl fullWidth required error={!!validationErrors['originHospitalId']}>
           <InputLabel>Origin Hospital</InputLabel>
           <Select
             value={formData.originHospitalId || ''}
@@ -280,6 +296,11 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
               ))
             )}
           </Select>
+          {validationErrors['originHospitalId'] && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {validationErrors['originHospitalId']}
+            </Typography>
+          )}
         </FormControl>
       </Grid>
       <Grid item xs={12} sm={6}>
@@ -333,7 +354,7 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
         </FormControl>
       </Grid>
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth>
+        <FormControl fullWidth required error={!!validationErrors['modeOfArrival']}>
           <InputLabel>Mode of Arrival</InputLabel>
           <Select
             value={formData.modeOfArrival || ''}
@@ -347,6 +368,11 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
             <MenuItem value="OTHER">Other</MenuItem>
           </Select>
+          {validationErrors['modeOfArrival'] && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {validationErrors['modeOfArrival']}
+            </Typography>
+          )}
         </FormControl>
       </Grid>
 

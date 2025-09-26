@@ -15,11 +15,13 @@ import { formatForDateTimeLocal, formatForUTC } from '../../../../helpers';
 interface AssessmentStepProps {
   formData: CreateStrokeCaseData;
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
+  validationErrors?: Record<string, string>;
 }
 
 const AssessmentStep: React.FC<AssessmentStepProps> = ({
   formData,
   updateFormData,
+  validationErrors = {},
 }) => {
   const handleDateTimeChange = (field: string, value: string) => {
     // Convert datetime-local input to ISO-8601 format for backend
@@ -44,7 +46,7 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
       </Grid>
 
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth required>
+        <FormControl fullWidth required error={!!validationErrors['strokeType']}>
           <InputLabel>Stroke Type</InputLabel>
           <Select
             value={formData.strokeType}
@@ -56,6 +58,11 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
             <MenuItem value="TIA">TIA</MenuItem>
             <MenuItem value="UNKNOWN">Unknown</MenuItem>
           </Select>
+          {validationErrors['strokeType'] && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {validationErrors['strokeType']}
+            </Typography>
+          )}
         </FormControl>
       </Grid>
       <Grid item xs={12} sm={6}>

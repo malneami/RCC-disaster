@@ -45,6 +45,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<CreateStrokeCaseData>({
     originHospitalId: '',
     strokeType: 'ISCHEMIC',
@@ -141,6 +142,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           <PatientStep
             formData={formData}
             updateFormData={updateFormData}
+            validationErrors={validationErrors}
           />
         );
       case 1:
@@ -148,6 +150,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           <AssessmentStep
             formData={formData}
             updateFormData={updateFormData}
+            validationErrors={validationErrors}
           />
         );
       case 2:
@@ -171,31 +174,58 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
     }
   };
 
-  const isStepValid = (step: number): boolean => {
+  const validateStep = (step: number): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    
     switch (step) {
       case 0:
-        return !!(
-          formData.patientInfo?.firstName && 
-          formData.patientInfo?.lastName && 
-          formData.patientInfo?.nationalId && 
-          formData.originHospitalId && 
-          formData.strokeType
-        );
+        if (!formData.patientInfo?.firstName) {
+          errors['patientInfo.firstName'] = 'Patient Name is required';
+        }
+        if (!formData.patientInfo?.lastName) {
+          errors['patientInfo.lastName'] = 'Patient Last Name is required';
+        }
+        if (!formData.patientInfo?.nationalId) {
+          errors['patientInfo.nationalId'] = 'National ID is required';
+        }
+        if (!formData.patientInfo?.age) {
+          errors['patientInfo.age'] = 'Age is required';
+        }
+        if (!formData.patientInfo?.gender) {
+          errors['patientInfo.gender'] = 'Gender is required';
+        }
+        if (!formData.originHospitalId) {
+          errors['originHospitalId'] = 'Origin Hospital is required';
+        }
+        if (!formData.modeOfArrival) {
+          errors['modeOfArrival'] = 'Mode of Arrival is required';
+        }
+        break;
       case 1:
-        return true; // Assessment fields are mostly optional
+        if (!formData.strokeType) {
+          errors['strokeType'] = 'Stroke Type is required';
+        }
+        break;
       case 2:
-        return true; // Diagnosis fields are mostly optional
+        // Diagnosis fields are mostly optional
+        break;
       case 3:
-        return true; // Treatment fields are mostly optional
+        // Treatment fields are mostly optional
+        break;
       case 4:
-        return true; // Review step
-      default:
-        return false;
+        // Review step
+        break;
     }
+    
+    return errors;
   };
 
   const handleNext = () => {
-    if (activeStep < steps.length - 1) {
+    const errors = validateStep(activeStep);
+    setValidationErrors(errors);
+    
+    // Only proceed if there are no validation errors
+    if (Object.keys(errors).length === 0 && activeStep < steps.length - 1) {
       setActiveStep(prev => prev + 1);
     }
   };
@@ -238,6 +268,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
   const handleClose = () => {
     setError(null);
     setActiveStep(0);
+    setValidationErrors({});
     onClose();
   };
 
@@ -282,7 +313,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           <Button
             onClick={handleNext}
             variant="contained"
-            disabled={!isStepValid(activeStep)}
+            disabled={loading}
           >
             Next
           </Button>
@@ -290,7 +321,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={loading || !isStepValid(activeStep)}
+            disabled={loading}
           >
             {loading ? 'Updating...' : 'Update'}
           </Button>
