@@ -85,6 +85,10 @@ model Patient {
   // Trauma Relations
   traumaCases     TraumaCase[]
   
+  // Notification Relations
+  notifications   Notification[]
+  caseNotes       CaseNote[]
+  
   @@map("patients")
   @@index([mrn])
   @@index([nationalId])

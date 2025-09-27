@@ -72,6 +72,13 @@ model User {
   triggeredTimelineEvents TimelineEvent[] @relation("TimelineEventTriggeredBy")
   createdTimelineEvents TimelineEvent[]  @relation("TimelineEventCreator")
   
+  // Notification Relations
+  createdNotifications Notification[]    @relation("NotificationCreator")
+  readNotifications    Notification[]    @relation("NotificationReader")
+  notificationRecipients NotificationRecipient[] @relation("NotificationRecipientUser")
+  createdCaseNotes      CaseNote[]       @relation("CaseNoteCreator")
+  caseNoteRecipients    CaseNoteRecipient[] @relation("CaseNoteRecipientUser")
+  
   @@map("users")
   @@index([email])
   @@index([role])
