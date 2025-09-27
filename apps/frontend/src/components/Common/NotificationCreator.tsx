@@ -150,18 +150,6 @@ const NotificationCreator: React.FC<NotificationCreatorProps> = ({
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'HIGH':
-        return 'error';
-      case 'MEDIUM':
-        return 'warning';
-      case 'LOW':
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
 
   return (
     <Dialog 

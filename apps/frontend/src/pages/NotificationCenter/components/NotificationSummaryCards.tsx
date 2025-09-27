@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Typography,
-  CircularProgress,
   Alert,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,7 +16,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import SkeletonLoader from '../../../components/Common/SkeletonLoader';
-import { notificationService, NotificationSummary, ApiError } from '../../../services/notificationService';
+import { notificationService, NotificationSummary } from '../../../services/notificationService';
 
 interface SummaryCardProps {
   title: string;

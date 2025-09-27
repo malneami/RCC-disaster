@@ -4,13 +4,11 @@ import { Box, Skeleton, Card, CardContent } from '@mui/material';
 interface SkeletonLoaderProps {
   variant?: 'notification' | 'summary' | 'list' | 'card';
   count?: number;
-  height?: number;
 }
 
 const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ 
   variant = 'card', 
-  count = 1, 
-  height 
+  count = 1
 }) => {
   const renderSkeleton = () => {
     switch (variant) {

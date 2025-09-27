@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Chip, Tooltip, Fade } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -22,7 +22,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   showDetails = false,
   position = 'top-right'
 }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [, setShowTooltip] = useState(false);
 
   const getStatusInfo = () => {
     if (isConnecting) {

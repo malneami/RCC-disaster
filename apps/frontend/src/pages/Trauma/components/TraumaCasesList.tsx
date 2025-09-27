@@ -44,7 +44,6 @@ import {
   ViewModule as CardsIcon,
   TableChart as TableIcon,
   MoreVert as MoreVertIcon,
-  NoteAdd as NoteAddIcon,
   Comment as CommentIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
