@@ -88,6 +88,7 @@ model Patient {
   // Notification Relations
   notifications   Notification[]
   caseNotes       CaseNote[]
+  replies         Reply[]
   
   @@map("patients")
   @@index([mrn])

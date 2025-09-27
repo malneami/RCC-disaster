@@ -529,6 +529,7 @@ model User {
   notificationRecipients NotificationRecipient[] @relation("NotificationRecipientUser")
   createdCaseNotes      CaseNote[]       @relation("CaseNoteCreator")
   caseNoteRecipients    CaseNoteRecipient[] @relation("CaseNoteRecipientUser")
+  createdReplies        Reply[]          @relation("ReplyCreator")
   
   @@map("users")
   @@index([email])
@@ -737,6 +738,7 @@ model Patient {
   // Notification Relations
   notifications   Notification[]
   caseNotes       CaseNote[]
+  replies         Reply[]
   
   @@map("patients")
   @@index([mrn])
@@ -2270,6 +2272,7 @@ model CaseNote {
   createdById             String              @map("created_by_id")
   patient                 Patient             @relation(fields: [patientId], references: [id])
   recipients              CaseNoteRecipient[]
+  replies                 Reply[]
   
   @@map("case_notes")
   @@index([caseType])
@@ -2355,3 +2358,51 @@ model CaseNoteRecipient {
   @@index([isRead])
 }
 
+model Reply {
+  id                      String              @id @default(uuid())
+  
+  // Reply Details
+  content                 String
+  priority                NotificationPriority @default(MEDIUM)
+  
+  // Parent References
+  caseNoteId              String              @map("case_note_id")
+  parentReplyId           String?             @map("parent_reply_id") // For nested replies
+  
+  // Case References (denormalized for quick access)
+  caseType                CaseType            @map("case_type")
+  caseId                  String              @map("case_id")
+  patientId               String              @map("patient_id")
+  patientName             String              @map("patient_name")
+  
+  // Reply Status
+  isEdited                Boolean             @default(false) @map("is_edited")
+  editedAt                DateTime?           @map("edited_at")
+  
+  // Soft Delete
+  deletedAt               DateTime?           @map("deleted_at")
+  
+  // Additional Information
+  metadata                String?             // JSON string for additional data
+  
+  // Audit Fields
+  createdAt               DateTime            @default(now()) @map("created_at")
+  updatedAt               DateTime            @updatedAt @map("updated_at")
+  
+  // Relations
+  createdBy               User                @relation("ReplyCreator", fields: [createdById], references: [id])
+  createdById             String              @map("created_by_id")
+  caseNote                CaseNote            @relation(fields: [caseNoteId], references: [id], onDelete: Cascade)
+  patient                 Patient             @relation(fields: [patientId], references: [id])
+  parentReply             Reply?              @relation("ReplyThread", fields: [parentReplyId], references: [id])
+  childReplies            Reply[]             @relation("ReplyThread")
+  
+  @@map("replies")
+  @@index([caseNoteId])
+  @@index([parentReplyId])
+  @@index([caseType])
+  @@index([caseId])
+  @@index([patientId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}

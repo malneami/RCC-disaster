@@ -126,6 +126,7 @@ function validateMergedSchema(content) {
     { name: 'CaseNote model', pattern: /model CaseNote/, required: true },
     { name: 'NotificationRecipient model', pattern: /model NotificationRecipient/, required: true },
     { name: 'CaseNoteRecipient model', pattern: /model CaseNoteRecipient/, required: true },
+    { name: 'Reply model', pattern: /model Reply/, required: true },
     { name: 'Enums', pattern: /enum/, required: true },
   ];
   

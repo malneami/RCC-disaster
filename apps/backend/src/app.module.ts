@@ -32,6 +32,7 @@ import { EmsGatewayModule } from './modules/ems-gateway/ems-gateway.module';
 import { GpsModule } from './modules/gps/gps.module';
 import { TimelineEventsModule } from './modules/timeline-events/timeline-events.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { RepliesModule } from './modules/replies/replies.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     GpsModule,
     TimelineEventsModule,
     NotificationsModule,
+    RepliesModule,
     
     AuthModule,
     UsersModule,

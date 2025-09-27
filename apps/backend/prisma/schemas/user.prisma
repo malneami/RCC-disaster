@@ -78,6 +78,7 @@ model User {
   notificationRecipients NotificationRecipient[] @relation("NotificationRecipientUser")
   createdCaseNotes      CaseNote[]       @relation("CaseNoteCreator")
   caseNoteRecipients    CaseNoteRecipient[] @relation("CaseNoteRecipientUser")
+  createdReplies        Reply[]          @relation("ReplyCreator")
   
   @@map("users")
   @@index([email])

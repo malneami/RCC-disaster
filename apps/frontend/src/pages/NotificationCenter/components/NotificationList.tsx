@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   List,
-  ListItem,
-  Chip,
-  IconButton,
-  Typography,
   CircularProgress,
   Alert,
   Pagination,
@@ -13,13 +9,6 @@ import {
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faCheck,
-  faTrash,
-  faComment,
-  faExclamationTriangle,
-  faInfoCircle,
-  faCheckCircle,
-  faArrowUp,
   faBell,
   faRefresh,
 } from '@fortawesome/free-solid-svg-icons';
@@ -27,6 +16,7 @@ import {
 import EmptyState from '../../../components/Common/EmptyState';
 import SkeletonLoader from '../../../components/Common/SkeletonLoader';
 import { notificationService, Notification, NotificationFilter, ApiError } from '../../../services/notificationService';
+import NotificationItemWithReplies from './NotificationItemWithReplies';
 
 interface NotificationListProps {
   filters: NotificationFilter;
@@ -155,57 +145,6 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     setPagination(prev => ({ ...prev, page }));
   };
 
-  const getNotificationIcon = (type: string, priority: string) => {
-    if (priority === 'HIGH') {
-      return <FontAwesomeIcon icon={faExclamationTriangle} color="#f44336" />;
-    }
-    
-    switch (type) {
-      case 'CASE_COMMENT':
-        return <FontAwesomeIcon icon={faComment} color="#2196f3" />;
-      case 'CASE_UPDATE':
-        return <FontAwesomeIcon icon={faInfoCircle} color="#ff9800" />;
-      case 'CASE_ASSIGNMENT':
-        return <FontAwesomeIcon icon={faArrowUp} color="#9c27b0" />;
-      case 'CASE_COMPLETION':
-        return <FontAwesomeIcon icon={faCheckCircle} color="#4caf50" />;
-      case 'CASE_ESCALATION':
-        return <FontAwesomeIcon icon={faExclamationTriangle} color="#f44336" />;
-      default:
-        return <FontAwesomeIcon icon={faInfoCircle} color="#757575" />;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'HIGH':
-        return 'error';
-      case 'MEDIUM':
-        return 'warning';
-      case 'LOW':
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
-
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 30) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-    
-    const diffInMonths = Math.floor(diffInDays / 30);
-    return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
-  };
 
   const handleRetry = () => {
     setRetrying(true);
@@ -253,168 +192,12 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     <Box>
       <List sx={{ p: 0 }}>
         {notifications.map((notification) => (
-          <ListItem
+          <NotificationItemWithReplies
             key={notification.id}
-            sx={{
-              border: '1px solid #e2e8f0',
-              borderRadius: 2,
-              mb: 2,
-              p: 0,
-              backgroundColor: notification.isRead ? '#ffffff' : '#f8fafc',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                backgroundColor: notification.isRead ? '#f8fafc' : '#f1f5f9',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                borderColor: '#cbd5e1'
-              },
-            }}
-          >
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'flex-start', 
-              width: '100%',
-              p: { xs: 2, sm: 2.5, md: 3 },
-              gap: 2
-            }}>
-              {/* Icon */}
-              <Box sx={{ 
-                flexShrink: 0,
-                mt: 0.5
-              }}>
-                {getNotificationIcon(notification.type, notification.priority)}
-              </Box>
-
-              {/* Content */}
-              <Box sx={{ 
-                flex: 1,
-                minWidth: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1
-              }}>
-                {/* Title and Priority */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1,
-                  flexWrap: 'wrap'
-                }}>
-                  <Typography 
-                    variant="body1" 
-                    component="span"
-                    sx={{ 
-                      fontWeight: notification.isRead ? 500 : 600,
-                      fontSize: { xs: '0.9rem', sm: '1rem' },
-                      color: notification.isRead ? 'text.secondary' : 'text.primary',
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {notification.title}
-                  </Typography>
-                  <Chip
-                    label={notification.priority}
-                    size="small"
-                    color={getPriorityColor(notification.priority) as any}
-                    variant="filled"
-                    sx={{ 
-                      fontSize: '0.75rem',
-                      height: 20,
-                      fontWeight: 600
-                    }}
-                  />
-                </Box>
-
-                {/* Message */}
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary"
-                  sx={{ 
-                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                    lineHeight: 1.4,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}
-                >
-                  {notification.message}
-                </Typography>
-
-                {/* Time */}
-                <Typography 
-                  variant="caption" 
-                  color="text.secondary"
-                  sx={{ 
-                    fontSize: '0.75rem',
-                    opacity: 0.7
-                  }}
-                >
-                  {formatTimeAgo(notification.createdAt)}
-                </Typography>
-
-                {/* Created By */}
-                {notification.createdBy && (
-                  <Typography 
-                    variant="caption" 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: '0.75rem',
-                      opacity: 0.7,
-                      fontStyle: 'italic'
-                    }}
-                  >
-                    Created by {notification.createdBy.firstName} {notification.createdBy.lastName}
-                  </Typography>
-                )}
-              </Box>
-
-              {/* Actions */}
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: { xs: 'column', sm: 'row' },
-                gap: 0.5,
-                flexShrink: 0,
-                alignItems: 'center'
-              }}>
-                {!notification.isRead && (
-                  <IconButton
-                    size="small"
-                    onClick={() => handleMarkAsRead(notification.id)}
-                    title="Mark as read"
-                    sx={{
-                      backgroundColor: '#e3f2fd',
-                      color: '#1976d2',
-                      '&:hover': {
-                        backgroundColor: '#bbdefb'
-                      }
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faCheck} style={{ fontSize: '0.8rem' }} />
-                  </IconButton>
-                )}
-                <IconButton
-                  size="small"
-                  onClick={() => handleDeleteNotification(notification.id)}
-                  title="Delete"
-                  sx={{
-                    backgroundColor: '#ffebee',
-                    color: '#d32f2f',
-                    '&:hover': {
-                      backgroundColor: '#ffcdd2'
-                    }
-                  }}
-                >
-                  <FontAwesomeIcon icon={faTrash} style={{ fontSize: '0.8rem' }} />
-                </IconButton>
-              </Box>
-            </Box>
-          </ListItem>
+            notification={notification}
+            onMarkAsRead={handleMarkAsRead}
+            onDelete={handleDeleteNotification}
+          />
         ))}
       </List>
 
