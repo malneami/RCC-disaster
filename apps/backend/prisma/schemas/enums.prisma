@@ -82,6 +82,12 @@ enum CriticalCaseType {
   TRAUMA
 }
 
+enum CaseType {
+  STEMI
+  STROKE
+  TRAUMA
+}
+
 enum CriticalCaseSeverity {
   CRITICAL
   URGENT

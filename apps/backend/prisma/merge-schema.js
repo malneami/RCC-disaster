@@ -35,7 +35,9 @@ const SCHEMA_ORDER = [
   // Stroke assessment and rehabilitation models
   'stroke-kpi-summary.prisma',
   'stroke-assessment-score.prisma',
-  'stroke-rehabilitation.prisma'
+  'stroke-rehabilitation.prisma',
+  // Notification system
+  'notifications.prisma'
 ];
 
 // Prisma header
@@ -119,6 +121,11 @@ function validateMergedSchema(content) {
     { name: 'StrokeKpiSummary model', pattern: /model StrokeKpiSummary/, required: false },
     { name: 'StrokeAssessmentScore model', pattern: /model StrokeAssessmentScore/, required: false },
     { name: 'StrokeRehabilitation model', pattern: /model StrokeRehabilitation/, required: false },
+    // Notification models
+    { name: 'Notification model', pattern: /model Notification/, required: true },
+    { name: 'CaseNote model', pattern: /model CaseNote/, required: true },
+    { name: 'NotificationRecipient model', pattern: /model NotificationRecipient/, required: true },
+    { name: 'CaseNoteRecipient model', pattern: /model CaseNoteRecipient/, required: true },
     { name: 'Enums', pattern: /enum/, required: true },
   ];
   

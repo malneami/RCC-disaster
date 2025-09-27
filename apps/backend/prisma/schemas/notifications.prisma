@@ -1,0 +1,204 @@
+// notifications.prisma
+// Notification system for case-related notifications and case notes
+
+// Enums
+enum NotificationType {
+  CASE_COMMENT
+  CASE_UPDATE
+  CASE_ASSIGNMENT
+  CASE_COMPLETION
+  CASE_ESCALATION
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  READ
+}
+
+enum DeliveryMethod {
+  IN_APP
+  EMAIL
+  SMS
+  ALL
+}
+
+// Models
+model Notification {
+  id                      String              @id @default(uuid())
+  
+  // Notification Details
+  type                    NotificationType
+  priority                NotificationPriority
+  title                   String
+  message                 String
+  
+  // Case References
+  caseType                CaseType            @map("case_type") // STEMI, STROKE, TRAUMA
+  caseId                  String              @map("case_id") // ID of the specific case
+  ticketId                String?             @map("ticket_id") // Optional ticket reference
+  
+  // Patient Information (denormalized for quick access)
+  patientId               String              @map("patient_id")
+  patientName             String              @map("patient_name") // "FIRST_NAME LAST_NAME"
+  
+  // Notification Status
+  status                  NotificationStatus  @default(UNREAD)
+  isRead                  Boolean             @default(false) @map("is_read")
+  readAt                  DateTime?           @map("read_at")
+  readBy                  String?             @map("read_by")
+  
+  // Additional Information
+  metadata                String?             // JSON string for additional data
+  
+  // Audit Fields
+  createdAt               DateTime            @default(now()) @map("created_at")
+  updatedAt               DateTime            @updatedAt @map("updated_at")
+  
+  // Relations
+  createdBy               User                @relation("NotificationCreator", fields: [createdById], references: [id])
+  createdById             String              @map("created_by_id")
+  readByUser              User?               @relation("NotificationReader", fields: [readBy], references: [id])
+  patient                 Patient             @relation(fields: [patientId], references: [id])
+  recipients              NotificationRecipient[]
+  
+  @@map("notifications")
+  @@index([type])
+  @@index([priority])
+  @@index([status])
+  @@index([caseType])
+  @@index([caseId])
+  @@index([patientId])
+  @@index([createdAt])
+  @@index([isRead])
+}
+
+model CaseNote {
+  id                      String              @id @default(uuid())
+  
+  // Note Details
+  content                 String
+  priority                NotificationPriority
+  
+  // Case References
+  caseType                CaseType            @map("case_type") // STEMI, STROKE, TRAUMA
+  caseId                  String              @map("case_id") // ID of the specific case
+  ticketId                String?             @map("ticket_id") // Optional ticket reference
+  
+  // Patient Information (denormalized for quick access)
+  patientId               String              @map("patient_id")
+  patientName             String              @map("patient_name") // "FIRST_NAME LAST_NAME"
+  
+  // Notification Settings
+  notifyTeam              Boolean             @default(true) @map("notify_team")
+  
+  // Additional Information
+  metadata                String?             // JSON string for additional data
+  
+  // Audit Fields
+  createdAt               DateTime            @default(now()) @map("created_at")
+  updatedAt               DateTime            @updatedAt @map("updated_at")
+  
+  // Relations
+  createdBy               User                @relation("CaseNoteCreator", fields: [createdById], references: [id])
+  createdById             String              @map("created_by_id")
+  patient                 Patient             @relation(fields: [patientId], references: [id])
+  recipients              CaseNoteRecipient[]
+  
+  @@map("case_notes")
+  @@index([caseType])
+  @@index([caseId])
+  @@index([patientId])
+  @@index([createdAt])
+}
+
+model NotificationRecipient {
+  id                      String              @id @default(uuid())
+  
+  // References
+  notificationId          String              @map("notification_id")
+  userId                  String              @map("user_id")
+  
+  // Delivery Status
+  deliveryStatus          DeliveryStatus      @default(PENDING)
+  deliveryMethod          DeliveryMethod      @default(IN_APP)
+  
+  // Email/SMS specific fields
+  emailSent               Boolean             @default(false) @map("email_sent")
+  emailSentAt             DateTime?           @map("email_sent_at")
+  smsSent                 Boolean             @default(false) @map("sms_sent")
+  smsSentAt               DateTime?           @map("sms_sent_at")
+  
+  // Read Status
+  isRead                  Boolean             @default(false) @map("is_read")
+  readAt                  DateTime?           @map("read_at")
+  
+  // Soft Delete
+  deletedAt               DateTime?           @map("deleted_at")
+  
+  // Audit Fields
+  createdAt               DateTime            @default(now()) @map("created_at")
+  updatedAt               DateTime            @updatedAt @map("updated_at")
+  
+  // Relations
+  notification            Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user                    User                @relation("NotificationRecipientUser", fields: [userId], references: [id])
+  
+  @@map("notification_recipients")
+  @@unique([notificationId, userId])
+  @@index([notificationId])
+  @@index([userId])
+  @@index([deliveryStatus])
+  @@index([isRead])
+}
+
+model CaseNoteRecipient {
+  id                      String              @id @default(uuid())
+  
+  // References
+  caseNoteId              String              @map("case_note_id")
+  userId                  String              @map("user_id")
+  
+  // Delivery Status
+  deliveryStatus          DeliveryStatus      @default(PENDING)
+  deliveryMethod          DeliveryMethod      @default(IN_APP)
+  
+  // Email/SMS specific fields
+  emailSent               Boolean             @default(false) @map("email_sent")
+  emailSentAt             DateTime?           @map("email_sent_at")
+  smsSent                 Boolean             @default(false) @map("sms_sent")
+  smsSentAt               DateTime?           @map("sms_sent_at")
+  
+  // Read Status
+  isRead                  Boolean             @default(false) @map("is_read")
+  readAt                  DateTime?           @map("read_at")
+  
+  // Audit Fields
+  createdAt               DateTime            @default(now()) @map("created_at")
+  updatedAt               DateTime            @updatedAt @map("updated_at")
+  
+  // Relations
+  caseNote                CaseNote            @relation(fields: [caseNoteId], references: [id], onDelete: Cascade)
+  user                    User                @relation("CaseNoteRecipientUser", fields: [userId], references: [id])
+  
+  @@map("case_note_recipients")
+  @@unique([caseNoteId, userId])
+  @@index([caseNoteId])
+  @@index([userId])
+  @@index([deliveryStatus])
+  @@index([isRead])
+}
