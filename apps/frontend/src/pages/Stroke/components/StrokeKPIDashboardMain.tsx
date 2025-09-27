@@ -291,10 +291,13 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
         <Grid container spacing={3}>
           {kpiSummary.kpiPerformance ? Object.entries(kpiSummary.kpiPerformance).map(([kpiId, kpiData]) => {
             const kpiNames: { [key: string]: { name: string; description: string; target: number; category: string } } = {
-              kpi1: { name: 'Door to CT Scan', description: 'Time from arrival to CT scan', target: 20, category: 'Timing' },
-              kpi2: { name: 'Door to Needle', description: 'Time from arrival to thrombolysis', target: 60, category: 'Treatment' },
-              kpi3: { name: 'Door to Mechanical Thrombectomy', description: 'Time from arrival to thrombectomy', target: 120, category: 'Treatment' },
-              kpi4: { name: 'Stroke Unit Admission', description: 'Admission to stroke unit', target: 24, category: 'Care' },
+              kpi1: { name: 'Door to Physician', description: 'Time from arrival to physician assessment', target: 15, category: 'Timing' },
+              kpi2: { name: 'Door to CT Scan', description: 'Time from arrival to CT scan', target: 20, category: 'Timing' },
+              kpi3: { name: 'Door to Needle', description: 'Time from arrival to thrombolysis', target: 60, category: 'Treatment' },
+              kpi4: { name: 'Door to Mechanical Thrombectomy', description: 'Time from arrival to thrombectomy', target: 120, category: 'Treatment' },
+              kpi5: { name: 'Stroke Unit Admission', description: 'Admission to stroke unit', target: 24, category: 'Care' },
+              kpi6: { name: 'Door to CT Report', description: 'Time from arrival to CT report availability', target: 30, category: 'Timing' },
+              kpi10: { name: 'Swallowing Pass Rate', description: 'Percentage of patients who passed swallowing screening', target: 85, category: 'Assessment' },
             };
             
             const kpiInfo = kpiNames[kpiId];

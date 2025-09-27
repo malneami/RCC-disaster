@@ -42,7 +42,7 @@ export interface StrokeKPICalculations {
   srcaCallToArrivalMinutes?: number;
   metKpi9?: boolean;
 
-  // KPI 10: Percentage of acute stroke patients who received swallowing screening within 4 hours ≥85%
+  // KPI 10: Percentage of acute stroke patients who passed swallowing screening ≥85%
   swallowingScreeningWithin4Hours?: boolean;
   metKpi10?: boolean;
 
@@ -99,7 +99,7 @@ export class StrokeKPICalculatorService {
     calculations.srcaCallToArrivalMinutes = this.calculateSrcaCallToArrivalMinutes(strokeCase);
     calculations.metKpi9 = calculations.srcaCallToArrivalMinutes !== undefined && calculations.srcaCallToArrivalMinutes <= 60;
 
-    // KPI 10: Swallowing screening within 4 hours ≥85%
+    // KPI 10: Swallowing screening pass rate ≥85%
     calculations.swallowingScreeningWithin4Hours = this.calculateSwallowingScreeningWithin4Hours(strokeCase);
     calculations.metKpi10 = calculations.swallowingScreeningWithin4Hours;
 
@@ -310,18 +310,16 @@ export class StrokeKPICalculatorService {
   }
 
   /**
-   * KPI 10: Check if swallowing screening was performed within 4 hours
+   * KPI 10: Check if swallowing screening result was PASS (for cases where screening was performed)
    */
   private calculateSwallowingScreeningWithin4Hours(strokeCase: StrokeCase): boolean {
-    if (!strokeCase.swallowingScreeningPerformed || !strokeCase.timeOfSwallowingScreening || !strokeCase.dateOfAdmission) {
+    // Only consider cases where swallowing screening was actually performed
+    if (!strokeCase.swallowingScreeningPerformed || !strokeCase.swallowingScreeningResult) {
       return false;
     }
 
-    const registrationTime = new Date(strokeCase.dateOfAdmission);
-    const screeningTime = new Date(strokeCase.timeOfSwallowingScreening);
-    const minutesDiff = Math.round((screeningTime.getTime() - registrationTime.getTime()) / (1000 * 60));
-    
-    return minutesDiff <= 240; // 4 hours = 240 minutes
+    // Check if the screening result was PASS
+    return strokeCase.swallowingScreeningResult === 'PASS';
   }
 
   /**
