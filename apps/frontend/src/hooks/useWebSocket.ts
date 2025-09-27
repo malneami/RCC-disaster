@@ -37,7 +37,6 @@ export const useWebSocket = (namespace?: string): UseWebSocketReturn => {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
-      maxReconnectionAttempts: 5,
     });
 
     socketRef.current = newSocket;
