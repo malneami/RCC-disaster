@@ -30,7 +30,6 @@ export interface EMSAssignment {
   ticketId: string;
   ambulanceId: string;
   driverId: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
   status: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
   assignedAt: Date;
   emsContactTime?: Date;
@@ -217,17 +216,22 @@ export interface CreateEMSAssignmentDto {
   ticketId: string;
   ambulanceId: string;
   driverId: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
-  estimatedArrivalTime?: string;
+  assignedAt: string;
+  status: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
+  emsContactTime?: string;
+  actualArrivalTime?: string;
+  journeyStartTime?: string;
+  journeyEndTime?: string;
+  distanceKm?: number;
   notes?: string;
 }
 
 export interface UpdateEMSAssignmentDto {
   ambulanceId?: string;
   driverId?: string;
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
   status?: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
-  estimatedArrivalTime?: string;
+  assignedAt?: string;
+  emsContactTime?: string;
   actualArrivalTime?: string;
   journeyStartTime?: string;
   journeyEndTime?: string;

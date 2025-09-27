@@ -182,7 +182,6 @@ const AssignmentManagement: React.FC = () => {
         journeyEndTime: formData.journeyEndTime && formData.journeyEndTime.trim() !== ''
           ? new Date(formData.journeyEndTime).toISOString()
           : undefined,
-        priority: 'MEDIUM' as const,
         status: formData.status as 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED',
       };
 
@@ -302,10 +301,11 @@ const AssignmentManagement: React.FC = () => {
           onClose={handleCloseDialog}
           onSubmit={handleSubmit}
           onFormDataChange={handleFormDataChange}
-          tickets={[]}
-          ambulances={[]}
-          drivers={[]}
+          tickets={tickets}
+          ambulances={ambulances}
+          drivers={drivers}
           loading={isSubmitting}
+          loadingData={loadingData}
         />
       </Box>
     );
@@ -398,6 +398,7 @@ const AssignmentManagement: React.FC = () => {
         ambulances={ambulances}
         drivers={drivers}
         loading={isSubmitting}
+        loadingData={loadingData}
       />
     </Box>
   );

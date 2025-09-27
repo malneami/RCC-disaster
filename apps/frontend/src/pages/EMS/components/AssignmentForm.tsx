@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { EMSAssignment } from '../types/ems';
 import { formatForDateTimeLocal } from '../../../helpers';
+import SearchableSelect from '../../../components/Common/SearchableSelect';
 
 interface AssignmentFormProps {
   open: boolean;
@@ -39,6 +40,7 @@ interface AssignmentFormProps {
   ambulances: Array<{ id: string; callSign: string; plateNumber: string }>;
   drivers: Array<{ id: string; firstName: string; lastName: string }>;
   loading?: boolean;
+  loadingData?: boolean;
 }
 
 const AssignmentForm: React.FC<AssignmentFormProps> = ({
@@ -52,6 +54,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
   ambulances,
   drivers,
   loading = false,
+  loadingData = false,
 }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -61,52 +64,46 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Ticket</InputLabel>
-              <Select
-                value={formData.ticketId}
-                onChange={(e) => onFormDataChange('ticketId', e.target.value)}
-                label="Ticket"
-              >
-                {tickets?.map((ticket) => (
-                  <MenuItem key={ticket.id} value={ticket.id}>
-                    {ticket.ticketNumber} - {ticket.patient.firstName} {ticket.patient.lastName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              label="Ticket"
+              value={formData.ticketId || null}
+              options={tickets?.map((ticket) => ({
+                id: ticket.id,
+                label: `${ticket.ticketNumber} - ${ticket.patient.firstName} ${ticket.patient.lastName}`,
+                subtitle: `Patient: ${ticket.patient.firstName} ${ticket.patient.lastName}`,
+              })) || []}
+              onChange={(value) => onFormDataChange('ticketId', value || '')}
+              placeholder="Search for a ticket..."
+              loading={loadingData}
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Ambulance</InputLabel>
-              <Select
-                value={formData.ambulanceId}
-                onChange={(e) => onFormDataChange('ambulanceId', e.target.value)}
-                label="Ambulance"
-              >
-                {ambulances?.map((ambulance) => (
-                  <MenuItem key={ambulance.id} value={ambulance.id}>
-                    {ambulance.callSign} ({ambulance.plateNumber})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              label="Ambulance"
+              value={formData.ambulanceId || null}
+              options={ambulances?.map((ambulance) => ({
+                id: ambulance.id,
+                label: ambulance.callSign,
+                subtitle: `Plate: ${ambulance.plateNumber}`,
+              })) || []}
+              onChange={(value) => onFormDataChange('ambulanceId', value || '')}
+              placeholder="Search for an ambulance..."
+              loading={loadingData}
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Driver</InputLabel>
-              <Select
-                value={formData.driverId}
-                onChange={(e) => onFormDataChange('driverId', e.target.value)}
-                label="Driver"
-              >
-                {drivers?.map((driver) => (
-                  <MenuItem key={driver.id} value={driver.id}>
-                    {driver.firstName} {driver.lastName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              label="Driver"
+              value={formData.driverId || null}
+              options={drivers?.map((driver) => ({
+                id: driver.id,
+                label: `${driver.firstName} ${driver.lastName}`,
+                subtitle: `Driver ID: ${driver.id.slice(-8)}`,
+              })) || []}
+              onChange={(value) => onFormDataChange('driverId', value || '')}
+              placeholder="Search for a driver..."
+              loading={loadingData}
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField

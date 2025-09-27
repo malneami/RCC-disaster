@@ -192,7 +192,9 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   };
 
   const getPriorityInfo = () => {
-    switch (assignment.priority) {
+    // Priority is now derived from the ticket's priority
+    const ticketPriority = assignment.ticket?.priority || 'MEDIUM';
+    switch (ticketPriority) {
       case 'HIGH':
         return { label: 'High Priority', color: 'error', icon: faClock };
       case 'MEDIUM':
