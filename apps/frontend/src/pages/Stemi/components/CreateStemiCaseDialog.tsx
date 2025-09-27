@@ -67,10 +67,12 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
 
   const [admissionDetails, setAdmissionDetails] = useState<{
     admissionTime: string;
-    modeOfArrival: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+    modeOfArrival: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
+    transferRequestDateTime?: string;
+    transferArrivalDateTime?: string;
   }>({
     admissionTime: StemiDatetimeService.getCurrentLocalDateTime(),
-    modeOfArrival: '' as any,
+    modeOfArrival: 'AMBULANCE_RED_CRESCENT',
   });
 
   const [criticalTimestamps, setCriticalTimestamps] = useState<CriticalTimestamps>({
@@ -132,6 +134,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         patientInfo,
         admissionTime: StemiDatetimeService.formatForUTC(admissionDetails.admissionTime),
         modeOfArrival: admissionDetails.modeOfArrival,
+        transferRequestDateTime: admissionDetails.transferRequestDateTime ? StemiDatetimeService.formatForUTC(admissionDetails.transferRequestDateTime) : undefined,
+        transferArrivalDateTime: admissionDetails.transferArrivalDateTime ? StemiDatetimeService.formatForUTC(admissionDetails.transferArrivalDateTime) : undefined,
         criticalTimestamps: {
           triageTime: criticalTimestamps.triageTime ? StemiDatetimeService.formatForUTC(criticalTimestamps.triageTime) : undefined,
           firstEcgTime: criticalTimestamps.firstEcgTime ? StemiDatetimeService.formatForUTC(criticalTimestamps.firstEcgTime) : undefined,

@@ -142,7 +142,7 @@ export async function seedComprehensiveTraumaCases() {
         // Date and Time Information
         arrivalDateTime: arrivalTime,
         incidentDateTime: incidentTime,
-        modeOfArrival: getRandomItem(['AMBULANCE', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'WALK_IN', 'POLICE']),
+        modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
         transferRequestDateTime: transferRequestTime,
         transferArrivalDateTime: transferArrivalTime,
         transferDurationMinutes: transferArrivalTime && transferRequestTime ? Math.floor((transferArrivalTime.getTime() - transferRequestTime.getTime()) / (1000 * 60)) : null,

@@ -166,7 +166,7 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
 
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
-              <InputLabel>Modified Rankin Scale at 90 days</InputLabel>
+              <InputLabel>Current Modified Rankin Scale</InputLabel>
               <Select
                 value={formData.modifiedRankinScaleAt90Days || ''}
                 onChange={(e) => updateFormData('modifiedRankinScaleAt90Days', e.target.value as ModifiedRankinScale)}

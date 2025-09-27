@@ -370,7 +370,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
                   control={control}
                   render={({ field }) => (
                     <FormControl fullWidth>
-                      <InputLabel>Follow-up Modified Rankin Scale</InputLabel>
+                      <InputLabel>Follow-up Modified Rankin Scale at 90 days</InputLabel>
                       <Select {...field} label="Follow-up Modified Rankin Scale">
                         <MenuItem value={0}>0 - No symptoms</MenuItem>
                         <MenuItem value={1}>1 - No significant disability</MenuItem>

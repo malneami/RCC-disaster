@@ -66,7 +66,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
     incidentDetails: {
       arrivalDateTime: '',
       incidentDateTime: '',
-      modeOfArrival: 'AMBULANCE',
+      modeOfArrival: 'AMBULANCE_RED_CRESCENT',
       transferRequestDateTime: '',
       transferArrivalDateTime: '',
       chiefComplaint: '',
@@ -138,7 +138,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         incidentDetails: {
           arrivalDateTime: traumaCase.arrivalDateTime ? new Date(traumaCase.arrivalDateTime).toISOString().slice(0, 16) : '',
           incidentDateTime: traumaCase.incidentDateTime ? new Date(traumaCase.incidentDateTime).toISOString().slice(0, 16) : '',
-          modeOfArrival: traumaCase.modeOfArrival || 'AMBULANCE',
+          modeOfArrival: traumaCase.modeOfArrival || 'AMBULANCE_RED_CRESCENT',
           transferRequestDateTime: traumaCase.transferRequestDateTime ? new Date(traumaCase.transferRequestDateTime).toISOString().slice(0, 16) : '',
           transferArrivalDateTime: traumaCase.transferArrivalDateTime ? new Date(traumaCase.transferArrivalDateTime).toISOString().slice(0, 16) : '',
           chiefComplaint: traumaCase.chiefComplaint || '',

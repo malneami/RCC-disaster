@@ -50,6 +50,14 @@ export class UpdateStrokeCaseDto {
 
   @IsOptional()
   @IsDateString()
+  transferRequestDateTime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  transferArrivalDateTime?: string;
+
+  @IsOptional()
+  @IsDateString()
   srcaCallTime?: string;
 
   @IsOptional()

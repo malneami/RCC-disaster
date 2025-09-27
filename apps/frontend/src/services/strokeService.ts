@@ -6,7 +6,7 @@ export type StrokeSeverity = 'MILD' | 'MODERATE' | 'SEVERE' | 'CRITICAL';
 export type StrokeStatus = 'SUSPECTED' | 'CONFIRMED' | 'IMAGING_PENDING' | 'IMAGING_COMPLETE' | 'TREATMENT_EVALUATION' | 'THROMBOLYSIS_STARTED' | 'THROMBECTOMY_STARTED' | 'TREATMENT_COMPLETE' | 'STROKEUNIT_ADMITTED' | 'REHABILITATION_STARTED' | 'DISCHARGED' | 'FOLLOW_UP';
 
 // Stroke Toolkit Enums
-export type StrokeModeOfArrival = 'AMBULANCE' | 'BY_AMBULANCE_RED_CRESCENT' | 'TRANSFERRED_FROM_PHC_UCC' | 'WALK_IN' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+export type StrokeModeOfArrival = 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
 export type StrokeTypeDetailed = 'ISCHEMIC_STROKE' | 'HEMORRHAGIC_STROKE' | 'TRANSIENT_ISCHEMIC_ATTACK_TIA' | 'UNKNOWN';
 export type SwallowingScreeningResult = 'PASS' | 'FAIL' | 'NOT_APPLICABLE';
 export type CTFindings = 'ISCHEMIC_CHANGES' | 'HEMORRHAGE' | 'NORMAL' | 'UNCLEAR' | 'OTHER';
@@ -71,6 +71,8 @@ export interface StrokeCase {
   
   // Patient Arrival & Timing (Step 1)
   modeOfArrival?: StrokeModeOfArrival;
+  transferRequestDateTime?: string;
+  transferArrivalDateTime?: string;
   srcaCallTime?: string;
   timeOfSymptomOnset?: string;
   lastKnownNormal?: string;
@@ -379,6 +381,8 @@ export interface CreateStrokeCaseData {
 
   // Stroke Toolkit Fields - Patient Arrival & Timing (Step 1)
   modeOfArrival?: StrokeModeOfArrival;
+  transferRequestDateTime?: string;
+  transferArrivalDateTime?: string;
   srcaCallTime?: string;
   timeOfSymptomOnset?: string;
   lastKnownNormal?: string;
@@ -711,6 +715,15 @@ export class StrokeService {
       NOT_ELIGIBLE: 'Not Eligible',
     };
     return labels[treatment] || treatment;
+  }
+
+  static getModeOfArrivalLabel(mode: StrokeModeOfArrival): string {
+    const labels: Record<StrokeModeOfArrival, string> = {
+      AMBULANCE_RED_CRESCENT: 'Ambulance (Red Crescent)',
+      PRIVATE_CAR: 'Private Car',
+      TRANSFERRED_FROM_ANOTHER_HOSPITAL: 'Transferred from another hospital',
+    };
+    return labels[mode] || mode;
   }
 
   static getEventTypeLabel(eventType: StrokeEventType): string {

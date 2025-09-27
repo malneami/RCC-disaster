@@ -58,13 +58,9 @@ model TraumaCase {
 
 // Trauma-specific enums
 enum TraumaModeOfArrival {
-  AMBULANCE
-  PRIVATE_VEHICLE
-  AIR_TRANSPORT
-  WALK_IN
-  POLICE
-  TRANSFERRED_FROM_HOSPITAL
-  OTHER
+  AMBULANCE_RED_CRESCENT
+  PRIVATE_CAR
+  TRANSFERRED_FROM_ANOTHER_HOSPITAL
 }
 
 enum TraumaMechanismOfInjury {

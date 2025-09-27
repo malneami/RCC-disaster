@@ -1361,7 +1361,7 @@ async function seedComprehensiveCases() {
         // Basic Information
         arrivalDateTime: new Date(Date.now() - Math.random() * 3600000), // Within last hour
         incidentDateTime: new Date(Date.now() - Math.random() * 7200000), // Within last 2 hours
-        modeOfArrival: getRandomItem(['AMBULANCE', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'WALK_IN']),
+        modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
         mechanismOfInjury: getRandomItem(['MOTOR_VEHICLE_ACCIDENT', 'FALL', 'PENETRATING', 'BURN', 'OTHER']),
         
         // Clinical Assessment
@@ -1471,7 +1471,7 @@ async function seedStrokeKpiTest() {
         selectedTreatment: 'IV_THROMBOLYSIS',
         
         // Patient Arrival & Timing - EXCELLENT PERFORMANCE
-        modeOfArrival: 'BY_AMBULANCE_RED_CRESCENT',
+        modeOfArrival: 'AMBULANCE_RED_CRESCENT',
         srcaCallTime: addMinutes(admissionTime, -45), // 45 min before arrival
         timeOfSymptomOnset: addMinutes(admissionTime, -120), // 2 hours before arrival
         lastKnownNormal: addMinutes(admissionTime, -120),
@@ -1557,7 +1557,7 @@ async function seedStrokeKpiTest() {
         selectedTreatment: 'IV_THROMBOLYSIS',
         
         // Patient Arrival & Timing - GOOD PERFORMANCE
-        modeOfArrival: 'BY_AMBULANCE_RED_CRESCENT',
+        modeOfArrival: 'AMBULANCE_RED_CRESCENT',
         srcaCallTime: addMinutes(admissionTime, -50), // 50 min before arrival
         timeOfSymptomOnset: addMinutes(admissionTime, -180), // 3 hours before arrival
         lastKnownNormal: addMinutes(admissionTime, -180),
@@ -1642,7 +1642,7 @@ async function seedStrokeKpiTest() {
         selectedTreatment: 'CONSERVATIVE_MANAGEMENT',
         
         // Patient Arrival & Timing - POOR PERFORMANCE
-        modeOfArrival: 'WALK_IN',
+        modeOfArrival: 'PRIVATE_CAR',
         srcaCallTime: null, // No SRCA call
         timeOfSymptomOnset: addMinutes(admissionTime, -300), // 5 hours before arrival
         lastKnownNormal: addMinutes(admissionTime, -300),
@@ -1727,7 +1727,7 @@ async function seedStrokeKpiTest() {
         selectedTreatment: getRandomItem(['IV_THROMBOLYSIS', 'MECHANICAL_THROMBECTOMY', 'CONSERVATIVE_MANAGEMENT']),
         
         // Patient Arrival & Timing - MIXED PERFORMANCE
-        modeOfArrival: getRandomItem(['BY_AMBULANCE_RED_CRESCENT', 'TRANSFERRED_FROM_PHC_UCC', 'WALK_IN']),
+        modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL', 'PRIVATE_CAR']),
         srcaCallTime: randomBoolean(0.7) ? addMinutes(admissionTime, -60) : null,
         timeOfSymptomOnset: addMinutes(admissionTime, -180), // 3 hours before arrival
         lastKnownNormal: addMinutes(admissionTime, -180),

@@ -10,9 +10,11 @@ import {
   Card,
   CardContent,
   Typography,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComment } from '@fortawesome/free-solid-svg-icons';
+import { faComment, faClock } from '@fortawesome/free-solid-svg-icons';
 
 import { StrokeCase } from '../../../services/strokeService';
 import PatientInformationCard from './StrokeCaseDetails/PatientInformationCard';
@@ -24,6 +26,7 @@ import TreatmentInformationCard from './StrokeCaseDetails/TreatmentInformationCa
 import HospitalInformationCard from './StrokeCaseDetails/HospitalInformationCard';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService } from '../../../services/notificationService';
+import StrokeTimelineView from './StrokeTimelineView';
 
 interface StrokeCaseDetailsDialogProps {
   open: boolean;
@@ -39,6 +42,7 @@ const StrokeCaseDetailsDialog: React.FC<StrokeCaseDetailsDialogProps> = ({
   onEdit,
 }) => {
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
   if (!strokeCase) return null;
 
@@ -67,6 +71,10 @@ const StrokeCaseDetailsDialog: React.FC<StrokeCaseDetailsDialogProps> = ({
     setShowCaseNoteModal(false);
   };
 
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
   return (
     <Dialog 
       open={open} 
@@ -83,56 +91,77 @@ const StrokeCaseDetailsDialog: React.FC<StrokeCaseDetailsDialogProps> = ({
       
       <DialogContent>
         <Box sx={{ flexGrow: 1, py: 2 }}>
-          <Grid container spacing={3}>
-            {/* First Row - Patient and Case Info */}
-            <Grid item xs={12} md={6}>
-              <PatientInformationCard strokeCase={strokeCase} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <CaseInformationCard strokeCase={strokeCase} />
-            </Grid>
+          {/* Tabs for Case Details and Timeline */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs value={activeTab} onChange={handleTabChange}>
+              <Tab label="Case Details" />
+              <Tab 
+                label="Timeline" 
+                icon={<FontAwesomeIcon icon={faClock} />}
+                iconPosition="start"
+              />
+            </Tabs>
+          </Box>
 
-            {/* Second Row - Clinical Assessments */}
-            <Grid item xs={12}>
-              <ClinicalAssessmentsCard strokeCase={strokeCase} />
-            </Grid>
+          {/* Tab Content */}
+          {activeTab === 0 && (
+            <Grid container spacing={3}>
+              {/* First Row - Patient and Case Info */}
+              <Grid item xs={12} md={6}>
+                <PatientInformationCard strokeCase={strokeCase} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <CaseInformationCard strokeCase={strokeCase} />
+              </Grid>
 
-            {/* Third Row - Performance and KPIs */}
-            <Grid item xs={12} md={6}>
-              <PerformanceTimingsCard strokeCase={strokeCase} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <KPIPerformanceCard strokeCase={strokeCase} />
-            </Grid>
+              {/* Second Row - Clinical Assessments */}
+              <Grid item xs={12}>
+                <ClinicalAssessmentsCard strokeCase={strokeCase} />
+              </Grid>
 
-            {/* Fourth Row - Treatment and Hospital Info */}
-            <Grid item xs={12} md={6}>
-              <TreatmentInformationCard strokeCase={strokeCase} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <HospitalInformationCard strokeCase={strokeCase} />
-            </Grid>
+              {/* Third Row - Performance and KPIs */}
+              <Grid item xs={12} md={6}>
+                <PerformanceTimingsCard strokeCase={strokeCase} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <KPIPerformanceCard strokeCase={strokeCase} />
+              </Grid>
 
-            {/* Fifth Row - Case Notes Section */}
-            <Grid item xs={12}>
-              <Card sx={{ mt: 2 }}>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={1} mb={2}>
-                    <FontAwesomeIcon icon={faComment} />
-                    <Typography variant="h6">Quick Case Note</Typography>
-                  </Box>
-                  <Button 
-                    onClick={handleAddCaseNote} 
-                    variant="outlined" 
-                    startIcon={<FontAwesomeIcon icon={faComment} />}
-                    fullWidth
-                  >
-                    Add Case Note
-                  </Button>
-                </CardContent>
-              </Card>
+              {/* Fourth Row - Treatment and Hospital Info */}
+              <Grid item xs={12} md={6}>
+                <TreatmentInformationCard strokeCase={strokeCase} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <HospitalInformationCard strokeCase={strokeCase} />
+              </Grid>
+
+              {/* Fifth Row - Case Notes Section */}
+              <Grid item xs={12}>
+                <Card sx={{ mt: 2 }}>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
+                      <FontAwesomeIcon icon={faComment} />
+                      <Typography variant="h6">Quick Case Note</Typography>
+                    </Box>
+                    <Button 
+                      onClick={handleAddCaseNote} 
+                      variant="outlined" 
+                      startIcon={<FontAwesomeIcon icon={faComment} />}
+                      fullWidth
+                    >
+                      Add Case Note
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
-          </Grid>
+          )}
+
+          {activeTab === 1 && (
+            <Box>
+              <StrokeTimelineView strokeCase={strokeCase} />
+            </Box>
+          )}
         </Box>
       </DialogContent>
 

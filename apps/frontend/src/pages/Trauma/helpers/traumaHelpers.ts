@@ -9,26 +9,18 @@ import { formatForUTC, formatForDateTimeLocal, formatForDisplay, getCurrentUTC }
 // Mode of Arrival helpers
 export const getModeOfArrivalLabel = (mode: TraumaModeOfArrival): string => {
   const labels: Record<TraumaModeOfArrival, string> = {
-    AMBULANCE: 'Ambulance',
-    PRIVATE_VEHICLE: 'Private Vehicle',
-    AIR_TRANSPORT: 'Air Transport',
-    WALK_IN: 'Walk-in',
-    POLICE: 'Police',
-    TRANSFERRED_FROM_HOSPITAL: 'Transferred from Hospital',
-    OTHER: 'Other'
+    AMBULANCE_RED_CRESCENT: 'Ambulance (Red Crescent)',
+    PRIVATE_CAR: 'Private Car',
+    TRANSFERRED_FROM_ANOTHER_HOSPITAL: 'Transferred from another hospital'
   };
   return labels[mode] || mode;
 };
 
 export const getModeOfArrivalIcon = (mode: TraumaModeOfArrival): string => {
   const icons: Record<TraumaModeOfArrival, string> = {
-    AMBULANCE: '🚑',
-    PRIVATE_VEHICLE: '🚗',
-    AIR_TRANSPORT: '🚁',
-    WALK_IN: '🚶',
-    POLICE: '👮',
-    TRANSFERRED_FROM_HOSPITAL: '🏥',
-    OTHER: '❓'
+    AMBULANCE_RED_CRESCENT: '🚑',
+    PRIVATE_CAR: '🚗',
+    TRANSFERRED_FROM_ANOTHER_HOSPITAL: '🏥'
   };
   return icons[mode] || '❓';
 };

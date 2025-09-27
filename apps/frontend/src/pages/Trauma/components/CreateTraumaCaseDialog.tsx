@@ -67,7 +67,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
     incidentDetails: {
       arrivalDateTime: '',
       incidentDateTime: '',
-      modeOfArrival: 'AMBULANCE',
+      modeOfArrival: 'AMBULANCE_RED_CRESCENT',
       transferRequestDateTime: '',
       transferArrivalDateTime: '',
       chiefComplaint: '',

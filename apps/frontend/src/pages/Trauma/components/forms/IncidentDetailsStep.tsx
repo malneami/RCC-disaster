@@ -100,31 +100,36 @@ const IncidentDetailsStep: React.FC<IncidentDetailsStepProps> = ({
         </FormControl>
       </Grid>
       
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Transfer Request Date & Time"
-          type="datetime-local"
-          value={data.transferRequestDateTime}
-          onChange={handleChange('transferRequestDateTime')}
-          InputLabelProps={{ shrink: true }}
-          error={!!errors.transferRequestDateTime}
-          helperText={errors.transferRequestDateTime}
-        />
-      </Grid>
-      
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Transfer Arrival Date & Time"
-          type="datetime-local"
-          value={data.transferArrivalDateTime}
-          onChange={handleChange('transferArrivalDateTime')}
-          InputLabelProps={{ shrink: true }}
-          error={!!errors.transferArrivalDateTime}
-          helperText={errors.transferArrivalDateTime}
-        />
-      </Grid>
+      {/* Conditional Transfer Fields */}
+      {data.modeOfArrival === 'TRANSFERRED_FROM_ANOTHER_HOSPITAL' && (
+        <>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Transfer Request Date & Time"
+              type="datetime-local"
+              value={data.transferRequestDateTime}
+              onChange={handleChange('transferRequestDateTime')}
+              InputLabelProps={{ shrink: true }}
+              error={!!errors.transferRequestDateTime}
+              helperText={errors.transferRequestDateTime}
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Transfer Arrival Date & Time"
+              type="datetime-local"
+              value={data.transferArrivalDateTime}
+              onChange={handleChange('transferArrivalDateTime')}
+              InputLabelProps={{ shrink: true }}
+              error={!!errors.transferArrivalDateTime}
+              helperText={errors.transferArrivalDateTime}
+            />
+          </Grid>
+        </>
+      )}
       
       <Grid item xs={12}>
         <TextField

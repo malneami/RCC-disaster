@@ -89,13 +89,13 @@ export class TraumaExportService {
         const temperature = additionalVitalSigns?.temperature || vitalSigns?.temperature || null;
 
         // Calculate mode of arrival binary fields
-        const modeOfArrivalAmbulance = case_.modeOfArrival === 'AMBULANCE' ? 'Yes' : 'No';
-        const modeOfArrivalPrivateVehicle = case_.modeOfArrival === 'PRIVATE_VEHICLE' ? 'Yes' : 'No';
-        const modeOfArrivalWalkIn = case_.modeOfArrival === 'WALK_IN' ? 'Yes' : 'No';
-        const modeOfArrivalAirTransport = case_.modeOfArrival === 'AIR_TRANSPORT' ? 'Yes' : 'No';
-        const modeOfArrivalPolice = case_.modeOfArrival === 'POLICE' ? 'Yes' : 'No';
-        const modeOfArrivalTransferred = case_.modeOfArrival === 'TRANSFERRED_FROM_HOSPITAL' ? 'Yes' : 'No';
-        const modeOfArrivalOther = case_.modeOfArrival === 'OTHER' ? 'Yes' : 'No';
+        const modeOfArrivalAmbulance = case_.modeOfArrival === 'AMBULANCE_RED_CRESCENT' ? 'Yes' : 'No';
+        const modeOfArrivalPrivateVehicle = case_.modeOfArrival === 'PRIVATE_CAR' ? 'Yes' : 'No';
+        const modeOfArrivalWalkIn = 'No'; // No longer used in new enum
+        const modeOfArrivalAirTransport = 'No'; // No longer used in new enum
+        const modeOfArrivalPolice = 'No'; // No longer used in new enum
+        const modeOfArrivalTransferred = case_.modeOfArrival === 'TRANSFERRED_FROM_ANOTHER_HOSPITAL' ? 'Yes' : 'No';
+        const modeOfArrivalOther = 'No'; // No longer used in new enum
 
         // Calculate time metrics
         const arrivalTime = case_.arrivalDateTime ? new Date(case_.arrivalDateTime) : null;

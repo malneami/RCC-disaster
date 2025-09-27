@@ -296,7 +296,7 @@ async function seedCriticalCases() {
           currentStatus: getRandomItem(['SUSPECTED', 'STEMI_CONFIRMED', 'PCI_READY', 'BALLOON_INFLATED', 'CCU_ADMITTED']),
           selectedTreatment: getRandomItem(['PRIMARY_PCI', 'RESCUE_PCI', 'FIBRINOLYSIS', 'TRANSFER_FOR_PRIMARY_PCI']),
           pathwayStarted: admissionTime,
-          modeOfArrival: getRandomItem(['AMBULANCE', 'PRIVATE_VEHICLE', 'WALK_IN']),
+          modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
           rccActivated: Math.random() > 0.3,
           rccUnit: Math.random() > 0.3 ? `RCC-${Math.floor(Math.random() * 5) + 1}` : null,
           
@@ -412,7 +412,7 @@ async function seedCriticalCases() {
           currentStatus: getRandomItem(['SUSPECTED', 'CONFIRMED', 'IMAGING_PENDING', 'IMAGING_COMPLETE', 'TREATMENT_EVALUATION', 'THROMBOLYSIS_STARTED', 'THROMBECTOMY_STARTED', 'TREATMENT_COMPLETE', 'STROKEUNIT_ADMITTED', 'REHABILITATION_STARTED', 'DISCHARGED', 'FOLLOW_UP']),
           
           // Patient Arrival & Timing
-          modeOfArrival: getRandomItem(['AMBULANCE', 'BY_AMBULANCE_RED_CRESCENT', 'TRANSFERRED_FROM_PHC_UCC', 'WALK_IN', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'POLICE', 'TRANSFERRED_FROM_HOSPITAL', 'OTHER']),
+          modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
           srcaCallTime: Math.random() > 0.5 ? addMinutes(admissionTime, -Math.floor(Math.random() * 60) - 30) : null,
           timeOfSymptomOnset: addMinutes(admissionTime, -Math.floor(Math.random() * 180) - 30),
           lastKnownNormal: addMinutes(admissionTime, -Math.floor(Math.random() * 240) - 60),
@@ -590,7 +590,7 @@ async function seedCriticalCases() {
           
           // Pathway Execution
           arrivalDateTime: admissionTime,
-          modeOfArrival: getRandomItem(['AMBULANCE', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'WALK_IN', 'POLICE', 'TRANSFERRED_FROM_HOSPITAL', 'OTHER']),
+          modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
           
           
           // Injuries

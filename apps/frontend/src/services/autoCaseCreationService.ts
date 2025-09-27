@@ -61,7 +61,7 @@ class AutoCaseCreationService {
         
         // Required fields with defaults
         arrivalDateTime: new Date().toISOString(),
-        modeOfArrival: 'AMBULANCE', // Default, can be updated later
+        modeOfArrival: 'AMBULANCE_RED_CRESCENT', // Default, can be updated later
         mechanismOfInjury: 'OTHER', // Default, can be updated later
         
         // Optional fields from ticket data
@@ -180,7 +180,7 @@ class AutoCaseCreationService {
         
         // Required fields with defaults
         admissionTime: new Date().toISOString(),
-        modeOfArrival: 'AMBULANCE', // Default, can be updated later
+        modeOfArrival: 'AMBULANCE_RED_CRESCENT', // Default, can be updated later
         
         // Critical timestamps - will be filled as pathway progresses
         criticalTimestamps: {

@@ -12,7 +12,9 @@ import {
 
 interface AdmissionDetails {
   admissionTime: string;
-  modeOfArrival: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+  modeOfArrival: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
+  transferRequestDateTime?: string;
+  transferArrivalDateTime?: string;
 }
 
 interface AdmissionDetailsStepProps {
@@ -64,13 +66,9 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
               onChange={handleChange('modeOfArrival')}
               label="Mode of Arrival"
             >
-              <MenuItem value="AMBULANCE">Ambulance</MenuItem>
-              <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
-              <MenuItem value="AIR_TRANSPORT">Air Transport</MenuItem>
-              <MenuItem value="WALK_IN">Walk In</MenuItem>
-              <MenuItem value="POLICE">Police</MenuItem>
-              <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
-              <MenuItem value="OTHER">Other</MenuItem>
+              <MenuItem value="AMBULANCE_RED_CRESCENT">Ambulance (Red Crescent)</MenuItem>
+              <MenuItem value="PRIVATE_CAR">Private Car</MenuItem>
+              <MenuItem value="TRANSFERRED_FROM_ANOTHER_HOSPITAL">Transferred from another hospital</MenuItem>
             </Select>
             {validationErrors['admissionDetails.modeOfArrival'] && (
               <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
@@ -79,6 +77,36 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
             )}
           </FormControl>
         </Grid>
+
+        {/* Conditional Transfer Fields */}
+        {data.modeOfArrival === 'TRANSFERRED_FROM_ANOTHER_HOSPITAL' && (
+          <>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Transfer Request Date & Time"
+                type="datetime-local"
+                value={data.transferRequestDateTime || ''}
+                onChange={(e) => handleChange('transferRequestDateTime')(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Transfer Arrival Date & Time"
+                type="datetime-local"
+                value={data.transferArrivalDateTime || ''}
+                onChange={(e) => handleChange('transferArrivalDateTime')(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+          </>
+        )}
       </Grid>
     </Box>
   );

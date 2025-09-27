@@ -25,6 +25,8 @@ model StrokeCase {
   
   // Patient Arrival & Timing (Step 1)
   modeOfArrival                   StrokeModeOfArrival? @map("mode_of_arrival")
+  transferRequestDateTime         DateTime?   @map("transfer_request_date_time")
+  transferArrivalDateTime         DateTime?   @map("transfer_arrival_date_time")
   srcaCallTime                    DateTime?   @map("srca_call_time")
   timeOfSymptomOnset              DateTime?   @map("time_of_symptom_onset")
   lastKnownNormal                 DateTime?   @map("last_known_normal")

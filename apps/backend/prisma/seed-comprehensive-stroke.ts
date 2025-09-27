@@ -106,7 +106,7 @@ export async function seedComprehensiveStrokeCases() {
         strokeSubtype: getRandomItem(['Large vessel occlusion', 'Small vessel disease', 'Cardioembolic', 'Cryptogenic', 'Other']),
         
         // Patient Arrival & Timing (Step 1)
-        modeOfArrival: getRandomItem(['AMBULANCE', 'BY_AMBULANCE_RED_CRESCENT', 'TRANSFERRED_FROM_PHC_UCC', 'WALK_IN', 'PRIVATE_VEHICLE']),
+        modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
         srcaCallTime: Math.random() > 0.5 ? addMinutes(arrivalTime, -Math.random() * 30 - 10) : null,
         timeOfSymptomOnset: new Date(Date.now() - Math.random() * 7200000),
         lastKnownNormal: new Date(Date.now() - Math.random() * 7200000),

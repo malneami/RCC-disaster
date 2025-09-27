@@ -52,7 +52,9 @@ export interface StemiCase {
   patientId: string;
   originHospitalId: string;
   destinationHospitalId?: string;
-  modeOfArrival?: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+  modeOfArrival?: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
+  transferRequestDateTime?: string;
+  transferArrivalDateTime?: string;
   caseType?: 'DIRECT' | 'TRANSFER';
   
   // Patient Information
@@ -211,7 +213,9 @@ export interface StemiCase {
 export interface CreateStemiCaseData {
   patientInfo: PatientInfo;
   admissionTime: string;
-  modeOfArrival: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+  modeOfArrival: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
+  transferRequestDateTime?: string;
+  transferArrivalDateTime?: string;
   criticalTimestamps: CriticalTimestamps;
   interventionsAndTreatments: InterventionsAndTreatments;
   clinicalAssessment: ClinicalAssessment;
@@ -227,7 +231,9 @@ export interface CreateStemiCaseData {
 export interface UpdateStemiCaseData {
   patientInfo?: PatientInfo;
   admissionTime?: string;
-  modeOfArrival?: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+  modeOfArrival?: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
+  transferRequestDateTime?: string;
+  transferArrivalDateTime?: string;
   criticalTimestamps?: CriticalTimestamps;
   interventionsAndTreatments?: InterventionsAndTreatments;
   clinicalAssessment?: ClinicalAssessment;

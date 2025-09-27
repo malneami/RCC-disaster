@@ -145,8 +145,16 @@ export class CreateStemiCaseDto {
   @IsString()
   admissionTime!: string;
 
-  @IsEnum(['AMBULANCE', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'WALK_IN', 'POLICE', 'TRANSFERRED_FROM_HOSPITAL', 'OTHER'])
-  modeOfArrival!: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+  @IsEnum(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL'])
+  modeOfArrival!: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
+
+  @IsOptional()
+  @IsDateString()
+  transferRequestDateTime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  transferArrivalDateTime?: string;
 
   @ValidateNested()
   @Type(() => CriticalTimestampsDto)
@@ -204,8 +212,16 @@ export class UpdateStemiCaseDto {
   admissionTime?: string;
 
   @IsOptional()
-  @IsEnum(['AMBULANCE', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'WALK_IN', 'POLICE', 'TRANSFERRED_FROM_HOSPITAL', 'OTHER'])
-  modeOfArrival?: 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+  @IsEnum(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL'])
+  modeOfArrival?: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
+
+  @IsOptional()
+  @IsDateString()
+  transferRequestDateTime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  transferArrivalDateTime?: string;
 
   @IsOptional()
   @ValidateNested()

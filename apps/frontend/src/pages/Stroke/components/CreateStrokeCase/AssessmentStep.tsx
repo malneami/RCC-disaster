@@ -74,7 +74,7 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
         />
       </Grid>
       
-      {formData.modeOfArrival === 'BY_AMBULANCE_RED_CRESCENT' && (
+      {formData.modeOfArrival === 'AMBULANCE_RED_CRESCENT' && (
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth

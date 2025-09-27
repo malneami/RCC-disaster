@@ -70,45 +70,61 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           <Typography variant="body1">{StrokeService.getStrokeTypeLabel(formData.strokeType)}</Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">NIHSS Baseline:</Typography>
-          <Typography variant="body1">{formData.nihssBaseline || 'Not specified'}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
           <Typography variant="body2" color="text.secondary">Current Status:</Typography>
           <Typography variant="body1">{StrokeService.getStrokeStatusLabel(formData.currentStatus)}</Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Selected Treatment:</Typography>
+          <Typography variant="body2" color="text.secondary">Mode of Arrival:</Typography>
           <Typography variant="body1">
-            {formData.selectedTreatment ? StrokeService.getStrokeTreatmentLabel(formData.selectedTreatment) : 'Not specified'}
+            {formData.modeOfArrival ? StrokeService.getModeOfArrivalLabel(formData.modeOfArrival) : 'Not specified'}
           </Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Door to CT Scan:</Typography>
-          <Typography variant="body1">
-            {formData.doorToCtScanMinutes ? `${formData.doorToCtScanMinutes} minutes` : 'Not specified'}
-          </Typography>
+          <Typography variant="body2" color="text.secondary">Chief Complaint:</Typography>
+          <Typography variant="body1">{formData.chiefComplaint || 'Not provided'}</Typography>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Door to Needle:</Typography>
-          <Typography variant="body1">
-            {formData.doorToNeedleMinutes ? `${formData.doorToNeedleMinutes} minutes` : 'Not specified'}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Door to Mechanical Thrombectomy:</Typography>
-          <Typography variant="body1">
-            {formData.doorToMechanicalThrombectomyMinutes ? `${formData.doorToMechanicalThrombectomyMinutes} minutes` : 'Not specified'}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Eligible for Thrombolysis:</Typography>
-          <Typography variant="body1">{formData.eligibleForThrombolysis ? 'Yes' : 'No'}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Eligible for Thrombectomy:</Typography>
-          <Typography variant="body1">{formData.eligibleForThrombectomy ? 'Yes' : 'No'}</Typography>
-        </Grid>
+        {formData.srcaCallTime && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">SRCA Call Time:</Typography>
+            <Typography variant="body1">{new Date(formData.srcaCallTime).toLocaleString()}</Typography>
+          </Grid>
+        )}
+        {formData.timeOfSymptomOnset && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">Time of Symptom Onset:</Typography>
+            <Typography variant="body1">{new Date(formData.timeOfSymptomOnset).toLocaleString()}</Typography>
+          </Grid>
+        )}
+        {formData.dateOfAdmission && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">Date of Admission:</Typography>
+            <Typography variant="body1">{new Date(formData.dateOfAdmission).toLocaleString()}</Typography>
+          </Grid>
+        )}
+        {formData.timeOfTriage && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">Time of Triage:</Typography>
+            <Typography variant="body1">{new Date(formData.timeOfTriage).toLocaleString()}</Typography>
+          </Grid>
+        )}
+        {formData.timeOfPhysicianAssessment && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">Time of Physician Assessment:</Typography>
+            <Typography variant="body1">{new Date(formData.timeOfPhysicianAssessment).toLocaleString()}</Typography>
+          </Grid>
+        )}
+        {formData.ctScanPerformed !== undefined && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">CT Scan Performed:</Typography>
+            <Typography variant="body1">{formData.ctScanPerformed ? 'Yes' : 'No'}</Typography>
+          </Grid>
+        )}
+        {formData.swallowingScreeningPerformed !== undefined && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">Swallowing Screening Performed:</Typography>
+            <Typography variant="body1">{formData.swallowingScreeningPerformed ? 'Yes' : 'No'}</Typography>
+          </Grid>
+        )}
         {formData.presentingSymptoms && (
           <Grid item xs={12}>
             <Typography variant="body2" color="text.secondary">Presenting Symptoms:</Typography>

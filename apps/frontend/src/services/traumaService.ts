@@ -2,7 +2,7 @@ import { apiClient } from './apiClient';
 import type { TraumaKPIsResponse } from '../pages/Trauma/types/traumaTypes';
 
 // Trauma Types
-export type TraumaModeOfArrival = 'AMBULANCE' | 'PRIVATE_VEHICLE' | 'AIR_TRANSPORT' | 'WALK_IN' | 'POLICE' | 'TRANSFERRED_FROM_HOSPITAL' | 'OTHER';
+export type TraumaModeOfArrival = 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
 export type TraumaMechanismOfInjury = 'PENETRATING' | 'BLUNT' | 'BURN' | 'FALL' | 'MOTOR_VEHICLE_ACCIDENT' | 'OTHER';
 export type TraumaDispositionType = 'ICU_ADMISSION' | 'SURGICAL_WARD_ADMISSION' | 'MEDICAL_WARD_ADMISSION' | 'DISCHARGE' | 'OPERATING_THEATRE' | 'TRANSFER_TO_HIGHER_CENTER' | 'DEATH' | 'DISCHARGE_AGAINST_MEDICAL_ADVICE' | 'OTHER';
 export type TraumaInjurySeverity = 'NO_INJURY' | 'MINOR' | 'MODERATE' | 'SERIOUS' | 'SEVERE' | 'CRITICAL' | 'UNSURVIVABLE';
@@ -272,13 +272,9 @@ export class TraumaService {
   // Utility functions for labels and formatting
   static getModeOfArrivalLabel(mode: TraumaModeOfArrival): string {
     const labels: Record<TraumaModeOfArrival, string> = {
-      AMBULANCE: 'Ambulance',
-      PRIVATE_VEHICLE: 'Private Vehicle',
-      AIR_TRANSPORT: 'Air Transport',
-      WALK_IN: 'Walk-in',
-      POLICE: 'Police',
-      TRANSFERRED_FROM_HOSPITAL: 'Transferred from Hospital',
-      OTHER: 'Other'
+      AMBULANCE_RED_CRESCENT: 'Ambulance (Red Crescent)',
+      PRIVATE_CAR: 'Private Car',
+      TRANSFERRED_FROM_ANOTHER_HOSPITAL: 'Transferred from another hospital'
     };
     return labels[mode] || mode;
   }

@@ -360,13 +360,9 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             value={formData.modeOfArrival || ''}
             onChange={(e) => updateFormData('modeOfArrival', e.target.value)}
           >
-            <MenuItem value="AMBULANCE">Ambulance</MenuItem>
-            <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
-            <MenuItem value="AIR_TRANSPORT">Air Transport</MenuItem>
-            <MenuItem value="WALK_IN">Walk In</MenuItem>
-            <MenuItem value="POLICE">Police</MenuItem>
-            <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
-            <MenuItem value="OTHER">Other</MenuItem>
+            <MenuItem value="AMBULANCE_RED_CRESCENT">Ambulance (Red Crescent)</MenuItem>
+            <MenuItem value="PRIVATE_CAR">Private Car</MenuItem>
+            <MenuItem value="TRANSFERRED_FROM_ANOTHER_HOSPITAL">Transferred from another hospital</MenuItem>
           </Select>
           {validationErrors['modeOfArrival'] && (
             <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
@@ -376,6 +372,35 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
         </FormControl>
       </Grid>
 
+      {/* Conditional Transfer Fields */}
+      {formData.modeOfArrival === 'TRANSFERRED_FROM_ANOTHER_HOSPITAL' && (
+        <>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Transfer Request Date & Time"
+              type="datetime-local"
+              value={formData.transferRequestDateTime || ''}
+              onChange={(e) => updateFormData('transferRequestDateTime', e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Transfer Arrival Date & Time"
+              type="datetime-local"
+              value={formData.transferArrivalDateTime || ''}
+              onChange={(e) => updateFormData('transferArrivalDateTime', e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Grid>
+        </>
+      )}
 
       {/* Patient Edit Dialog */}
       <PortalPatientEdit

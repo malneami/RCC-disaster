@@ -159,7 +159,7 @@ export async function seedComprehensiveStemiCases() {
         selectedTreatment: getRandomItem(['PCI', 'THROMBOLYSIS', 'CONSERVATIVE_MANAGEMENT']),
         pathwayStarted: arrivalTime,
         pathwayCompleted: balloonInflation || addMinutes(arrivalTime, Math.random() * 120 + 60),
-        modeOfArrival: getRandomItem(['AMBULANCE', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'WALK_IN', 'POLICE']),
+        modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
         rccActivated: Math.random() > 0.3,
         rccUnit: getRandomItem(['RCC-001', 'RCC-002', 'RCC-003', 'RCC-004']),
         

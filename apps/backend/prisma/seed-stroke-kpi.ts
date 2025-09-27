@@ -99,7 +99,7 @@ export async function seedStrokeKpiTest() {
         currentStatus: getRandomItem(['SUSPECTED', 'CONFIRMED', 'IMAGING_PENDING', 'IMAGING_COMPLETE', 'TREATMENT_EVALUATION']),
         
         // Patient Arrival & Timing
-        modeOfArrival: getRandomItem(['AMBULANCE', 'PRIVATE_VEHICLE', 'WALK_IN']),
+        modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
         timeOfSymptomOnset: symptomOnset,
         dateOfAdmission: registration,
         timeOfTriage: triage,

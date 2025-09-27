@@ -206,7 +206,7 @@ export async function seedComprehensiveCases() {
         // Basic Information
         arrivalDateTime: new Date(Date.now() - Math.random() * 3600000), // Within last hour
         incidentDateTime: new Date(Date.now() - Math.random() * 7200000), // Within last 2 hours
-        modeOfArrival: getRandomItem(['AMBULANCE', 'PRIVATE_VEHICLE', 'AIR_TRANSPORT', 'WALK_IN']),
+        modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),
         mechanismOfInjury: getRandomItem(['MOTOR_VEHICLE_ACCIDENT', 'FALL', 'PENETRATING', 'BURN', 'OTHER']),
         
         // Clinical Assessment

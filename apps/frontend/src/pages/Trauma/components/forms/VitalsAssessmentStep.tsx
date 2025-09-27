@@ -101,18 +101,6 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
-          label="Blood Pressure"
-          value={data.vitalSigns.bloodPressure}
-          onChange={handleBloodPressureChange}
-          error={!!errors.bloodPressure}
-          helperText={errors.bloodPressure || 'Format: 120/80'}
-          placeholder="120/80"
-        />
-      </Grid>
-      
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
           label="Oxygen Saturation (%)"
           type="number"
           value={data.vitalSigns.oxygenSaturation || ''}

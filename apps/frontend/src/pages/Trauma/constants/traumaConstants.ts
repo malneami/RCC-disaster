@@ -14,13 +14,9 @@ import {
 
 // Form field options
 export const MODE_OF_ARRIVAL_OPTIONS = [
-  { value: 'AMBULANCE', label: 'Ambulance' },
-  { value: 'WALK_IN', label: 'Walk-in' },
-  { value: 'PRIVATE_VEHICLE', label: 'Private Vehicle' },
-  { value: 'AIR_TRANSPORT', label: 'Air Transport' },
-  { value: 'POLICE', label: 'Police' },
-  { value: 'TRANSFERRED_FROM_HOSPITAL', label: 'Transferred from Hospital' },
-  { value: 'OTHER', label: 'Other' },
+  { value: 'AMBULANCE_RED_CRESCENT', label: 'Ambulance (Red Crescent)' },
+  { value: 'PRIVATE_CAR', label: 'Private Car' },
+  { value: 'TRANSFERRED_FROM_ANOTHER_HOSPITAL', label: 'Transferred from another hospital' },
 ] as const;
 
 export const MECHANISM_OF_INJURY_OPTIONS = [

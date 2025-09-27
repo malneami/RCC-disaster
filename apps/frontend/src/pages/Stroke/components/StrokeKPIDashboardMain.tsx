@@ -295,10 +295,6 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
               kpi2: { name: 'Door to Needle', description: 'Time from arrival to thrombolysis', target: 60, category: 'Treatment' },
               kpi3: { name: 'Door to Mechanical Thrombectomy', description: 'Time from arrival to thrombectomy', target: 120, category: 'Treatment' },
               kpi4: { name: 'Stroke Unit Admission', description: 'Admission to stroke unit', target: 24, category: 'Care' },
-              kpi5: { name: 'Dysphagia Screening', description: 'Dysphagia screening completion', target: 4, category: 'Assessment' },
-              kpi6: { name: 'Early Mobilization', description: 'Early mobilization within 24h', target: 24, category: 'Rehabilitation' },
-              kpi7: { name: 'Speech Therapy', description: 'Speech therapy initiation', target: 48, category: 'Rehabilitation' },
-              kpi8: { name: 'Physiotherapy', description: 'Physiotherapy initiation', target: 48, category: 'Rehabilitation' }
             };
             
             const kpiInfo = kpiNames[kpiId];

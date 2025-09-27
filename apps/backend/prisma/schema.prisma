@@ -229,16 +229,9 @@ enum StrokeEventType {
 
 // Additional stroke-specific enums
 enum StrokeModeOfArrival {
-  AMBULANCE
-  PRIVATE_VEHICLE
-  WALK_IN
-  HELICOPTER
-  OTHER
-  BY_AMBULANCE_RED_CRESCENT
-  TRANSFERRED_FROM_PHC_UCC
-  AIR_TRANSPORT
-  POLICE
-  TRANSFERRED_FROM_HOSPITAL
+  AMBULANCE_RED_CRESCENT
+  PRIVATE_CAR
+  TRANSFERRED_FROM_ANOTHER_HOSPITAL
 }
 
 enum StrokeTypeDetailed {
@@ -837,6 +830,8 @@ model Ticket {
   emsContactTime      DateTime?       @map("ems_contact_time")
   actualArrival       DateTime?       @map("actual_arrival")
   transportMode       String?         @map("transport_mode")
+  transferRequestDateTime DateTime?   @map("transfer_request_date_time")
+  transferArrivalDateTime DateTime?   @map("transfer_arrival_date_time")
   emsUnit             String?         @map("ems_unit")
   transportNotes      String?         @map("transport_notes")
   
@@ -1043,6 +1038,8 @@ model StrokeCase {
   
   // Patient Arrival & Timing (Step 1)
   modeOfArrival                   StrokeModeOfArrival? @map("mode_of_arrival")
+  transferRequestDateTime         DateTime?   @map("transfer_request_date_time")
+  transferArrivalDateTime         DateTime?   @map("transfer_arrival_date_time")
   srcaCallTime                    DateTime?   @map("srca_call_time")
   timeOfSymptomOnset              DateTime?   @map("time_of_symptom_onset")
   lastKnownNormal                 DateTime?   @map("last_known_normal")
@@ -1286,7 +1283,9 @@ model StemiCase {
   selectedTreatment               String?     @map("selected_treatment") // PRIMARY_PCI, RESCUE_PCI, FIBRINOLYSIS, etc.
   pathwayStarted                  DateTime?   @map("pathway_started")
   pathwayCompleted                DateTime?   @map("pathway_completed")
-  modeOfArrival                   String?     @map("mode_of_arrival") // AMBULANCE, PRIVATE_VEHICLE, AIR_TRANSPORT, etc.
+  modeOfArrival                   String?     @map("mode_of_arrival") // AMBULANCE_RED_CRESCENT, PRIVATE_CAR, TRANSFERRED_FROM_ANOTHER_HOSPITAL
+  transferRequestDateTime         DateTime?   @map("transfer_request_date_time")
+  transferArrivalDateTime         DateTime?   @map("transfer_arrival_date_time")
   rccActivated                    Boolean     @default(false) @map("rcc_activated")
   rccUnit                         String?     @map("rcc_unit")
   caseType                        String      @default("DIRECT") @map("case_type") // DIRECT or TRANSFER
@@ -1431,13 +1430,9 @@ model TraumaCase {
 
 // Trauma-specific enums
 enum TraumaModeOfArrival {
-  AMBULANCE
-  PRIVATE_VEHICLE
-  AIR_TRANSPORT
-  WALK_IN
-  POLICE
-  TRANSFERRED_FROM_HOSPITAL
-  OTHER
+  AMBULANCE_RED_CRESCENT
+  PRIVATE_CAR
+  TRANSFERRED_FROM_ANOTHER_HOSPITAL
 }
 
 enum TraumaMechanismOfInjury {
