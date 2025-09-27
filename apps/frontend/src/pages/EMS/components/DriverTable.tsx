@@ -18,7 +18,6 @@ import {
   faTrash, 
   faUser,
   faPhone,
-  faEnvelope,
   faHospital
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -80,10 +79,6 @@ const DriverTable: React.FC<DriverTableProps> = ({
               
               <TableCell>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FontAwesomeIcon icon={faEnvelope} size="sm" color="#666" />
-                    <Typography variant="body2">{driver.email}</Typography>
-                  </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <FontAwesomeIcon icon={faPhone} size="sm" color="#666" />
                     <Typography variant="body2">{driver.phoneNumber}</Typography>

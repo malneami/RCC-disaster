@@ -1,7 +1,7 @@
 // User model with comprehensive role management
 model User {
   id                String      @id @default(uuid())
-  email             String      @unique
+  email             String?     @unique
   firstName         String      @map("first_name")
   lastName          String      @map("last_name")
   phoneNumber       String?     @map("phone_number")

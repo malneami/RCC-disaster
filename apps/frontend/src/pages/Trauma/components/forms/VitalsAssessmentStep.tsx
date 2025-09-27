@@ -50,14 +50,6 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
     onChange({ [field]: value });
   };
 
-  const handleBloodPressureChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange({
-      vitalSigns: {
-        ...data.vitalSigns,
-        bloodPressure: event.target.value,
-      },
-    });
-  };
 
   return (
     <Grid container spacing={3}>

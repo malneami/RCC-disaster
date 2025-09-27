@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -13,6 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useEMSDrivers } from '../hooks/useEMSDrivers';
+import { hospitalService } from '../../../services/hospitalService';
 import DriverForm from './DriverForm';
 import DriverTable from './DriverTable';
 import GenericPageHeader from '../../../components/Common/GenericPageHeader';
@@ -31,22 +32,32 @@ const DriverManagement: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingDriver, setEditingDriver] = useState<any | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hospitals, setHospitals] = useState<any[]>([]);
+  const [hospitalsLoading, setHospitalsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
     phoneNumber: '',
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
     hospitalId: '',
   });
 
-  // Mock hospitals data - in real app, this would come from a hook
-  const hospitals = [
-    { id: '1', name: 'King Fahd Hospital' },
-    { id: '2', name: 'Jazan General Hospital' },
-    { id: '3', name: 'Al-Hada Hospital' },
-    { id: '4', name: 'Prince Mohammed Hospital' },
-  ];
+  // Fetch hospitals dynamically
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        setHospitalsLoading(true);
+        const hospitalsData = await hospitalService.getAllHospitals();
+        setHospitals(hospitalsData);
+      } catch (error) {
+        console.error('Error fetching hospitals:', error);
+      } finally {
+        setHospitalsLoading(false);
+      }
+    };
+
+    fetchHospitals();
+  }, []);
 
   const handleOpenDialog = (driver?: any) => {
     if (driver) {
@@ -54,7 +65,6 @@ const DriverManagement: React.FC = () => {
       setFormData({
         firstName: driver.firstName || '',
         lastName: driver.lastName || '',
-        email: driver.email || '',
         phoneNumber: driver.phoneNumber || '',
         status: driver.status || 'ACTIVE',
         hospitalId: driver.hospitalId || '',
@@ -64,7 +74,6 @@ const DriverManagement: React.FC = () => {
       setFormData({
         firstName: '',
         lastName: '',
-        email: '',
         phoneNumber: '',
         status: 'ACTIVE',
         hospitalId: '',
@@ -150,7 +159,7 @@ const DriverManagement: React.FC = () => {
           onSubmit={handleSubmit}
           onFormDataChange={handleFormDataChange}
           hospitals={hospitals}
-          loading={isSubmitting}
+          loading={isSubmitting || hospitalsLoading}
         />
       </Box>
     );
@@ -232,7 +241,7 @@ const DriverManagement: React.FC = () => {
         onSubmit={handleSubmit}
         onFormDataChange={handleFormDataChange}
         hospitals={hospitals}
-        loading={isSubmitting}
+        loading={isSubmitting || hospitalsLoading}
       />
     </Box>
   );

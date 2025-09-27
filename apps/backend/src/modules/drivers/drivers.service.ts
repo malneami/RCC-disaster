@@ -13,13 +13,15 @@ export class DriversService {
 
   async create(createDriverDto: CreateDriverDto) {
     try {
-      // Check if email already exists
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: createDriverDto.email },
-      });
+      // Check if email already exists (only if email is provided)
+      if (createDriverDto.email) {
+        const existingUser = await this.prisma.user.findUnique({
+          where: { email: createDriverDto.email },
+        });
 
-      if (existingUser) {
-        throw new ConflictException('Email already exists');
+        if (existingUser) {
+          throw new ConflictException('Email already exists');
+        }
       }
 
       // Generate a temporary password (drivers will need to reset it)
@@ -46,7 +48,7 @@ export class DriversService {
       // Remove sensitive data
       const { passwordHash, refreshToken, ...driverWithoutSecrets } = driver;
       
-      this.logger.log(`Driver created: ${driver.email}`);
+      this.logger.log(`Driver created: ${driver.firstName} ${driver.lastName}${driver.email ? ` (${driver.email})` : ''}`);
       return driverWithoutSecrets;
     } catch (error) {
       this.logger.error('Failed to create driver:', error);
@@ -191,7 +193,7 @@ export class DriversService {
       // Remove sensitive data
       const { passwordHash, refreshToken, ...driverWithoutSecrets } = updatedDriver;
       
-      this.logger.log(`Driver updated: ${updatedDriver.email}`);
+      this.logger.log(`Driver updated: ${updatedDriver.firstName} ${updatedDriver.lastName}${updatedDriver.email ? ` (${updatedDriver.email})` : ''}`);
       return driverWithoutSecrets;
     } catch (error) {
       this.logger.error(`Failed to update driver ${id}:`, error);
@@ -216,7 +218,7 @@ export class DriversService {
         },
       });
 
-      this.logger.log(`Driver soft deleted: ${driver.email}`);
+      this.logger.log(`Driver soft deleted: ${driver.firstName} ${driver.lastName}${driver.email ? ` (${driver.email})` : ''}`);
     } catch (error) {
       this.logger.error(`Failed to delete driver ${id}:`, error);
       throw error;

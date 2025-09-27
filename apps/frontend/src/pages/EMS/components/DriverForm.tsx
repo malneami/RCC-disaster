@@ -12,6 +12,7 @@ import {
   MenuItem,
   Grid,
   CircularProgress,
+  Autocomplete,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -22,7 +23,6 @@ interface DriverFormProps {
   formData: {
     firstName: string;
     lastName: string;
-    email: string;
     phoneNumber: string;
     status: 'ACTIVE' | 'INACTIVE';
     hospitalId: string;
@@ -84,18 +84,6 @@ const DriverForm: React.FC<DriverFormProps> = ({
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => onFormDataChange('email', e.target.value)}
-                required
-                variant="outlined"
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
                 label="Phone Number"
                 value={formData.phoneNumber}
                 onChange={(e) => onFormDataChange('phoneNumber', e.target.value)}
@@ -120,20 +108,27 @@ const DriverForm: React.FC<DriverFormProps> = ({
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Hospital</InputLabel>
-                <Select
-                  value={formData.hospitalId}
-                  onChange={(e) => onFormDataChange('hospitalId', e.target.value)}
-                  label="Hospital"
-                >
-                  {hospitals.map((hospital) => (
-                    <MenuItem key={hospital.id} value={hospital.id}>
-                      {hospital.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                fullWidth
+                options={hospitals}
+                getOptionLabel={(option) => option.name}
+                value={hospitals.find(h => h.id === formData.hospitalId) || null}
+                onChange={(_, newValue) => onFormDataChange('hospitalId', newValue?.id || '')}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Hospital"
+                    required
+                    variant="outlined"
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <li {...props} key={option.id}>
+                    {option.name}
+                  </li>
+                )}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+              />
             </Grid>
           </Grid>
         </DialogContent>

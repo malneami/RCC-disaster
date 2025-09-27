@@ -10,9 +10,10 @@ export class CreateDriverDto {
   @IsString()
   lastName!: string;
 
-  @ApiProperty({ description: 'Driver email address' })
+  @ApiProperty({ description: 'Driver email address', required: false })
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
   @ApiProperty({ description: 'Driver phone number' })
   @IsString()
