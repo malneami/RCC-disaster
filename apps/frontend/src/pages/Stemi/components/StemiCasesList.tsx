@@ -33,10 +33,13 @@ import {
   CheckCircle as CheckIcon,
   Cancel as CrossIcon,
   MoreVert as MoreVertIcon,
+  Comment as CommentIcon,
 } from '@mui/icons-material';
 import { StemiCase } from '../services/stemiService';
 import StemiOutcomeForm from './StemiOutcomeForm';
 import StemiCaseCompleteness from './StemiCaseCompleteness';
+import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../services/notificationService';
 
 interface StemiCasesListProps {
   cases: StemiCase[];
@@ -45,6 +48,7 @@ interface StemiCasesListProps {
   onViewCase: (case_: StemiCase) => void;
   onDeleteCase: (id: string) => void;
   onOutcomeFormUpdate?: (caseId: string, updatedData: any) => void;
+  onAddCaseNote?: (case_: StemiCase) => void;
 }
 
 // Helper functions to calculate KPI status
@@ -112,12 +116,15 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   onViewCase,
   onDeleteCase,
   onOutcomeFormUpdate,
+  onAddCaseNote,
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<StemiCase | null>(null);
   const [outcomeFormDialogOpen, setOutcomeFormDialogOpen] = useState(false);
   const [outcomeFormCaseId, setOutcomeFormCaseId] = useState<string | null>(null);
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
+  const [selectedCaseForNote, setSelectedCaseForNote] = useState<StemiCase | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedCaseForMenu, setSelectedCaseForMenu] = useState<StemiCase | null>(null);
   const [sortConfig, setSortConfig] = useState<{
@@ -221,6 +228,26 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
       handleDeleteClick(selectedCaseForMenu);
     }
     handleMenuClose();
+  };
+
+  const handleAddCaseNote = () => {
+    if (selectedCaseForMenu) {
+      setSelectedCaseForNote(selectedCaseForMenu);
+      setShowCaseNoteModal(true);
+    }
+    handleMenuClose();
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      setSelectedCaseForNote(null);
+      // Optionally refresh data or show success message
+    } catch (error) {
+      console.error('Failed to create case note:', error);
+      // Handle error - could show a toast notification
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -498,6 +525,12 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
           <ViewIcon fontSize="small" sx={{ mr: 1 }} />
           View Details
         </MenuItem>
+        {onAddCaseNote && (
+          <MenuItem onClick={handleAddCaseNote}>
+            <CommentIcon fontSize="small" sx={{ mr: 1 }} />
+            Add Case Note
+          </MenuItem>
+        )}
         <MenuItem onClick={handleEditCase}>
           <EditIcon fontSize="small" sx={{ mr: 1 }} />
           Edit Case
@@ -553,6 +586,21 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
           onSuccess={handleOutcomeFormSuccess}
         />
       )}
+
+      {/* Case Note Modal */}
+      <CaseNoteModal
+        open={showCaseNoteModal}
+        onClose={() => {
+          setShowCaseNoteModal(false);
+          setSelectedCaseForNote(null);
+        }}
+        onSubmit={handleCaseNoteSubmit}
+        patientName={selectedCaseForNote ? `${selectedCaseForNote.patient?.firstName || ''} ${selectedCaseForNote.patient?.lastName || ''}`.trim() : ''}
+        caseType="STEMI"
+        caseId={selectedCaseForNote?.id || ''}
+        patientId={selectedCaseForNote?.patientId || ''}
+        ticketId={selectedCaseForNote?.ticketId}
+      />
     </Box>
   );
 };

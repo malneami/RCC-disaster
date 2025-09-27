@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Alert,
   Pagination,
+  Button,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -20,10 +21,12 @@ import {
   faCheckCircle,
   faArrowUp,
   faBell,
+  faRefresh,
 } from '@fortawesome/free-solid-svg-icons';
 
 import EmptyState from '../../../components/Common/EmptyState';
-import { notificationService, Notification, NotificationFilter } from '../../../services/notificationService';
+import SkeletonLoader from '../../../components/Common/SkeletonLoader';
+import { notificationService, Notification, NotificationFilter, ApiError } from '../../../services/notificationService';
 
 interface NotificationListProps {
   filters: NotificationFilter;
@@ -34,6 +37,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -68,32 +72,26 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
       setPagination(data.pagination);
     } catch (err: any) {
       console.error('Error loading notifications:', err);
-      console.error('Error details:', {
-        message: err.message,
-        status: err.response?.status,
-        data: err.response?.data,
-        code: err.code,
-        config: err.config,
-        request: err.request
-      });
-      console.error('Failed request filters:', requestFilters);
       
-      // More specific error handling
-      if (err.response?.status === 404) {
+      // Handle enhanced error types
+      const apiError = err as ApiError;
+      
+      if (apiError.status === 404) {
         // No notifications found - show empty state instead of error
         setNotifications([]);
         setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 });
         setError(null);
         return;
-      } else if (err.response?.status === 401) {
+      } else if (apiError.status === 401) {
         setError('Authentication required. Please log in again.');
-      } else if (err.code === 'ERR_NETWORK') {
-        setError('Network error. Please check your connection.');
+      } else if (apiError.code === 'NETWORK_ERROR') {
+        setError('Network error. Please check your connection and try again.');
       } else {
-        setError('Failed to load notifications. Please try again.');
+        setError(apiError.message || 'Failed to load notifications. Please try again.');
       }
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
   };
 
@@ -209,16 +207,35 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
   };
 
+  const handleRetry = () => {
+    setRetrying(true);
+    setError(null);
+    loadNotifications();
+  };
+
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <SkeletonLoader variant="notification" count={5} />;
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <Alert 
+        severity="error" 
+        action={
+          <Button 
+            color="inherit" 
+            size="small" 
+            onClick={handleRetry}
+            disabled={retrying}
+            startIcon={retrying ? <CircularProgress size={16} /> : <FontAwesomeIcon icon={faRefresh} />}
+          >
+            {retrying ? 'Retrying...' : 'Retry'}
+          </Button>
+        }
+      >
+        {error}
+      </Alert>
+    );
   }
 
   if (notifications.length === 0) {
@@ -340,6 +357,21 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
                 >
                   {formatTimeAgo(notification.createdAt)}
                 </Typography>
+
+                {/* Created By */}
+                {notification.createdBy && (
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary"
+                    sx={{ 
+                      fontSize: '0.75rem',
+                      opacity: 0.7,
+                      fontStyle: 'italic'
+                    }}
+                  >
+                    Created by {notification.createdBy.firstName} {notification.createdBy.lastName}
+                  </Typography>
+                )}
               </Box>
 
               {/* Actions */}

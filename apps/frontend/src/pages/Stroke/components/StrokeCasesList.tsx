@@ -37,6 +37,7 @@ interface StrokeCasesListProps {
   onUpdateCase: (id: string, data: any) => Promise<void>;
   onCreateCase: () => void;
   onDeleteCase?: (id: string) => Promise<void>;
+  onAddCaseNote?: (case_: StrokeCase) => void;
   isAdmin?: boolean;
   onViewModeChange?: (mode: 'table' | 'cards') => void;
 }
@@ -46,6 +47,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   onUpdateCase,
   onCreateCase,
   onDeleteCase,
+  onAddCaseNote,
   isAdmin = false,
   onViewModeChange,
 }) => {
@@ -302,6 +304,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
                 onEditCase={handleEditCase}
                 onDeleteCase={handleDeleteCase}
                 onOpenOutcomeForm={handleOpenOutcomeForm}
+                onAddCaseNote={onAddCaseNote}
                 isAdmin={isAdmin}
               />
             ))}

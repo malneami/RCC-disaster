@@ -185,6 +185,12 @@ const TraumaPortalPage: React.FC = () => {
     }
   };
 
+  const handleAddCaseNote = (case_: TraumaCase) => {
+    // TODO: Implement case note creation dialog
+    console.log('Add case note for:', case_);
+    // For now, just log the case - you can implement a dialog later
+  };
+
   const handleUpdateCase = async (id: string, data: any): Promise<void> => {
     try {
       const updatedCase = await TraumaService.updateTraumaCase(id, data);
@@ -338,6 +344,7 @@ const TraumaPortalPage: React.FC = () => {
               onCreateCase={() => setCreateDialogOpen(true)}
               onDeleteCase={handleDeleteCase}
               onUpdateCase={handleUpdateCase}
+              onAddCaseNote={handleAddCaseNote}
               isAdmin={isAdmin}
               onViewModeChange={setViewMode}
             />

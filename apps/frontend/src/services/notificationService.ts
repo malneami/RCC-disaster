@@ -1,5 +1,19 @@
 import { apiClient } from './apiClient';
 
+// Enhanced error types
+export interface ApiError {
+  message: string;
+  status?: number;
+  code?: string;
+  details?: any;
+}
+
+export interface RetryConfig {
+  maxRetries: number;
+  retryDelay: number;
+  retryCondition?: (error: ApiError) => boolean;
+}
+
 // Types
 export interface Notification {
   id: string;
@@ -147,6 +161,69 @@ export interface User {
   role: 'ADMIN' | 'RCC' | 'EMS' | 'DATA_COLLECTOR' | 'CATH_LAB_USER';
 }
 
+// Utility functions for enhanced error handling
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const createApiError = (error: any): ApiError => {
+  if (error.response) {
+    return {
+      message: error.response.data?.message || error.message || 'An error occurred',
+      status: error.response.status,
+      code: error.response.data?.code || error.code,
+      details: error.response.data
+    };
+  } else if (error.request) {
+    return {
+      message: 'Network error - please check your connection',
+      code: 'NETWORK_ERROR',
+      details: error.request
+    };
+  } else {
+    return {
+      message: error.message || 'An unexpected error occurred',
+      code: error.code || 'UNKNOWN_ERROR',
+      details: error
+    };
+  }
+};
+
+const retryRequest = async <T>(
+  requestFn: () => Promise<T>,
+  config: RetryConfig = { maxRetries: 3, retryDelay: 1000 }
+): Promise<T> => {
+  let lastError: ApiError;
+  
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      lastError = createApiError(error);
+      
+      // Don't retry on client errors (4xx) except 408, 429
+      if (lastError.status && lastError.status >= 400 && lastError.status < 500) {
+        if (lastError.status !== 408 && lastError.status !== 429) {
+          throw lastError;
+        }
+      }
+      
+      // Check custom retry condition
+      if (config.retryCondition && !config.retryCondition(lastError)) {
+        throw lastError;
+      }
+      
+      // Don't retry on last attempt
+      if (attempt === config.maxRetries) {
+        throw lastError;
+      }
+      
+      // Wait before retrying
+      await sleep(config.retryDelay * Math.pow(2, attempt)); // Exponential backoff
+    }
+  }
+  
+  throw lastError!;
+};
+
 // API Functions
 export const notificationService = {
   // Get notifications with filtering
@@ -159,21 +236,27 @@ export const notificationService = {
       totalPages: number;
     };
   }> {
-    const params = new URLSearchParams();
-    Object.entries(filter).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.append(key, value.toString());
-      }
+    return retryRequest(async () => {
+      const params = new URLSearchParams();
+      Object.entries(filter).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+
+      const url = `/notifications?${params.toString()}`;
+      console.log('Making API call to:', url);
+      console.log('Filter object:', filter);
+      console.log('URL params:', params.toString());
+
+      const response = await apiClient.get(url);
+      console.log('API response status:', response.status);
+      return response.data;
+    }, {
+      maxRetries: 2,
+      retryDelay: 1000,
+      retryCondition: (error) => error.status === 408 || error.status === 429 || error.code === 'NETWORK_ERROR'
     });
-
-    const url = `/notifications?${params.toString()}`;
-    console.log('Making API call to:', url);
-    console.log('Filter object:', filter);
-    console.log('URL params:', params.toString());
-
-    const response = await apiClient.get(url);
-    console.log('API response status:', response.status);
-    return response.data;
   },
 
   // Get notification summary
@@ -210,7 +293,7 @@ export const notificationService = {
 
   // Delete notification (soft delete for current user)
   async deleteNotification(id: string): Promise<{ count: number }> {
-    const response = await apiClient.delete(`/notifications/${id}`);
+    const response = await apiClient.delete(`/notifications/${id}/user`);
     return response.data;
   },
 

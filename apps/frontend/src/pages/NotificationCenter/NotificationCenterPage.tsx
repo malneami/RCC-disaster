@@ -27,7 +27,10 @@ import NotificationList from './components/NotificationList';
 import NotificationFilters from './components/NotificationFilters';
 import EmptyState from '../../components/Common/EmptyState';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import ErrorBoundary from '../../components/Common/ErrorBoundary';
+import ConnectionStatus from '../../components/Common/ConnectionStatus';
 import { notificationService, NotificationFilter, NotificationCategory } from '../../services/notificationService';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 
 const NotificationCenterPage: React.FC = () => {
@@ -39,11 +42,42 @@ const NotificationCenterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [lastConnected, setLastConnected] = useState<Date | undefined>();
+  
+  // WebSocket connection
+  const { socket, isConnected } = useWebSocket();
 
   // Load initial data
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Track WebSocket connection status
+  useEffect(() => {
+    if (isConnected) {
+      setLastConnected(new Date());
+    }
+  }, [isConnected]);
+
+  // Listen for real-time notifications
+  useEffect(() => {
+    if (socket && isConnected) {
+      socket.on('notification', (notification: any) => {
+        console.log('Received real-time notification:', notification);
+        setRefreshTrigger(prev => prev + 1);
+      });
+
+      socket.on('notification-read', (data: any) => {
+        console.log('Notification marked as read:', data);
+        setRefreshTrigger(prev => prev + 1);
+      });
+
+      return () => {
+        socket.off('notification');
+        socket.off('notification-read');
+      };
+    }
+  }, [socket, isConnected]);
 
   const loadInitialData = async () => {
     try {
@@ -130,11 +164,19 @@ const NotificationCenterPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      backgroundColor: '#f8fafc',
-      p: { xs: 1, sm: 2, md: 3 }
-    }}>
+    <ErrorBoundary>
+      <Box sx={{ 
+        minHeight: '100vh',
+        backgroundColor: '#f8fafc',
+        p: { xs: 1, sm: 2, md: 3 }
+      }}>
+        {/* Connection Status */}
+        <ConnectionStatus 
+          isConnected={isConnected}
+          lastConnected={lastConnected}
+          showDetails={true}
+          position="top-right"
+        />
       {/* Header */}
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
         <GenericPageHeader
@@ -401,7 +443,8 @@ const NotificationCenterPage: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
-    </Box>
+      </Box>
+    </ErrorBoundary>
   );
 };
 

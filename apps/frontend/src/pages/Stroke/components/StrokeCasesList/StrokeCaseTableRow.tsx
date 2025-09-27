@@ -18,12 +18,15 @@ import {
   CheckCircle as CheckIcon,
   Cancel as CrossIcon,
   MoreVert as MoreVertIcon,
+  Comment as CommentIcon,
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faUser, faHospital } from '@fortawesome/free-solid-svg-icons';
 
 import { StrokeCase, StrokeService, StrokeStatus } from '../../../../services/strokeService';
 import StrokeCaseCompleteness from '../StrokeCaseCompleteness';
+import CaseNoteModal from '../../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../../services/notificationService';
 
 interface StrokeCaseTableRowProps {
   strokeCase: StrokeCase;
@@ -31,6 +34,7 @@ interface StrokeCaseTableRowProps {
   onEditCase: (case_: StrokeCase) => void;
   onDeleteCase?: (case_: StrokeCase) => void;
   onOpenOutcomeForm?: (case_: StrokeCase) => void;
+  onAddCaseNote?: (case_: StrokeCase) => void;
   isAdmin?: boolean;
 }
 
@@ -105,10 +109,12 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
   onEditCase,
   onDeleteCase,
   onOpenOutcomeForm,
+  onAddCaseNote,
   isAdmin = false,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
   const kpis = calculateKpiStatus(strokeCase);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -136,6 +142,22 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
     handleMenuClose();
   };
 
+  const handleAddCaseNote = () => {
+    setShowCaseNoteModal(true);
+    handleMenuClose();
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      // Optionally refresh data or show success message
+    } catch (error) {
+      console.error('Failed to create case note:', error);
+      // Handle error - could show a toast notification
+    }
+  };
+
   const getStatusColor = (status: StrokeStatus): string => {
     const colors: Record<StrokeStatus, string> = {
       SUSPECTED: 'default',
@@ -161,7 +183,8 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
   };
 
   return (
-    <TableRow hover>
+    <>
+      <TableRow hover>
       <TableCell>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', flex: 1 }} onClick={handleViewDetails}>
@@ -204,6 +227,12 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
               <ViewIcon fontSize="small" sx={{ mr: 1 }} />
               View Details
             </MenuItem>
+            {onAddCaseNote && (
+              <MenuItem onClick={handleAddCaseNote}>
+                <CommentIcon fontSize="small" sx={{ mr: 1 }} />
+                Add Case Note
+              </MenuItem>
+            )}
             <MenuItem onClick={handleEditCase}>
               <EditIcon fontSize="small" sx={{ mr: 1 }} />
               Edit Case
@@ -318,6 +347,19 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
         </Box>
       </TableCell>
     </TableRow>
+
+    {/* Case Note Modal */}
+    <CaseNoteModal
+      open={showCaseNoteModal}
+      onClose={() => setShowCaseNoteModal(false)}
+      onSubmit={handleCaseNoteSubmit}
+      patientName={`${strokeCase.patient?.firstName || ''} ${strokeCase.patient?.lastName || ''}`.trim()}
+      caseType="STROKE"
+      caseId={strokeCase.id}
+      patientId={strokeCase.patientId}
+      ticketId={strokeCase.ticketId}
+    />
+  </>
   );
 };
 

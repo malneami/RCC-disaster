@@ -533,6 +533,12 @@ const StemiPortalPage: React.FC = () => {
     setViewDialogOpen(true);
   };
 
+  const handleAddCaseNote = (case_: StemiCase) => {
+    // TODO: Implement case note creation dialog
+    console.log('Add case note for:', case_);
+    // For now, just log the case - you can implement a dialog later
+  };
+
   const handleOutcomeFormUpdate = (caseId: string, updatedData: any) => {
     // Update the specific case in the local state
     setStemiCases(prev => prev.map(c => 
@@ -814,6 +820,7 @@ const StemiPortalPage: React.FC = () => {
             onEditCase={handleEditCase}
             onViewCase={handleViewCase}
             onDeleteCase={handleDeleteCase}
+            onAddCaseNote={handleAddCaseNote}
             onOutcomeFormUpdate={handleOutcomeFormUpdate}
           />
           ) : (

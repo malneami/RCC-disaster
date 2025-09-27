@@ -1,7 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateNotificationDto, NotificationFilterDto, MarkNotificationReadDto } from './dto/create-notification.dto';
 import { NotificationType, NotificationPriority, CaseType, DeliveryStatus, DeliveryMethod } from '@prisma/client';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class NotificationsService {
@@ -12,11 +13,24 @@ export class NotificationsService {
   /**
    * Create a new notification with recipients
    */
-  async createNotification(createNotificationDto: CreateNotificationDto, createdById: string) {
-    const { recipientUserIds, ...notificationData } = createNotificationDto;
+  async createNotification(createNotificationDto: CreateNotificationDto, createdById: string, requestContext?: { ipAddress?: string; userAgent?: string }) {
+    try {
+      this.logger.log('=== createNotification service called ===');
+      this.logger.log('createNotificationDto:', JSON.stringify(createNotificationDto, null, 2));
+      this.logger.log('createdById:', createdById);
 
-    // Create the notification
-    const notification = await this.prisma.notification.create({
+      const { recipientUserIds, ...notificationData } = createNotificationDto;
+
+      // Enhanced validation
+      await this.validateNotificationData(notificationData, recipientUserIds || [], createdById);
+
+      this.logger.log('Creating notification with data:', JSON.stringify(notificationData, null, 2));
+      this.logger.log('Recipients:', recipientUserIds);
+
+      // Create the notification with enhanced error handling
+      const notification = await this.prisma.$transaction(async (tx) => {
+      // Create the notification
+        const notification = await tx.notification.create({
       data: {
         ...notificationData,
         createdById,
@@ -60,73 +74,272 @@ export class NotificationsService {
           },
         },
       },
+        });
+
+        // TODO: Create audit log when audit table is available
+        // await tx.notificationAuditLog.create({
+        //   data: {
+        //     notificationId: notification.id,
+        //     userId: createdById,
+        //     action: 'CREATED',
+        //     newValues: JSON.stringify(notificationData),
+        //     ipAddress: requestContext?.ipAddress,
+        //     userAgent: requestContext?.userAgent,
+        //   },
+        // });
+
+        return notification;
     });
 
     this.logger.log(`Created notification ${notification.id} for ${recipientUserIds?.length || 0} recipients`);
+      
+      // Queue for delivery (async)
+      this.queueNotificationDelivery(notification.id).catch(error => {
+        this.logger.error(`Failed to queue notification delivery for ${notification.id}:`, error);
+      });
+
     return notification;
+    } catch (error) {
+      this.logger.error('=== Error in createNotification service ===');
+      this.logger.error('Error:', error);
+      this.logger.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      throw error;
+      }
+      
+      throw new InternalServerErrorException('Failed to create notification');
+    }
+  }
+
+  /**
+   * Validate notification data
+   */
+  private async validateNotificationData(notificationData: any, recipientUserIds: string[], createdById: string) {
+    // Validate required fields
+    if (!notificationData.type || !notificationData.priority || !notificationData.title || !notificationData.message) {
+      throw new BadRequestException('Missing required fields: type, priority, title, message');
+    }
+
+    if (!notificationData.patientId || !notificationData.patientName) {
+      throw new BadRequestException('Missing required patient information');
+    }
+
+    // Validate creator exists
+    const creator = await this.prisma.user.findUnique({
+      where: { id: createdById },
+      select: { id: true, status: true },
+    });
+
+    if (!creator) {
+      throw new NotFoundException(`User with ID ${createdById} not found`);
+    }
+
+    if (creator.status !== 'ACTIVE') {
+      throw new BadRequestException('User is not active');
+    }
+
+    // Validate patient exists
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: notificationData.patientId },
+      select: { id: true },
+    });
+
+    if (!patient) {
+      throw new NotFoundException(`Patient with ID ${notificationData.patientId} not found`);
+    }
+
+    // Validate recipients exist and are active
+    if (recipientUserIds && recipientUserIds.length > 0) {
+      const recipients = await this.prisma.user.findMany({
+        where: { 
+          id: { in: recipientUserIds },
+          status: 'ACTIVE',
+        },
+        select: { id: true },
+      });
+
+      const existingUserIds = recipients.map(user => user.id);
+      const missingUserIds = recipientUserIds.filter(id => !existingUserIds.includes(id));
+
+      if (missingUserIds.length > 0) {
+        throw new NotFoundException(`Users with IDs ${missingUserIds.join(', ')} not found or inactive`);
+      }
+    }
+  }
+
+  /**
+   * Queue notification for delivery
+   */
+  private async queueNotificationDelivery(notificationId: string) {
+    // This would integrate with a job queue system like Bull or Agenda
+    // For now, we'll process immediately
+    await this.processNotificationDelivery(notificationId);
+  }
+
+  /**
+   * Process notification delivery
+   */
+  private async processNotificationDelivery(notificationId: string) {
+    try {
+      const notification = await this.prisma.notification.findUnique({
+        where: { id: notificationId },
+        include: {
+          recipients: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  phoneNumber: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!notification) {
+        this.logger.error(`Notification ${notificationId} not found for delivery`);
+        return;
+      }
+
+      // Process each recipient
+      for (const recipient of notification.recipients) {
+        await this.deliverToRecipient(notification, recipient);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to process notification delivery for ${notificationId}:`, error);
+    }
+  }
+
+  /**
+   * Deliver notification to a specific recipient
+   */
+  private async deliverToRecipient(notification: any, recipient: any) {
+    try {
+      // Update delivery status
+      await this.prisma.notificationRecipient.update({
+        where: { id: recipient.id },
+        data: {
+          deliveryStatus: DeliveryStatus.DELIVERED,
+        },
+      });
+
+      // TODO: Implement email/SMS delivery based on preferences
+      this.logger.log(`Delivered notification ${notification.id} to user ${recipient.userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to deliver notification to user ${recipient.userId}:`, error);
+      
+      // Update delivery status to failed
+      await this.prisma.notificationRecipient.update({
+        where: { id: recipient.id },
+        data: {
+          deliveryStatus: DeliveryStatus.FAILED,
+        },
+      });
+    }
   }
 
   /**
    * Get notifications with filtering and pagination
    */
   async getNotifications(filterDto: NotificationFilterDto, userId: string) {
-    const {
-      type,
-      priority,
-      caseType,
-      patientId,
-      caseId,
-      isRead,
-      search,
-      dateFrom,
-      dateTo,
-      page = '1',
-      limit = '20',
-    } = filterDto;
+    try {
+      this.logger.log('=== getNotifications service called ===');
+      this.logger.log('filterDto:', JSON.stringify(filterDto, null, 2));
+      this.logger.log('userId:', userId);
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+      const {
+        type,
+        priority,
+        caseType,
+        patientId,
+        caseId,
+        isRead,
+        search,
+        dateFrom,
+        dateTo,
+        page = '1',
+        limit = '20',
+      } = filterDto;
+
+      // Validate pagination parameters
+      const pageNum = Math.max(1, parseInt(page) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20)); // Max 100 items per page
     const skip = (pageNum - 1) * limitNum;
 
-    // Build where clause
+      // Validate user exists
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, status: true },
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      if (user.status !== 'ACTIVE') {
+        throw new BadRequestException('User is not active');
+      }
+
+      // Build where clause with enhanced filtering
     const where: any = {
       recipients: {
         some: {
           userId,
-          deletedAt: null, // Only show non-deleted notifications for this user
+          deletedAt: null, // Only include notifications with non-deleted recipients
         },
       },
     };
 
+      // Apply filters
     if (type) where.type = type;
     if (priority) where.priority = priority;
     if (caseType) where.caseType = caseType;
     if (patientId) where.patientId = patientId;
     if (caseId) where.caseId = caseId;
+      
     if (isRead !== undefined) {
       where.recipients = {
         some: {
           userId,
           isRead,
-          deletedAt: null, // Only show non-deleted notifications for this user
+          deletedAt: null, // Only include non-deleted recipients
         },
       };
     }
 
+      // Enhanced search functionality
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { message: { contains: search, mode: 'insensitive' } },
         { patientName: { contains: search, mode: 'insensitive' } },
+          // { tags: { has: search } }, // TODO: Enable when tags field is available
       ];
     }
 
+      // Date range filtering
     if (dateFrom || dateTo) {
       where.createdAt = {};
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) where.createdAt.lte = new Date(dateTo);
-    }
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom);
+          if (isNaN(fromDate.getTime())) {
+            throw new BadRequestException('Invalid dateFrom format');
+          }
+          where.createdAt.gte = fromDate;
+        }
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          if (isNaN(toDate.getTime())) {
+            throw new BadRequestException('Invalid dateTo format');
+          }
+          where.createdAt.lte = toDate;
+        }
+      }
 
+      // Execute queries in parallel for better performance
     const [notifications, total] = await Promise.all([
       this.prisma.notification.findMany({
         where,
@@ -163,7 +376,10 @@ export class NotificationsService {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+          orderBy: [
+            { priority: 'desc' }, // High priority first
+            { createdAt: 'desc' }, // Then by creation date
+          ],
         skip,
         take: limitNum,
       }),
@@ -172,15 +388,18 @@ export class NotificationsService {
 
     // Transform notifications to include user-specific read status
     const transformedNotifications = notifications.map(notification => {
-      const userRecipient = notification.recipients.find(r => r.userId === userId);
+        const userRecipient = notification.recipients.find((r: any) => r.userId === userId);
       return {
         ...notification,
         isRead: userRecipient?.isRead || false,
         readAt: userRecipient?.readAt || null,
+          deliveryStatus: userRecipient?.deliveryStatus || 'PENDING',
         recipients: undefined, // Remove recipients array to avoid confusion
       };
     });
 
+    this.logger.log(`Retrieved ${notifications.length} notifications, total: ${total}`);
+    
     return {
       notifications: transformedNotifications,
       pagination: {
@@ -188,8 +407,21 @@ export class NotificationsService {
         limit: limitNum,
         total,
         totalPages: Math.ceil(total / limitNum),
+          hasNext: pageNum < Math.ceil(total / limitNum),
+          hasPrev: pageNum > 1,
       },
     };
+    } catch (error) {
+      this.logger.error('=== Error in getNotifications service ===');
+      this.logger.error('Error:', error);
+      this.logger.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      throw error;
+      }
+      
+      throw new InternalServerErrorException('Failed to retrieve notifications');
+    }
   }
 
   /**
@@ -391,11 +623,15 @@ export class NotificationsService {
    * Get notification categories distribution
    */
   async getNotificationCategories(userId: string) {
+    try {
     const categories = await this.prisma.notification.groupBy({
       by: ['type'],
       where: {
         recipients: {
-          some: { userId },
+            some: { 
+              userId,
+              deletedAt: null, // Only count non-deleted recipients
+            },
         },
       },
       _count: {
@@ -405,7 +641,177 @@ export class NotificationsService {
 
     return categories.map(category => ({
       type: category.type,
-      count: category._count.id,
-    }));
+        count: category._count?.id || 0,
+      }));
+    } catch (error) {
+      this.logger.error('Failed to get notification categories:', error);
+      throw new InternalServerErrorException('Failed to retrieve notification categories');
+    }
+  }
+
+  /**
+   * Clean up expired notifications (scheduled job)
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async cleanupExpiredNotifications() {
+    try {
+      this.logger.log('Starting cleanup of expired notifications...');
+      
+      // TODO: Implement when expiresAt field is available
+      const expiredNotifications: any[] = [];
+      // const expiredNotifications = await this.prisma.notification.findMany({
+      //   where: {
+      //     expiresAt: {
+      //       lte: new Date(),
+      //     },
+      //     deletedAt: null,
+      //   },
+      //   select: { id: true },
+      // });
+
+      if (expiredNotifications.length > 0) {
+        // await this.prisma.notification.updateMany({
+        //   where: {
+        //     id: { in: expiredNotifications.map(n => n.id) },
+        //   },
+        //   data: {
+        //     deletedAt: new Date(),
+        //   },
+        // });
+
+        this.logger.log(`Cleaned up ${expiredNotifications.length} expired notifications`);
+      }
+    } catch (error) {
+      this.logger.error('Failed to cleanup expired notifications:', error);
+    }
+  }
+
+  /**
+   * Archive old notifications (scheduled job)
+   */
+  @Cron(CronExpression.EVERY_WEEK)
+  async archiveOldNotifications() {
+    try {
+      this.logger.log('Starting archive of old notifications...');
+      
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const oldNotifications = await this.prisma.notification.findMany({
+        where: {
+          createdAt: {
+            lte: thirtyDaysAgo,
+          },
+          status: 'READ',
+        },
+        select: { id: true },
+      });
+
+      if (oldNotifications.length > 0) {
+        await this.prisma.notification.updateMany({
+          where: {
+            id: { in: oldNotifications.map(n => n.id) },
+          },
+          data: {
+            status: 'ARCHIVED',
+          },
+        });
+
+        this.logger.log(`Archived ${oldNotifications.length} old notifications`);
+      }
+    } catch (error) {
+      this.logger.error('Failed to archive old notifications:', error);
+    }
+  }
+
+  /**
+   * Retry failed deliveries (scheduled job)
+   */
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async retryFailedDeliveries() {
+    try {
+      this.logger.log('Starting retry of failed deliveries...');
+      
+      // TODO: Implement when new fields are available
+      const failedRecipients: any[] = [];
+      // const failedRecipients = await this.prisma.notificationRecipient.findMany({
+      //   where: {
+      //     deliveryStatus: 'FAILED',
+      //     deliveryAttempts: { lt: 3 }, // Max 3 attempts
+      //     nextRetryAt: { lte: new Date() },
+      //     deletedAt: null,
+      //   },
+      //   include: {
+      //     notification: true,
+      //     user: {
+      //       select: {
+      //         id: true,
+      //         email: true,
+      //         phoneNumber: true,
+      //         notificationPreferences: true,
+      //       },
+      //     },
+      //   },
+      // });
+
+      for (const recipient of failedRecipients) {
+        try {
+          await this.deliverToRecipient(recipient.notification, recipient);
+          
+          // TODO: Update next retry time when fields are available
+          // const nextRetryMinutes = Math.pow(2, recipient.deliveryAttempts) * 5; // 5, 10, 20 minutes
+          // const nextRetryAt = new Date();
+          // nextRetryAt.setMinutes(nextRetryAt.getMinutes() + nextRetryMinutes);
+
+          // await this.prisma.notificationRecipient.update({
+          //   where: { id: recipient.id },
+          //   data: { nextRetryAt },
+          // });
+        } catch (error) {
+          this.logger.error(`Failed to retry delivery for recipient ${recipient.id}:`, error);
+        }
+      }
+
+      if (failedRecipients.length > 0) {
+        this.logger.log(`Retried ${failedRecipients.length} failed deliveries`);
+      }
+    } catch (error) {
+      this.logger.error('Failed to retry failed deliveries:', error);
+    }
+  }
+
+  /**
+   * Get user notification preferences
+   */
+  async getUserNotificationPreferences(userId: string) {
+    try {
+      // TODO: Implement when userNotificationPreferences table is available
+      return {
+        userId,
+        emailNotifications: true,
+        smsNotifications: false,
+        pushNotifications: true,
+        inAppNotifications: true,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get user notification preferences:', error);
+      throw new InternalServerErrorException('Failed to retrieve notification preferences');
+    }
+  }
+
+  /**
+   * Update user notification preferences
+   */
+  async updateUserNotificationPreferences(userId: string, preferences: any) {
+    try {
+      // TODO: Implement when userNotificationPreferences table is available
+      return {
+        userId,
+        ...preferences,
+      };
+    } catch (error) {
+      this.logger.error('Failed to update user notification preferences:', error);
+      throw new InternalServerErrorException('Failed to update notification preferences');
+    }
   }
 }

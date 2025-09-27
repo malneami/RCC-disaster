@@ -16,7 +16,8 @@ import {
   faSms,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { notificationService, NotificationSummary } from '../../../services/notificationService';
+import SkeletonLoader from '../../../components/Common/SkeletonLoader';
+import { notificationService, NotificationSummary, ApiError } from '../../../services/notificationService';
 
 interface SummaryCardProps {
   title: string;
@@ -140,13 +141,13 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
 
   if (loading) {
     return (
-      <Card sx={{ mt: 2 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
+      <Grid container spacing={{ xs: 2, sm: 2, md: 3 }}>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Grid item xs={6} sm={3} md={3} key={index}>
+            <SkeletonLoader variant="summary" />
+          </Grid>
+        ))}
+      </Grid>
     );
   }
 

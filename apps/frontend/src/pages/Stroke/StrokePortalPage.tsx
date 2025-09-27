@@ -222,6 +222,12 @@ const StrokePortalPage: React.FC = () => {
     }
   };
 
+  const handleAddCaseNote = (case_: StrokeCase) => {
+    // TODO: Implement case note creation dialog
+    console.log('Add case note for:', case_);
+    // For now, just log the case - you can implement a dialog later
+  };
+
   const handleExportToExcel = async () => {
     try {
       setExportLoading(true);
@@ -354,6 +360,7 @@ const StrokePortalPage: React.FC = () => {
               onUpdateCase={handleUpdateCase}
               onCreateCase={() => setCreateDialogOpen(true)}
               onDeleteCase={handleDeleteCase}
+              onAddCaseNote={handleAddCaseNote}
               isAdmin={isAdmin}
               onViewModeChange={setViewMode}
             />
