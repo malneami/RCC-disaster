@@ -142,7 +142,7 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
     return (
       <Grid container spacing={{ xs: 2, sm: 2, md: 3 }}>
         {Array.from({ length: 4 }).map((_, index) => (
-          <Grid item xs={6} sm={3} md={3} key={index}>
+          <Grid item xs={12} sm={6} md={3} key={index}>
             <SkeletonLoader variant="summary" />
           </Grid>
         ))}
@@ -166,7 +166,7 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
 
   return (
     <Grid container spacing={{ xs: 2, sm: 2, md: 3 }}>
-      <Grid item xs={6} sm={3} md={3}>
+      <Grid item xs={12} sm={6} md={3}>
         <SummaryCard
           title="Unread"
           value={summary.unreadNotifications}
@@ -175,7 +175,7 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
           color="primary"
         />
       </Grid>
-      <Grid item xs={6} sm={3} md={3}>
+      <Grid item xs={12} sm={6} md={3}>
         <SummaryCard
           title="High Priority"
           value={summary.highPriorityUnreadNotifications}
@@ -184,7 +184,7 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
           color="error"
         />
       </Grid>
-      <Grid item xs={6} sm={3} md={3}>
+      <Grid item xs={12} sm={6} md={3}>
         <SummaryCard
           title="Email"
           value={summary.emailNotifications}
@@ -193,7 +193,7 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
           color="info"
         />
       </Grid>
-      <Grid item xs={6} sm={3} md={3}>
+      <Grid item xs={12} sm={6} md={3}>
         <SummaryCard
           title="SMS"
           value={summary.smsNotifications}

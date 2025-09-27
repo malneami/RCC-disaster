@@ -29,9 +29,15 @@ export const useWebSocket = (namespace?: string): UseWebSocketReturn => {
         userId: user.id,
         role: user.role,
       },
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       upgrade: true,
       rememberUpgrade: true,
+      timeout: 20000,
+      forceNew: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      maxReconnectionAttempts: 5,
     });
 
     socketRef.current = newSocket;
@@ -50,13 +56,28 @@ export const useWebSocket = (namespace?: string): UseWebSocketReturn => {
 
     newSocket.on('connect_error', (error) => {
       console.error('WebSocket connection error:', error);
-      setConnectionError(error.message);
+      setConnectionError(error.message || 'Connection failed');
       setIsConnected(false);
     });
 
     newSocket.on('error', (error) => {
       console.error('WebSocket error:', error);
-      setConnectionError(error.message);
+      setConnectionError(error.message || 'WebSocket error occurred');
+    });
+
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log('WebSocket reconnected after', attemptNumber, 'attempts');
+      setConnectionError(null);
+    });
+
+    newSocket.on('reconnect_error', (error) => {
+      console.error('WebSocket reconnection error:', error);
+      setConnectionError(`Reconnection failed: ${error.message}`);
+    });
+
+    newSocket.on('reconnect_failed', () => {
+      console.error('WebSocket reconnection failed');
+      setConnectionError('Unable to reconnect to server');
     });
 
     // EMS-specific event handlers

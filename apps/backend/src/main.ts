@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import * as compression from 'compression';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -30,6 +31,9 @@ async function bootstrap() {
   }));
 
   app.use(compression());
+
+  // WebSocket adapter
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // CORS configuration
   app.enableCors({
@@ -93,7 +97,7 @@ async function bootstrap() {
 
   logger.log(`🚀 RCC Healthcare Platform Backend running on ${host}:${port}`);
   logger.log(`🏥 Health check available at ${host}:${port}/api/v1/health`);
-  logger.log(`🔌 WebSocket server available at ${host}:${port}/hospitals`);
+  logger.log(`🔌 WebSocket server available at ${host}:${port}/socket.io/`);
 }
 
 bootstrap();

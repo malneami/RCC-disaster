@@ -33,7 +33,8 @@ interface Notification {
 const EMSNotifications: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [expanded, setExpanded] = useState(true);
-  const { socket, isConnected } = useWebSocket();
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected');
+  const { socket, isConnected, connectionError } = useWebSocket('notifications');
 
   // Sample notifications - in real implementation, these would come from the API
   useEffect(() => {
@@ -86,30 +87,64 @@ const EMSNotifications: React.FC = () => {
   // WebSocket connection for real-time notifications
   useEffect(() => {
     if (socket && isConnected) {
-      socket.on('ems-notification', (notification: any) => {
-        setNotifications(prev => [notification, ...prev]);
+      setConnectionStatus('connected');
+      
+      socket.on('case-note-created', (data: any) => {
+        try {
+          const notification: Notification = {
+            id: data.caseNote.id,
+            type: 'INFO',
+            title: `Case Note Added - ${data.caseNote.patientName}`,
+            message: data.caseNote.content.substring(0, 100) + (data.caseNote.content.length > 100 ? '...' : ''),
+            timestamp: new Date(data.caseNote.createdAt),
+            priority: data.caseNote.priority || 'MEDIUM',
+            acknowledged: false,
+          };
+          setNotifications(prev => [notification, ...prev]);
+        } catch (error) {
+          console.error('Error processing case note notification:', error);
+        }
       });
 
-      socket.on('ambulance-alert', (alert: any) => {
-        const notification: Notification = {
-          id: `alert-${Date.now()}`,
-          type: 'ALERT',
-          title: alert.title,
-          message: alert.message,
-          timestamp: new Date(),
-          ambulanceId: alert.ambulanceId,
-          priority: alert.priority || 'MEDIUM',
-          acknowledged: false,
-        };
-        setNotifications(prev => [notification, ...prev]);
+      socket.on('notification-created', (data: any) => {
+        try {
+          const notification: Notification = {
+            id: data.notification.id,
+            type: 'INFO',
+            title: data.notification.title,
+            message: data.notification.message,
+            timestamp: new Date(data.notification.createdAt),
+            priority: data.notification.priority || 'MEDIUM',
+            acknowledged: false,
+          };
+          setNotifications(prev => [notification, ...prev]);
+        } catch (error) {
+          console.error('Error processing notification:', error);
+        }
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('WebSocket connection error:', error);
+        setConnectionStatus('error');
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.warn('WebSocket disconnected:', reason);
+        setConnectionStatus('disconnected');
       });
 
       return () => {
-        socket.off('ems-notification');
-        socket.off('ambulance-alert');
+        socket.off('case-note-created');
+        socket.off('notification-created');
+        socket.off('connect_error');
+        socket.off('disconnect');
       };
+    } else if (connectionError) {
+      setConnectionStatus('error');
+    } else {
+      setConnectionStatus('disconnected');
     }
-  }, [socket, isConnected]);
+  }, [socket, isConnected, connectionError]);
 
   const handleAcknowledge = (id: string) => {
     setNotifications(prev =>
@@ -138,6 +173,26 @@ const EMSNotifications: React.FC = () => {
         actions={[]}
       />
 
+      {/* Connection Status */}
+      {connectionStatus === 'error' && (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          <AlertTitle>Connection Issue</AlertTitle>
+          <Typography variant="body2">
+            Unable to connect to real-time notifications. You may not receive live updates.
+            {connectionError && ` Error: ${connectionError}`}
+          </Typography>
+        </Alert>
+      )}
+
+      {connectionStatus === 'disconnected' && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <AlertTitle>Connecting...</AlertTitle>
+          <Typography variant="body2">
+            Establishing connection to real-time notifications...
+          </Typography>
+        </Alert>
+      )}
+
       {/* Critical Alerts */}
       {criticalAlerts.length > 0 && (
         <Alert severity="error" sx={{ mt: 2 }}>
@@ -151,7 +206,7 @@ const EMSNotifications: React.FC = () => {
       )}
 
       {/* Notifications Panel */}
-      <Card sx={{ mt: 2 }}>
+      <Card sx={{ mt: 3, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
         <NotificationHeader
           unreadCount={unreadCount}
           expanded={expanded}
@@ -159,7 +214,7 @@ const EMSNotifications: React.FC = () => {
         />
         
         <Collapse in={expanded}>
-          <CardContent sx={{ p: 0 }}>
+          <CardContent sx={{ p: 0, pt: 2 }}>
             {notifications.length === 0 ? (
               <EmptyState
                 icon={<FontAwesomeIcon icon={faBell} size="2x" />}
@@ -168,7 +223,7 @@ const EMSNotifications: React.FC = () => {
                 size="small"
               />
             ) : (
-              <List sx={{ p: 0 }}>
+              <List sx={{ p: 2 }}>
                 {notifications.map((notification) => (
                   <NotificationItem
                     key={notification.id}

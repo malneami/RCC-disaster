@@ -30,7 +30,7 @@ const RealTimeMap: React.FC = () => {
   const [map, setMap] = useState<any>(null);
   const [ambulanceLocations, setAmbulanceLocations] = useState<AmbulanceLocation[]>([]);
   const [selectedAmbulance, setSelectedAmbulance] = useState<AmbulanceLocation | null>(null);
-  const { socket, isConnected } = useWebSocket();
+  const { socket, isConnected } = useWebSocket('ems');
   const { ambulances } = useAmbulances();
 
   // Initialize map (placeholder - replace with actual map library)

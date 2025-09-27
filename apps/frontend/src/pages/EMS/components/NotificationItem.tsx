@@ -86,8 +86,15 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       sx={{
         borderLeft: `4px solid ${getIconColor(notification.type, notification.priority)}`,
         backgroundColor: notification.acknowledged ? '#f5f5f5' : 'white',
-        mb: 1,
-        borderRadius: 1,
+        mb: 2,
+        borderRadius: 2,
+        p: 2,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+          transform: 'translateY(-1px)',
+        },
       }}
     >
       <ListItemIcon>
@@ -98,14 +105,15 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       </ListItemIcon>
       <ListItemText
         primary={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#333' }}>
               {notification.title}
             </Typography>
             <Chip
               label={notification.priority}
               color={getPriorityColor(notification.priority) as any}
               size="small"
+              sx={{ fontWeight: 'medium' }}
             />
             {contextIcon && (
               <FontAwesomeIcon 
@@ -117,23 +125,29 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           </Box>
         }
         secondary={
-          <Box>
-            <Typography variant="body2" color="text.secondary">
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.5 }}>
               {notification.message}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
               {notification.timestamp.toLocaleString()}
             </Typography>
           </Box>
         }
       />
-      <Box sx={{ display: 'flex', gap: 1 }}>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
         {!notification.acknowledged && (
           <IconButton
             size="small"
             onClick={() => onAcknowledge(notification.id)}
             color="primary"
             title="Acknowledge"
+            sx={{ 
+              '&:hover': { 
+                backgroundColor: 'primary.light',
+                color: 'white'
+              }
+            }}
           >
             <FontAwesomeIcon icon={faCheckCircle} />
           </IconButton>
@@ -143,6 +157,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           onClick={() => onDismiss(notification.id)}
           color="error"
           title="Dismiss"
+          sx={{ 
+            '&:hover': { 
+              backgroundColor: 'error.light',
+              color: 'white'
+            }
+          }}
         >
           <FontAwesomeIcon icon={faTimes} />
         </IconButton>

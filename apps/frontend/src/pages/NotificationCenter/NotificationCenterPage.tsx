@@ -45,7 +45,7 @@ const NotificationCenterPage: React.FC = () => {
   const [lastConnected, setLastConnected] = useState<Date | undefined>();
   
   // WebSocket connection
-  const { socket, isConnected } = useWebSocket();
+  const { socket, isConnected } = useWebSocket('notifications');
 
   // Load initial data
   useEffect(() => {

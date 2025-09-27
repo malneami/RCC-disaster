@@ -29,20 +29,21 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        p: 2,
-        borderBottom: '1px solid #eee',
+        p: 3,
+        borderBottom: '1px solid #e0e0e0',
         backgroundColor: '#f8f9fa',
+        borderRadius: '8px 8px 0 0',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Badge badgeContent={unreadCount} color="error">
           <FontAwesomeIcon icon={faBell} size="lg" color="#1976d2" />
         </Badge>
-        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
           EMS Notifications
         </Typography>
         {unreadCount > 0 && (
-          <Typography variant="body2" color="error">
+          <Typography variant="body2" color="error" sx={{ fontWeight: 'medium' }}>
             ({unreadCount} unread)
           </Typography>
         )}

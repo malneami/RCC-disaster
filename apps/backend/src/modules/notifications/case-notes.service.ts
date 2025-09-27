@@ -1,13 +1,18 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateCaseNoteDto } from './dto/create-notification.dto';
 import { NotificationPriority, CaseType, DeliveryStatus, DeliveryMethod, NotificationType } from '@prisma/client';
+import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
 export class CaseNotesService {
   private readonly logger = new Logger(CaseNotesService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => NotificationsGateway))
+    private notificationsGateway: NotificationsGateway,
+  ) {}
 
   /**
    * Create a new case note with recipients
@@ -129,6 +134,15 @@ export class CaseNotesService {
       }
 
       this.logger.log(`Created case note ${caseNote.id} for ${recipientUserIds?.length || 0} recipients`);
+      
+      // Emit WebSocket event for real-time updates
+      try {
+        this.notificationsGateway.emitCaseNoteCreated(caseNote);
+      } catch (websocketError) {
+        this.logger.error(`Failed to emit WebSocket event: ${websocketError instanceof Error ? websocketError.message : String(websocketError)}`);
+        // Continue with case note creation even if WebSocket emission fails
+      }
+      
       return caseNote;
     } catch (error) {
       this.logger.error(`Failed to create case note: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
@@ -183,6 +197,15 @@ export class CaseNotesService {
       });
 
       this.logger.log(`Created notification ${notification.id} from case note ${caseNote.id} for ${recipientUserIds.length} recipients`);
+      
+      // Emit WebSocket event for the notification
+      try {
+        this.notificationsGateway.emitNotificationCreated(notification);
+      } catch (websocketError) {
+        this.logger.error(`Failed to emit notification WebSocket event: ${websocketError instanceof Error ? websocketError.message : String(websocketError)}`);
+        // Continue even if WebSocket emission fails
+      }
+      
       return notification;
     } catch (error) {
       this.logger.error(`Failed to create notification from case note: ${error instanceof Error ? error.message : String(error)}`);
@@ -340,6 +363,15 @@ export class CaseNotesService {
     });
 
     this.logger.log(`Updated case note ${id} by user ${userId}`);
+    
+    // Emit WebSocket event for real-time updates
+    try {
+      this.notificationsGateway.emitCaseNoteUpdated(updatedCaseNote);
+    } catch (websocketError) {
+      this.logger.error(`Failed to emit WebSocket update event: ${websocketError instanceof Error ? websocketError.message : String(websocketError)}`);
+      // Continue even if WebSocket emission fails
+    }
+    
     return updatedCaseNote;
   }
 
@@ -363,6 +395,15 @@ export class CaseNotesService {
     });
 
     this.logger.log(`Deleted case note ${id} by user ${userId}`);
+    
+    // Emit WebSocket event for real-time updates
+    try {
+      this.notificationsGateway.emitCaseNoteDeleted(id, caseNote.caseType, caseNote.caseId);
+    } catch (websocketError) {
+      this.logger.error(`Failed to emit WebSocket deletion event: ${websocketError instanceof Error ? websocketError.message : String(websocketError)}`);
+      // Continue even if WebSocket emission fails
+    }
+    
     return { success: true };
   }
 
