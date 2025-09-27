@@ -44,6 +44,8 @@ import {
   ViewModule as CardsIcon,
   TableChart as TableIcon,
   MoreVert as MoreVertIcon,
+  NoteAdd as NoteAddIcon,
+  Comment as CommentIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
@@ -51,12 +53,15 @@ import { TraumaCase, TraumaService } from '../../../services/traumaService';
 import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
 import EditTraumaCaseDialog from './EditTraumaCaseDialog';
 import ViewTraumaCaseDialog from './ViewTraumaCaseDialog';
+import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
+import { notificationService } from '../../../services/notificationService';
 
 interface TraumaCasesListProps {
   cases: TraumaCase[];
   onCreateCase: () => void;
   onDeleteCase: (id: string) => Promise<void>;
   onUpdateCase: (id: string, data: any) => Promise<void>;
+  onAddCaseNote?: (case_: TraumaCase) => void;
   isAdmin: boolean;
   onViewModeChange?: (mode: 'table' | 'cards') => void;
 }
@@ -83,6 +88,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   onCreateCase,
   onDeleteCase,
   onUpdateCase,
+  onAddCaseNote,
   isAdmin,
   onViewModeChange,
 }) => {
@@ -101,6 +107,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedCaseForMenu, setSelectedCaseForMenu] = useState<TraumaCase | null>(null);
+  const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
 
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
@@ -322,6 +329,22 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
       handleDeleteClick(selectedCaseForMenu);
     }
     handleMenuClose();
+  };
+
+  const handleAddCaseNoteFromMenu = () => {
+    setShowCaseNoteModal(true);
+    setMenuAnchorEl(null); // Close menu but don't clear selectedCaseForMenu yet
+  };
+
+  const handleCaseNoteSubmit = async (data: any) => {
+    try {
+      await notificationService.createCaseNote(data);
+      setShowCaseNoteModal(false);
+      // Optionally refresh data or show success message
+    } catch (error) {
+      console.error('Failed to create case note:', error);
+      // Handle error - could show a toast notification
+    }
   };
 
   const getSeverityColor = (severity: string | undefined) => {
@@ -664,6 +687,12 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
           <Visibility fontSize="small" sx={{ mr: 1 }} />
           View Details
         </MenuItem>
+        {onAddCaseNote && (
+          <MenuItem onClick={handleAddCaseNoteFromMenu}>
+            <CommentIcon fontSize="small" sx={{ mr: 1 }} />
+            Add Case Note
+          </MenuItem>
+        )}
         <MenuItem onClick={handleEditCaseFromMenu}>
           <Edit fontSize="small" sx={{ mr: 1 }} />
           Edit Case
@@ -734,6 +763,21 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
         open={viewDialogOpen}
         onClose={() => setViewDialogOpen(false)}
         traumaCase={selectedCase}
+      />
+
+      {/* Case Note Modal */}
+      <CaseNoteModal
+        open={showCaseNoteModal}
+        onClose={() => {
+          setShowCaseNoteModal(false);
+          setSelectedCaseForMenu(null); // Clear selected case when modal closes
+        }}
+        onSubmit={handleCaseNoteSubmit}
+        patientName={selectedCaseForMenu ? `${selectedCaseForMenu.patient?.firstName || ''} ${selectedCaseForMenu.patient?.lastName || ''}`.trim() : ''}
+        caseType="TRAUMA"
+        caseId={selectedCaseForMenu?.id || ''}
+        patientId={selectedCaseForMenu?.patientId || ''}
+        ticketId={selectedCaseForMenu?.ticketId}
       />
     </Box>
   );

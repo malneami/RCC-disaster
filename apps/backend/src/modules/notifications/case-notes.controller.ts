@@ -37,7 +37,7 @@ export class CaseNotesController {
       console.log('Received DTO:', JSON.stringify(createCaseNoteDto, null, 2));
       
       // Use a test user ID
-      const testUserId = '4c932dce-0ed9-4ad7-88a9-77424803f682';
+      const testUserId = '927c6e65-7cfb-477c-8397-247e1b5504b1';
       console.log('Using test user ID:', testUserId);
       
       const result = await this.caseNotesService.createCaseNote(createCaseNoteDto, testUserId);
