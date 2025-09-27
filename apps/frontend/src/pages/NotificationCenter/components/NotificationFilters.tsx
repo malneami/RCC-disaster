@@ -14,7 +14,26 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faRedo, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { NotificationFilter } from '../../../services/notificationService';
-import { NotificationType, NotificationPriority, CaseType } from '@prisma/client';
+// Define enum values locally to avoid Prisma client dependency issues
+const NotificationType = {
+  CASE_COMMENT: 'CASE_COMMENT',
+  CASE_UPDATE: 'CASE_UPDATE',
+  CASE_ASSIGNMENT: 'CASE_ASSIGNMENT',
+  CASE_COMPLETION: 'CASE_COMPLETION',
+  CASE_ESCALATION: 'CASE_ESCALATION'
+} as const;
+
+const NotificationPriority = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH'
+} as const;
+
+const CaseType = {
+  STEMI: 'STEMI',
+  STROKE: 'STROKE',
+  TRAUMA: 'TRAUMA'
+} as const;
 
 // NotificationFiltersProps interface
 interface NotificationFiltersProps {
