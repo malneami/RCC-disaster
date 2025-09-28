@@ -14,6 +14,10 @@ export interface StemiOutcomeFormData {
   followUpAppointmentDate?: string;
   followUpAppointmentProvider?: string;
 
+  // Follow-up Call Phase
+  followUpCallCompleted?: boolean;
+  followUpCallDate?: string;
+
   // Outcome Form Management
   outcomeFormCompleted?: boolean;
   outcomeFormCompletionDate?: string;

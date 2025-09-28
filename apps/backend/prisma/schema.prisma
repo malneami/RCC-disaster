@@ -1353,6 +1353,7 @@ model StemiCase {
   metKpi4                         Boolean?    @map("met_kpi_4") // RCC Activation ≤15min
   metKpi5                         Boolean?    @map("met_kpi_5") // Door In Door Out ≤30min
   metKpi6                         Boolean?    @map("met_kpi_6") // Primary PCI Success ≥95%
+  metKpi11                        Boolean?    @map("met_kpi_11") // Follow-up call after 30 days discharge
   
   // Audit Fields
   createdAt                       DateTime    @default(now()) @map("created_at")

@@ -61,9 +61,19 @@ export class StemiCasesService {
       const patient = await this.stemiPatientService.createOrUpdatePatient(patientInfo, userId);
       console.log('Patient created successfully:', patient.id);
 
-      // Create ticket only if there's a destination hospital (transfer case)
+      // Create ticket only if there's a destination hospital (transfer case) and no existing ticketId provided
       let ticket = null;
-      if (patientInfo.destinationHospitalId) {
+      if (createStemiCaseDto.ticketId) {
+        console.log('Using existing ticket ID:', createStemiCaseDto.ticketId);
+        // Verify the ticket exists
+        ticket = await this.prisma.ticket.findUnique({
+          where: { id: createStemiCaseDto.ticketId }
+        });
+        if (!ticket) {
+          throw new BadRequestException(`Ticket with ID ${createStemiCaseDto.ticketId} not found`);
+        }
+        console.log('Linked to existing ticket:', ticket.id);
+      } else if (patientInfo.destinationHospitalId) {
         console.log('Creating transfer ticket for STEMI case with destination hospital:', patientInfo.destinationHospitalId);
         ticket = await this.prisma.ticket.create({
           data: {

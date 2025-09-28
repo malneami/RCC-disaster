@@ -30,18 +30,24 @@ const PieChartComponent: React.FC<PieChartComponentProps> = ({
   }));
 
   return (
-    <div style={{ width: '100%', height: '300px' }}>
-      <h3 style={{ textAlign: 'center', marginBottom: '16px', fontSize: '16px', fontWeight: 'bold' }}>
+    <div style={{ width: '100%', height: '350px', backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '16px' }}>
+      <h3 style={{ 
+        textAlign: 'center', 
+        marginBottom: '16px', 
+        fontSize: '16px', 
+        fontWeight: 'bold',
+        color: '#ffffff'
+      }}>
         {title}
       </h3>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={250}>
         <PieChart>
           <Pie
             data={chartData}
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+            label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(1)}%`}
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
@@ -50,8 +56,18 @@ const PieChartComponent: React.FC<PieChartComponentProps> = ({
               <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
           </Pie>
-          <Tooltip />
-          <Legend />
+          <Tooltip 
+            contentStyle={{
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444444',
+              borderRadius: '8px',
+              color: '#ffffff'
+            }}
+            labelStyle={{ color: '#ffffff' }}
+          />
+          <Legend 
+            wrapperStyle={{ color: '#ffffff' }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>

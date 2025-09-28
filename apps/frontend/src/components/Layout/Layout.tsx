@@ -22,6 +22,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
+import { useFullscreen } from '../../contexts/FullscreenContext';
 import Sidebar from './Sidebar';
 
 interface LayoutProps {
@@ -32,6 +33,7 @@ const drawerWidth = 280;
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
+  const { isFullscreen } = useFullscreen();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -54,7 +56,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <AppBar
+      {!isFullscreen && (
+        <AppBar
         position="fixed"
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
@@ -136,8 +139,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Box>
         </Toolbar>
       </AppBar>
+      )}
 
-      <Box
+      {!isFullscreen && (
+        <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
       >
@@ -172,14 +177,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Sidebar />
         </Drawer>
       </Box>
+      )}
 
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: { xs: 1, sm: 2, md: 3 },
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: '64px',
+          width: { sm: isFullscreen ? '100%' : `calc(100% - ${drawerWidth}px)` },
+          mt: isFullscreen ? '0px' : '64px',
         }}
       >
         {children}

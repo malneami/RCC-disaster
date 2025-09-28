@@ -35,6 +35,8 @@ interface StemiOutcomeFormData {
   dischargeMedications?: string;
   followUpAppointmentDate?: string;
   followUpAppointmentProvider?: string;
+  followUpCallCompleted?: boolean;
+  followUpCallDate?: string;
   outcomeFormCompleted?: boolean;
   outcomeFormCompletionDate?: string;
 }
@@ -76,6 +78,8 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
       dischargeMedications: '',
       followUpAppointmentDate: '',
       followUpAppointmentProvider: '',
+      followUpCallCompleted: false,
+      followUpCallDate: '',
       outcomeFormCompleted: false,
       outcomeFormCompletionDate: '',
     },
@@ -157,6 +161,8 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
         dischargeMedications: data.dischargeMedications || '',
         followUpAppointmentDate: formatDateForInput(data.followUpAppointmentDate),
         followUpAppointmentProvider: data.followUpAppointmentProvider || '',
+        followUpCallCompleted: data.followUpCallCompleted || false,
+        followUpCallDate: formatDateForInput(data.followUpCallDate),
         outcomeFormCompleted: data.outcomeFormCompleted || false,
         outcomeFormCompletionDate: data.outcomeFormCompletionDate || '',
       });
@@ -174,6 +180,8 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
           dischargeMedications: stemiCaseData.dischargeMedications || '',
           followUpAppointmentDate: formatDateForInput(stemiCaseData.followUpAppointmentDate),
           followUpAppointmentProvider: stemiCaseData.followUpAppointmentProvider || '',
+          followUpCallCompleted: stemiCaseData.followUpCallCompleted || false,
+          followUpCallDate: formatDateForInput(stemiCaseData.followUpCallDate),
           outcomeFormCompleted: stemiCaseData.outcomeFormCompleted || false,
           outcomeFormCompletionDate: stemiCaseData.outcomeFormCompletionDate || '',
         });
@@ -216,11 +224,17 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
       'dischargeStatus',
       'dischargeMedications',
       'followUpAppointmentProvider',
+      'followUpCallCompleted',
     ];
 
     // Add followUpAppointmentDate only if followUpAppointmentProvider is YES
     if (formData.followUpAppointmentProvider === 'YES') {
       outcomeFields.push('followUpAppointmentDate');
+    }
+
+    // Add followUpCallDate only if followUpCallCompleted is true
+    if (formData.followUpCallCompleted === true) {
+      outcomeFields.push('followUpCallDate');
     }
 
     const completedFields = outcomeFields.filter(field => {
@@ -246,6 +260,8 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
         pciProcedureStartTime: data.pciProcedureStartTime || undefined,
         pciProcedureCompleteTime: data.pciProcedureCompleteTime || undefined,
         followUpAppointmentDate: data.followUpAppointmentDate || undefined,
+        followUpCallDate: data.followUpCallDate || undefined,
+        followUpCallCompleted: data.followUpCallCompleted,
         // Only include text fields if they have values
         postPciComplications: data.postPciComplications || undefined,
         dischargeStatus: data.dischargeStatus || undefined,
@@ -485,6 +501,53 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
                   )}
                 />
               </Grid>
+
+              {/* Follow-up Call Section */}
+              <Grid item xs={12}>
+                <Typography variant="h6" sx={{ mt: 2, mb: 1, color: '#1976d2' }}>
+                  Follow-up Call (KPI #11)
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="followUpCallCompleted"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth>
+                      <InputLabel>Follow-up Call Completed</InputLabel>
+                      <Select 
+                        {...field} 
+                        label="Follow-up Call Completed"
+                        value={field.value ? 'true' : 'false'}
+                        onChange={(e) => field.onChange(e.target.value === 'true')}
+                      >
+                        <MenuItem value="true">Yes</MenuItem>
+                        <MenuItem value="false">No</MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+              </Grid>
+
+              {watch('followUpCallCompleted') === true && (
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="followUpCallDate"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Follow-up Call Date"
+                        type="datetime-local"
+                        InputLabelProps={{ shrink: true }}
+                        helperText="Date and time when follow-up call was made (should be 30+ days after discharge)"
+                      />
+                    )}
+                  />
+                </Grid>
+              )}
 
               {/* Completion Status */}
               <Grid item xs={12}>

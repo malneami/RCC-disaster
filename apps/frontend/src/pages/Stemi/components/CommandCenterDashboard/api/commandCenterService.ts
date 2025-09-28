@@ -30,6 +30,28 @@ export interface CommandCenterApiResponse {
       mortality: any;
     };
   }>;
+  hospitalPerformanceHeatmap: Array<{
+    hospitalId: string;
+    hospitalName: string;
+    totalCases: number;
+    doorToEcgCompliance: number;
+    doorToEcgValid: number;
+    doorToEcgCompliant: number;
+    doorToNeedleCompliance: number;
+    doorToNeedleValid: number;
+    doorToNeedleCompliant: number;
+    doorToBalloonCompliance: number;
+    doorToBalloonValid: number;
+    doorToBalloonCompliant: number;
+    activationDoorOutCompliance: number;
+    activationDoorOutValid: number;
+    activationDoorOutCompliant: number;
+    doorInDoorOutCompliance: number;
+    doorInDoorOutValid: number;
+    doorInDoorOutCompliant: number;
+    dataQualityScore: number;
+    dataCompletenessScore: number;
+  }>;
   charts: {
     referralSource: {
       labels: string[];

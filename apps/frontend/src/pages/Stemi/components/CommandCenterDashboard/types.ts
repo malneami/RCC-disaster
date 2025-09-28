@@ -39,6 +39,29 @@ export interface ChartData {
   }[];
 }
 
+export interface HospitalPerformanceHeatmap {
+  hospitalId: string;
+  hospitalName: string;
+  totalCases: number;
+  doorToEcgCompliance: number;
+  doorToEcgValid: number;
+  doorToEcgCompliant: number;
+  doorToNeedleCompliance: number;
+  doorToNeedleValid: number;
+  doorToNeedleCompliant: number;
+  doorToBalloonCompliance: number;
+  doorToBalloonValid: number;
+  doorToBalloonCompliant: number;
+  activationDoorOutCompliance: number;
+  activationDoorOutValid: number;
+  activationDoorOutCompliant: number;
+  doorInDoorOutCompliance: number;
+  doorInDoorOutValid: number;
+  doorInDoorOutCompliant: number;
+  dataQualityScore: number;
+  dataCompletenessScore: number;
+}
+
 export interface CommandCenterData {
   summary: {
     totalCases: number;
@@ -48,6 +71,7 @@ export interface CommandCenterData {
   };
   kpis: KPIMetric[];
   hospitals: HospitalPerformance[];
+  hospitalPerformanceHeatmap: HospitalPerformanceHeatmap[];
   charts: {
     referralSource: ChartData;
     pciBreakdown: ChartData;

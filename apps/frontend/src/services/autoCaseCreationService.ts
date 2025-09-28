@@ -161,6 +161,8 @@ class AutoCaseCreationService {
   ): Promise<AutoCaseCreationResult> {
     try {
       const stemiData: CreateStemiCaseData = {
+        ticketId: ticket.id, // Link to existing ticket to prevent duplicate creation
+        
         patientInfo: {
           firstName: patient.firstName,
           lastName: patient.lastName,

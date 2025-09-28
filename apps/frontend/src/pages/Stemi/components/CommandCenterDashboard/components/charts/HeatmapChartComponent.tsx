@@ -32,11 +32,17 @@ const HeatmapChartComponent: React.FC<HeatmapChartComponentProps> = ({
   };
 
   return (
-    <div style={{ width: '100%', height: '300px' }}>
-      <h3 style={{ textAlign: 'center', marginBottom: '16px', fontSize: '16px', fontWeight: 'bold' }}>
+    <div style={{ width: '100%', height: '350px', backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '16px' }}>
+      <h3 style={{ 
+        textAlign: 'center', 
+        marginBottom: '16px', 
+        fontSize: '16px', 
+        fontWeight: 'bold',
+        color: '#ffffff'
+      }}>
         {title}
       </h3>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={200}>
         <BarChart
           data={data}
           margin={{
@@ -46,11 +52,28 @@ const HeatmapChartComponent: React.FC<HeatmapChartComponentProps> = ({
             bottom: 5,
           }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
+          <CartesianGrid strokeDasharray="3 3" stroke="#444444" />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fill: '#ffffff' }}
+            axisLine={{ stroke: '#666666' }}
+          />
+          <YAxis 
+            tick={{ fill: '#ffffff' }}
+            axisLine={{ stroke: '#666666' }}
+          />
+          <Tooltip 
+            contentStyle={{
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444444',
+              borderRadius: '8px',
+              color: '#ffffff'
+            }}
+            labelStyle={{ color: '#ffffff' }}
+          />
+          <Legend 
+            wrapperStyle={{ color: '#ffffff' }}
+          />
           <Bar dataKey="value">
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={getColor(entry.value)} />
@@ -58,8 +81,13 @@ const HeatmapChartComponent: React.FC<HeatmapChartComponentProps> = ({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '12px', color: '#666' }}>
-        🟢 Good (≥{threshold}%) | 🟡 Warning (≥{threshold * 0.8}%) | 🔴 Poor (&lt;{threshold * 0.8}%)
+      <div style={{ 
+        textAlign: 'center', 
+        marginTop: '8px', 
+        fontSize: '12px', 
+        color: '#cccccc'
+      }}>
+        🟢 Good (≥{threshold.toFixed(1)}%) | 🟡 Warning (≥{(threshold * 0.8).toFixed(1)}%) | 🔴 Poor (&lt;{(threshold * 0.8).toFixed(1)}%)
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 
 import { useAuth } from './contexts/AuthContext';
+import { FullscreenProvider } from './contexts/FullscreenContext';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/Auth/LoginPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
@@ -35,9 +36,10 @@ function App() {
   }
 
   return (
-    <Layout>
-      <Box sx={{ flexGrow: 1, p: 3 }}>
-        <Routes>
+    <FullscreenProvider>
+      <Layout>
+        <Box sx={{ flexGrow: 1, p: 3 }}>
+          <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/tickets" element={<TicketsPage />} />
@@ -104,8 +106,9 @@ function App() {
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </Box>
-    </Layout>
+        </Box>
+      </Layout>
+    </FullscreenProvider>
   );
 }
 

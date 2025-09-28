@@ -35,6 +35,13 @@ export class StemiOutcomeFormService {
     // Prepare update data with proper date conversion
     const updateData: any = {
       ...outcomeFormDto,
+      // Exclude date fields that will be processed separately
+      cathLabActivationTime: undefined,
+      cathLabArrivalTime: undefined,
+      pciProcedureStartTime: undefined,
+      pciProcedureCompleteTime: undefined,
+      followUpAppointmentDate: undefined,
+      followUpCallDate: undefined,
       outcomeFormCompleted: outcomeFormDto.outcomeFormCompleted ?? true,
       outcomeFormCompletionDate: outcomeFormDto.outcomeFormCompletionDate 
         ? new Date(outcomeFormDto.outcomeFormCompletionDate)
@@ -58,6 +65,9 @@ export class StemiOutcomeFormService {
     }
     if (outcomeFormDto.followUpAppointmentDate && outcomeFormDto.followUpAppointmentDate.trim() !== '') {
       updateData.followUpAppointmentDate = new Date(outcomeFormDto.followUpAppointmentDate);
+    }
+    if (outcomeFormDto.followUpCallDate && outcomeFormDto.followUpCallDate.trim() !== '') {
+      updateData.followUpCallDate = new Date(outcomeFormDto.followUpCallDate);
     }
 
     // Update the STEMI case
@@ -149,9 +159,19 @@ export class StemiOutcomeFormService {
       'postPciComplications',
       'dischargeStatus',
       'dischargeMedications',
-      'followUpAppointmentDate',
       'followUpAppointmentProvider',
+      'followUpCallCompleted',
     ];
+
+    // Add followUpAppointmentDate only if followUpAppointmentProvider is YES
+    if (stemiCase.followUpAppointmentProvider === 'YES') {
+      outcomeFields.push('followUpAppointmentDate');
+    }
+
+    // Add followUpCallDate only if followUpCallCompleted is true
+    if (stemiCase.followUpCallCompleted === true) {
+      outcomeFields.push('followUpCallDate');
+    }
 
     const completedFields = outcomeFields.filter(field => {
       const value = stemiCase[field];

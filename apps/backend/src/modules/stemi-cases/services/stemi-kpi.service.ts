@@ -210,7 +210,7 @@ export class StemiKpiService {
         const emsContact = new Date(c.ticket.emsContactTime);
         const doorOut = new Date(c.doorOutTime);
         const diffMinutes = (doorOut.getTime() - emsContact.getTime()) / (1000 * 60);
-        return diffMinutes <= 15;
+        return diffMinutes > 0 && diffMinutes <= 15;
       }
 
       // Exclude direct cases from RCC Activation KPI
@@ -224,7 +224,7 @@ export class StemiKpiService {
       const triage = new Date(c.triageTime);
       const doorOut = new Date(c.doorOutTime);
       const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
-      return diffMinutes <= 30;
+      return diffMinutes > 0 && diffMinutes <= 30;
     }).length;
 
     // Primary PCI Success - cases where PCI was successful
@@ -357,7 +357,7 @@ export class StemiKpiService {
         name: 'Mortality Rate',
         target: '≤5%',
         totalAdmissions: totalCases,
-        deaths: mortalityCases,
+        deaths: deceasedCases,
         percentage: Math.round(mortalityRate * 10) / 10,
         status: mortalityRate <= 5 ? 'GREEN' : mortalityRate <= 10 ? 'YELLOW' : 'RED',
       },

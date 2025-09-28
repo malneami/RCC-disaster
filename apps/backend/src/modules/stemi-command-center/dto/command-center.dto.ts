@@ -136,6 +136,68 @@ export class RecentCaseDto {
   timestamp!: string;
 }
 
+export class HospitalPerformanceHeatmapDto {
+  @ApiProperty({ description: 'Hospital ID' })
+  hospitalId!: string;
+
+  @ApiProperty({ description: 'Hospital name' })
+  hospitalName!: string;
+
+  @ApiProperty({ description: 'Total STEMI cases' })
+  totalCases!: number;
+
+  @ApiProperty({ description: 'Door-to-ECG compliance percentage' })
+  doorToEcgCompliance!: number;
+
+  @ApiProperty({ description: 'Door-to-ECG valid cases count' })
+  doorToEcgValid!: number;
+
+  @ApiProperty({ description: 'Door-to-ECG compliant cases count' })
+  doorToEcgCompliant!: number;
+
+  @ApiProperty({ description: 'Door-to-Needle compliance percentage' })
+  doorToNeedleCompliance!: number;
+
+  @ApiProperty({ description: 'Door-to-Needle valid cases count' })
+  doorToNeedleValid!: number;
+
+  @ApiProperty({ description: 'Door-to-Needle compliant cases count' })
+  doorToNeedleCompliant!: number;
+
+  @ApiProperty({ description: 'Door-to-Balloon compliance percentage' })
+  doorToBalloonCompliance!: number;
+
+  @ApiProperty({ description: 'Door-to-Balloon valid cases count' })
+  doorToBalloonValid!: number;
+
+  @ApiProperty({ description: 'Door-to-Balloon compliant cases count' })
+  doorToBalloonCompliant!: number;
+
+  @ApiProperty({ description: 'Activation-to-Door-Out compliance percentage' })
+  activationDoorOutCompliance!: number;
+
+  @ApiProperty({ description: 'Activation-to-Door-Out valid cases count' })
+  activationDoorOutValid!: number;
+
+  @ApiProperty({ description: 'Activation-to-Door-Out compliant cases count' })
+  activationDoorOutCompliant!: number;
+
+  @ApiProperty({ description: 'Door-In-Door-Out compliance percentage' })
+  doorInDoorOutCompliance!: number;
+
+  @ApiProperty({ description: 'Door-In-Door-Out valid cases count' })
+  doorInDoorOutValid!: number;
+
+  @ApiProperty({ description: 'Door-In-Door-Out compliant cases count' })
+  doorInDoorOutCompliant!: number;
+
+  @ApiProperty({ description: 'Data quality score' })
+  dataQualityScore!: number;
+
+  @ApiProperty({ description: 'Data completeness score' })
+  dataCompletenessScore!: number;
+}
+
 export class CommandCenterDataDto {
   @ApiProperty({ description: 'Summary statistics' })
   summary!: CommandCenterSummaryDto;
@@ -145,6 +207,9 @@ export class CommandCenterDataDto {
 
   @ApiProperty({ description: 'Hospital performance data' })
   hospitals!: HospitalPerformanceDto[];
+
+  @ApiProperty({ description: 'Hospital performance heatmap data' })
+  hospitalPerformanceHeatmap!: HospitalPerformanceHeatmapDto[];
 
   @ApiProperty({ description: 'Chart data for visualizations' })
   charts!: {

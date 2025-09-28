@@ -31,19 +31,26 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
     return { color: 'error', icon: ErrorIcon, label: language === 'ar' ? 'يحتاج تحسين' : 'Needs Improvement' };
   };
 
-  const complianceMetrics = data.kpis.map(kpi => ({
-    name: kpi.name,
-    value: kpi.value,
-    target: kpi.target,
-    status: kpi.status,
-  }));
+  const complianceMetrics = data.kpis
+    .filter(kpi => kpi.id !== 'mortality') // Exclude mortality KPI
+    .map(kpi => ({
+      name: kpi.name,
+      value: kpi.value,
+      target: kpi.target,
+      status: kpi.status,
+    }));
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-        {language === 'ar' ? 'نظام إشارات المرور للامتثال' : 'Traffic Light Compliance System'}
-      </Typography>
-
+    <Paper 
+      elevation={2} 
+      sx={{ 
+        p: 3, 
+        mb: 3,
+        backgroundColor: '#1e1e1e',
+        color: '#ffffff',
+        border: '1px solid #333333'
+      }}
+    >
       <Grid container spacing={3}>
         {complianceMetrics.map((metric, index) => {
           const status = getComplianceStatus(metric.value);
@@ -59,7 +66,7 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
                     isMet ? '#4caf50' : metric.value >= metric.target * 0.8 ? '#ff9800' : '#f44336'
                   }`,
                   borderRadius: 2,
-                  backgroundColor: isMet ? '#e8f5e8' : metric.value >= metric.target * 0.8 ? '#fff3e0' : '#ffebee',
+                  backgroundColor: isMet ? '#2d4a2d' : metric.value >= metric.target * 0.8 ? '#4a3c2a' : '#4a2d2d',
                   textAlign: 'center',
                   transition: 'all 0.3s ease',
                   '&:hover': {
@@ -77,16 +84,16 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
                   />
                 </Box>
 
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: '#ffffff' }}>
                   {metric.name}
                 </Typography>
 
-                <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
-                  {metric.value}%
+                <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ color: '#64b5f6' }}>
+                  {Math.round(metric.value * 10) / 10}%
                 </Typography>
 
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {language === 'ar' ? 'الهدف' : 'Target'}: {metric.target}%
+                <Typography variant="body2" gutterBottom sx={{ color: '#b0b0b0' }}>
+                  {language === 'ar' ? 'الهدف' : 'Target'}: {Math.round(metric.target * 10) / 10}%
                 </Typography>
 
                 <LinearProgress
@@ -95,7 +102,7 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
                   sx={{
                     height: 8,
                     borderRadius: 4,
-                    backgroundColor: '#e0e0e0',
+                    backgroundColor: '#444444',
                     '& .MuiLinearProgress-bar': {
                       backgroundColor: isMet ? '#4caf50' : metric.value >= metric.target * 0.8 ? '#ff9800' : '#f44336',
                     },
@@ -105,9 +112,12 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
                 <Box mt={1}>
                   <Chip
                     label={status.label}
-                    color={status.color as any}
                     size="small"
-                    sx={{ fontWeight: 'bold' }}
+                    sx={{ 
+                      fontWeight: 'bold',
+                      backgroundColor: isMet ? '#2e7d32' : metric.value >= metric.target * 0.8 ? '#f57c00' : '#d32f2f',
+                      color: '#ffffff'
+                    }}
                   />
                 </Box>
               </Box>
@@ -116,11 +126,11 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
         })}
       </Grid>
 
-      <Box mt={3} p={2} sx={{ backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-        <Typography variant="body2" color="text.secondary" textAlign="center">
+      <Box mt={3} p={2} sx={{ backgroundColor: '#2a2a2a', borderRadius: 1, border: '1px solid #444444' }}>
+        <Typography variant="body2" textAlign="center" sx={{ color: '#b0b0b0' }}>
           {language === 'ar' 
-            ? '🟢 ممتاز (90%+) | 🟡 جيد (75-89%) | 🔴 يحتاج تحسين (<75%)'
-            : '🟢 Excellent (90%+) | 🟡 Good (75-89%) | 🔴 Needs Improvement (<75%)'
+            ? '🟢 ممتاز (90.0%+) | 🟡 جيد (75.0-89.9%) | 🔴 يحتاج تحسين (<75.0%)'
+            : '🟢 Excellent (90.0%+) | 🟡 Good (75.0-89.9%) | 🔴 Needs Improvement (<75.0%)'
           }
         </Typography>
       </Box>

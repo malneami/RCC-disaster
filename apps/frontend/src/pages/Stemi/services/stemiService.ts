@@ -211,6 +211,7 @@ export interface StemiCase {
 }
 
 export interface CreateStemiCaseData {
+  ticketId?: string; // If provided, link to existing ticket instead of creating new one
   patientInfo: PatientInfo;
   admissionTime: string;
   modeOfArrival: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';

@@ -39,6 +39,15 @@ export class StemiOutcomeFormDto {
   @IsString()
   followUpAppointmentProvider?: string;
 
+  // Follow-up Call Phase
+  @IsOptional()
+  @IsBoolean()
+  followUpCallCompleted?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  followUpCallDate?: string;
+
   // Outcome Form Management
   @IsOptional()
   @IsBoolean()
@@ -93,6 +102,15 @@ export class UpdateStemiOutcomeFormDto {
   @IsOptional()
   @IsString()
   followUpAppointmentProvider?: string;
+
+  // Follow-up Call Phase
+  @IsOptional()
+  @IsBoolean()
+  followUpCallCompleted?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  followUpCallDate?: string;
 
   // Outcome Form Management
   @IsOptional()

@@ -269,4 +269,8 @@ export class UpdateStemiCaseDto {
   @IsOptional()
   @IsString()
   additionalNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  ticketId?: string; // If provided, link to existing ticket instead of creating new one
 }
