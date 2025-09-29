@@ -15,6 +15,7 @@ import HospitalDashboardPage from './pages/Hospitals/HospitalDashboardPage';
 import StemiPortalPage from './pages/Stemi/StemiPortalPage';
 import CommandCenterPage from './pages/Stemi/CommandCenterPage';
 import StrokePortal from './pages/Portals/StrokePortal';
+import StrokeCommandCenterPage from './pages/Stroke/CommandCenterPage';
 import TraumaPortalPage from './pages/Trauma/TraumaPortalPage';
 import EMSPortal from './pages/EMS/EMSPortal';
 import EMSDashboardPage from './pages/EMSDashboard';
@@ -74,6 +75,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
                 <StrokePortal />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portals/stroke/command-center"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                <StrokeCommandCenterPage />
               </ProtectedRoute>
             }
           />

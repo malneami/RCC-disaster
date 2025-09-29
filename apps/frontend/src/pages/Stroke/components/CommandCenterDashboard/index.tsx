@@ -2,31 +2,34 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
+  Grid,
+  CircularProgress,
 } from '@mui/material';
 
 import { CommandCenterHeader } from '../../../../components/common/CommandCenterHeader';
 import LiveClock from './components/LiveClock';
-import FilterPanel from './components/FilterPanel';
-import KPIMetrics from './components/KPIMetrics';
-import VisualAnalytics from './components/VisualAnalytics';
-import TrafficLightSystem from './components/TrafficLightSystem';
-import HospitalPerformanceHeatmap from './components/HospitalPerformanceHeatmap';
-import ExportDialog from './components/ExportDialog';
-import { useCommandCenterData } from './hooks/useCommandCenterData';
+import StrokeKPICards from './components/StrokeKPICards';
+import StrokeDistributionCharts from './components/StrokeDistributionCharts';
+import TherapyPerformanceCharts from './components/TherapyPerformanceCharts';
+import AdmissionFollowupCharts from './components/AdmissionFollowupCharts';
+import StrokeTypeDistribution from './components/StrokeTypeDistribution';
+import PerformanceTrendChart from './components/PerformanceTrendChart';
+import StrokeTrafficLightSystem from './components/StrokeTrafficLightSystem';
+import HospitalPerformanceTable from './components/HospitalPerformanceTable';
+import { useStrokeCommandCenterData } from './hooks/useStrokeCommandCenterData';
 import { useFullscreen } from '../../../../contexts/FullscreenContext';
-import { CommandCenterFilters } from './types';
+import { StrokeCommandCenterFilters } from './types';
 
-const CommandCenterDashboard: React.FC = () => {
+const StrokeCommandCenterDashboard: React.FC = () => {
   const { isFullscreen, setIsFullscreen } = useFullscreen();
-  const [showExportDialog, setShowExportDialog] = useState(false);
   const [language] = useState<'en' | 'ar'>('en');
-  const [filters, setFilters] = useState<CommandCenterFilters>({
+  const [filters, setFilters] = useState<StrokeCommandCenterFilters>({
     hospitalId: 'all',
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
 
-  const { data, loading, error, refreshData } = useCommandCenterData(filters);
+  const { data, loading, error, refreshData } = useStrokeCommandCenterData(filters);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -56,16 +59,6 @@ const CommandCenterDashboard: React.FC = () => {
     };
   }, [setIsFullscreen]);
 
-
-  const handleFiltersChange = (newFilters: CommandCenterFilters) => {
-    setFilters(newFilters);
-  };
-
-
-  const handleDownloadPNG = async () => {
-    // This will be handled by the CommandCenterHeader component
-  };
-
   const handleRefresh = () => {
     refreshData();
   };
@@ -78,10 +71,17 @@ const CommandCenterDashboard: React.FC = () => {
     setFilters(prev => ({ ...prev, startDate, endDate }));
   };
 
+  const handleDownloadPNG = async () => {
+    // This will be handled by the CommandCenterHeader component
+  };
+
   if (loading && !data) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <Typography>Loading Command Center Dashboard...</Typography>
+        <CircularProgress sx={{ color: '#2196f3' }} />
+        <Typography sx={{ ml: 2, color: '#ffffff' }}>
+          Loading Stroke Command Center Dashboard...
+        </Typography>
       </Box>
     );
   }
@@ -104,8 +104,8 @@ const CommandCenterDashboard: React.FC = () => {
     }}>
       {/* Common Header */}
       <CommandCenterHeader
-        title="STEMI Command Center"
-        dashboardContentId="dashboard-content"
+        title="Stroke Command Center"
+        dashboardContentId="stroke-dashboard-content"
         onDownloadPNG={handleDownloadPNG}
         onRefresh={handleRefresh}
         filters={{
@@ -124,51 +124,72 @@ const CommandCenterDashboard: React.FC = () => {
       </Box>
 
       {/* Dashboard Content */}
-      <Box id="dashboard-content" sx={{ p: isFullscreen ? 2 : 0 }}>
-        {/* Filter Panel */}
-        <FilterPanel
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          language={language}
-        />
-        {/* KPI Metrics */}
-        <KPIMetrics
+      <Box id="stroke-dashboard-content" sx={{ p: isFullscreen ? 2 : 0 }}>
+        {/* KPI Cards */}
+        <StrokeKPICards
           data={data}
           language={language}
         />
 
-        {/* Traffic Light System */}
-        <TrafficLightSystem
-          data={data}
-          language={language}
-        />
-
-        {/* Visual Analytics */}
-        <VisualAnalytics
-          data={data}
-          language={language}
-        />
-
-        {/* Hospital Performance Heatmap */}
+        {/* Distribution Charts */}
         <Box mt={3}>
-          <HospitalPerformanceHeatmap
-            data={data?.hospitalPerformanceHeatmap}
-            loading={loading}
-            error={error || undefined}
+          <StrokeDistributionCharts
+            data={data}
             language={language}
           />
         </Box>
-      </Box>
 
-      {/* Export Dialog */}
-      <ExportDialog
-        open={showExportDialog}
-        onClose={() => setShowExportDialog(false)}
-        data={data}
-        language={language}
-      />
+        {/* Therapy Performance Charts */}
+        <Box mt={3}>
+          <TherapyPerformanceCharts
+            data={data}
+            language={language}
+          />
+        </Box>
+
+        {/* Admission & Follow-up Performance */}
+        <Box mt={3}>
+          <AdmissionFollowupCharts
+            data={data}
+            language={language}
+          />
+        </Box>
+
+        {/* Stroke Type Distribution & Performance Trend */}
+        <Box mt={3}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <StrokeTypeDistribution
+                data={data}
+                language={language}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <PerformanceTrendChart
+                data={data}
+                language={language}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Traffic Light System */}
+        <Box mt={3}>
+          <StrokeTrafficLightSystem
+            data={data}
+            language={language}
+          />
+        </Box>
+
+        {/* Hospital Performance Table */}
+        {data?.hospitalPerformance && (
+          <Box mt={3}>
+            <HospitalPerformanceTable data={data.hospitalPerformance} />
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 };
 
-export default CommandCenterDashboard;
+export default StrokeCommandCenterDashboard;

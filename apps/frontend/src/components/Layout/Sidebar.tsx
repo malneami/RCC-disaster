@@ -75,12 +75,6 @@ const Sidebar: React.FC = () => {
 
   const navigationItems = [
     {
-      text: 'Dashboard',
-      icon: <FontAwesomeIcon icon={faTachometerAlt} />,
-      path: '/dashboard',
-      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER'],
-    },
-    {
       text: 'Transfer Tickets',
       icon: <FontAwesomeIcon icon={faFileAlt} />,
       path: '/tickets',
@@ -99,16 +93,39 @@ const Sidebar: React.FC = () => {
       roles: ['ADMIN', 'RCC', 'EMS'],
     },
     {
+      text: 'Notification Center',
+      icon: <FontAwesomeIcon icon={faBell} />,
+      path: '/notifications',
+      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER'],
+    },
+  ];
+
+  const dashboardItems = [
+    {
+      text: 'Main Dashboard',
+      icon: <FontAwesomeIcon icon={faTachometerAlt} />,
+      path: '/dashboard',
+      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER'],
+    },
+    {
       text: 'EMS Dashboard',
       icon: <FontAwesomeIcon icon={faAmbulance} />,
       path: '/ems-dashboard',
       roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR'],
     },
     {
-      text: 'Notification Center',
-      icon: <FontAwesomeIcon icon={faBell} />,
-      path: '/notifications',
-      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER'],
+      text: 'STEMI Command Center',
+      icon: <FontAwesomeIcon icon={faChartLine} />,
+      path: '/portals/stemi/command-center',
+      roles: ['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR'],
+      color: 'error',
+    },
+    {
+      text: 'Stroke Command Center',
+      icon: <FontAwesomeIcon icon={faChartLine} />,
+      path: '/portals/stroke/command-center',
+      roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
+      color: 'warning',
     },
   ];
 
@@ -117,13 +134,6 @@ const Sidebar: React.FC = () => {
       text: 'STEMI Portal',
       icon: <FontAwesomeIcon icon={faHeart} />,
       path: '/portals/stemi',
-      roles: ['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR'],
-      color: 'error',
-    },
-    {
-      text: 'STEMI Command Center',
-      icon: <FontAwesomeIcon icon={faChartLine} />,
-      path: '/portals/stemi/command-center',
       roles: ['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR'],
       color: 'error',
     },
@@ -218,6 +228,45 @@ const Sidebar: React.FC = () => {
                   ) : (
                     item.icon
                   )}
+                </ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+      </List>
+
+      <Divider sx={{ my: 1 }} />
+      
+      <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
+        Dashboards
+      </Typography>
+      
+      <List>
+        {dashboardItems
+          .filter(item => hasRole(item.roles))
+          .map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                selected={location.pathname === item.path}
+                onClick={() => handleNavigation(item.path)}
+                sx={{
+                  mx: 1,
+                  borderRadius: 1,
+                  '&.Mui-selected': {
+                    bgcolor: item.color ? `${item.color}.light` : 'primary.light',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: item.color ? `${item.color}.main` : 'primary.main',
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    color: location.pathname === item.path ? 'inherit' : (item.color ? `${item.color}.main` : 'text.secondary'),
+                  }}
+                >
+                  {item.icon}
                 </ListItemIcon>
                 <ListItemText primary={item.text} />
               </ListItemButton>
