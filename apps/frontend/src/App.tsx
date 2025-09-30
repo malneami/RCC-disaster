@@ -5,6 +5,7 @@ import { useAuth } from './contexts/AuthContext';
 import { FullscreenProvider } from './contexts/FullscreenContext';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/Auth/LoginPage';
+import UserRegistrationPage from './pages/Auth/UserRegistrationPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import TicketsPage from './pages/Tickets/TicketsPage';
 import TicketViewPage from './pages/Tickets/TicketViewPage';
@@ -33,7 +34,12 @@ function App() {
   }
 
   if (!user) {
-    return <LoginPage />;
+    return (
+      <Routes>
+        <Route path="/register" element={<UserRegistrationPage />} />
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    );
   }
 
   return (

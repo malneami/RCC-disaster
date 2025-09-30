@@ -38,6 +38,20 @@ export class HospitalsService {
     });
   }
 
+  async getForRegistration() {
+    return this.prisma.hospital.findMany({
+      where: { 
+        deletedAt: null,
+        status: 'ACTIVE' // Only return active hospitals
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async findById(id: string) {
     const hospital = await this.prisma.hospital.findFirst({
       where: { id, deletedAt: null },

@@ -9,7 +9,9 @@ import {
   Alert,
   CircularProgress,
   Container,
+  Link,
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHospital } from '@fortawesome/free-solid-svg-icons';
 import { useForm } from 'react-hook-form';
@@ -140,6 +142,23 @@ const LoginPage: React.FC = () => {
                     'Sign In'
                   )}
                 </Button>
+
+                <Box sx={{ mt: 3, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Don't have an account?{' '}
+                    <Link 
+                      component={RouterLink} 
+                      to="/register"
+                      sx={{ 
+                        textDecoration: 'none',
+                        color: 'primary.main',
+                        '&:hover': { textDecoration: 'underline' }
+                      }}
+                    >
+                      Request Access
+                    </Link>
+                  </Typography>
+                </Box>
 
                 <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                   <Typography variant="caption" color="text.secondary">

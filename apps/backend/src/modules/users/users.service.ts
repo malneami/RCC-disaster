@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -175,4 +176,117 @@ export class UsersService {
       pages: Math.ceil(total / limit),
     };
   }
+
+  async resetUserPassword(userId: string, newPassword: string): Promise<{ user: any }> {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (user.status !== 'ACTIVE') {
+      throw new Error('Cannot reset password for inactive user');
+    }
+
+    // Hash the new password
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    // Update user password
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        loginAttempts: 0, // Reset login attempts
+        lockedUntil: null, // Unlock account if locked
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    return {
+      user: updatedUser,
+    };
+  }
+
+  async updateUser(userId: string, updateData: UpdateUserDto): Promise<{ user: any }> {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Validate hospital if provided
+    if (updateData.hospitalId) {
+      const hospital = await this.prisma.hospital.findUnique({
+        where: { id: updateData.hospitalId },
+      });
+
+      if (!hospital) {
+        throw new Error('Invalid hospital ID');
+      }
+    }
+
+    // Prepare update data
+    const updatePayload: any = {};
+    if (updateData.role) updatePayload.role = updateData.role;
+    if (updateData.hospitalId !== undefined) updatePayload.hospitalId = updateData.hospitalId;
+    if (updateData.firstName) updatePayload.firstName = updateData.firstName;
+    if (updateData.lastName) updatePayload.lastName = updateData.lastName;
+    if (updateData.phoneNumber !== undefined) updatePayload.phoneNumber = updateData.phoneNumber;
+
+    // Update user
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: updatePayload,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        phoneNumber: true,
+        hospitalId: true,
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      user: updatedUser,
+    };
+  }
+
 }

@@ -96,6 +96,9 @@ model Hospital {
   traumaOriginCases TraumaCase[]  @relation("TraumaOriginHospital")
   traumaDestinationCases TraumaCase[] @relation("TraumaDestinationHospital")
   
+  // User Registration Relations
+  userRegistrationRequests UserRegistrationRequest[]
+  
   @@map("hospitals")
   @@index([status])
   @@index([cluster])

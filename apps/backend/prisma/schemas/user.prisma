@@ -80,9 +80,46 @@ model User {
   caseNoteRecipients    CaseNoteRecipient[] @relation("CaseNoteRecipientUser")
   createdReplies        Reply[]          @relation("ReplyCreator")
   
+  // Registration Request Relations
+  reviewedRegistrationRequests UserRegistrationRequest[] @relation("RegistrationRequestReviewer")
+  
   @@map("users")
   @@index([email])
   @@index([role])
   @@index([status])
   @@index([hospitalId])
+}
+
+// User registration request model for pending approvals
+model UserRegistrationRequest {
+  id                String      @id @default(uuid())
+  email             String      @unique
+  firstName         String      @map("first_name")
+  lastName          String      @map("last_name")
+  phoneNumber       String?     @map("phone_number")
+  passwordHash      String      @map("password_hash")
+  requestedRole     UserRole    @map("requested_role")
+  hospitalId        String?     @map("hospital_id")
+  justification     String?     // Why they need access
+  status            RegistrationRequestStatus @default(PENDING)
+  
+  // Admin approval fields
+  reviewedBy        String?     @map("reviewed_by")
+  reviewedAt        DateTime?   @map("reviewed_at")
+  adminComments     String?     @map("admin_comments")
+  
+  // Audit Fields
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  hospital          Hospital?   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  reviewer          User?       @relation("RegistrationRequestReviewer", fields: [reviewedBy], references: [id])
+  
+  @@map("user_registration_requests")
+  @@index([email])
+  @@index([requestedRole])
+  @@index([status])
+  @@index([hospitalId])
+  @@index([reviewedBy])
 }

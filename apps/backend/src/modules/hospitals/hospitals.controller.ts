@@ -63,6 +63,14 @@ export class HospitalsController {
     });
   }
 
+  @Get('for-registration')
+  @Public()
+  @ApiOperation({ summary: 'Get hospitals for user registration (id and name only)' })
+  @ApiResponse({ status: 200, description: 'List of hospitals with basic info' })
+  async getForRegistration() {
+    return this.hospitalsService.getForRegistration();
+  }
+
   @Get('alerts')
   @ApiOperation({ summary: 'Get capacity alerts for all hospitals' })
   async getCapacityAlerts() {
