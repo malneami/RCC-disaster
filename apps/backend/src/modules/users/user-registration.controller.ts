@@ -86,3 +86,4 @@ export class UserRegistrationController {
     return this.userRegistrationService.getRegistrationRequestStats();
   }
 }
+

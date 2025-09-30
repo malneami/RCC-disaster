@@ -31,3 +31,4 @@ export class UpdateUserDto {
   @MaxLength(500, { message: 'Admin comments must not exceed 500 characters' })
   adminComments?: string;
 }
+
