@@ -385,11 +385,9 @@ const TransportInfoStep: React.FC<{
               onChange={(e) => handleInputChange('transportMode', e.target.value)}
             >
               <MenuItem value="">Select Transport Mode</MenuItem>
-              <MenuItem value="AMBULANCE">Ambulance</MenuItem>
-              <MenuItem value="HELICOPTER">Helicopter</MenuItem>
-              <MenuItem value="GROUND_TRANSPORT">Ground Transport</MenuItem>
-              <MenuItem value="AIR_AMBULANCE">Air Ambulance</MenuItem>
-              <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
+              <MenuItem value="AMBULANCE_RED_CRESCENT">Ambulance (Red Crescent)</MenuItem>
+              <MenuItem value="PRIVATE_CAR">Private Car</MenuItem>
+              <MenuItem value="TRANSFERRED_FROM_ANOTHER_HOSPITAL">Transferred from another hospital</MenuItem>
             </Select>
           </FormControl>
         </Grid>

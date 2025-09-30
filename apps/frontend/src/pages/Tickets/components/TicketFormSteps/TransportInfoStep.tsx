@@ -71,13 +71,9 @@ const TransportInfoStep: React.FC<TransportInfoStepProps> = ({
               <MenuItem value="">
                 <em>Select transport mode (optional)</em>
               </MenuItem>
-              <MenuItem value="AMBULANCE">Ambulance</MenuItem>
-              <MenuItem value="PRIVATE_VEHICLE">Private Vehicle</MenuItem>
-              <MenuItem value="AIR_TRANSPORT">Air Transport</MenuItem>
-              <MenuItem value="WALK_IN">Walk In</MenuItem>
-              <MenuItem value="POLICE">Police</MenuItem>
-              <MenuItem value="TRANSFERRED_FROM_HOSPITAL">Transferred from Hospital</MenuItem>
-              <MenuItem value="OTHER">Other</MenuItem>
+              <MenuItem value="AMBULANCE_RED_CRESCENT">Ambulance (Red Crescent)</MenuItem>
+              <MenuItem value="PRIVATE_CAR">Private Car</MenuItem>
+              <MenuItem value="TRANSFERRED_FROM_ANOTHER_HOSPITAL">Transferred from another hospital</MenuItem>
             </Select>
             <FormHelperText>
               Mode of transportation for the transfer
