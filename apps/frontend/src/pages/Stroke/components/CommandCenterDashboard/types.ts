@@ -115,6 +115,7 @@ export interface StrokeCommandCenterData {
     physicianPct: number;
     ctPct: number;
     ctReportPct: number;
+    needlePct: number;
     mtPct: number;
     swallowingPct: number;
     strokeUnitPct: number;

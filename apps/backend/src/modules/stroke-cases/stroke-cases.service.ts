@@ -731,14 +731,18 @@ export class StrokeCasesService {
 
     const avgDoorToPhysician = this.calculateAverage(cases.map(c => c.doorToPhysicianMinutes).filter(v => v !== null && v !== undefined));
     const avgRegistrationToCt = this.calculateAverage(cases.map(c => c.registrationToCtMinutes).filter(v => v !== null && v !== undefined));
-    const avgRegistrationToThrombolysis = this.calculateAverage(cases.map(c => c.registrationToThrombolysisMinutes).filter(v => v !== null && v !== undefined));
+    const avgRegistrationToThrombolysis = this.calculateAverage(
+      cases
+        .filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES')
+        .map(c => c.registrationToThrombolysisMinutes)
+        .filter(v => v !== null && v !== undefined)
+    );
     const avgSrcaCallToArrival = this.calculateAverage(cases.map(c => c.srcaCallToArrivalMinutes).filter(v => v !== null && v !== undefined));
     const avgTransferActivationToDeparture = this.calculateAverage(cases.map(c => c.transferActivationToDepartureMinutes).filter(v => v !== null && v !== undefined));
 
     // For outcomes, we'll calculate what we can with the new schema
     const successfulCases = cases.filter(c => c.strokeType === 'ISCHEMIC' && c.ivThrombolysisGiven === 'YES').length;
     const independentDischarge = cases.filter(c => c.modifiedRankinScaleAt90Days && (c.modifiedRankinScaleAt90Days === 'SCORE_0' || c.modifiedRankinScaleAt90Days === 'SCORE_1' || c.modifiedRankinScaleAt90Days === 'SCORE_2')).length;
-
     return {
       totalCases,
       strokeTypeBreakdown: {
@@ -749,7 +753,12 @@ export class StrokeCasesService {
       kpiPerformance: {
         kpi1: { met: kpi1Met, total: totalCases, percentage: totalCases > 0 ? (kpi1Met / totalCases) * 100 : 0 },
         kpi2: { met: kpi2Met, total: totalCases, percentage: totalCases > 0 ? (kpi2Met / totalCases) * 100 : 0 },
-        kpi3: { met: kpi3Met, total: totalCases, percentage: totalCases > 0 ? (kpi3Met / totalCases) * 100 : 0 },
+        kpi3: { 
+          met: kpi3Met, 
+          total: cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length, 
+          percentage: cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length > 0 ? 
+            (kpi3Met / cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length) * 100 : 0 
+        },
         kpi4: { met: kpi4Met, total: totalCases, percentage: totalCases > 0 ? (kpi4Met / totalCases) * 100 : 0 },
         kpi5: { met: kpi5Met, total: totalCases, percentage: totalCases > 0 ? (kpi5Met / totalCases) * 100 : 0 },
         kpi6: { met: kpi6Met, total: totalCases, percentage: totalCases > 0 ? (kpi6Met / totalCases) * 100 : 0 },
@@ -1003,6 +1012,7 @@ export class StrokeCasesService {
       select: {
         id: true,
         strokeType: true,
+        candidateForIVThrombolysis: true,
         metKpi1: true,
         metKpi2: true,
         metKpi3: true,
@@ -1015,6 +1025,7 @@ export class StrokeCasesService {
         metKpi10: true,
         metKpi11: true,
         doorToPhysicianMinutes: true,
+        registrationToCtMinutes: true,
         registrationToThrombolysisMinutes: true,
         srcaCallToArrivalMinutes: true,
         transferActivationToDepartureMinutes: true,

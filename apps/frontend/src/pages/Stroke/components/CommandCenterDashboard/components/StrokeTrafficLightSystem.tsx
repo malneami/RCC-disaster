@@ -16,8 +16,6 @@ import {
   Assignment as AssignmentIcon,
   Medication as MedicationIcon,
   Settings as SettingsIcon,
-  LocalHospital as HospitalIcon,
-  Psychology,
 } from '@mui/icons-material';
 import { StrokeCommandCenterData } from '../types';
 
@@ -44,9 +42,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
       doorToCT: <ScannerIcon />,
       doorToNeedle: <MedicationIcon />,
       doorToMechanicalThrombectomy: <SettingsIcon />,
-      strokeUnitAdmission: <HospitalIcon />,
       doorToCTReport: <AssignmentIcon />,
-      swallowingScreening: <Psychology sx={{ fontSize: 24 }} />,
     };
 
     const nameMap: { [key: string]: { en: string; ar: string } } = {
@@ -54,9 +50,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
       doorToCT: { en: 'Door to CT Scan', ar: 'من الباب إلى الأشعة المقطعية' },
       doorToNeedle: { en: 'Door to Needle', ar: 'من الباب إلى الإبرة' },
       doorToMechanicalThrombectomy: { en: 'Door to Mechanical Thrombectomy', ar: 'من الباب إلى استئصال الخثرة الميكانيكي' },
-      strokeUnitAdmission: { en: 'Stroke Unit Admission', ar: 'قبول وحدة السكتة الدماغية' },
       doorToCTReport: { en: 'Door to CT Report', ar: 'من الباب إلى تقرير الأشعة' },
-      swallowingScreening: { en: 'Swallowing Screening', ar: 'فحص البلع' },
     };
 
       const targetMap: { [key: string]: string } = {
@@ -64,9 +58,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
         doorToCT: '≤25min', 
         doorToNeedle: '≤60min',
         doorToMechanicalThrombectomy: '≤120min',
-        strokeUnitAdmission: '≥80%',
         doorToCTReport: '≤45min',
-        swallowingScreening: '≥85%',
       };
 
       return {
@@ -103,8 +95,12 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
 
           const status = getComplianceStatus(performancePercentage);
 
+          // Last 2 KPIs take full width, others take 1/3 width
+          const isLastTwo = index >= strokeKPIs.length - 2;
+          const gridSize = isLastTwo ? { xs: 12, sm: 12, md: 6 } : { xs: 12, sm: 6, md: 4 };
+
           return (
-            <Grid item xs={12} sm={6} md={4} key={index}>
+            <Grid item {...gridSize} key={index}>
               <Box
                 sx={{
                   p: 3,
@@ -192,7 +188,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
         <Typography variant="body2" textAlign="center" sx={{ color: '#b0b0b0' }}>
           {language === 'ar' 
             ? '🟢 ممتاز (90.0%+) | 🟡 جيد (75.0-89.9%) | 🔴 يحتاج تحسين (<75.0%)'
-            : '🟢 Excellent (90.0%+) | 🟡 Good (75.0-89.9%) | 🔴 Needs Improvement (<75.0%)'
+            : '🟢 Excellent (90.0%+) | 🟡 Needs Improvement (75.0-89.9%) | 🔴 Not Good (<75.0%)'
           }
         </Typography>
       </Box>

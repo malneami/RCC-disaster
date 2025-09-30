@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StrokeCommandCenterFilters, StrokeCommandCenterData } from '../types';
-import { hospitalService } from '../../../../../services/hospitalService';
+import { hospitalService, Hospital } from '../../../../../services/hospitalService';
 import { commandCenterService } from '../api/commandCenterService';
 
 export const useStrokeCommandCenterData = (filters: StrokeCommandCenterFilters) => {
   const [data, setData] = useState<StrokeCommandCenterData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [hospitalsLoaded, setHospitalsLoaded] = useState(false);
 
   const fetchHospitals = useCallback(async () => {
@@ -15,6 +16,7 @@ export const useStrokeCommandCenterData = (filters: StrokeCommandCenterFilters) 
     try {
       const hospitalsData = await hospitalService.getAllHospitals();
       console.log('[Stroke Dashboard] Hospitals fetched:', hospitalsData.length);
+      setHospitals(hospitalsData);
       setHospitalsLoaded(true);
     } catch (err) {
       console.error('Failed to fetch hospitals:', err);
@@ -57,5 +59,6 @@ export const useStrokeCommandCenterData = (filters: StrokeCommandCenterFilters) 
     loading,
     error,
     refreshData,
+    hospitals,
   };
 };

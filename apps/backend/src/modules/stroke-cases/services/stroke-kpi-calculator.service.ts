@@ -178,9 +178,10 @@ export class StrokeKPICalculatorService {
 
   /**
    * Calculate door to thrombolysis order time in minutes
+   * Only applies to ischemic cases that are candidates for IV thrombolysis
    */
   private calculateDoorToThrombolysisOrderMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.dateOfAdmission || !strokeCase.thrombolysisOrderTime) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.thrombolysisOrderTime || strokeCase.strokeType !== 'ISCHEMIC' || strokeCase.candidateForIVThrombolysis !== 'YES') {
       return undefined;
     }
 
@@ -194,7 +195,7 @@ export class StrokeKPICalculatorService {
    * Calculate door to needle time in minutes (same as registration to thrombolysis)
    */
   private calculateDoorToNeedleMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.dateOfAdmission || !strokeCase.ivThrombolysisAdministrationTime) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.ivThrombolysisAdministrationTime || strokeCase.strokeType !== 'ISCHEMIC' || strokeCase.candidateForIVThrombolysis !== 'YES') {
       return undefined;
     }
 
@@ -220,9 +221,10 @@ export class StrokeKPICalculatorService {
 
   /**
    * KPI 4: Calculate registration to IV thrombolysis time in minutes
+   * Only applies to ischemic cases that are candidates for IV thrombolysis
    */
   private calculateRegistrationToThrombolysisMinutes(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.dateOfAdmission || !strokeCase.ivThrombolysisAdministrationTime) {
+    if (!strokeCase.dateOfAdmission || !strokeCase.ivThrombolysisAdministrationTime || strokeCase.strokeType !== 'ISCHEMIC' || strokeCase.candidateForIVThrombolysis !== 'YES') {
       return undefined;
     }
 

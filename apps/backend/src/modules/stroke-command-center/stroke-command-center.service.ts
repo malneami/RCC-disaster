@@ -253,9 +253,11 @@ export class StrokeCommandCenterService {
 
   private calculateTherapyPerformance(cases: any[]): TherapyPerformanceDataDto {
     // Thrombolytic therapy performance (Door to Needle) - use KPI3 from stroke portal dashboard
-    const thrombolyticMet = cases.filter(c => c.metKpi3).length;
-    const thrombolyticSuccessRate = cases.length > 0 
-      ? (thrombolyticMet / cases.length) * 100 
+    // Only consider ischemic cases that are candidates for IV thrombolysis
+    const thrombolyticMet = cases.filter(c => c.metKpi4).length;
+    const ischemicThrombolysisCandidates = cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length;
+    const thrombolyticSuccessRate = ischemicThrombolysisCandidates > 0 
+      ? (thrombolyticMet / ischemicThrombolysisCandidates) * 100 
       : 0;
 
     // Swallowing screening performance - use the same calculation as stroke portal dashboard
@@ -440,7 +442,9 @@ export class StrokeCommandCenterService {
     // Calculate percentages the same way as stroke portal
     const kpi1Percentage = totalCases > 0 ? (kpi1Met / totalCases) * 100 : 0;
     const kpi2Percentage = totalCases > 0 ? (kpi2Met / totalCases) * 100 : 0;
-    const kpi3Percentage = totalCases > 0 ? (kpi3Met / totalCases) * 100 : 0;
+    // KPI3 (door to needle) should only consider ischemic cases that are candidates for IV thrombolysis
+    const ischemicThrombolysisCandidates = cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length;
+    const kpi3Percentage = ischemicThrombolysisCandidates > 0 ? (kpi3Met / ischemicThrombolysisCandidates) * 100 : 0;
     const kpi4Percentage = totalCases > 0 ? (kpi4Met / totalCases) * 100 : 0;
     const kpi5Percentage = totalCases > 0 ? (kpi5Met / totalCases) * 100 : 0;
     const kpi6Percentage = totalCases > 0 ? (kpi6Met / totalCases) * 100 : 0;
@@ -496,27 +500,7 @@ export class StrokeCommandCenterService {
         percentage: Math.round(kpi4Percentage * 10) / 10,
         status: this.getKpiStatus(kpi4Percentage, 80),
         trend: 'stable',
-      },
-      {
-        id: 'strokeUnitAdmission',
-        name: 'Stroke Unit Admission',
-        target: '≥80%',
-        currentValue: 0, // Not used in traffic light system
-        targetValue: 80,
-        percentage: Math.round(kpi5Percentage * 10) / 10,
-        status: this.getKpiStatus(kpi5Percentage, 80),
-        trend: 'stable',
-      },
-      {
-        id: 'swallowingScreening',
-        name: 'Swallowing Screening',
-        target: '≥85%',
-        currentValue: 0, // Not used in traffic light system
-        targetValue: 85,
-        percentage: Math.round(kpi10Percentage * 10) / 10,
-        status: this.getKpiStatus(kpi10Percentage, 85),
-        trend: 'stable',
-      },
+      }
     ];
   }
 
@@ -646,7 +630,7 @@ export class StrokeCommandCenterService {
       const validPhysicianTimes = hospitalCaseList.filter((c: any) => c.timeOfPhysicianAssessment && c.timeOfTriage);
       const validCtTimes = hospitalCaseList.filter((c: any) => c.timeOfCtScanStart && c.timeOfTriage);
       const validCtReportTimes = hospitalCaseList.filter((c: any) => c.timeOfCtReportFinal && c.timeOfTriage);
-      const validNeedleTimes = hospitalCaseList.filter((c: any) => c.ivThrombolysisAdministrationTime && c.timeOfTriage);
+      const validNeedleTimes = hospitalCaseList.filter((c: any) => c.ivThrombolysisAdministrationTime && c.timeOfTriage && c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES');
       const validMtTimes = hospitalCaseList.filter((c: any) => c.timeOfMechanicalThrombectomyPuncture && c.timeOfTriage);
 
       const avgPhysicianTime = validPhysicianTimes.length > 0 
@@ -682,6 +666,9 @@ export class StrokeCommandCenterService {
       const physicianPct = hospitalCaseCount > 0 ? (kpi1Met / hospitalCaseCount) * 100 : 0;
       const ctPct = hospitalCaseCount > 0 ? (kpi2Met / hospitalCaseCount) * 100 : 0;
       const ctReportPct = hospitalCaseCount > 0 ? (kpi6Met / hospitalCaseCount) * 100 : 0;
+      // KPI3 (door to needle) should only consider ischemic cases that are candidates for IV thrombolysis
+      const hospitalIschemicThrombolysisCandidates = hospitalCaseList.filter((c: any) => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length;
+      const needlePct = hospitalIschemicThrombolysisCandidates > 0 ? (kpi3Met / hospitalIschemicThrombolysisCandidates) * 100 : 0;
       const mtPct = hospitalCaseCount > 0 ? (kpi4Met / hospitalCaseCount) * 100 : 0;
 
       const swallowingPct = hospitalCaseCount > 0 ? (kpi10Met / hospitalCaseCount) * 100 : 0;
@@ -701,6 +688,7 @@ export class StrokeCommandCenterService {
         physicianPct: Math.round(physicianPct),
         ctPct: Math.round(ctPct),
         ctReportPct: Math.round(ctReportPct),
+        needlePct: Math.round(needlePct),
         mtPct: Math.round(mtPct),
         swallowingPct: Math.round(swallowingPct),
         strokeUnitPct: Math.round(strokeUnitPct),

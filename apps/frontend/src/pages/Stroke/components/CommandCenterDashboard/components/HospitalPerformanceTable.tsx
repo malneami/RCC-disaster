@@ -42,6 +42,7 @@ type HospitalPerformanceData = {
   physicianPct: number;
   ctPct: number;
   ctReportPct: number;
+  needlePct: number;
   mtPct: number;
   swallowingPct: number;
   strokeUnitPct: number;
@@ -54,6 +55,7 @@ type SortColumn =
   | 'physicianPct' 
   | 'ctPct' 
   | 'ctReportPct' 
+  | 'needlePct'
   | 'mtPct'
   | 'swallowingPct'
   | 'strokeUnitPct'
@@ -152,9 +154,15 @@ const HospitalPerformanceTable: React.FC<HospitalPerformanceTableProps> = ({
       icon: <Assessment sx={{ fontSize: 16 }} />
     },
     { 
-      key: 'mtPct', 
+      key: 'needlePct', 
       label: language === 'ar' ? 'الباب إلى الإبرة' : 'Door-to-Needle', 
       target: '≤60min', 
+      icon: <MedicalServices sx={{ fontSize: 16 }} />
+    },
+    { 
+      key: 'mtPct', 
+      label: language === 'ar' ? 'الباب إلى الخثرة' : 'Door-to-Thrombectomy', 
+      target: '≤120min', 
       icon: <MedicalServices sx={{ fontSize: 16 }} />
     },
     { 

@@ -118,7 +118,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel sx={{ color: '#ffffff' }}>Hospital</InputLabel>
                 <Select
-                  value={filters.hospitalId || ''}
+                  value={filters.hospitalId || 'all'}
                   onChange={(e) => filters.onHospitalChange(e.target.value)}
                   label="Hospital"
                   sx={{
@@ -137,7 +137,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
                     },
                   }}
                 >
-                  <MenuItem value="">All Hospitals</MenuItem>
+                  <MenuItem value="all">All Hospitals</MenuItem>
                   {hospitals.map((hospital) => (
                     <MenuItem key={hospital.id} value={hospital.id}>
                       {hospital.name}

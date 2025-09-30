@@ -29,7 +29,7 @@ const StrokeCommandCenterDashboard: React.FC = () => {
     endDate: new Date().toISOString().split('T')[0],
   });
 
-  const { data, loading, error, refreshData } = useStrokeCommandCenterData(filters);
+  const { data, loading, error, refreshData, hospitals } = useStrokeCommandCenterData(filters);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -115,7 +115,7 @@ const StrokeCommandCenterDashboard: React.FC = () => {
           onHospitalChange: handleHospitalChange,
           onDateRangeChange: handleDateRangeChange,
         }}
-        hospitals={data?.hospitals || []}
+        hospitals={hospitals}
       />
 
       {/* Live Clock */}
@@ -184,7 +184,7 @@ const StrokeCommandCenterDashboard: React.FC = () => {
         {/* Hospital Performance Table */}
         {data?.hospitalPerformance && (
           <Box mt={3}>
-            <HospitalPerformanceTable data={data.hospitalPerformance} />
+            <HospitalPerformanceTable data={data.hospitalPerformance as any} />
           </Box>
         )}
       </Box>
