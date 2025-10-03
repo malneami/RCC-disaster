@@ -35,6 +35,7 @@ import { Helmet } from 'react-helmet-async';
 import { hospitalService, Hospital, CriticalCase, HospitalTicket } from '../../services/hospitalService';
 import RelatedTicketsManager from './components/RelatedTicketsManager';
 import HospitalCriticalCaseTracker from './components/HospitalCriticalCaseTracker';
+import HospitalCoordinatesEditor from './components/HospitalCoordinatesEditor';
 import { UnifiedTicket } from './types/tickets';
 
 const HospitalDashboardPage: React.FC = () => {
@@ -98,6 +99,10 @@ const HospitalDashboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleHospitalUpdate = (updatedHospital: Hospital) => {
+    setHospital(updatedHospital);
   };
 
   const getAvailabilityPercentage = (hospital: Hospital) => {
@@ -461,6 +466,12 @@ const HospitalDashboardPage: React.FC = () => {
               <Typography variant="h6" gutterBottom>
                 Hospital Details
               </Typography>
+
+              {/* Hospital Coordinates Editor */}
+              <HospitalCoordinatesEditor 
+                hospital={hospital} 
+                onHospitalUpdate={handleHospitalUpdate} 
+              />
 
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>

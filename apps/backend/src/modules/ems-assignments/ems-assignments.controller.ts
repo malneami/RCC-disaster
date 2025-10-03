@@ -137,6 +137,33 @@ export class EmsAssignmentsController {
     }, req.user.id);
   }
 
+  @Post(':id/start-location-monitoring')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Start automatic location monitoring for EMS assignment' })
+  @ApiResponse({ status: 200, description: 'Location monitoring started successfully' })
+  @ApiResponse({ status: 404, description: 'Assignment not found' })
+  async startLocationMonitoring(@Param('id') id: string) {
+    await this.emsAssignmentsService.startLocationMonitoring(id);
+    return { message: 'Location monitoring started for assignment', assignmentId: id };
+  }
+
+  @Post('start-all-location-monitoring')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Start location monitoring for all active EMS assignments' })
+  @ApiResponse({ status: 200, description: 'Location monitoring started for all active assignments' })
+  async startAllLocationMonitoring() {
+    await this.emsAssignmentsService.startLocationMonitoringForAllActiveAssignments();
+    return { message: 'Location monitoring started for all active assignments' };
+  }
+
+  @Get('active-for-monitoring')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Get all active EMS assignments that should be monitored' })
+  @ApiResponse({ status: 200, description: 'Active assignments retrieved successfully' })
+  async getActiveAssignmentsForMonitoring() {
+    return this.emsAssignmentsService.getActiveAssignmentsForMonitoring();
+  }
+
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.EMS)
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -4,16 +4,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Grid,
   Button,
   Typography,
   CircularProgress,
   Alert,
   Box,
+  Autocomplete,
+  TextField,
+  Chip,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAmbulance, faUserMd } from '@fortawesome/free-solid-svg-icons';
@@ -94,6 +93,20 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
       return false;
     }
 
+    // Additional validation to ensure selected options exist
+    const selectedAmbulance = ambulances.find(ambulance => ambulance.id === formData.ambulanceId);
+    const selectedDriver = drivers.find(driver => driver.id === formData.driverId);
+
+    if (!selectedAmbulance) {
+      setError('Selected ambulance is no longer available');
+      return false;
+    }
+
+    if (!selectedDriver) {
+      setError('Selected driver is no longer available');
+      return false;
+    }
+
     return true;
   };
 
@@ -161,88 +174,132 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
         <Grid container spacing={3} sx={{ mt: 1 }}>
           {/* Ambulance Selection */}
           <Grid item xs={12}>
-            <FormControl fullWidth>
-              <InputLabel>Select Ambulance</InputLabel>
-              <Select
-                value={formData.ambulanceId}
-                onChange={(e) => handleInputChange('ambulanceId', e.target.value)}
-                label="Select Ambulance"
-                disabled={loading || ambulancesLoading}
-              >
-                {ambulancesLoading ? (
-                  <MenuItem disabled>
-                    <CircularProgress size={16} sx={{ mr: 1 }} />
-                    Loading ambulances...
-                  </MenuItem>
-                ) : ambulances.length === 0 ? (
-                  <MenuItem disabled>No available ambulances</MenuItem>
-                ) : (
-                  ambulances.map((ambulance) => (
-                    <MenuItem key={ambulance.id} value={ambulance.id}>
+            <Autocomplete
+              value={ambulances.find(ambulance => ambulance.id === formData.ambulanceId) || null}
+              onChange={(_, newValue) => {
+                handleInputChange('ambulanceId', newValue?.id || '');
+              }}
+              options={ambulances}
+              getOptionLabel={(option) => `${option.callSign} - ${option.plateNumber}`}
+              loading={ambulancesLoading}
+              disabled={loading || ambulancesLoading}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Ambulance"
+                  placeholder="Search by call sign or plate number..."
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {ambulancesLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                    <FontAwesomeIcon icon={faAmbulance} size="sm" />
+                    <Box sx={{ flexGrow: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <FontAwesomeIcon icon={faAmbulance} size="sm" />
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {ambulance.callSign}
-                            {ambulance.id === assignment?.ambulanceId && (
-                              <Typography component="span" variant="caption" sx={{ ml: 1, color: 'primary.main' }}>
-                                (Currently Assigned)
-                              </Typography>
-                            )}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {ambulance.plateNumber} • {ambulance.type} • {ambulance.status}
-                          </Typography>
-                        </Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {option.callSign}
+                        </Typography>
+                        {option.id === assignment?.ambulanceId && (
+                          <Chip 
+                            label="Currently Assigned" 
+                            size="small" 
+                            color="primary" 
+                            variant="outlined"
+                          />
+                        )}
                       </Box>
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.plateNumber} • {option.type} • {option.status}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+              filterOptions={(options, { inputValue }) => {
+                const filtered = options.filter(option =>
+                  option.callSign.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.plateNumber.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.type.toLowerCase().includes(inputValue.toLowerCase())
+                );
+                return filtered;
+              }}
+              noOptionsText="No ambulances found"
+              loadingText="Loading ambulances..."
+            />
           </Grid>
 
           {/* Driver Selection */}
           <Grid item xs={12}>
-            <FormControl fullWidth>
-              <InputLabel>Select Driver</InputLabel>
-              <Select
-                value={formData.driverId}
-                onChange={(e) => handleInputChange('driverId', e.target.value)}
-                label="Select Driver"
-                disabled={loading || driversLoading}
-              >
-                {driversLoading ? (
-                  <MenuItem disabled>
-                    <CircularProgress size={16} sx={{ mr: 1 }} />
-                    Loading drivers...
-                  </MenuItem>
-                ) : drivers.length === 0 ? (
-                  <MenuItem disabled>No available drivers</MenuItem>
-                ) : (
-                  drivers.map((driver) => (
-                    <MenuItem key={driver.id} value={driver.id}>
+            <Autocomplete
+              value={drivers.find(driver => driver.id === formData.driverId) || null}
+              onChange={(_, newValue) => {
+                handleInputChange('driverId', newValue?.id || '');
+              }}
+              options={drivers}
+              getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+              loading={driversLoading}
+              disabled={loading || driversLoading}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Driver"
+                  placeholder="Search by name or phone number..."
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {driversLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                    <FontAwesomeIcon icon={faUserMd} size="sm" />
+                    <Box sx={{ flexGrow: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <FontAwesomeIcon icon={faUserMd} size="sm" />
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {driver.firstName} {driver.lastName}
-                            {driver.id === assignment?.driverId && (
-                              <Typography component="span" variant="caption" sx={{ ml: 1, color: 'primary.main' }}>
-                                (Currently Assigned)
-                              </Typography>
-                            )}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {driver.phoneNumber}
-                          </Typography>
-                        </Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {option.firstName} {option.lastName}
+                        </Typography>
+                        {option.id === assignment?.driverId && (
+                          <Chip 
+                            label="Currently Assigned" 
+                            size="small" 
+                            color="primary" 
+                            variant="outlined"
+                          />
+                        )}
                       </Box>
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.phoneNumber}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+              filterOptions={(options, { inputValue }) => {
+                const filtered = options.filter(option =>
+                  option.firstName.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.lastName.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.phoneNumber.includes(inputValue)
+                );
+                return filtered;
+              }}
+              noOptionsText="No drivers found"
+              loadingText="Loading drivers..."
+            />
           </Grid>
 
           {/* Current Assignment Info */}

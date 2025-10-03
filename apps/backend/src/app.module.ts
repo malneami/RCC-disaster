@@ -27,11 +27,12 @@ import { RolesGuard } from './auth/guards/roles.guard';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
 import { AmbulancesModule } from './modules/ambulances/ambulances.module';
 import { EmsAssignmentsModule } from './modules/ems-assignments/ems-assignments.module';
+import { AmbulanceTrackingModule } from './modules/ambulance-tracking/ambulance-tracking.module';
+import { EmsLocationWorkflowModule } from './modules/ems-location-workflow/ems-location-workflow.module';
 import { DriverSchedulesModule } from './modules/driver-schedules/driver-schedules.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { EmsDashboardModule } from './modules/ems-dashboard/ems-dashboard.module';
 import { EmsGatewayModule } from './modules/ems-gateway/ems-gateway.module';
-import { GpsModule } from './modules/gps/gps.module';
 import { TimelineEventsModule } from './modules/timeline-events/timeline-events.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RepliesModule } from './modules/replies/replies.module';
@@ -65,11 +66,12 @@ import { RepliesModule } from './modules/replies/replies.module';
     // EMS Modules
     AmbulancesModule,
     EmsAssignmentsModule,
+    AmbulanceTrackingModule,
+    EmsLocationWorkflowModule,
     DriverSchedulesModule,
     DriversModule,
     EmsDashboardModule,
     EmsGatewayModule,
-    GpsModule,
     TimelineEventsModule,
     NotificationsModule,
     RepliesModule,

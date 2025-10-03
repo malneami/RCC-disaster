@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import gpsConfig from './gps.config';
-import redisConfig from './redis.config';
 import appConfig from './app.config';
 import environmentConfig from './environment.config';
 
@@ -10,8 +8,6 @@ import environmentConfig from './environment.config';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
-        gpsConfig,
-        redisConfig,
         appConfig,
         environmentConfig,
       ],

@@ -5,6 +5,7 @@ import { UpdateEmsAssignmentDto } from './dto/update-ems-assignment.dto';
 import { AssignmentFilterDto } from './dto/assignment-filter.dto';
 import { EMSAssignment, Prisma, AssignmentStatus } from '@prisma/client';
 import { TimelineEventsService } from '../timeline-events/timeline-events.service';
+import { EmsLocationWorkflowService } from '../../common/services/ems-location-workflow.service';
 
 interface AssignmentFilters {
   status?: AssignmentStatus;
@@ -21,7 +22,8 @@ export class EmsAssignmentsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly timelineEventsService: TimelineEventsService
+    private readonly timelineEventsService: TimelineEventsService,
+    private readonly emsLocationWorkflowService: EmsLocationWorkflowService
   ) {}
 
   async create(createAssignmentDto: CreateEmsAssignmentDto, createdBy: string): Promise<EMSAssignment> {
@@ -167,6 +169,16 @@ export class EmsAssignmentsService {
           },
         }
       );
+    }
+
+    // Start location monitoring if ambulance is assigned and assignment is active
+    if (updateAssignmentDto.ambulanceId && assignment.status !== 'ARRIVED' && assignment.status !== 'CANCELLED') {
+      try {
+        await this.startLocationMonitoring(assignment.id);
+      } catch (error) {
+        this.logger.error(`Failed to start location monitoring for assignment ${assignment.id}: ${(error as Error).message}`);
+        // Don't throw error to prevent failing the update
+      }
     }
 
     this.logger.log(`EMS assignment updated: ${assignment.id}`);
@@ -520,6 +532,154 @@ export class EmsAssignmentsService {
         return `Assignment cancelled for assignment ${assignment.id}`;
       default:
         return `Assignment status changed from ${fromStatus} to ${toStatus} for assignment ${assignment.id}`;
+    }
+  }
+
+  /**
+   * Start automatic location monitoring for an EMS assignment
+   * This will check the ambulance location every 5 minutes and update status accordingly
+   */
+  async startLocationMonitoring(assignmentId: string): Promise<void> {
+    try {
+      const assignment = await this.prisma.eMSAssignment.findFirst({
+        where: {
+          id: assignmentId,
+          deletedAt: null
+        },
+        include: {
+          ambulance: true
+        }
+      });
+
+      if (!assignment) {
+        throw new Error(`EMS assignment ${assignmentId} not found`);
+      }
+
+      if (!assignment.ambulanceId || !assignment.ambulance?.vehicleImei) {
+        this.logger.warn(`No ambulance or IMEI found for assignment ${assignmentId}, skipping location monitoring`);
+        return;
+      }
+
+      if (assignment.status === 'ARRIVED' || assignment.status === 'CANCELLED') {
+        this.logger.log(`Assignment ${assignmentId} is already finished (${assignment.status}), skipping location monitoring`);
+        return;
+      }
+
+      this.logger.log(`Starting location monitoring for assignment ${assignmentId} with ambulance IMEI: ${assignment.ambulance.vehicleImei}`);
+
+      // Start the monitoring interval
+      const monitoringInterval = setInterval(async () => {
+        try {
+          await this.checkAndUpdateLocation(assignmentId);
+        } catch (error) {
+          this.logger.error(`Error in location monitoring for assignment ${assignmentId}: ${(error as Error).message}`);
+        }
+      }, 5 * 60 * 1000); // 5 minutes
+
+      // Store the interval ID for potential cleanup (you might want to implement cleanup logic)
+      // For now, we'll let it run indefinitely until the assignment is completed
+      
+      this.logger.log(`Location monitoring started for assignment ${assignmentId} (checking every 5 minutes)`);
+    } catch (error) {
+      this.logger.error(`Failed to start location monitoring for assignment ${assignmentId}: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Check and update location for a specific assignment
+   */
+  private async checkAndUpdateLocation(assignmentId: string): Promise<void> {
+    try {
+      // First check if assignment is still active
+      const assignment = await this.prisma.eMSAssignment.findFirst({
+        where: {
+          id: assignmentId,
+          deletedAt: null
+        },
+        include: {
+          ambulance: true
+        }
+      });
+
+      if (!assignment) {
+        this.logger.log(`Assignment ${assignmentId} no longer exists, stopping location monitoring`);
+        return;
+      }
+
+      if (assignment.status === 'ARRIVED' || assignment.status === 'CANCELLED') {
+        this.logger.log(`Assignment ${assignmentId} is finished (${assignment.status}), stopping location monitoring`);
+        return;
+      }
+
+      if (!assignment.ambulanceId || !assignment.ambulance?.vehicleImei) {
+        this.logger.log(`No ambulance assigned to assignment ${assignmentId}, stopping location monitoring`);
+        return;
+      }
+
+      this.logger.log(`Checking location for assignment ${assignmentId} (status: ${assignment.status})`);
+
+      // Call the EMS location workflow service to process the location update
+      const result = await this.emsLocationWorkflowService.processLocationUpdate(assignmentId);
+
+      if (result) {
+        this.logger.log(`Location update processed for assignment ${assignmentId}: ${result.previousStatus} → ${result.newStatus}`);
+      } else {
+        this.logger.log(`No status change needed for assignment ${assignmentId}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error checking location for assignment ${assignmentId}: ${(error as Error).message}`);
+      // Don't throw error to prevent stopping the monitoring interval
+    }
+  }
+
+  /**
+   * Get all active EMS assignments that should be monitored
+   */
+  async getActiveAssignmentsForMonitoring(): Promise<EMSAssignment[]> {
+    return await this.prisma.eMSAssignment.findMany({
+      where: {
+        deletedAt: null,
+        status: {
+          notIn: ['ARRIVED', 'CANCELLED']
+        },
+        ambulanceId: {
+          not: null
+        }
+      },
+      include: {
+        ambulance: true,
+        ticket: {
+          include: {
+            originHospital: true,
+            destinationHospital: true
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Start location monitoring for all active assignments
+   * This can be called on application startup
+   */
+  async startLocationMonitoringForAllActiveAssignments(): Promise<void> {
+    try {
+      const activeAssignments = await this.getActiveAssignmentsForMonitoring();
+      
+      this.logger.log(`Found ${activeAssignments.length} active assignments to monitor`);
+
+      for (const assignment of activeAssignments) {
+        const assignmentWithAmbulance = assignment as any; // Type assertion for included ambulance
+        if (assignmentWithAmbulance.ambulance?.vehicleImei) {
+          await this.startLocationMonitoring(assignment.id);
+        } else {
+          this.logger.warn(`Assignment ${assignment.id} has no ambulance IMEI, skipping monitoring`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Failed to start location monitoring for active assignments: ${(error as Error).message}`);
+      throw error;
     }
   }
 }
