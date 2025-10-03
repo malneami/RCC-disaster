@@ -122,6 +122,8 @@ const UserRegistrationRequests: React.FC = () => {
         return 'Data Collector';
       case 'CATH_LAB_USER':
         return 'Cath Lab User';
+      case 'HOSPITAL_USER':
+        return 'Hospital User';
       default:
         return role;
     }

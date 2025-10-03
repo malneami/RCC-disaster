@@ -207,6 +207,11 @@ class HospitalService {
     return response.data;
   }
 
+  async getMyHospital(): Promise<Hospital> {
+    const response = await apiClient.get('/hospitals/my-hospital');
+    return response.data;
+  }
+
   async createHospital(data: CreateHospitalDto): Promise<Hospital> {
     const response = await apiClient.post('/hospitals', data);
     return response.data;

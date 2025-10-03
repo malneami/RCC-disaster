@@ -56,6 +56,7 @@ const UserRegistrationPage: React.FC = () => {
     { value: 'EMS', label: 'EMS Operator', description: 'Emergency Medical Services' },
     { value: 'DATA_COLLECTOR', label: 'Data Collector', description: 'Clinical Data Entry' },
     { value: 'CATH_LAB_USER', label: 'Cath Lab User', description: 'Cardiac Catheterization Lab' },
+    { value: 'HOSPITAL_USER', label: 'Hospital User', description: 'Hospital-specific access and management' },
   ];
 
   useEffect(() => {

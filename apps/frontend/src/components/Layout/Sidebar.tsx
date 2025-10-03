@@ -78,7 +78,7 @@ const Sidebar: React.FC = () => {
       text: 'Transfer Tickets',
       icon: <FontAwesomeIcon icon={faFileAlt} />,
       path: '/tickets',
-      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER'],
+      roles: ['ADMIN', 'RCC', 'CATH_LAB_USER'],
     },
     {
       text: 'Patients',
@@ -90,13 +90,13 @@ const Sidebar: React.FC = () => {
       text: 'Hospitals',
       icon: <FontAwesomeIcon icon={faHospital} />,
       path: '/hospitals',
-      roles: ['ADMIN', 'RCC', 'EMS'],
+      roles: ['ADMIN', 'RCC', 'HOSPITAL_USER'],
     },
     {
       text: 'Notification Center',
       icon: <FontAwesomeIcon icon={faBell} />,
       path: '/notifications',
-      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER'],
+      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER', 'HOSPITAL_USER'],
     },
   ];
 
@@ -105,26 +105,26 @@ const Sidebar: React.FC = () => {
       text: 'Main Dashboard',
       icon: <FontAwesomeIcon icon={faTachometerAlt} />,
       path: '/dashboard',
-      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER'],
+      roles: ['ADMIN', 'RCC', 'CATH_LAB_USER', 'HOSPITAL_USER'],
     },
     {
       text: 'EMS Dashboard',
       icon: <FontAwesomeIcon icon={faAmbulance} />,
       path: '/ems-dashboard',
-      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR'],
+      roles: ['ADMIN', 'RCC', 'EMS'],
     },
     {
       text: 'STEMI Command Center',
       icon: <FontAwesomeIcon icon={faChartLine} />,
       path: '/portals/stemi/command-center',
-      roles: ['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR'],
+      roles: ['ADMIN', 'RCC', 'CATH_LAB_USER'],
       color: 'error',
     },
     {
       text: 'Stroke Command Center',
       icon: <FontAwesomeIcon icon={faChartLine} />,
       path: '/portals/stroke/command-center',
-      roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
+      roles: ['ADMIN', 'RCC'],
       color: 'warning',
     },
   ];
@@ -174,7 +174,12 @@ const Sidebar: React.FC = () => {
   };
 
   const handleNavigation = (path: string) => {
-    navigate(path);
+    // Special handling for HOSPITAL_USER - redirect to their assigned hospital
+    if (user?.role === 'HOSPITAL_USER' && path === '/hospitals') {
+      navigate('/my-hospital');
+    } else {
+      navigate(path);
+    }
   };
 
   return (
@@ -235,11 +240,15 @@ const Sidebar: React.FC = () => {
           ))}
       </List>
 
-      <Divider sx={{ my: 1 }} />
-      
-      <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
-        Dashboards
-      </Typography>
+      {/* Dashboards Section - only show if user has access to dashboard items */}
+      {dashboardItems.filter(item => hasRole(item.roles)).length > 0 && (
+        <>
+          <Divider sx={{ my: 1 }} />
+          <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
+            Dashboards
+          </Typography>
+        </>
+      )}
       
       <List>
         {dashboardItems
@@ -274,11 +283,15 @@ const Sidebar: React.FC = () => {
           ))}
       </List>
 
-      <Divider sx={{ my: 1 }} />
-      
-      <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
-        Clinical Portals
-      </Typography>
+      {/* Clinical Portals Section - only show if user has access to portal items */}
+      {portalItems.filter(item => hasRole(item.roles)).length > 0 && (
+        <>
+          <Divider sx={{ my: 1 }} />
+          <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
+            Clinical Portals
+          </Typography>
+        </>
+      )}
       
       <List>
         {portalItems

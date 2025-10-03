@@ -9,7 +9,9 @@ import {
   Body, 
   UseGuards,
   ParseIntPipe,
-  DefaultValuePipe
+  DefaultValuePipe,
+  Request,
+  ForbiddenException
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { HospitalStatus } from '@prisma/client';
@@ -77,12 +79,36 @@ export class HospitalsController {
     return this.hospitalsService.getCapacityAlerts();
   }
 
+  @Get('my-hospital')
+  @Roles(UserRole.HOSPITAL_USER)
+  @ApiOperation({ summary: 'Get the hospital assigned to the current user' })
+  @ApiResponse({ status: 200, description: 'Hospital found' })
+  @ApiResponse({ status: 404, description: 'No hospital assigned to user' })
+  async getMyHospital(@Request() req: any) {
+    const user = req.user;
+    
+    if (!user.hospitalId) {
+      throw new ForbiddenException('No hospital assigned to this user.');
+    }
+    
+    return this.hospitalsService.findById(user.hospitalId);
+  }
+
   @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.EMS, UserRole.HOSPITAL_USER)
   @ApiOperation({ summary: 'Get hospital by ID' })
   @ApiParam({ name: 'id', description: 'Hospital ID' })
   @ApiResponse({ status: 200, description: 'Hospital found' })
   @ApiResponse({ status: 404, description: 'Hospital not found' })
-  async findById(@Param('id') id: string) {
+  @ApiResponse({ status: 403, description: 'Forbidden - Access denied to this hospital' })
+  async findById(@Param('id') id: string, @Request() req: any) {
+    const user = req.user;
+    
+    // Check if HOSPITAL_USER can only access their assigned hospital
+    if (user.role === UserRole.HOSPITAL_USER && user.hospitalId !== id) {
+      throw new ForbiddenException('Access denied. You can only access your assigned hospital.');
+    }
+    
     return this.hospitalsService.findById(id);
   }
 
@@ -91,8 +117,16 @@ export class HospitalsController {
   @ApiParam({ name: 'id', description: 'Hospital ID' })
   @ApiResponse({ status: 200, description: 'Hospital updated successfully' })
   @ApiResponse({ status: 404, description: 'Hospital not found' })
-  @Roles(UserRole.ADMIN, UserRole.RCC)
-  async update(@Param('id') id: string, @Body() updateHospitalDto: UpdateHospitalDto) {
+  @ApiResponse({ status: 403, description: 'Forbidden - Access denied to this hospital' })
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.HOSPITAL_USER)
+  async update(@Param('id') id: string, @Body() updateHospitalDto: UpdateHospitalDto, @Request() req: any) {
+    const user = req.user;
+    
+    // Check if HOSPITAL_USER can only update their assigned hospital
+    if (user.role === UserRole.HOSPITAL_USER && user.hospitalId !== id) {
+      throw new ForbiddenException('Access denied. You can only update your assigned hospital.');
+    }
+    
     return this.hospitalsService.update(id, updateHospitalDto);
   }
 

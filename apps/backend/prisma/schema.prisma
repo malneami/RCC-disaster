@@ -16,6 +16,7 @@ enum UserRole {
   EMS
   DATA_COLLECTOR
   CATH_LAB_USER
+  HOSPITAL_USER
 }
 
 enum UserStatus {

@@ -58,6 +58,7 @@ export class TicketsService {
       [UserRole.EMS]: [TicketStatus.ASSIGNED, TicketStatus.IN_TRANSPORT, TicketStatus.COMPLETED],
       [UserRole.DATA_COLLECTOR]: [TicketStatus.PENDING, TicketStatus.ASSIGNED],
       [UserRole.CATH_LAB_USER]: [TicketStatus.PENDING, TicketStatus.ASSIGNED, TicketStatus.IN_TRANSPORT, TicketStatus.COMPLETED],
+      [UserRole.HOSPITAL_USER]: [TicketStatus.ASSIGNED, TicketStatus.IN_TRANSPORT, TicketStatus.COMPLETED],
     };
 
     return allowedTransitions[userRole]?.includes(newStatus) || false;

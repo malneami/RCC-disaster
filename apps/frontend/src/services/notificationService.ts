@@ -158,7 +158,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'ADMIN' | 'RCC' | 'EMS' | 'DATA_COLLECTOR' | 'CATH_LAB_USER';
+  role: 'ADMIN' | 'RCC' | 'EMS' | 'DATA_COLLECTOR' | 'CATH_LAB_USER' | 'HOSPITAL_USER';
 }
 
 // Utility functions for enhanced error handling
