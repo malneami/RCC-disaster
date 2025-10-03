@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Patch, Param, Body, UseGuards, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { UsersService } from './users.service';
@@ -59,5 +59,16 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ) {
     return this.usersService.updateUser(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete user (Admin only)' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 400, description: 'Cannot delete admin user or user with active assignments' })
+  async deleteUser(@Param('id') id: string) {
+    return this.usersService.deleteUser(id);
   }
 }

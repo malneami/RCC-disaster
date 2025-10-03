@@ -12,8 +12,11 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async findByEmail(email: string) {
-    return this.prisma.user.findUnique({
-      where: { email },
+    return this.prisma.user.findFirst({
+      where: { 
+        email,
+        deletedAt: null, // Exclude soft-deleted users
+      },
       include: {
         hospital: true,
       },
@@ -21,8 +24,11 @@ export class UsersService {
   }
 
   async findById(id: string) {
-    return this.prisma.user.findUnique({
-      where: { id },
+    return this.prisma.user.findFirst({
+      where: { 
+        id,
+        deletedAt: null, // Exclude soft-deleted users
+      },
       include: {
         hospital: true,
       },
@@ -36,6 +42,7 @@ export class UsersService {
         passwordResetExpiry: {
           gt: new Date(),
         },
+        deletedAt: null, // Exclude soft-deleted users
       },
     });
   }
@@ -286,6 +293,84 @@ export class UsersService {
 
     return {
       user: updatedUser,
+    };
+  }
+
+  async deleteUser(userId: string): Promise<{ message: string; user: any }> {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Prevent deletion of admin users
+    if (user.role === 'ADMIN') {
+      throw new Error('Cannot delete admin users');
+    }
+
+    // Check for active assignments created by this user
+    const activeAssignments = await this.prisma.eMSAssignment.count({
+      where: {
+        createdBy: userId,
+        status: {
+          notIn: ['ARRIVED', 'CANCELLED'],
+        },
+      },
+    });
+
+    if (activeAssignments > 0) {
+      throw new Error('Cannot delete user with active EMS assignments');
+    }
+
+    // Check for pending tickets created by this user
+    const pendingTickets = await this.prisma.ticket.count({
+      where: {
+        createdById: userId,
+        status: {
+          notIn: ['COMPLETED', 'CANCELLED'],
+        },
+      },
+    });
+
+    if (pendingTickets > 0) {
+      throw new Error('Cannot delete user with pending tickets');
+    }
+
+    // Perform soft delete by setting deletedAt timestamp
+    const deletedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletedAt: new Date(),
+        status: UserStatus.INACTIVE,
+        email: `deleted_${Date.now()}_${user.email}`, // Make email unique for soft delete
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        deletedAt: true,
+      },
+    });
+
+    this.logger.log(`User ${user.email} (${user.id}) has been soft deleted`);
+
+    return {
+      message: `User ${user.firstName} ${user.lastName} has been deleted successfully`,
+      user: deletedUser,
     };
   }
 

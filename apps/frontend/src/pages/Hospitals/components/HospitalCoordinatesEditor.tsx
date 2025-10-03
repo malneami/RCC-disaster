@@ -134,7 +134,7 @@ const HospitalCoordinatesEditor: React.FC<HospitalCoordinatesEditorProps> = ({
     );
   };
 
-  const formatCoordinate = (coord: number | string) => {
+  const formatCoordinate = (coord: number | string | undefined) => {
     if (coord === null || coord === undefined || coord === '') {
       return 'Not set';
     }

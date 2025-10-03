@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   CircularProgress,
   Alert,
   Button,

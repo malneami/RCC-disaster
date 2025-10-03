@@ -34,6 +34,7 @@ import {
   Edit,
   Email,
   Business,
+  Delete,
 } from '@mui/icons-material';
 import { userManagementService, User, UpdateUserDto } from '../../../services/userManagementService';
 import { userRegistrationService, Hospital } from '../../../services/userRegistrationService';
@@ -59,6 +60,12 @@ const UserManagement: React.FC = () => {
   const [editData, setEditData] = useState<UpdateUserDto>({});
   const [editLoading, setEditLoading] = useState(false);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  
+  // Delete user state
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<{ message: string; user: User } | null>(null);
 
   const userRoles = [
     { value: '', label: 'All Roles' },
@@ -67,6 +74,7 @@ const UserManagement: React.FC = () => {
     { value: 'EMS', label: 'EMS Operator' },
     { value: 'DATA_COLLECTOR', label: 'Data Collector' },
     { value: 'CATH_LAB_USER', label: 'Cath Lab User' },
+    { value: 'HOSPITAL_USER', label: 'Hospital User' },
   ];
 
   const loadUsers = async () => {
@@ -113,6 +121,8 @@ const UserManagement: React.FC = () => {
         return 'warning';
       case 'CATH_LAB_USER':
         return 'info';
+      case 'HOSPITAL_USER':
+        return 'secondary';
       default:
         return 'default';
     }
@@ -221,6 +231,42 @@ const UserManagement: React.FC = () => {
     setEditUser(null);
     setEditData({});
     setError(null);
+  };
+
+  const handleDeleteUser = (user: User) => {
+    setUserToDelete(user);
+    setDeleteDialog(true);
+    setError(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      setError(null);
+
+      const result = await userManagementService.deleteUser(userToDelete.id);
+      
+      setDeleteResult(result);
+      setDeleteDialog(false);
+      setUserToDelete(null);
+      loadUsers(); // Refresh users list
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete user');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialog(false);
+    setUserToDelete(null);
+    setError(null);
+  };
+
+  const handleCloseDeleteResult = () => {
+    setDeleteResult(null);
   };
 
   if (loading) {
@@ -383,6 +429,16 @@ const UserManagement: React.FC = () => {
                           disabled={user.status !== 'ACTIVE'}
                         >
                           <LockReset />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete User">
+                        <IconButton 
+                          size="small" 
+                          color="error"
+                          onClick={() => handleDeleteUser(user)}
+                          disabled={user.role === 'ADMIN'}
+                        >
+                          <Delete />
                         </IconButton>
                       </Tooltip>
                     </Box>
@@ -580,6 +636,7 @@ const UserManagement: React.FC = () => {
                   <MenuItem value="EMS">EMS Operator</MenuItem>
                   <MenuItem value="DATA_COLLECTOR">Data Collector</MenuItem>
                   <MenuItem value="CATH_LAB_USER">Cath Lab User</MenuItem>
+                  <MenuItem value="HOSPITAL_USER">Hospital User</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -616,6 +673,97 @@ const UserManagement: React.FC = () => {
             disabled={editLoading}
           >
             {editLoading ? <CircularProgress size={20} /> : 'Update User'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialog} 
+        onClose={handleCloseDeleteDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Delete User: {userToDelete?.firstName} {userToDelete?.lastName}
+        </DialogTitle>
+        <DialogContent>
+          {userToDelete && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body1" gutterBottom>
+                <strong>User:</strong> {userToDelete.firstName} {userToDelete.lastName}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Email:</strong> {userToDelete.email}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Role:</strong> {userToDelete.role}
+              </Typography>
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  <strong>Soft Delete:</strong> The user will be deactivated but their data will be preserved in the database for audit purposes.
+                </Typography>
+                <Typography variant="body2">
+                  This will:
+                </Typography>
+                <ul>
+                  <li>Set the user status to INACTIVE</li>
+                  <li>Remove access to all system features</li>
+                  <li>Prevent future login attempts</li>
+                  <li>Preserve user data for audit trails</li>
+                  <li>Hide user from active user lists</li>
+                </ul>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  Note: Users with active assignments or pending tickets cannot be deleted.
+                </Typography>
+              </Alert>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} disabled={deleteLoading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? <CircularProgress size={20} /> : 'Delete User'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Result Dialog */}
+      <Dialog 
+        open={!!deleteResult} 
+        onClose={handleCloseDeleteResult}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          User Deleted Successfully
+        </DialogTitle>
+        <DialogContent>
+          {deleteResult && (
+            <Box>
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {deleteResult.message}
+              </Alert>
+              
+              <Alert severity="info">
+                <Typography variant="body2">
+                  <strong>Success:</strong> The user has been deactivated (soft deleted).
+                  The user will no longer be able to access any system features, but their data is preserved for audit purposes.
+                </Typography>
+              </Alert>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteResult} variant="contained">
+            Close
           </Button>
         </DialogActions>
       </Dialog>

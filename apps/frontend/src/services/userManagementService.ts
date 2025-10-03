@@ -38,6 +38,11 @@ export interface ResetPasswordResponse {
   user: User;
 }
 
+export interface DeleteUserResponse {
+  message: string;
+  user: User;
+}
+
 class UserManagementService {
   async getAllUsers(page = 1, limit = 10, role?: string): Promise<UsersResponse> {
     const params: any = { page, limit };
@@ -57,6 +62,11 @@ class UserManagementService {
 
   async updateUser(userId: string, updateData: UpdateUserDto): Promise<ResetPasswordResponse> {
     const response = await apiClient.patch(`/users/${userId}`, updateData);
+    return response.data;
+  }
+
+  async deleteUser(userId: string): Promise<DeleteUserResponse> {
+    const response = await apiClient.delete(`/users/${userId}`);
     return response.data;
   }
 }
