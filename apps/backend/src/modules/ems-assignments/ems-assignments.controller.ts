@@ -97,7 +97,7 @@ export class EmsAssignmentsController {
   async startAssignment(@Param('id') id: string, @Request() req: any) {
     return this.emsAssignmentsService.update(id, { 
       status: 'EMS_ARRIVAL',
-      journeyStartTime: new Date().toISOString()
+      actualArrivalTime: new Date().toISOString()
     }, req.user.id);
   }
 
@@ -109,7 +109,7 @@ export class EmsAssignmentsController {
   async markArrived(@Param('id') id: string, @Request() req: any) {
     return this.emsAssignmentsService.update(id, { 
       status: 'DEPARTED',
-      actualArrivalTime: new Date().toISOString()
+      journeyStartTime: new Date().toISOString()
     }, req.user.id);
   }
 
@@ -120,7 +120,8 @@ export class EmsAssignmentsController {
   @ApiResponse({ status: 404, description: 'Assignment not found' })
   async markDeparted(@Param('id') id: string, @Request() req: any) {
     return this.emsAssignmentsService.update(id, { 
-      status: 'DEPARTED'
+      status: 'DEPARTED',
+      journeyStartTime: new Date().toISOString()
     }, req.user.id);
   }
 

@@ -170,15 +170,36 @@ export class EmsLocationWorkflowService {
 
       // 4. Update assignment status if needed
       if (newStatus && newStatus !== currentStatus) {
+        const now = new Date();
+        
+        // Prepare update data with appropriate timestamp
+        const updateData: any = {
+          status: newStatus as any,
+          updatedAt: now
+        };
+
+        // Add the appropriate timestamp based on the new status
+        switch (newStatus) {
+          case 'EMS_CONTACT':
+            updateData.emsContactTime = now;
+            break;
+          case 'EMS_ARRIVAL':
+            updateData.actualArrivalTime = now;
+            break;
+          case 'DEPARTED':
+            updateData.journeyStartTime = now;
+            break;
+          case 'ARRIVED':
+            updateData.journeyEndTime = now;
+            break;
+        }
+
         await this.prisma.eMSAssignment.update({
           where: { id: assignmentId },
-          data: {
-            status: newStatus as any,
-            updatedAt: new Date()
-          }
+          data: updateData
         });
 
-        this.logger.log(`✅ Updated assignment ${assignmentId}: ${currentStatus} → ${newStatus}`);
+        this.logger.log(`✅ Updated assignment ${assignmentId}: ${currentStatus} → ${newStatus} at ${now.toISOString()}`);
 
         // TODO: Create timeline event when user ID is available
         // await this.createTimelineEvent(assignment.ticketId, newStatus, reason, hospitalName);
