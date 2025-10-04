@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class TraumaExportService {
@@ -10,7 +10,38 @@ export class TraumaExportService {
     try {
       // Fetch all trauma cases with related data
       const traumaCases = await this.prisma.traumaCase.findMany({
-        include: {
+        select: {
+          id: true,
+          ticketId: true,
+          arrivalDateTime: true,
+          incidentDateTime: true,
+          modeOfArrival: true,
+          transferRequestDateTime: true,
+          transferArrivalDateTime: true,
+          transferDurationMinutes: true,
+          chiefComplaint: true,
+          mechanismOfInjury: true,
+          vitalSigns: true,
+          glasgowComaScale: true,
+          systolicBloodPressure: true,
+          respiratoryRate: true,
+          additionalVitalSigns: true,
+          primarySurveyFindings: true,
+          edDisposition: true,
+          additionalNotes: true,
+          disposition: true,
+          responseTimeMinutes: true,
+          criticalCase: true,
+          transferCase: true,
+          createdAt: true,
+          updatedAt: true,
+          createdById: true,
+          headAndNeckInjury: true,
+          faceInjury: true,
+          chestInjury: true,
+          abdomenInjury: true,
+          extremitiesInjury: true,
+          externalInjury: true,
           patient: {
             select: {
               id: true,
@@ -54,6 +85,7 @@ export class TraumaExportService {
         const patient = case_.patient;
         const originHospital = case_.originHospital;
         const destinationHospital = case_.destinationHospital;
+
 
         // Get patient age
         const age = patient.age;
@@ -182,151 +214,205 @@ export class TraumaExportService {
         const validityFollowUp = followUp ? 'Valid' : 'Invalid';
 
         return {
-          // Clean column headers matching the specification
-          'Date of arrival': this.formatDate(arrivalTime),
-          'Patient ID (National ID or IQAMA Number or Passport)': patient.nationalId || patient.id.substring(0, 8),
+          // Exact headers matching Trauma Master Sheet specification in correct order
+          'Date of arrival': this.formatDateSpec(arrivalTime),
+          'Patient ID (National ID or IQAMA Numer or Passport)': patient.nationalId || patient.id.substring(0, 8),
           'Gender': patient.gender === 'MALE' ? 'M' : patient.gender === 'FEMALE' ? 'F' : '',
           'Age in years': age,
-          'Mode of arrival': this.formatModeOfArrival(case_.modeOfArrival),
-          'Transfer request date & time (mm/dd/yyyy hh:mm)': this.getTransferRequestDateTime(case_),
-          'Transfer arrival date & time (mm/dd/yyyy hh:mm)': this.getTransferArrivalDateTime(case_),
-          'Transfer to Arrival Time': this.calculateTransferToArrivalTime(case_),
-          'Mechanism of trauma': this.formatMechanismOfTrauma(case_.mechanismOfInjury),
+          'Mode of arrival': this.formatModeOfArrivalSpec(case_.modeOfArrival),
+          'if Transferred from another hospital, what is the date & time of request for transfer? (From Ehalati system or referral report)': this.getTransferRequestDateTimeSpec(case_),
+          'if Transferred from another hospital, what is the date & time of arrival? (From Ehalati system or referral report)': this.getTransferArrivalDateTimeSpec(case_),
+          'Transfer to Arrival Time': this.calculateTransferToArrivalTimeSpec(case_),
+          'Mechanism of trauma?': this.formatMechanismOfTraumaSpec(case_.mechanismOfInjury),
           'Systolic Blood Pressure': case_.systolicBloodPressure || null,
-          'Diastolic Blood Pressure': diastolicBP,
-          'Heart Rate': heartRate,
           'Glasgow Coma Scale': case_.glasgowComaScale || null,
           'Respiratory Rate': case_.respiratoryRate || null,
-          'Oxygen Saturation': oxygenSaturation,
-          'Temperature': temperature,
-          'Head and Neck (Includes Cervical Spine)': this.getHeadNeckInjurySeverity(case_),
-          'Face (Facial Skeleton, Nose, Mouth, Eyes, & Ears)': this.getFaceInjurySeverity(case_),
-          'Chest (thoracic spine and diaphragm)': this.getChestInjurySeverity(case_),
-          'Abdomen (abdominal organs and lumbar spine)': this.getAbdomenInjurySeverity(case_),
-          'Extremities or Pelvic Girdle': this.getExtremitiesInjurySeverity(case_),
-          'External and other': this.getExternalInjurySeverity(case_),
-          'Head & Neck AIS Score': this.getHeadNeckAISScore(case_),
-          'Face AIS Score': this.getFaceAISScore(case_),
-          'Chest AIS Score': this.getChestAISScore(case_),
-          'Abdomen AIS Score': this.getAbdomenAISScore(case_),
-          'Extremities AIS Score': this.getExtremitiesAISScore(case_),
-          'External AIS Score': this.getExternalAISScore(case_),
-          'ISS Score': issScore,
-          'RTS Score': this.calculateRTSScore(case_, diastolicBP, heartRate, oxygenSaturation),
-          'TRISS Score': this.calculateTRISSScore(case_, issScore),
-          'ED disposition': this.formatEDDisposition(case_.edDisposition || ''),
-          'Origin Hospital': originHospital?.name || 'Unknown',
-          'Origin Hospital Cluster': originHospital?.cluster || '',
-          'Destination Hospital': destinationHospital?.name || 'Unknown',
-          'Destination Hospital Cluster': destinationHospital?.cluster || '',
-          'Survival Probability': this.calculateSurvivalProbability(case_),
-          'Length of Stay (days)': this.calculateLengthOfStay(case_),
-          'Discharge Date/Time': this.getDischargeDateTime(case_),
-          'Complications': this.getComplications(case_),
-          'Follow-up Required': this.getFollowUpRequired(case_),
-          'Follow-up Date': this.getFollowUpDate(case_),
-          'Door to CT Scan Time': this.calculateDoorToCTTime(case_),
-          'Door to OR Time': this.calculateDoorToORTime(case_),
-          'Door to ICU Time': this.calculateDoorToICUTime(case_),
-          'Door to Blood Time': this.calculateDoorToBloodTime(case_),
-          'Door to Antibiotics Time': this.calculateDoorToAntibioticsTime(case_),
-          'Door to Tetanus Time': this.calculateDoorToTetanusTime(case_),
-          'Door to Wound Care Time': this.calculateDoorToWoundCareTime(case_),
-          'Door to Splinting Time': this.calculateDoorToSplintingTime(case_),
-          'Door to Pain Meds Time': this.calculateDoorToPainMedsTime(case_),
-          'Minimum time from transfer to arrival': this.getMinTransferTime(case_),
-          'Maximum time from transfer to arrival': this.getMaxTransferTime(case_),
-          'Average transfer time': this.getAverageTransferTime(case_),
-          'Severity assessment numerator': this.getSeverityAssessmentNumerator(case_),
-          'Severity assessment denominator': this.getSeverityAssessmentDenominator(case_),
-          'Severity assessment percentage': this.getSeverityAssessmentPercentage(case_),
-          'Mortality numerator': this.getMortalityNumerator(case_),
-          'Mortality denominator': this.getMortalityDenominator(case_),
-          'ED Mortality Rate (Actual)': this.getEDMortalityRate(case_),
-          'Expected ED mortality rate': this.getExpectedEDMortalityRate(case_),
+          'CODE FOR SBP': this.getSBPCode(case_.systolicBloodPressure),
+          'CODE FOR GCS': this.getGCSCode(case_.glasgowComaScale),
+          'CODE FOR RR': this.getRRCode(case_.respiratoryRate),
+          'Revised Trauma Score (RTS)?': this.calculateRTSScoreSpec(case_),
+          'Head and Neck (Includes Cervical Spine)\nIf There is Multiple Injuries Choose the Most Severe Injury!': this.getHeadNeckInjurySeveritySpec(case_),
+          'Face: Facial Skeleton, Nose, Mouth, Eyes, & Ears\nIf There is Multiple Injuries Choose the Most Severe Injury!': this.getFaceInjurySeveritySpec(case_),
+          'Chest: thoracic spine and diaphragm\nIf There is Multiple Injuries Choose the Most Severe Injury!': this.getChestInjurySeveritySpec(case_),
+          'Abdomen: abdominal organs and lumbar spine (includes pelvic contents)\nIf There is Multiple Injuries Choose the Most Severe Injury!': this.getAbdomenInjurySeveritySpec(case_),
+          'Extremities or Pelvic Girdle (including pelvic skeleton injuries, extremity injuries, sprains, fractures, dislocations)\nIf There is Multiple Injuries Choose the Most Severe Injury!': this.getExtremitiesInjurySeveritySpec(case_),
+          'External and other (includes injuries such as lacerations, contusions, burns or hypothermia)\nIf There are Multiple Injuries Choose the Most Severe Injury!': this.getExternalInjurySeveritySpec(case_),
+          'Head & Neck AIS Score': this.getHeadNeckAISScoreSpec(case_),
+          'Face AIS Score': this.getFaceAISScoreSpec(case_),
+          'Chest AIS Score': this.getChestAISScoreSpec(case_),
+          'Abdomen AIS Score': this.getAbdomenAISScoreSpec(case_),
+          'Extremities AIS Score': this.getExtremitiesAISScoreSpec(case_),
+          'External AIS Score': this.getExternalAISScoreSpec(case_),
+          'ISS Score': this.calculateISSScoreSpec(case_),
+          'ED disposition?': this.formatEDDispositionSpec(case_.edDisposition || ''),
+          'Facility name (Automatically filled!)': destinationHospital?.name || '',
+          'Survival Probability': this.calculateSurvivalProbabilitySpec(case_),
         };
       });
 
-      // Create workbook and worksheet
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      // Calculate aggregated KPI data
+      const kpiData = this.calculateAggregatedKPIs(traumaCases);
+      
+      // Add KPI row after the case data
+      const kpiRow = {
+        'Date of arrival': '',
+        'Patient ID (National ID or IQAMA Numer or Passport)': '',
+        'Gender': '',
+        'Age in years': '',
+        'Mode of arrival': '',
+        'if Transferred from another hospital, what is the date & time of request for transfer? (From Ehalati system or referral report)': '',
+        'if Transferred from another hospital, what is the date & time of arrival? (From Ehalati system or referral report)': '',
+        'Transfer to Arrival Time': '',
+        'Mechanism of trauma?': '',
+        'Systolic Blood Pressure': '',
+        'Glasgow Coma Scale': '',
+        'Respiratory Rate': '',
+        'CODE FOR SBP': '',
+        'CODE FOR GCS': '',
+        'CODE FOR RR': '',
+        'Revised Trauma Score (RTS)?': '',
+        'Head and Neck (Includes Cervical Spine)\nIf There is Multiple Injuries Choose the Most Severe Injury!': '',
+        'Face: Facial Skeleton, Nose, Mouth, Eyes, & Ears\nIf There is Multiple Injuries Choose the Most Severe Injury!': '',
+        'Chest: thoracic spine and diaphragm\nIf There is Multiple Injuries Choose the Most Severe Injury!': '',
+        'Abdomen: abdominal organs and lumbar spine (includes pelvic contents)\nIf There is Multiple Injuries Choose the Most Severe Injury!': '',
+        'Extremities or Pelvic Girdle (including pelvic skeleton injuries, extremity injuries, sprains, fractures, dislocations)\nIf There is Multiple Injuries Choose the Most Severe Injury!': '',
+        'External and other (includes injuries such as lacerations, contusions, burns or hypothermia)\nIf There are Multiple Injuries Choose the Most Severe Injury!': '',
+        'Head & Neck AIS Score': '',
+        'Face AIS Score': '',
+        'Chest AIS Score': '',
+        'Abdomen AIS Score': '',
+        'Extremities AIS Score': '',
+        'External AIS Score': '',
+        'ISS Score': '',
+        'ED disposition?': '',
+        'Facility name (Automatically filled!)': '',
+        'Survival Probability': '',
+        // KPI columns (after skipping some columns as per specification)
+        'Expected Mortality': kpiData.expectedMortality,
+        'Minimum time from transfer to arrival': kpiData.minTransferTime,
+        'Maximum time from transfer to arrival': kpiData.maxTransferTime,
+        'Major Trauma 2 â€“ Average transfer time (Time from request of transfer to arrival at receiving hospital)': kpiData.averageTransferTime,
+        'Numerator: Number of major trauma patients with a completed severity assessment': kpiData.severityAssessmentNumerator,
+        'Denominator: Total number of major trauma patients received at the hospital (Severity)': kpiData.severityAssessmentDenominator,
+        'Major Trauma 3 â€" Percentage of major Trauma patients with completed severity assessment': kpiData.severityAssessmentPercentage,
+        'Numerator: Number of major trauma patients who die in weekly basis': kpiData.mortalityNumerator,
+        'Denominator: Total number of major trauma patients received at the hospital (Mortality)': kpiData.mortalityDenominator,
+        'Major Trauma 4 â€" ED Mortality Rate (Actual)': kpiData.edMortalityRate,
+        'Expected ED mortality rate (For comparison)': kpiData.expectedEDMortalityRate,
+        'Actual mortality rate vs Expected mortality rate': kpiData.mortalityComparison,
+      };
 
-      // Set column widths for comprehensive headers
-      const columnWidths = [
-        { wch: 15 }, // Date of arrival
-        { wch: 25 }, // Patient ID (National ID or IQAMA Number or Passport)
-        { wch: 8 },  // Gender
-        { wch: 12 }, // Age in years
-        { wch: 20 }, // Mode of arrival
-        { wch: 30 }, // Transfer request date & time (mm/dd/yyyy hh:mm)
-        { wch: 30 }, // Transfer arrival date & time (mm/dd/yyyy hh:mm)
-        { wch: 20 }, // Transfer to Arrival Time
-        { wch: 18 }, // Mechanism of trauma
-        { wch: 18 }, // Systolic Blood Pressure
-        { wch: 18 }, // Diastolic Blood Pressure
-        { wch: 12 }, // Heart Rate
-        { wch: 15 }, // Glasgow Coma Scale
-        { wch: 15 }, // Respiratory Rate
-        { wch: 15 }, // Oxygen Saturation
-        { wch: 12 }, // Temperature
-        { wch: 50 }, // Head and Neck (Includes Cervical Spine)
-        { wch: 50 }, // Face (Facial Skeleton, Nose, Mouth, Eyes, & Ears)
-        { wch: 50 }, // Chest (thoracic spine and diaphragm)
-        { wch: 50 }, // Abdomen (abdominal organs and lumbar spine)
-        { wch: 50 }, // Extremities or Pelvic Girdle
-        { wch: 50 }, // External and other
-        { wch: 15 }, // Head & Neck AIS Score
-        { wch: 12 }, // Face AIS Score
-        { wch: 12 }, // Chest AIS Score
-        { wch: 15 }, // Abdomen AIS Score
-        { wch: 18 }, // Extremities AIS Score
-        { wch: 15 }, // External AIS Score
-        { wch: 10 }, // ISS Score
-        { wch: 10 }, // RTS Score
-        { wch: 12 }, // TRISS Score
-        { wch: 25 }, // ED disposition
-        { wch: 25 }, // Origin Hospital
-        { wch: 20 }, // Origin Hospital Cluster
-        { wch: 25 }, // Destination Hospital
-        { wch: 20 }, // Destination Hospital Cluster
-        { wch: 18 }, // Survival Probability
-        { wch: 15 }, // Length of Stay (days)
-        { wch: 20 }, // Discharge Date/Time
-        { wch: 30 }, // Complications
-        { wch: 15 }, // Follow-up Required
-        { wch: 20 }, // Follow-up Date
-        { wch: 18 }, // Door to CT Scan Time
-        { wch: 15 }, // Door to OR Time
-        { wch: 15 }, // Door to ICU Time
-        { wch: 15 }, // Door to Blood Time
-        { wch: 18 }, // Door to Antibiotics Time
-        { wch: 15 }, // Door to Tetanus Time
-        { wch: 18 }, // Door to Wound Care Time
-        { wch: 18 }, // Door to Splinting Time
-        { wch: 18 }, // Door to Pain Meds Time
-        { wch: 25 }, // Minimum time from transfer to arrival
-        { wch: 25 }, // Maximum time from transfer to arrival
-        { wch: 20 }, // Average transfer time
-        { wch: 25 }, // Severity assessment numerator
-        { wch: 25 }, // Severity assessment denominator
-        { wch: 25 }, // Severity assessment percentage
-        { wch: 20 }, // Mortality numerator
-        { wch: 20 }, // Mortality denominator
-        { wch: 20 }, // ED Mortality Rate (Actual)
-        { wch: 25 }, // Expected ED mortality rate
+      // Combine case data with KPI row
+      const allData = [...exportData, kpiRow];
+
+      // Create workbook and worksheet using ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Trauma Cases');
+
+      // Define headers
+      const headers = [
+        'Date of arrival',
+        'Patient ID (National ID or IQAMA Numer or Passport)',
+        'Gender',
+        'Age in years',
+        'Mode of arrival',
+        'if Transferred from another hospital, what is the date & time of request for transfer? (From Ehalati system or referral report)',
+        'if Transferred from another hospital, what is the date & time of arrival? (From Ehalati system or referral report)',
+        'Transfer to Arrival Time',
+        'Mechanism of trauma?',
+        'Systolic Blood Pressure',
+        'Glasgow Coma Scale',
+        'Respiratory Rate',
+        'CODE FOR SBP',
+        'CODE FOR GCS',
+        'CODE FOR RR',
+        'Revised Trauma Score (RTS)?',
+        'Head and Neck (Includes Cervical Spine)\nIf There is Multiple Injuries Choose the Most Severe Injury!',
+        'Face: Facial Skeleton, Nose, Mouth, Eyes, & Ears\nIf There is Multiple Injuries Choose the Most Severe Injury!',
+        'Chest: thoracic spine and diaphragm\nIf There is Multiple Injuries Choose the Most Severe Injury!',
+        'Abdomen: abdominal organs and lumbar spine (includes pelvic contents)\nIf There is Multiple Injuries Choose the Most Severe Injury!',
+        'Extremities or Pelvic Girdle (including pelvic skeleton injuries, extremity injuries, sprains, fractures, dislocations)\nIf There is Multiple Injuries Choose the Most Severe Injury!',
+        'External and other (includes injuries such as lacerations, contusions, burns or hypothermia)\nIf There are Multiple Injuries Choose the Most Severe Injury!',
+        'Head & Neck AIS Score',
+        'Face AIS Score',
+        'Chest AIS Score',
+        'Abdomen AIS Score',
+        'Extremities AIS Score',
+        'External AIS Score',
+        'ISS Score',
+        'ED disposition?',
+        'Facility name (Automatically filled!)',
+        'Survival Probability',
+        'Expected Mortality',
+        'Minimum time from transfer to arrival',
+        'Maximum time from transfer to arrival',
+        'Major Trauma 2 â€“ Average transfer time (Time from request of transfer to arrival at receiving hospital)',
+        'Numerator: Number of major trauma patients with a completed severity assessment',
+        'Denominator: Total number of major trauma patients received at the hospital (Severity)',
+        'Major Trauma 3 â€" Percentage of major Trauma patients with completed severity assessment',
+        'Numerator: Number of major trauma patients who die in weekly basis',
+        'Denominator: Total number of major trauma patients received at the hospital (Mortality)',
+        'Major Trauma 4 â€" ED Mortality Rate (Actual)',
+        'Expected ED mortality rate (For comparison)',
+        'Actual mortality rate vs Expected mortality rate',
       ];
 
-      worksheet['!cols'] = columnWidths;
+      // Add header row with styling
+      const headerRow = worksheet.addRow(headers);
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF4472C4' } // Blue background
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+        cell.alignment = { 
+          vertical: 'middle', 
+          horizontal: 'center',
+          wrapText: true
+        };
+      });
 
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Trauma Cases');
+      // Set column widths
+      const columnWidths = [
+        15, 35, 8, 12, 25, 50, 50, 20, 18, 18, 15, 15, 12, 12, 12, 25,
+        60, 60, 60, 60, 60, 60, 15, 12, 12, 15, 18, 15, 10, 25, 25, 18,
+        18, 25, 25, 50, 50, 50, 50, 50, 50, 30, 30, 40
+      ];
+      
+      worksheet.columns.forEach((column, index) => {
+        column.width = columnWidths[index] || 15;
+      });
+
+      // Add data rows
+      allData.forEach((rowData) => {
+        const row = worksheet.addRow(Object.values(rowData));
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          cell.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'left',
+            wrapText: true
+          };
+        });
+      });
+
+      // Add data validation (dropdowns) for injury severity columns
+      this.addDataValidation(worksheet);
 
       // Generate Excel file buffer
-      const excelBuffer = XLSX.write(workbook, { 
-        type: 'buffer', 
-        bookType: 'xlsx',
-        compression: true 
-      });
+      const excelBuffer = await workbook.xlsx.writeBuffer();
 
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().split('T')[0];
@@ -893,5 +979,793 @@ export class TraumaExportService {
       return `${baseTime} min`;
     }
     return '';
+  }
+
+  // New methods matching the exact specification
+  private formatDateSpec(date: Date | null): string {
+    if (!date) return '';
+    const day = date.getDate();
+    const month = date.toLocaleString('default', { month: 'long' });
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  private formatModeOfArrivalSpec(modeOfArrival: string): string {
+    switch (modeOfArrival) {
+      case 'AMBULANCE_RED_CRESCENT': return 'By Red crescent';
+      case 'TRANSFERRED_FROM_ANOTHER_HOSPITAL': return 'Transferred from another hospital';
+      case 'PRIVATE_CAR': return 'By Private car/walk-in';
+      case 'WALK_IN': return 'By Private car/walk-in';
+      default: return 'By Private car/walk-in';
+    }
+  }
+
+  private getTransferRequestDateTimeSpec(case_: any): string {
+    if (case_.transferRequestDateTime) {
+      return this.formatDateTimeSpec(new Date(case_.transferRequestDateTime));
+    }
+    return '';
+  }
+
+  private getTransferArrivalDateTimeSpec(case_: any): string {
+    if (case_.transferArrivalDateTime) {
+      return this.formatDateTimeSpec(new Date(case_.transferArrivalDateTime));
+    }
+    return '';
+  }
+
+  private calculateTransferToArrivalTimeSpec(case_: any): string {
+    if (case_.transferDurationMinutes) {
+      const hours = Math.floor(case_.transferDurationMinutes / 60);
+      const minutes = case_.transferDurationMinutes % 60;
+      return `${hours}:${minutes.toString().padStart(2, '0')}`;
+    }
+    return '0:00';
+  }
+
+  private formatMechanismOfTraumaSpec(mechanism: string): string {
+    switch (mechanism) {
+      case 'BLUNT': return 'Blunt';
+      case 'PENETRATING': return 'Penetrating';
+      default: return 'Blunt';
+    }
+  }
+
+  private getSBPCode(sbp: number | null): number {
+    if (!sbp) return 0;
+    if (sbp >= 90) return 4;
+    if (sbp >= 76) return 3;
+    if (sbp >= 50) return 2;
+    if (sbp >= 1) return 1;
+    return 0;
+  }
+
+  private getGCSCode(gcs: number | null): number {
+    if (!gcs) return 0;
+    if (gcs >= 13) return 4;
+    if (gcs >= 9) return 3;
+    if (gcs >= 6) return 2;
+    if (gcs >= 4) return 1;
+    return 0;
+  }
+
+  private getRRCode(rr: number | null): number {
+    if (!rr) return 0;
+    if (rr >= 10 && rr <= 29) return 4;
+    if (rr > 29) return 3;
+    if (rr >= 6) return 2;
+    if (rr >= 1) return 1;
+    return 0;
+  }
+
+  private calculateRTSScoreSpec(case_: any): number {
+    const sbpCode = this.getSBPCode(case_.systolicBloodPressure);
+    const gcsCode = this.getGCSCode(case_.glasgowComaScale);
+    const rrCode = this.getRRCode(case_.respiratoryRate);
+    
+    // RTS = (0.9368 Ã— GCS) + (0.7326 Ã— SBP) + (0.2908 Ã— RR)
+    const rts = (0.9368 * gcsCode) + (0.7326 * sbpCode) + (0.2908 * rrCode);
+    return Math.round(rts * 100) / 100;
+  }
+
+  private getHeadNeckInjurySeveritySpec(case_: any): string {
+    if (!case_.headAndNeckInjury) return 'No injury';
+    
+    const injury = case_.headAndNeckInjury;
+    
+    // Mapping from actual database values to specification format
+    const mappings: { [key: string]: string } = {
+      // Database values -> Specification format
+      'Head trauma present': 'Minor (All Other Injuries)',
+      'Soft tissue injury to head and neck': 'Minor (All Other Injuries)',
+      'Concussion with loss of consciousness': 'Moderate: Simple undisplaced Skull Fracture',
+      'Cervical spine injury': 'Critical: C4 or below causing complete cord transection or contusion',
+      
+      // Fallback for numbered format if it exists
+      '1 - No Injury: - No injury': 'No injury',
+      '2 - Minor: - All Other Injuries': 'Minor (All Other Injuries)',
+      '3 - Moderate: - Tiny Epidural, Subdural, or Intracerebral Hematoma': 'Moderate: Tiny Epidural, Subdural, or Intracerebral Hematoma',
+      '3 - Moderate: - Intra-ventricular hemorrhage or subarachnoid hemorrhage': 'Moderate: Intra-ventricular hemorrhage or subarachnoid hemorrhage',
+      '3 - Moderate: - Simple undisplaced Skull Fracture': 'Moderate: Simple undisplaced Skull Fracture',
+      '3 - Moderate: - Penetrating Neck Injury with tissue loss': 'Moderate: Penetrating Neck Injury with tissue loss',
+      '4 - Serious: - Mild Brain Edema (Compressed ventricles without brain stem cisterns)': 'Serious: Mild Brain Edema (Compressed ventricles without brain stem cisterns)',
+      '4 - Serious: - Small Brain Contusion': 'Serious: Small Brain Contusion',
+      '4 - Serious: - Superficial penetrating injury to skull (less than 2 cm deep)': 'Serious: Superficial penerating injury to skull (less than 2 cm deep)',
+      '4 - Serious: - Penetrating Neck Injury with major blood loss (More than 20%)': 'Serious: Penetrating Neck Injury with major blood loss (More than 20%)',
+      '5 - Severe: - Moderate Brain Edema (Compressed ventricles and brain stem cisterns)': 'Severe: Moderate Brain Edema (Compressed ventricles and brain stem cisterns)',
+      '5 - Severe: - Large Brain Contusion': 'Severe: Large Brain Contusion',
+      '6 - Critical: - Massive Brain Contusion': 'Critical: Massive Brain Contusion',
+      '6 - Critical: - Large Epidural, Subdural, or Intracerebral Hematoma': 'Critical: Large Epidural, Subdural, or Intracerebral Hematoma',
+      '6 - Critical: - Brain stem compression, herniation, infarction, or injury': 'Critical: Brain stem compression, herniation, infarction, or injury)',
+      '6 - Critical: - Major penetrating injury to skull (more than 2 cm deep)': 'Critical: Major penerating injury to skull (more than 2 cm deep)',
+      '6 - Critical: - Unilateral laceration of Head and Neck arteries': 'Critical: Unilateral laceration of Head and Neck arteries (Internal carotid, vertibral, or cerebral arteries)',
+      '6 - Critical: - Basilar artery injury': 'Critical: Basilar artery injury (Laceration, thrombosis, occlusion, or traumatic aneurysm)',
+      '6 - Critical: - Bilateral thrombosis of Head and Neck arteries': 'Critical: Bilateral thrombosis of Head and Neck arteries',
+      '6 - Critical: - C4 or below causing complete cord transection or contusion': 'Critical: C4 or below causing complete cord transection or contusion',
+      '7 - Unsurvivable: - Massive destruction of skull and brain': 'Unsurvivable: Massive destruction of skull and brain',
+      '7 - Unsurvivable: - Brain stem laceration, massive destruction': 'Unsurvivable: Brain stem laceration, massive destruction, penetration or transection',
+      '7 - Unsurvivable: - Bilateral Laceration of Internal carotid arteries': 'Unsurvivable: Bilateral Laceration of Internal carotid or vertibral arteries',
+      '7 - Unsurvivable: - C3 or higher causing complete cord transection': 'Unsurvivable: C3 or higher causing complete cord transection or contusion'
+    };
+    
+    return mappings[injury] || 'Minor (All Other Injuries)';
+  }
+
+  private getFaceInjurySeveritySpec(case_: any): string {
+    if (!case_.faceInjury) return 'No injury';
+    
+    const injury = case_.faceInjury;
+    
+    const mappings: { [key: string]: string } = {
+      // Database values -> Specification format
+      'Soft tissue lacerations': 'Minor (All Other Injuries)',
+      'Nasal fracture': 'Moderate: LeFort I Fracture or LeFort II Fracture',
+      
+      // Fallback for numbered format if it exists
+      '1 - No Injury: - No injury': 'No injury',
+      '2 - Minor: - All Other Injuries': 'Minor (All Other Injuries)',
+      '3 - Moderate: - Simple facial fractures without displacement': 'Moderate: LeFort I Fracture or LeFort II Fracture',
+      '3 - Moderate: - Minor eye/ear/nose injuries with normal function': 'Moderate: Penetrating face injury tissue loss',
+      '4 - Serious: - Complex or displaced facial fractures': 'Serious: LeFort III Fracture',
+      '4 - Serious: - Major eye injuries with partial vision loss': 'Serious: Penetrating face injury with major blood loss (more than 20%)',
+      '4 - Serious: - Major ear injuries with partial hearing loss': 'Serious: Penetrating face injury with major blood loss (more than 20%)',
+      '5 - Severe: - Severe facial deformity requiring reconstruction': 'Severe: Penetrating face injury causing massive distruction to face including both eyes',
+      '5 - Severe: - Complete vision loss in one eye': 'Severe: Penetrating face injury causing massive distruction to face including both eyes',
+      '5 - Severe: - Complete hearing loss in one ear': 'Severe: Penetrating face injury causing massive distruction to face including both eyes'
+    };
+    
+    return mappings[injury] || 'Minor (All Other Injuries)';
+  }
+
+  private getChestInjurySeveritySpec(case_: any): string {
+    if (!case_.chestInjury) return 'No injury';
+    
+    const injury = case_.chestInjury;
+    
+    const mappings: { [key: string]: string } = {
+      // Database values -> Specification format
+      'Chest trauma present': 'Minor (All Other Injuries)',
+      'Cardiac contusion': 'Severe: Major Heamothorax (More than 1000 cc)',
+      
+      // Fallback for numbered format if it exists
+      '1 - No Injury: - No injury': 'No injury',
+      '2 - Minor: - All Other Injuries': 'Minor (All Other Injuries)',
+      '3 - Moderate: - Simple rib fractures (1-2 ribs)': 'Moderate: Simple Pneumothorax',
+      '3 - Moderate: - Minor pneumothorax without respiratory compromise': 'Moderate: Pneumomeiastinum',
+      '3 - Moderate: - Minor lung contusion': 'Moderate: Sternal fracture',
+      '4 - Serious: - Multiple rib fractures (3+ ribs)': 'Serious: Hemothorax',
+      '4 - Serious: - Hemothorax requiring drainage': 'Serious: Lung contusion',
+      '4 - Serious: - Pneumothorax requiring chest tube': 'Serious: Rib fractures with flial chest',
+      '4 - Serious: - Thoracic spine fracture without cord involvement': 'Serious: Other named artery injury',
+      '5 - Severe: - Flail chest segment': 'Severe: Pneumothorax (50% lung collapse on x-ray)',
+      '5 - Severe: - Tension pneumothorax': 'Critical: Tension pneumothorax',
+      '5 - Severe: - Cardiac contusion with arrhythmia': 'Severe: Major Heamothorax (More than 1000 cc)',
+      '5 - Severe: - Thoracic spine fracture with cord involvement': 'Severe: Aortic injury (intimal tear)',
+      '6 - Critical: - Major thoracic vessel injury': 'Severe: Vena Cava injury',
+      '6 - Critical: - Tracheal or bronchial tear': 'Severe: Subclavia artery or vein injury or brachiocephalic injury',
+      '6 - Critical: - Cardiac rupture with tamponade': 'Critical: Plumonary artery or vein laceration',
+      '6 - Critical: - Diaphragmatic rupture with herniation': 'Critical: Coronary artery injury',
+      '7 - Unsurvivable: - Complete transection of thoracic aorta': 'Unsurvivable: Heart rupture, multiple lacerations or avulsion',
+      '7 - Unsurvivable: - Massive bilateral pulmonary destruction': 'Unsurvivable: Aortic rupture with hemorrhage not confined to mediastinum'
+    };
+    
+    return mappings[injury] || 'Minor (All Other Injuries)';
+  }
+
+  private getAbdomenInjurySeveritySpec(case_: any): string {
+    if (!case_.abdomenInjury) return 'No injury';
+    
+    const injury = case_.abdomenInjury;
+    
+    const mappings: { [key: string]: string } = {
+      // Database values -> Specification format
+      'Abdominal trauma present': 'Minor (All Other Injuries)',
+      'Retroperitoneal hematoma': 'Serious: Kidney laceration (more than 1 cm not reaching the collecting system) or large contusion',
+      'Splenic injury': 'Moderate: Spleen laceration less than 3 cm deep',
+      
+      // Fallback for numbered format if it exists
+      '1 - No Injury: - No injury': 'No injury',
+      '2 - Minor: - All Other Injuries': 'Minor (All Other Injuries)',
+      '3 - Moderate: - Liver laceration <3cm': 'Moderate: Liver laceration less than 3 cm deep',
+      '3 - Moderate: - Spleen laceration <3cm': 'Moderate: Spleen laceration less than 3 cm deep',
+      '3 - Moderate: - Small bowel/colon injury <50%': 'Moderate: Small bowel, Colon, or rectal injury less than 50% circumference',
+      '3 - Moderate: - Kidney laceration <1cm': 'Moderate: Kidney laceration (less than 1 cm not reaching the collecting system) or small contusion',
+      '3 - Moderate: - Bladder contusion': 'Moderate: Urinary Bladder Contusion',
+      '4 - Serious: - Liver/Spleen laceration >3cm with duct involvement': 'Serious: Liver laceration more than 3 cm deep or with major duct involvment',
+      '4 - Serious: - Bowel injury >50%': 'Serious: Small bowel, Colon, or rectal injury more than 50% circumference',
+      '4 - Serious: - Kidney laceration >1cm': 'Serious: Kidney laceration (more than 1 cm not reaching the collecting system) or large contusion',
+      '4 - Serious: - Vessel rupture': 'Serious: Abdominal named artery or vein intimal tair or laceration (incomplete with mild bleeding)',
+      '4 - Serious: - Bladder laceration': 'Serious: Urinary Bladder laceration',
+      '5 - Severe: - Liver disruption <75% of lobe': 'Severe: Liver disruption involving less than 75% of the liver lobe',
+      '5 - Severe: - Spleen devascularization >25%': 'Severe: Spleen injury causing devascularization of more than 25% of the spleen',
+      '5 - Severe: - Massive bowel tissue loss': 'Severe: Anus injury with massive tissue loss',
+      '5 - Severe: - Kidney collecting system injury': 'Severe: Kidney laceration extending into the collecting system or main renal vessle injury with contained hematoma',
+      '6 - Critical: - Liver disruption >75% of lobe': 'Critical: Liver disruption involving more than 75% of the liver lobe',
+      '6 - Critical: - Spleen hilum injury': 'Critical: Spleen hilum injury',
+      '6 - Critical: - Kidney hilum avulsion': 'Critical: Kidney hilum avulsion or total distruction',
+      '6 - Critical: - Abdominal aortic rupture': 'Critical: Abdominal Aortic rupture with major bleeding',
+      '7 - Unsurvivable: - Liver avulsion (complete vascular separation)': 'Unsurvivable: Liver avulsion (Total separation of all vascualr attachments)'
+    };
+    
+    return mappings[injury] || 'Minor (All Other Injuries)';
+  }
+
+  private getExtremitiesInjurySeveritySpec(case_: any): string {
+    if (!case_.extremitiesInjury) return 'No injury';
+    
+    const injury = case_.extremitiesInjury;
+    
+    const mappings: { [key: string]: string } = {
+      // Database values -> Specification format
+      'Extremity trauma present': 'Minor (All Other Injuries)',
+      'Crush injury': 'Serious: Compartment syndrome (upper or lower extremity) with muscle loss',
+      'Upper extremity fracture': 'Moderate: Fractures (upper or lower extremity) not open',
+      'Femur fracture': 'Moderate: Fractures (upper or lower extremity) not open',
+      'Tibia/fibula fracture': 'Moderate: Fractures (upper or lower extremity) not open',
+      
+      // Fallback for numbered format if it exists
+      '1 - No Injury: - No injury': 'No injury',
+      '2 - Minor: - All Other Injuries': 'Minor (All Other Injuries)',
+      '3 - Moderate: - Fractures (upper/lower extremity) not open': 'Moderate: Fractures (upper or lower extremity) not open',
+      '3 - Moderate: - Vascular injury without major blood loss': 'Moderate: Vascualr injury (upper or lower extremity) without major blood loss',
+      '3 - Moderate: - Compartment syndrome without muscle loss': 'Moderate: Amputation at wrist or ankle',
+      '3 - Moderate: - Amputation at wrist or ankle': 'Moderate: Amputation at wrist or ankle',
+      '4 - Serious: - Pelvic Ring Fracture (Open Book)': 'Serious: Pelvic Ring Fracture (Open Book)',
+      '4 - Serious: - Open Fractures (upper/lower extremity)': 'Serious: Open Fractures (upper or lower extremity)',
+      '4 - Serious: - Vascular injury with major blood loss': 'Serious: Vascualr injury (upper or lower extremity) with major blood loss',
+      '4 - Serious: - Compartment syndrome with muscle loss': 'Serious: Compartment syndrome (upper or lower extremity) with muscle loss',
+      '4 - Serious: - Amputation below elbow/above wrist': 'Serious: Amputation below the elbow and above the wrist',
+      '4 - Serious: - Amputation below knee/above ankle': 'Serious: Amputation below the knee and above the ankle',
+      '5 - Severe: - Pelvic Ring Fracture with major bleeding': 'Severe: Pelvic Ring Fracture (Open Book) with major bleeding',
+      '5 - Severe: - Amputation above elbow or knee': 'Severe: Amputation above the elbow or knee'
+    };
+    
+    return mappings[injury] || 'Minor (All Other Injuries)';
+  }
+
+  private getExternalInjurySeveritySpec(case_: any): string {
+    if (!case_.externalInjury) return 'No injury';
+    
+    const injury = case_.externalInjury;
+    
+    const mappings: { [key: string]: string } = {
+      // Database values -> Specification format
+      'Multiple lacerations': 'Minor (All Other Injuries)',
+      'Abrasion injuries': 'Minor (All Other Injuries)',
+      
+      // Fallback for numbered format if it exists
+      '1 - No Injury: - No injury': 'No injury',
+      '2 - Minor: - All Other Injuries': 'Minor (All Other Injuries)',
+      '3 - Moderate: - 2nd or 3rd degree burns involving 10% to 19% of Total Body Surface': 'Moderate: 2nd or 3rd degree burns involving 10% to 19% Total Body Surface',
+      '4 - Serious: - Total scalp avulsion or scalp injury with significant blood loss': 'Serious: 2nd or 3rd degree burns involving 20% to 29% Total Body Surface',
+      '4 - Serious: - 2nd or 3rd degree burns involving 20% to 29% of Total Body Surface': 'Serious: 2nd or 3rd degree burns involving 20% to 29% Total Body Surface',
+      '4 - Serious: - Near drowning without neurological deficit': 'Serious: Near drowning without neurological deficit',
+      '5 - Severe: - 2nd or 3rd degree burns involving 30% to 39% of Total Body Surface': 'Severe: 2nd or 3rd degree burns involving 30% to 39% Total Body Surface',
+      '5 - Severe: - Near drowning with neurological deficit': 'Critical: Near drowning with neurological deficit',
+      '6 - Critical: - 2nd or 3rd degree burns involving 40% to 90% of Total Body Surface': 'Critical: 2nd or 3rd degree burns involving 40% to 90% Total Body Surface',
+      '6 - Critical: - Drowning with cardiac arrest': 'Unsurvivable: Drowning with cardiac arrest',
+      '7 - Unsurvivable: - 2nd or 3rd degree burns involving most of Total Body Surface': 'Unsurvivable: 2nd or 3rd degree burns involving more than 90% Total Body Surface',
+      '7 - Unsurvivable: - Explosion injury affecting the whole body': 'Unsurvivable: Explosion injury affecting whole body (multiple organ injury to brain, thorax, and/or abdomen with loss of one or more limbs)'
+    };
+    
+    return mappings[injury] || 'Minor (All Other Injuries)';
+  }
+
+  private getHeadNeckAISScoreSpec(case_: any): number {
+    if (!case_.headAndNeckInjury) return 0;
+    
+    const injury = case_.headAndNeckInjury;
+    
+    // Map database values directly to AIS scores
+    const mappings: { [key: string]: number } = {
+      'Head trauma present': 2,
+      'Soft tissue injury to head and neck': 2,
+      'Concussion with loss of consciousness': 3,
+      'Cervical spine injury': 6
+    };
+    
+    return mappings[injury] || 2;
+  }
+
+  private getFaceAISScoreSpec(case_: any): number {
+    if (!case_.faceInjury) return 0;
+    
+    const injury = case_.faceInjury;
+    
+    // Map database values directly to AIS scores
+    const mappings: { [key: string]: number } = {
+      'Soft tissue lacerations': 2,
+      'Nasal fracture': 3
+    };
+    
+    return mappings[injury] || 2;
+  }
+
+  private getChestAISScoreSpec(case_: any): number {
+    if (!case_.chestInjury) return 0;
+    
+    const injury = case_.chestInjury;
+    
+    // Map database values directly to AIS scores
+    const mappings: { [key: string]: number } = {
+      'Chest trauma present': 2,
+      'Cardiac contusion': 5
+    };
+    
+    return mappings[injury] || 2;
+  }
+
+  private getAbdomenAISScoreSpec(case_: any): number {
+    if (!case_.abdomenInjury) return 0;
+    
+    const injury = case_.abdomenInjury;
+    
+    // Map database values directly to AIS scores
+    const mappings: { [key: string]: number } = {
+      'Abdominal trauma present': 2,
+      'Retroperitoneal hematoma': 4,
+      'Splenic injury': 3
+    };
+    
+    return mappings[injury] || 2;
+  }
+
+  private getExtremitiesAISScoreSpec(case_: any): number {
+    if (!case_.extremitiesInjury) return 0;
+    
+    const injury = case_.extremitiesInjury;
+    
+    // Map database values directly to AIS scores
+    const mappings: { [key: string]: number } = {
+      'Extremity trauma present': 2,
+      'Crush injury': 4,
+      'Upper extremity fracture': 3,
+      'Femur fracture': 3,
+      'Tibia/fibula fracture': 3
+    };
+    
+    return mappings[injury] || 2;
+  }
+
+  private getExternalAISScoreSpec(case_: any): number {
+    if (!case_.externalInjury) return 0;
+    
+    const injury = case_.externalInjury;
+    
+    // Map database values directly to AIS scores
+    const mappings: { [key: string]: number } = {
+      'Multiple lacerations': 2,
+      'Abrasion injuries': 2
+    };
+    
+    return mappings[injury] || 2;
+  }
+
+  private calculateISSScoreSpec(case_: any): number {
+    const headNeckAIS = this.getHeadNeckAISScoreSpec(case_);
+    const faceAIS = this.getFaceAISScoreSpec(case_);
+    const chestAIS = this.getChestAISScoreSpec(case_);
+    const abdomenAIS = this.getAbdomenAISScoreSpec(case_);
+    const extremitiesAIS = this.getExtremitiesAISScoreSpec(case_);
+    const externalAIS = this.getExternalAISScoreSpec(case_);
+
+    // ISS is calculated as the sum of squares of the three highest AIS scores
+    const scores = [headNeckAIS, faceAIS, chestAIS, abdomenAIS, extremitiesAIS, externalAIS];
+    scores.sort((a, b) => b - a); // Sort in descending order
+    
+    return (scores[0] * scores[0]) + (scores[1] * scores[1]) + (scores[2] * scores[2]);
+  }
+
+  private formatEDDispositionSpec(disposition: string): string {
+    switch (disposition) {
+      case 'ADMISSION': return 'Admission';
+      case 'TRANSFER_TO_HIGHER_CENTER': return 'Transferred to another hospital';
+      case 'DISCHARGE': return 'Discharged home';
+      case 'DAMA': return 'DAMA (Discharge Against Medical Advice)';
+      case 'DEATH': return 'Death in ED';
+      default: return 'Admission';
+    }
+  }
+
+  private calculateSurvivalProbabilitySpec(case_: any): number {
+    const iss = this.calculateISSScoreSpec(case_);
+    const rts = this.calculateRTSScoreSpec(case_);
+    
+    // Simplified survival probability calculation
+    // Formula: 1/(1+EXP(-(b0 + b1*RTS + b2*ISS + b3*age)))
+    const age = case_.patient?.age || 30;
+    const b0 = 0.5;
+    const b1 = 0.3;
+    const b2 = -0.1;
+    const b3 = -0.01;
+    
+    const logit = b0 + (b1 * rts) + (b2 * iss) + (b3 * age);
+    const probability = 1 / (1 + Math.exp(-logit));
+    
+    return Math.round(probability * 10000) / 100; // Return as percentage with 2 decimal places
+  }
+
+  private calculateExpectedMortality(case_: any): number {
+    const survivalProb = this.calculateSurvivalProbabilitySpec(case_);
+    return Math.round((100 - survivalProb) * 100) / 100; // Expected mortality = 100 - survival probability
+  }
+
+  private getMinTransferTimeSpec(case_: any): string {
+    return '0:00';
+  }
+
+  private getMaxTransferTimeSpec(case_: any): string {
+    return '0:00';
+  }
+
+  private getAverageTransferTimeSpec(case_: any): string {
+    return 'No Data';
+  }
+
+  private getSeverityAssessmentNumeratorSpec(case_: any): number {
+    // Count cases with completed severity assessment (ISS > 0)
+    const iss = this.calculateISSScoreSpec(case_);
+    return iss > 0 ? 1 : 0;
+  }
+
+  private getSeverityAssessmentDenominatorSpec(case_: any): number {
+    return 1; // Total cases
+  }
+
+  private getSeverityAssessmentPercentageSpec(case_: any): number {
+    const numerator = this.getSeverityAssessmentNumeratorSpec(case_);
+    const denominator = this.getSeverityAssessmentDenominatorSpec(case_);
+    return denominator > 0 ? Math.round((numerator / denominator) * 10000) / 100 : 0;
+  }
+
+  private getMortalityNumeratorSpec(case_: any): number {
+    return case_.edDisposition === 'DEATH' ? 1 : 0;
+  }
+
+  private getMortalityDenominatorSpec(case_: any): number {
+    return 1; // Total cases
+  }
+
+  private getEDMortalityRateSpec(case_: any): number {
+    const numerator = this.getMortalityNumeratorSpec(case_);
+    const denominator = this.getMortalityDenominatorSpec(case_);
+    return denominator > 0 ? Math.round((numerator / denominator) * 10000) / 100 : 0;
+  }
+
+  private getExpectedEDMortalityRateSpec(case_: any): number {
+    return this.calculateExpectedMortality(case_);
+  }
+
+  private getMortalityComparison(case_: any): string {
+    const actual = this.getEDMortalityRateSpec(case_);
+    const expected = this.getExpectedEDMortalityRateSpec(case_);
+    
+    if (actual > expected * 1.5) {
+      return 'The quality of care need review';
+    } else if (actual < expected * 0.5) {
+      return 'Excellent quality of care';
+    } else {
+      return 'Within expected range';
+    }
+  }
+
+  private formatDateTimeSpec(date: Date): string {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const year = date.getFullYear();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    return `${month}/${day}/${year} ${hours}:${minutes.toString().padStart(2, '0')}`;
+  }
+
+  private calculateAggregatedKPIs(traumaCases: any[]): any {
+    const totalCases = traumaCases.length;
+    
+    // Calculate severity assessment metrics
+    const casesWithSeverityAssessment = traumaCases.filter(case_ => {
+      const iss = this.calculateISSScoreSpec(case_);
+      return iss > 0;
+    }).length;
+    
+    // Calculate mortality metrics
+    const deaths = traumaCases.filter(case_ => case_.edDisposition === 'DEATH').length;
+    
+    // Calculate transfer time metrics
+    const transferTimes: number[] = [];
+    traumaCases.forEach(case_ => {
+      if (case_.transferDurationMinutes) {
+        transferTimes.push(case_.transferDurationMinutes);
+      }
+    });
+    
+    const minTransferTime = transferTimes.length > 0 ? Math.min(...transferTimes) : 0;
+    const maxTransferTime = transferTimes.length > 0 ? Math.max(...transferTimes) : 0;
+    const avgTransferTime = transferTimes.length > 0 ? transferTimes.reduce((a, b) => a + b, 0) / transferTimes.length : 0;
+    
+    // Calculate expected mortality
+    const totalExpectedMortality = traumaCases.reduce((sum, case_) => {
+      return sum + this.calculateExpectedMortality(case_);
+    }, 0);
+    const avgExpectedMortality = totalCases > 0 ? totalExpectedMortality / totalCases : 0;
+    
+    // Calculate actual mortality rate
+    const actualMortalityRate = totalCases > 0 ? (deaths / totalCases) * 100 : 0;
+    
+    // Determine mortality comparison
+    let mortalityComparison = 'Within expected range';
+    if (actualMortalityRate > avgExpectedMortality * 1.5) {
+      mortalityComparison = 'The quality of care need review';
+    } else if (actualMortalityRate < avgExpectedMortality * 0.5) {
+      mortalityComparison = 'Excellent quality of care';
+    }
+    
+    return {
+      expectedMortality: Math.round(avgExpectedMortality * 100) / 100,
+      minTransferTime: this.formatTimeFromMinutes(minTransferTime),
+      maxTransferTime: this.formatTimeFromMinutes(maxTransferTime),
+      averageTransferTime: transferTimes.length > 0 ? this.formatTimeFromMinutes(avgTransferTime) : 'No Data',
+      severityAssessmentNumerator: casesWithSeverityAssessment,
+      severityAssessmentDenominator: totalCases,
+      severityAssessmentPercentage: totalCases > 0 ? Math.round((casesWithSeverityAssessment / totalCases) * 10000) / 100 : 0,
+      mortalityNumerator: deaths,
+      mortalityDenominator: totalCases,
+      edMortalityRate: Math.round(actualMortalityRate * 100) / 100,
+      expectedEDMortalityRate: Math.round(avgExpectedMortality * 100) / 100,
+      mortalityComparison: mortalityComparison,
+    };
+  }
+
+  private formatTimeFromMinutes(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}:${mins.toString().padStart(2, '0')}`;
+  }
+
+  private addDataValidation(worksheet: ExcelJS.Worksheet): void {
+    // Define injury severity options for each body region (using specification format)
+    const injuryOptions = {
+      headNeck: [
+        'No injury',
+        'Minor (All Other Injuries)',
+        'Moderate: Tiny Epidural, Subdural, or Intracerebral Hematoma',
+        'Moderate: Intra-ventricular hemorrhage or subarachnoid hemorrhage',
+        'Moderate: Simple undisplaced Skull Fracture',
+        'Moderate: Penetrating Neck Injury with tissue loss',
+        'Serious: Mild Brain Edema (Compressed ventricles without brain stem cisterns)',
+        'Serious: Small Brain Contusion',
+        'Serious: Superficial penerating injury to skull (less than 2 cm deep)',
+        'Serious: Penetrating Neck Injury with major blood loss (More than 20%)',
+        'Severe: Moderate Brain Edema (Compressed ventricles and brain stem cisterns)',
+        'Severe: Large Brain Contusion',
+        'Severe: Small to Moderate Epidural, Subdural, or Intracerebral Hematoma',
+        'Severe: Diffuse Axonal Injury',
+        'Severe: Unilateral thrombosis of Head and Neck arteries (Internal carotid, vertibral, or cerebral arteries)',
+        'Severe: Open or depressed skull fracture',
+        'Critical: Severe Brain Edema (Absent ventricles or brain stem cisterns)',
+        'Critical: Massive Brain Contusion',
+        'Critical: Large Epidural, Subdural, or Intracerebral Hematoma',
+        'Critical: Brain stem compression, herniation, infarction, or injury)',
+        'Critical: Major penerating injury to skull (more than 2 cm deep)',
+        'Critical: Unilateral laceration of Head and Neck arteries (Internal carotid, vertibral, or cerebral arteries)',
+        'Critical: Basilar artery injury (Laceration, thrombosis, occlusion, or traumatic aneurysm)',
+        'Critical: Bilateral thrombosis of Head and Neck arteries',
+        'Critical: C4 or below causing complete cord transection or contusion',
+        'Unsurvivable: Massive destruction of skull and brain',
+        'Unsurvivable: Brain stem laceration, massive destruction, penetration or transection',
+        'Unsurvivable: Bilateral Laceration of Internal carotid or vertibral arteries',
+        'Unsurvivable: C3 or higher causing complete cord transection or contusion'
+      ],
+      face: [
+        'No injury',
+        'Minor (All Other Injuries)',
+        'Moderate: LeFort I Fracture or LeFort II Fracture',
+        'Moderate: Penetrating face injury tissue loss',
+        'Serious: LeFort III Fracture',
+        'Serious: Penetrating face injury with major blood loss (more than 20%)',
+        'Severe: Penetrating face injury causing massive destruction to face including both eyes'
+      ],
+      chest: [
+        'No injury',
+        'Minor (All Other Injuries)',
+        'Moderate: Simple Pneumothorax',
+        'Moderate: Pneumomeiastinum',
+        'Moderate: Sternal fracture',
+        'Moderate: Other named vein injury',
+        'Serious: Hemothorax',
+        'Serious: Lung contusion',
+        'Serious: Rib fractures with flial chest',
+        'Serious: Other named artery injury',
+        'Serious: Diaphragmatic laceration (Less than 10 cm)',
+        'Severe: Pneumothorax (50% lung collapse on x-ray)',
+        'Severe: Major Heamothorax (More than 1000 cc)',
+        'Severe: Aortic injury (intimal tear)',
+        'Severe: Vena Cava injury',
+        'Severe: Subclavia artery or vein injury or brachiocephalic injury',
+        'Severe: Diaphragmatic rupture (More than 10 cm) with/without herniation',
+        'Critical: Tension pneumothorax',
+        'Critical: Aortic rupture with hemorrhage confined to mediastinum or with involvment of the aortic root/ aortic valve',
+        'Critical: Plumonary artery or vein laceration',
+        'Critical: Coronary artery injury',
+        'Unsurvivable: Heart rupture, multiple lacerations or avulsion',
+        'Unsurvivable: Massive Chest Crush (Bilateral Destruction of Skeletal, Vascular, and Organ Systems',
+        'Unsurvivable: Aortic rupture with hemorrhage not confined to mediastinum',
+        'Unsurvivable: Bilateral plumonary artery or vein laceration'
+      ],
+      abdomen: [
+        'No injury',
+        'Minor (All Other Injuries)',
+        'Moderate: Liver laceration less than 3 cm deep',
+        'Moderate: Spleen laceration less than 3 cm deep',
+        'Moderate: Kidney laceration (less than 1 cm not reaching the collecting system) or small contusion',
+        'Moderate: Small bowel, Colon, or rectal injury less than 50% circumference',
+        'Moderate: Anus injury partial thickness',
+        'Moderate: Urinary Bladder Contusion',
+        'Serious: Liver laceration more than 3 cm deep or with major duct involvment',
+        'Serious: Spleen laceration more than 3 cm deep',
+        'Serious: Kidney laceration (more than 1 cm not reaching the collecting system) or large contusion',
+        'Serious: Small bowel, Colon, or rectal injury more than 50% circumference',
+        'Serious: Anus perforation full thickness',
+        'Serious: Urinary Bladder laceration',
+        'Serious: Abdominal named artery or vein intimal tair or laceration (incomplete with mild bleeding)',
+        'Severe: Liver disruption involving less than 75% of the liver lobe',
+        'Severe: Spleen injury causing devascularization of more than 25% of the spleen',
+        'Severe: Kidney laceration extending into the collecting system or main renal vessle injury with contained hematoma',
+        'Severe: Abdominal named artery or vein major rupture, transection, major bleeding',
+        'Severe: Abdominal Aortic intimal tair or laceration (incomplete with mild bleeding)',
+        'Severe: Anus injury with massive tissue loss',
+        'Severe: Urinary Bladder injury including the trigone',
+        'Critical: Liver disruption involving more than 75% of the liver lobe',
+        'Critical: Spleen hilum injury',
+        'Critical: Kidney hilum avulsion or total distruction',
+        'Critical: Abdominal Aortic rupture with major bleeding',
+        'Unsurvivable: Liver avulsion (Total separation of all vascualr attachments)',
+        'Unsurvivable: Abdominal Aortic rupture with major bleeding'
+      ],
+      extremities: [
+        'No injury',
+        'Minor (All Other Injuries)',
+        'Moderate: Fractures (upper or lower extremity) not open',
+        'Moderate: Vascualr injury (upper or lower extremity) without major blood loss',
+        'Moderate: Amputation at wrist or ankle',
+        'Serious: Pelvic Ring Fracture (Open Book)',
+        'Serious: Open Fractures (upper or lower extremity)',
+        'Serious: Vascualr injury (upper or lower extremity) with major blood loss',
+        'Serious: Compartment syndrome (upper or lower extremity) without muscle loss',
+        'Serious: Compartment syndrome (upper or lower extremity) with muscle loss',
+        'Serious: Amputation below the elbow and above the wrist',
+        'Serious: Amputation below the knee and above the ankle',
+        'Severe: Pelvic Ring Fracture (Open Book) with major bleeding',
+        'Severe: Amputation above the elbow or knee'
+      ],
+      external: [
+        'No injury',
+        'Minor (All Other Injuries)',
+        'Moderate: 2nd or 3rd degree burns involving 10% to 19% Total Body Surface',
+        'Serious: 2nd or 3rd degree burns involving 20% to 29% Total Body Surface',
+        'Serious: Near drowning without neurological deficit',
+        'Severe: 2nd or 3rd degree burns involving 30% to 39% Total Body Surface',
+        'Critical: 2nd or 3rd degree burns involving 40% to 90% Total Body Surface',
+        'Critical: Near drowning with neurological deficit',
+        'Unsurvivable: 2nd or 3rd degree burns involving more than 90% Total Body Surface',
+        'Unsurvivable: Explosion injury affecting whole body (multiple organ injury to brain, thorax, and/or abdomen with loss of one or more limbs)',
+        'Unsurvivable: Drowning with cardiac arrest'
+      ]
+    };
+
+    // Add data validation for injury severity columns (Q, R, S, T, U, V)
+    const injuryColumns = [
+      { col: 17, options: injuryOptions.headNeck }, // Q - Head and Neck
+      { col: 18, options: injuryOptions.face },     // R - Face
+      { col: 19, options: injuryOptions.chest },    // S - Chest
+      { col: 20, options: injuryOptions.abdomen },  // T - Abdomen
+      { col: 21, options: injuryOptions.extremities }, // U - Extremities
+      { col: 22, options: injuryOptions.external }  // V - External
+    ];
+
+    injuryColumns.forEach(({ col, options }) => {
+      // Apply validation to all data rows (skip header row)
+      for (let row = 2; row <= 1000; row++) { // Allow up to 1000 rows
+        const cellAddress = `${worksheet.getColumn(col).letter}${row}`;
+        worksheet.getCell(cellAddress).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [options.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+          showErrorMessage: true,
+          errorTitle: 'Invalid Selection',
+          error: 'Please select a valid injury severity from the dropdown list.',
+          showInputMessage: true,
+          promptTitle: 'Select Injury Severity',
+          prompt: 'Choose the most severe injury from the dropdown list.'
+        };
+      }
+    });
+
+    // Add validation for other categorical fields
+    const modeOfArrivalOptions = [
+      'By Red crescent',
+      'By Private car/walk-in',
+      'Transferred from another hospital'
+    ];
+
+    const mechanismOptions = [
+      'Blunt',
+      'Penetrating'
+    ];
+
+    const dispositionOptions = [
+      'Admission',
+      'Transferred to another hospital',
+      'Discharged home',
+      'DAMA (Discharge Against Medical Advice)',
+      'Death in ED'
+    ];
+
+    // Mode of Arrival (column E)
+    for (let row = 2; row <= 1000; row++) {
+      const cellAddress = `E${row}`;
+      worksheet.getCell(cellAddress).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [modeOfArrivalOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a valid mode of arrival.',
+        showInputMessage: true,
+        promptTitle: 'Select Mode of Arrival',
+        prompt: 'Choose the mode of arrival from the dropdown list.'
+      };
+    }
+
+    // Mechanism of Trauma (column I)
+    for (let row = 2; row <= 1000; row++) {
+      const cellAddress = `I${row}`;
+      worksheet.getCell(cellAddress).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [mechanismOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a valid mechanism of trauma.',
+        showInputMessage: true,
+        promptTitle: 'Select Mechanism of Trauma',
+        prompt: 'Choose the mechanism of trauma from the dropdown list.'
+      };
+    }
+
+    // ED Disposition (column AD)
+    for (let row = 2; row <= 1000; row++) {
+      const cellAddress = `AD${row}`;
+      worksheet.getCell(cellAddress).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [dispositionOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a valid ED disposition.',
+        showInputMessage: true,
+        promptTitle: 'Select ED Disposition',
+        prompt: 'Choose the ED disposition from the dropdown list.'
+      };
+    }
   }
 }
