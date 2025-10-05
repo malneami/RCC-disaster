@@ -42,7 +42,7 @@ export class HospitalsService {
     return this.prisma.hospital.findMany({
       where: { 
         deletedAt: null,
-        status: 'ACTIVE' // Only return active hospitals
+        // status: 'ACTIVE' // Only return active hospitals
       },
       select: {
         id: true,
