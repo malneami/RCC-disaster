@@ -574,7 +574,7 @@ export class EmsAssignmentsService {
         } catch (error) {
           this.logger.error(`Error in location monitoring for assignment ${assignmentId}: ${(error as Error).message}`);
         }
-      }, 5 * 60 * 1000); // 5 minutes
+      }, 1 * 60 * 1000); // 5 minutes
 
       // Store the interval ID for potential cleanup (you might want to implement cleanup logic)
       // For now, we'll let it run indefinitely until the assignment is completed
