@@ -141,7 +141,7 @@ export class TicketsService {
       this.ticketsGateway.emitEmergencyTicket(ticket);
     }
 
-    if (createTicketDto.transportMode === 'AMBULANCE_RED_CRESCENT') {
+    
       try {
         const emsAssignment = await this.emsAssignmentsService.create({
           ticketId: ticket.id,
@@ -185,7 +185,6 @@ export class TicketsService {
           },
         });
       }
-    }
 
     return ticket;
   }
