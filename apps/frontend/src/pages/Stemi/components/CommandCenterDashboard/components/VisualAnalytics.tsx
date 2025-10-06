@@ -143,14 +143,6 @@ const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({ data, language }) => 
           />
         </Grid>
 
-        {/* Hospital Performance */}
-        <Grid item xs={12} md={6}>
-          <DonutChartComponent
-            data={transformChartData(data?.charts.hospitalPerformance)}
-            title={language === 'ar' ? 'توزيع أداء المستشفيات' : 'Hospital Performance Distribution'}
-            // colors={['#4caf50', '#4caf50', '#ff9800', '#9c27b0', '#f44336', '#607d8b', '#795548', '#009688']}
-          />
-        </Grid>
 
         {/* Hospital Performance Heatmap */}
         <Grid item xs={12}>

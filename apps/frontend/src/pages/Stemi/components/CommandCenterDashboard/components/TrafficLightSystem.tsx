@@ -27,8 +27,8 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
 
   const getComplianceStatus = (percentage: number) => {
     if (percentage >= 90) return { color: 'success', icon: CheckIcon, label: language === 'ar' ? 'ممتاز' : 'Excellent' };
-    if (percentage >= 75) return { color: 'warning', icon: WarningIcon, label: language === 'ar' ? 'جيد' : 'Good' };
-    return { color: 'error', icon: ErrorIcon, label: language === 'ar' ? 'يحتاج تحسين' : 'Needs Improvement' };
+    if (percentage >= 75) return { color: 'warning', icon: WarningIcon, label: language === 'ar' ? 'جيد' : 'Needs Improvement' };
+    return { color: 'error', icon: ErrorIcon, label: language === 'ar' ? 'يحتاج تحسين' : 'Not Good' };
   };
 
   const complianceMetrics = data.kpis
@@ -130,7 +130,7 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
         <Typography variant="body2" textAlign="center" sx={{ color: '#b0b0b0' }}>
           {language === 'ar' 
             ? '🟢 ممتاز (90.0%+) | 🟡 جيد (75.0-89.9%) | 🔴 يحتاج تحسين (<75.0%)'
-            : '🟢 Excellent (90.0%+) | 🟡 Good (75.0-89.9%) | 🔴 Needs Improvement (<75.0%)'
+            : '🟢 Excellent (90.0%+) | 🟡 Needs Improvement (75.0-89.9%) | 🔴 Not Good (<75.0%)'
           }
         </Typography>
       </Box>

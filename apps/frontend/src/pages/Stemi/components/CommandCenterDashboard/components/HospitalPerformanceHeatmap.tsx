@@ -91,18 +91,21 @@ const HospitalPerformanceHeatmap: React.FC<HospitalPerformanceHeatmapProps> = ({
   };
 
   const getComplianceColor = (percentage: number): string => {
+    if (percentage === 0) return '#666666'; // Gray for 0%
     if (percentage >= 80) return '#4caf50'; // Green
     if (percentage >= 65) return '#ff9800'; // Yellow
     return '#f44336'; // Red
   };
 
   const getComplianceIcon = (percentage: number) => {
+    if (percentage === 0) return null; // No icon for 0%
     if (percentage >= 80) return <CheckCircle sx={{ fontSize: 16, color: 'white' }} />;
     if (percentage >= 65) return <Warning sx={{ fontSize: 16, color: 'white' }} />;
     return <Cancel sx={{ fontSize: 16, color: 'white' }} />;
   };
 
   const getComplianceStatus = (percentage: number): string => {
+    if (percentage === 0) return language === 'ar' ? 'لا توجد بيانات' : 'No Data';
     if (percentage >= 80) return language === 'ar' ? 'ممتاز' : 'Excellent';
     if (percentage >= 65) return language === 'ar' ? 'مقبول' : 'Acceptable';
     return language === 'ar' ? 'يحتاج تحسين' : 'Needs Improvement';
@@ -350,7 +353,7 @@ const HospitalPerformanceHeatmap: React.FC<HospitalPerformanceHeatmapProps> = ({
                               {hospital.hospitalName} - {column.label}
                             </Typography>
                             <Typography variant="body2">
-                              {language === 'ar' ? 'الامتثال:' : 'Compliance:'} {compliantCount}/{validCount} {language === 'ar' ? 'حالة' : 'cases'} ({value}%)
+                              {language === 'ar' ? 'الامتثال:' : 'Compliance:'} {compliantCount}/{validCount} {language === 'ar' ? 'حالة' : 'cases'} {value === 0 ? '(—)' : `(${value}%)`}
                             </Typography>
                             <Typography variant="body2">
                               {language === 'ar' ? 'الحالة:' : 'Status:'} {getComplianceStatus(value)}
@@ -386,7 +389,7 @@ const HospitalPerformanceHeatmap: React.FC<HospitalPerformanceHeatmapProps> = ({
                               fontWeight: 'bold',
                               fontSize: '0.8rem'
                             }}>
-                              {value}%
+                              {value === 0 ? '—' : `${value}%`}
                             </Typography>
                           </Box>
                         </Box>
