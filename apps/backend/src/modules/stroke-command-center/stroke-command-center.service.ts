@@ -45,6 +45,7 @@ export class StrokeCommandCenterService {
       select: {
         id: true,
         strokeType: true,
+        candidateForIVThrombolysis: true,
         modeOfArrival: true,
         timeOfTriage: true,
         timeOfPhysicianAssessment: true,
@@ -57,7 +58,11 @@ export class StrokeCommandCenterService {
         dischargeDestination: true,
         timeOfSwallowingScreening: true,
         followUpCallCompleted: true,
-        // Add the actual KPI boolean fields
+        // Add the actual timing data for proper KPI calculations
+        doorToPhysicianMinutes: true,
+        doorToCtScanMinutes: true,
+        doorToNeedleMinutes: true,
+        // Keep the stored KPI flags for backward compatibility
         metKpi1: true,
         metKpi2: true,
         metKpi3: true,
@@ -430,21 +435,37 @@ export class StrokeCommandCenterService {
   private calculateKPIMetrics(cases: any[]): StrokeKPIMetricDto[] {
     const totalCases = cases.length;
     
-    // Use the same calculation method as stroke portal dashboard
-    const kpi1Met = cases.filter(c => c.metKpi1).length;
-    const kpi2Met = cases.filter(c => c.metKpi2).length;
-    const kpi3Met = cases.filter(c => c.metKpi3).length;
+    // Calculate KPI metrics based on actual timing data from patients (same as stroke portal)
+    // KPI 1: Door to Physician ≤ 15 minutes
+    const doorToPhysicianCases = cases.filter(c => c.doorToPhysicianMinutes !== null && c.doorToPhysicianMinutes !== undefined);
+    const kpi1Met = doorToPhysicianCases.filter(c => c.doorToPhysicianMinutes <= 15).length;
+    const kpi1Total = doorToPhysicianCases.length;
+
+    // KPI 2: Door to CT Scan ≤ 20 minutes (should be based on doorToCtScanMinutes)
+    const doorToCtCases = cases.filter(c => c.doorToCtScanMinutes !== null && c.doorToCtScanMinutes !== undefined);
+    const kpi2Met = doorToCtCases.filter(c => c.doorToCtScanMinutes <= 20).length;
+    const kpi2Total = doorToCtCases.length;
+
+    // KPI 3: Door to Needle ≤ 60 minutes (should be based on doorToNeedleMinutes for ischemic thrombolysis candidates)
+    const doorToNeedleCases = cases.filter(c => 
+      c.strokeType === 'ISCHEMIC' && 
+      c.candidateForIVThrombolysis === 'YES' && 
+      c.doorToNeedleMinutes !== null && 
+      c.doorToNeedleMinutes !== undefined
+    );
+    const kpi3Met = doorToNeedleCases.filter(c => c.doorToNeedleMinutes <= 60).length;
+    const kpi3Total = doorToNeedleCases.length;
+
+    // Keep other KPIs as they were (using stored flags for now)
     const kpi4Met = cases.filter(c => c.metKpi4).length;
     const kpi5Met = cases.filter(c => c.metKpi5).length;
     const kpi6Met = cases.filter(c => c.metKpi6).length;
     const kpi10Met = cases.filter(c => c.metKpi10).length;
 
-    // Calculate percentages the same way as stroke portal
-    const kpi1Percentage = totalCases > 0 ? (kpi1Met / totalCases) * 100 : 0;
-    const kpi2Percentage = totalCases > 0 ? (kpi2Met / totalCases) * 100 : 0;
-    // KPI3 (door to needle) should only consider ischemic cases that are candidates for IV thrombolysis
-    const ischemicThrombolysisCandidates = cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length;
-    const kpi3Percentage = ischemicThrombolysisCandidates > 0 ? (kpi3Met / ischemicThrombolysisCandidates) * 100 : 0;
+    // Calculate percentages using the corrected calculations
+    const kpi1Percentage = kpi1Total > 0 ? (kpi1Met / kpi1Total) * 100 : 0;
+    const kpi2Percentage = kpi2Total > 0 ? (kpi2Met / kpi2Total) * 100 : 0;
+    const kpi3Percentage = kpi3Total > 0 ? (kpi3Met / kpi3Total) * 100 : 0;
     const kpi4Percentage = totalCases > 0 ? (kpi4Met / totalCases) * 100 : 0;
     const kpi5Percentage = totalCases > 0 ? (kpi5Met / totalCases) * 100 : 0;
     const kpi6Percentage = totalCases > 0 ? (kpi6Met / totalCases) * 100 : 0;
