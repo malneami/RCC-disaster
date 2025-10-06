@@ -717,9 +717,28 @@ export class StrokeCasesService {
     const hemorrhagicCases = cases.filter(c => c.strokeType === 'HEMORRHAGIC').length;
     const tiaCases = cases.filter(c => c.strokeType === 'TIA').length;
 
-    const kpi1Met = cases.filter(c => c.metKpi1).length;
-    const kpi2Met = cases.filter(c => c.metKpi2).length;
-    const kpi3Met = cases.filter(c => c.metKpi3).length;
+    // Calculate KPI metrics based on actual timing data from patients
+    // KPI 1: Door to Physician ≤ 15 minutes
+    const doorToPhysicianCases = cases.filter(c => c.doorToPhysicianMinutes !== null && c.doorToPhysicianMinutes !== undefined);
+    const kpi1Met = doorToPhysicianCases.filter(c => c.doorToPhysicianMinutes <= 15).length;
+    const kpi1Total = doorToPhysicianCases.length;
+
+    // KPI 2: Door to CT Scan ≤ 20 minutes (should be based on doorToCtScanMinutes)
+    const doorToCtCases = cases.filter(c => c.doorToCtScanMinutes !== null && c.doorToCtScanMinutes !== undefined);
+    const kpi2Met = doorToCtCases.filter(c => c.doorToCtScanMinutes <= 20).length;
+    const kpi2Total = doorToCtCases.length;
+
+    // KPI 3: Door to Needle ≤ 60 minutes (should be based on doorToNeedleMinutes for ischemic thrombolysis candidates)
+    const doorToNeedleCases = cases.filter(c => 
+      c.strokeType === 'ISCHEMIC' && 
+      c.candidateForIVThrombolysis === 'YES' && 
+      c.doorToNeedleMinutes !== null && 
+      c.doorToNeedleMinutes !== undefined
+    );
+    const kpi3Met = doorToNeedleCases.filter(c => c.doorToNeedleMinutes <= 60).length;
+    const kpi3Total = doorToNeedleCases.length;
+
+    // Keep other KPIs as they were
     const kpi4Met = cases.filter(c => c.metKpi4).length;
     const kpi5Met = cases.filter(c => c.metKpi5).length;
     const kpi6Met = cases.filter(c => c.metKpi6).length;
@@ -730,7 +749,13 @@ export class StrokeCasesService {
     const kpi11Met = cases.filter(c => c.metKpi11).length;
 
     const avgDoorToPhysician = this.calculateAverage(cases.map(c => c.doorToPhysicianMinutes).filter(v => v !== null && v !== undefined));
-    const avgRegistrationToCt = this.calculateAverage(cases.map(c => c.registrationToCtMinutes).filter(v => v !== null && v !== undefined));
+    const avgDoorToCtScan = this.calculateAverage(cases.map(c => c.doorToCtScanMinutes).filter(v => v !== null && v !== undefined));
+    const avgDoorToNeedle = this.calculateAverage(
+      cases
+        .filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES')
+        .map(c => c.doorToNeedleMinutes)
+        .filter(v => v !== null && v !== undefined)
+    );
     const avgRegistrationToThrombolysis = this.calculateAverage(
       cases
         .filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES')
@@ -743,6 +768,7 @@ export class StrokeCasesService {
     // For outcomes, we'll calculate what we can with the new schema
     const successfulCases = cases.filter(c => c.strokeType === 'ISCHEMIC' && c.ivThrombolysisGiven === 'YES').length;
     const independentDischarge = cases.filter(c => c.modifiedRankinScaleAt90Days && (c.modifiedRankinScaleAt90Days === 'SCORE_0' || c.modifiedRankinScaleAt90Days === 'SCORE_1' || c.modifiedRankinScaleAt90Days === 'SCORE_2')).length;
+    
     return {
       totalCases,
       strokeTypeBreakdown: {
@@ -751,14 +777,9 @@ export class StrokeCasesService {
         tia: tiaCases,
       },
       kpiPerformance: {
-        kpi1: { met: kpi1Met, total: totalCases, percentage: totalCases > 0 ? (kpi1Met / totalCases) * 100 : 0 },
-        kpi2: { met: kpi2Met, total: totalCases, percentage: totalCases > 0 ? (kpi2Met / totalCases) * 100 : 0 },
-        kpi3: { 
-          met: kpi3Met, 
-          total: cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length, 
-          percentage: cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length > 0 ? 
-            (kpi3Met / cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length) * 100 : 0 
-        },
+        kpi1: { met: kpi1Met, total: kpi1Total, percentage: kpi1Total > 0 ? (kpi1Met / kpi1Total) * 100 : 0 },
+        kpi2: { met: kpi2Met, total: kpi2Total, percentage: kpi2Total > 0 ? (kpi2Met / kpi2Total) * 100 : 0 },
+        kpi3: { met: kpi3Met, total: kpi3Total, percentage: kpi3Total > 0 ? (kpi3Met / kpi3Total) * 100 : 0 },
         kpi4: { met: kpi4Met, total: totalCases, percentage: totalCases > 0 ? (kpi4Met / totalCases) * 100 : 0 },
         kpi5: { met: kpi5Met, total: totalCases, percentage: totalCases > 0 ? (kpi5Met / totalCases) * 100 : 0 },
         kpi6: { met: kpi6Met, total: totalCases, percentage: totalCases > 0 ? (kpi6Met / totalCases) * 100 : 0 },
@@ -770,7 +791,8 @@ export class StrokeCasesService {
       },
       averageTimings: {
         doorToPhysician: avgDoorToPhysician,
-        registrationToCt: avgRegistrationToCt,
+        doorToCtScan: avgDoorToCtScan,
+        doorToNeedle: avgDoorToNeedle,
         registrationToThrombolysis: avgRegistrationToThrombolysis,
         srcaCallToArrival: avgSrcaCallToArrival,
         transferActivationToDeparture: avgTransferActivationToDeparture,
@@ -1025,6 +1047,8 @@ export class StrokeCasesService {
         metKpi10: true,
         metKpi11: true,
         doorToPhysicianMinutes: true,
+        doorToCtScanMinutes: true,
+        doorToNeedleMinutes: true,
         registrationToCtMinutes: true,
         registrationToThrombolysisMinutes: true,
         srcaCallToArrivalMinutes: true,
