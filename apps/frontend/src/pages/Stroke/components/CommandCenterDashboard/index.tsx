@@ -131,6 +131,22 @@ const StrokeCommandCenterDashboard: React.FC = () => {
           language={language}
         />
 
+                {/* Traffic Light System */}
+        <Box mt={3}>
+          <StrokeTrafficLightSystem
+            data={data}
+            language={language}
+          />
+        </Box>
+
+        {/* Admission & Follow-up Performance */}
+        <Box mt={3}>
+          <AdmissionFollowupCharts
+            data={data}
+            language={language}
+          />
+        </Box>
+
         {/* Distribution Charts */}
         <Box mt={3}>
           <StrokeDistributionCharts
@@ -142,14 +158,6 @@ const StrokeCommandCenterDashboard: React.FC = () => {
         {/* Therapy Performance Charts */}
         <Box mt={3}>
           <TherapyPerformanceCharts
-            data={data}
-            language={language}
-          />
-        </Box>
-
-        {/* Admission & Follow-up Performance */}
-        <Box mt={3}>
-          <AdmissionFollowupCharts
             data={data}
             language={language}
           />
@@ -171,14 +179,6 @@ const StrokeCommandCenterDashboard: React.FC = () => {
               />
             </Grid>
           </Grid>
-        </Box>
-
-        {/* Traffic Light System */}
-        <Box mt={3}>
-          <StrokeTrafficLightSystem
-            data={data}
-            language={language}
-          />
         </Box>
 
         {/* Hospital Performance Table */}
