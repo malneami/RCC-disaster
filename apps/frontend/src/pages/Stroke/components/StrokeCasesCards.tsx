@@ -192,7 +192,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
         value: strokeCase.doorToCtScanMinutes || 'N/A',
         target: '≤25min',
         unit: 'min',
-        met: !strokeCase.doorToCtScanMinutes || strokeCase.doorToCtScanMinutes <= 25,
+        met: !strokeCase.doorToCtScanMinutes || strokeCase.doorToCtScanMinutes <= 20,
         percentage: strokeCase.doorToCtScanMinutes ? (strokeCase.doorToCtScanMinutes / 25) * 100 : undefined,
       },
       {
@@ -329,7 +329,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
 
     // Door to CT (≤25min)
     total++;
-    if (strokeCase.doorToCtScanMinutes && strokeCase.doorToCtScanMinutes <= 25) {
+    if (strokeCase.doorToCtScanMinutes && strokeCase.doorToCtScanMinutes <= 20) {
       met++;
     }
 

@@ -97,7 +97,7 @@ import CommandCenterDashboard from './components/CommandCenterDashboard';
 
 ### Time-based KPIs (Lower is Better)
 - **Door to Physician**: Target ≤10 minutes
-- **Door to CT**: Target ≤25 minutes  
+- **Door to CT**: Target ≤20 minutes  
 - **Door to CT Report**: Target ≤45 minutes
 - **Door to Needle**: Target ≤60 minutes
 - **Door to Mechanical Thrombectomy**: Target ≤120 minutes

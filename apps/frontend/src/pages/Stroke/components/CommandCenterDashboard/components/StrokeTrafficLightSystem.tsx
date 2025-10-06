@@ -55,7 +55,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
 
       const targetMap: { [key: string]: string } = {
         doorToPhysician: '≤15min',
-        doorToCT: '≤25min', 
+        doorToCT: '≤20min', 
         doorToNeedle: '≤60min',
         doorToMechanicalThrombectomy: '≤120min',
         doorToCTReport: '≤45min',
