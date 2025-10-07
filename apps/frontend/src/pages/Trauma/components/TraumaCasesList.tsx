@@ -368,6 +368,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   };
 
 
+
   const filterFields = [
     {
       key: 'search',
@@ -547,6 +548,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
                 <TableCell>Mode of Arrival</TableCell>
                 <TableCell>Mechanism</TableCell>
                 <TableCell>GCS Score</TableCell>
+                <TableCell>Door to Transfer</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Hospital</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -617,6 +619,19 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
                           <Warning color="error" fontSize="small" />
                         </Tooltip>
                       )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: TraumaService.getDoorToTransferTimeColor(case_),
+                          fontWeight: 'medium'
+                        }}
+                      >
+                        {TraumaService.calculateDoorToTransferTime(case_)}
+                      </Typography>
                     </Box>
                   </TableCell>
                   <TableCell>

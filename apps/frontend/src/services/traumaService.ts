@@ -359,6 +359,62 @@ export class TraumaService {
     return 'Critical';
   }
 
+  // Calculate door to transfer time for KPI display
+  static calculateDoorToTransferTime(case_: TraumaCase): string {
+    // Only calculate for transfer cases
+    if (!case_.transferCase || !case_.transferRequestDateTime || !case_.transferArrivalDateTime) {
+      return 'N/A';
+    }
+
+    try {
+      const requestTime = new Date(case_.transferRequestDateTime);
+      const arrivalTime = new Date(case_.transferArrivalDateTime);
+      
+      // Calculate difference in minutes
+      const diffMinutes = Math.floor((arrivalTime.getTime() - requestTime.getTime()) / (1000 * 60));
+      
+      if (diffMinutes < 0) return 'N/A';
+      
+      // Format as hours:minutes if >= 60 minutes, otherwise just minutes
+      if (diffMinutes >= 60) {
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+        return `${hours}:${minutes.toString().padStart(2, '0')}h`;
+      } else {
+        return `${diffMinutes}m`;
+      }
+    } catch (error) {
+      console.error('Error calculating door to transfer time:', error);
+      return 'N/A';
+    }
+  }
+
+  // Get door to transfer time color based on KPI compliance
+  static getDoorToTransferTimeColor(case_: TraumaCase): string {
+    if (!case_.transferCase || !case_.transferRequestDateTime || !case_.transferArrivalDateTime) {
+      return '#757575'; // Gray for N/A
+    }
+
+    try {
+      const requestTime = new Date(case_.transferRequestDateTime);
+      const arrivalTime = new Date(case_.transferArrivalDateTime);
+      const diffMinutes = Math.floor((arrivalTime.getTime() - requestTime.getTime()) / (1000 * 60));
+      
+      if (diffMinutes < 0) return '#757575';
+      
+      // KPI Target: ≤4 hours (240 minutes) for trauma transfer
+      if (diffMinutes <= 240) {
+        return '#4caf50'; // Green - within target
+      } else if (diffMinutes <= 360) {
+        return '#ffc107'; // Yellow - approaching target
+      } else {
+        return '#f44336'; // Red - exceeds target
+      }
+    } catch (error) {
+      return '#757575';
+    }
+  }
+
 }
 
 export default TraumaService;
