@@ -89,18 +89,21 @@ const HospitalPerformanceTable: React.FC<HospitalPerformanceTableProps> = ({
   };
 
   const getComplianceColor = (percentage: number): string => {
+    if (percentage === 0) return '#666666'; // Gray for 0%
     if (percentage >= 80) return '#4caf50'; // Green
     if (percentage >= 60) return '#ff9800'; // Yellow
     return '#f44336'; // Red
   };
 
   const getComplianceIcon = (percentage: number) => {
+    if (percentage === 0) return null; // No icon for 0%
     if (percentage >= 80) return <CheckCircle sx={{ fontSize: 16, color: 'white' }} />;
     if (percentage >= 60) return <Warning sx={{ fontSize: 16, color: 'white' }} />;
     return <Cancel sx={{ fontSize: 16, color: 'white' }} />;
   };
 
   const getComplianceStatus = (percentage: number): string => {
+    if (percentage === 0) return language === 'ar' ? 'لا توجد بيانات' : 'No Data';
     if (percentage >= 80) return language === 'ar' ? 'ممتاز' : 'Excellent';
     if (percentage >= 60) return language === 'ar' ? 'مقبول' : 'Acceptable';
     return language === 'ar' ? 'يحتاج تحسين' : 'Needs Improvement';
@@ -349,7 +352,7 @@ const HospitalPerformanceTable: React.FC<HospitalPerformanceTableProps> = ({
                               {hospital.hospitalName} - {column.label}
                             </Typography>
                             <Typography variant="body2">
-                              {language === 'ar' ? 'الأداء:' : 'Performance:'} {value}%
+                              {language === 'ar' ? 'الأداء:' : 'Performance:'} {value === 0 ? '—' : `${value}%`}
                             </Typography>
                             <Typography variant="body2">
                               {language === 'ar' ? 'الحالة:' : 'Status:'} {getComplianceStatus(value)}
@@ -385,7 +388,7 @@ const HospitalPerformanceTable: React.FC<HospitalPerformanceTableProps> = ({
                               fontWeight: 'bold',
                               fontSize: '0.8rem'
                             }}>
-                              {value}%
+                              {value === 0 ? '—' : `${value}%`}
                             </Typography>
                           </Box>
                         </Box>
@@ -453,6 +456,26 @@ const HospitalPerformanceTable: React.FC<HospitalPerformanceTableProps> = ({
           </Box>
           <Typography variant="caption" sx={{ color: '#ffffff' }}>
             &lt;60% - {language === 'ar' ? 'يحتاج تحسين' : 'Needs Improvement'}
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center" gap={1}>
+          <Box
+            sx={{
+              width: 16,
+              height: 16,
+              backgroundColor: '#666666',
+              borderRadius: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Typography variant="body2" sx={{ color: 'white', fontSize: '0.8rem' }}>
+              —
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ color: '#ffffff' }}>
+            {language === 'ar' ? 'لا توجد بيانات' : 'No Data'}
           </Typography>
         </Box>
       </Box>

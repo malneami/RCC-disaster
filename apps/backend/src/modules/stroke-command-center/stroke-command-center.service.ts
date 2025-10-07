@@ -52,6 +52,7 @@ export class StrokeCommandCenterService {
         timeOfCtScanStart: true,
         timeOfCtReportFinal: true,
         ivThrombolysisAdministrationTime: true,
+        ivThrombolysisGiven: true,
         timeOfMechanicalThrombectomyPuncture: true,
         strokeUnitAdmissionTime: true,
         dischargeDate: true,
@@ -257,34 +258,56 @@ export class StrokeCommandCenterService {
   }
 
   private calculateTherapyPerformance(cases: any[]): TherapyPerformanceDataDto {
-    // Thrombolytic therapy performance (Door to Needle) - use KPI3 from stroke portal dashboard
-    // Only consider ischemic cases that are candidates for IV thrombolysis
-    const thrombolyticMet = cases.filter(c => c.metKpi4).length;
-    const ischemicThrombolysisCandidates = cases.filter(c => c.strokeType === 'ISCHEMIC' && c.candidateForIVThrombolysis === 'YES').length;
-    const thrombolyticSuccessRate = ischemicThrombolysisCandidates > 0 
-      ? (thrombolyticMet / ischemicThrombolysisCandidates) * 100 
+    console.log('🔄 Starting fresh thrombolytic therapy calculation...');
+    
+    // STEP 1: Filter for eligible candidates (ischemic stroke patients who are candidates for thrombolysis)
+    const eligibleCandidates = cases.filter(case_ => 
+      case_.strokeType === 'ISCHEMIC' && 
+      case_.candidateForIVThrombolysis === 'YES'
+    );
+    
+    console.log(`📊 Step 1 - Eligible candidates: ${eligibleCandidates.length}`);
+    console.log('Eligible cases:', eligibleCandidates.map(c => ({ id: c.id, thrombolysisGiven: c.ivThrombolysisGiven })));
+    
+    // STEP 2: Count how many eligible candidates actually received thrombolysis
+    const treatedCases = eligibleCandidates.filter(case_ => 
+      case_.ivThrombolysisGiven === 'YES'
+    );
+    
+    console.log(`✅ Step 2 - Treated cases: ${treatedCases.length}`);
+    console.log('Treated cases:', treatedCases.map(c => ({ id: c.id, thrombolysisGiven: c.ivThrombolysisGiven })));
+    
+    // STEP 3: Calculate success rate
+    const successRate = eligibleCandidates.length > 0 
+      ? (treatedCases.length / eligibleCandidates.length) * 100 
       : 0;
-
-    // Swallowing screening performance - use the same calculation as stroke portal dashboard
+    
+    console.log(`📈 Step 3 - Success rate: ${successRate.toFixed(1)}%`);
+    
+    // STEP 4: Calculate swallowing screening (unchanged)
     const swallowingMet = cases.filter(c => c.metKpi10).length;
     const swallowingSuccessRate = cases.length > 0 
       ? (swallowingMet / cases.length) * 100 
       : 0;
-
-    return {
+    
+    // STEP 5: Build response
+    const response = {
       thrombolyticTherapy: {
-        successRate: Math.round(thrombolyticSuccessRate * 10) / 10,
-        treated: thrombolyticMet,
-        total: cases.length,
-        target: 5, // >=5%
+        successRate: Math.round(successRate * 10) / 10,
+        treated: treatedCases.length,
+        total: eligibleCandidates.length,
+        target: 5,
       },
       swallowingScreening: {
         successRate: Math.round(swallowingSuccessRate * 10) / 10,
         screened: swallowingMet,
         total: cases.length,
-        target: 85, // >=85%
+        target: 85,
       },
     };
+    
+    console.log('🎯 FINAL RESPONSE:', JSON.stringify(response, null, 2));
+    return response;
   }
 
   private calculateAdmissionFollowup(cases: any[]): AdmissionFollowupDataDto {
