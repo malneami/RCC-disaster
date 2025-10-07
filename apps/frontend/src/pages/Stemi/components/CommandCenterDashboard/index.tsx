@@ -6,7 +6,6 @@ import {
 
 import { CommandCenterHeader } from '../../../../components/common/CommandCenterHeader';
 import LiveClock from './components/LiveClock';
-import FilterPanel from './components/FilterPanel';
 import KPIMetrics from './components/KPIMetrics';
 import VisualAnalytics from './components/VisualAnalytics';
 import TrafficLightSystem from './components/TrafficLightSystem';
@@ -26,7 +25,7 @@ const CommandCenterDashboard: React.FC = () => {
     endDate: new Date().toISOString().split('T')[0],
   });
 
-  const { data, loading, error, refreshData } = useCommandCenterData(filters);
+  const { data, loading, error, refreshData, hospitals } = useCommandCenterData(filters);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -57,17 +56,12 @@ const CommandCenterDashboard: React.FC = () => {
   }, [setIsFullscreen]);
 
 
-  const handleFiltersChange = (newFilters: CommandCenterFilters) => {
-    setFilters(newFilters);
+  const handleRefresh = () => {
+    refreshData();
   };
-
 
   const handleDownloadPNG = async () => {
     // This will be handled by the CommandCenterHeader component
-  };
-
-  const handleRefresh = () => {
-    refreshData();
   };
 
   const handleHospitalChange = (hospitalId: string) => {
@@ -115,7 +109,7 @@ const CommandCenterDashboard: React.FC = () => {
           onHospitalChange: handleHospitalChange,
           onDateRangeChange: handleDateRangeChange,
         }}
-        hospitals={data?.hospitals || []}
+        hospitals={hospitals}
       />
 
       {/* Live Clock */}
@@ -125,12 +119,6 @@ const CommandCenterDashboard: React.FC = () => {
 
       {/* Dashboard Content */}
       <Box id="dashboard-content" sx={{ p: isFullscreen ? 2 : 0 }}>
-        {/* Filter Panel */}
-        <FilterPanel
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          language={language}
-        />
         {/* KPI Metrics */}
         <KPIMetrics
           data={data}
