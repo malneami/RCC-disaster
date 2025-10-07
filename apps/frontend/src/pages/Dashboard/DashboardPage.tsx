@@ -203,14 +203,6 @@ const DashboardPage: React.FC = () => {
             </Grid>
           ))}
 
-          {/* Live Performance Metrics and Peak Analysis */}
-          <Grid item xs={12} md={6}>
-            <LivePerformanceMetrics />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <PeakAnalysisDashboard />
-          </Grid>
-
           {/* Performance Comparison */}
           <Grid item xs={12}>
             <PerformanceComparison />
@@ -358,6 +350,13 @@ const DashboardPage: React.FC = () => {
             </Card>
           </Grid>
 
+          {/* Live Performance Metrics and Peak Analysis */}
+          <Grid item xs={12} md={6}>
+            <LivePerformanceMetrics />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <PeakAnalysisDashboard />
+          </Grid>
         </Grid>
       </Box>
     </>

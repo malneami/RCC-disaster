@@ -100,23 +100,23 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
       <Box sx={{ height: 400, width: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={displayData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 0, 0, 0.1)" />
             <XAxis 
               dataKey="date" 
-              stroke="white"
+              stroke="currentColor"
               fontSize={12}
-              tick={{ fill: 'white' }}
+              tick={{ fill: 'currentColor' }}
             />
             <YAxis 
-              stroke="white"
+              stroke="currentColor"
               fontSize={12}
-              tick={{ fill: 'white' }}
+              tick={{ fill: 'currentColor' }}
               domain={[0, 1]}
               ticks={[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend 
-              wrapperStyle={{ color: 'white' }}
+              wrapperStyle={{ color: 'currentColor' }}
             />
             <Line
               type="monotone"

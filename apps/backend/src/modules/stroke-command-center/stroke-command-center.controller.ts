@@ -183,4 +183,27 @@ export class StrokeCommandCenterController {
       hospitals: dashboardData.hospitals,
     };
   }
+
+  @Get('performance/comparison')
+  // @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR) // Temporarily disabled for testing
+  @ApiOperation({ summary: 'Get performance comparison data based on admission time' })
+  @ApiResponse({ status: 200, description: 'Performance comparison data retrieved successfully' })
+  @ApiQuery({ name: 'hospitalId', required: false, description: 'Hospital ID filter' })
+  @ApiQuery({ name: 'startDate', required: false, description: 'Start date for data filtering' })
+  @ApiQuery({ name: 'endDate', required: false, description: 'End date for data filtering' })
+  @ApiQuery({ name: 'period', required: false, description: 'Time period: daily, weekly, or monthly', enum: ['daily', 'weekly', 'monthly'] })
+  async getPerformanceComparison(
+    @Query('hospitalId') hospitalId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('period') period: 'daily' | 'weekly' | 'monthly' = 'daily',
+  ) {
+    const filters = {
+      hospitalId: hospitalId || 'all',
+      startDate,
+      endDate,
+    };
+
+    return this.commandCenterService.getPerformanceComparisonData(filters, period);
+  }
 }

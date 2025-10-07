@@ -758,4 +758,378 @@ export class StrokeCommandCenterService {
       };
     }).sort((a, b) => b.cases - a.cases); // Sort by case count descending
   }
+
+  async getPerformanceComparisonData(filters: {
+    hospitalId?: string;
+    startDate?: string;
+    endDate?: string;
+  }, period: 'daily' | 'weekly' | 'monthly') {
+    // Build where clause for filtering
+    const whereClause: any = {};
+    
+    if (filters.hospitalId && filters.hospitalId !== 'all') {
+      whereClause.OR = [
+        { originHospitalId: filters.hospitalId },
+        { destinationHospitalId: filters.hospitalId }
+      ];
+    }
+    
+    if (filters.startDate || filters.endDate) {
+      whereClause.dateOfAdmission = {};
+      if (filters.startDate) {
+        whereClause.dateOfAdmission.gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        whereClause.dateOfAdmission.lte = new Date(filters.endDate);
+      }
+    }
+
+    // Get all case types with admission times
+    const [strokeCases, stemiCases, traumaCases] = await Promise.all([
+      // Stroke cases
+      this.prisma.strokeCase.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          strokeType: true,
+          dateOfAdmission: true,
+          timeOfTriage: true,
+          timeOfPhysicianAssessment: true,
+          timeOfCtScanStart: true,
+          timeOfCtReportFinal: true,
+          ivThrombolysisAdministrationTime: true,
+          ivThrombolysisGiven: true,
+          timeOfMechanicalThrombectomyPuncture: true,
+          strokeUnitAdmissionTime: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { dateOfAdmission: 'asc' },
+      }),
+      // STEMI cases - use createdAt as admission time
+      this.prisma.stemiCase.findMany({
+        where: {
+          ...whereClause,
+          // Map dateOfAdmission filter to createdAt for STEMI cases
+          ...(whereClause.dateOfAdmission && {
+            createdAt: whereClause.dateOfAdmission
+          })
+        },
+        select: {
+          id: true,
+          createdAt: true, // Use createdAt as admission time
+          triageTime: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+      // Trauma cases - use arrivalDateTime as admission time
+      this.prisma.traumaCase.findMany({
+        where: {
+          ...whereClause,
+          // Map dateOfAdmission filter to arrivalDateTime for trauma cases
+          ...(whereClause.dateOfAdmission && {
+            arrivalDateTime: whereClause.dateOfAdmission
+          })
+        },
+        select: {
+          id: true,
+          arrivalDateTime: true, // Use arrivalDateTime as admission time
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { arrivalDateTime: 'asc' },
+      }),
+    ]);
+
+    // Combine all cases with proper categorization and normalize admission times
+    const cases = [
+      ...strokeCases.map(c => ({ ...c, caseType: 'STROKE', admissionTime: c.dateOfAdmission })),
+      ...stemiCases.map(c => ({ ...c, caseType: 'STEMI', strokeType: 'STEMI', admissionTime: c.createdAt })),
+      ...traumaCases.map(c => ({ ...c, caseType: 'TRAUMA', strokeType: 'TRAUMA', admissionTime: c.arrivalDateTime })),
+    ];
+
+    // Generate chart data based on admission time
+    const chartData = this.generateChartDataByAdmissionTime(cases, period);
+    
+    // Calculate global metrics
+    const globalMetrics = this.calculateGlobalMetrics(cases, period);
+    
+    // Calculate daily summary
+    const dailySummary = this.calculateDailySummary(cases, period);
+    
+    // Calculate change analysis
+    const changeAnalysis = this.calculateChangeAnalysis(cases, period);
+
+    // Validate data consistency
+    this.validateDataConsistency(globalMetrics, dailySummary, changeAnalysis, chartData);
+
+    return {
+      globalMetrics,
+      dailySummary,
+      changeAnalysis,
+      chartData: {
+        data: chartData,
+      },
+    };
+  }
+
+  // Add validation method to ensure data consistency
+  private validateDataConsistency(globalMetrics: any, dailySummary: any, changeAnalysis: any, chartData: any[]) {
+    console.log('=== Data Validation ===');
+    console.log('Global Metrics:', globalMetrics);
+    console.log('Daily Summary:', dailySummary);
+    console.log('Change Analysis:', changeAnalysis);
+    console.log('Chart Data Points:', chartData.length);
+    
+    // Validate that current period matches
+    if (globalMetrics.current !== dailySummary.currentPeriod) {
+      console.warn('Mismatch: Global current vs Daily Summary current period');
+    }
+    
+    // Validate percentage calculations
+    const expectedPreviousChange = dailySummary.previousPeriod > 0 
+      ? ((dailySummary.currentPeriod - dailySummary.previousPeriod) / dailySummary.previousPeriod) * 100 
+      : 0;
+    
+    if (Math.abs(globalMetrics.previousChange - expectedPreviousChange) > 0.01) {
+      console.warn('Mismatch: Previous change calculation');
+    }
+    
+    console.log('=== End Validation ===');
+  }
+
+  private generateChartDataByAdmissionTime(cases: any[], period: 'daily' | 'weekly' | 'monthly') {
+    const now = new Date();
+    
+    // Group cases by time period based on admission time
+    const groupedCases = new Map<string, any[]>();
+    
+    cases.forEach(case_ => {
+      if (!case_.admissionTime) return;
+      
+      const admissionDate = new Date(case_.admissionTime);
+      let timeKey: string;
+      
+      if (period === 'daily') {
+        // Group by hour for daily view
+        timeKey = admissionDate.toISOString().slice(0, 13) + ':00:00.000Z';
+      } else if (period === 'weekly') {
+        // Group by day for weekly view
+        timeKey = admissionDate.toISOString().slice(0, 10);
+      } else {
+        // Group by week for monthly view
+        const weekStart = new Date(admissionDate);
+        weekStart.setDate(admissionDate.getDate() - admissionDate.getDay());
+        timeKey = weekStart.toISOString().slice(0, 10);
+      }
+      
+      if (!groupedCases.has(timeKey)) {
+        groupedCases.set(timeKey, []);
+      }
+      groupedCases.get(timeKey)!.push(case_);
+    });
+
+    // Generate data points for the selected period
+    const dataPoints: any[] = [];
+    const endDate = new Date();
+    let startDate: Date;
+    let timeSlotSize: number;
+    
+    if (period === 'daily') {
+      startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000); // Last 24 hours
+      timeSlotSize = 60 * 60 * 1000; // 1 hour
+    } else if (period === 'weekly') {
+      startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Last 7 days
+      timeSlotSize = 24 * 60 * 60 * 1000; // 1 day
+    } else {
+      startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
+      timeSlotSize = 7 * 24 * 60 * 60 * 1000; // 1 week
+    }
+
+    // Generate time slots
+    const timeSlots: string[] = [];
+    const current = new Date(startDate);
+    
+    while (current <= endDate) {
+      let timeKey: string;
+      
+      if (period === 'daily') {
+        timeKey = current.toISOString().slice(0, 13) + ':00:00.000Z';
+      } else if (period === 'weekly') {
+        timeKey = current.toISOString().slice(0, 10);
+      } else {
+        const weekStart = new Date(current);
+        weekStart.setDate(current.getDate() - current.getDay());
+        timeKey = weekStart.toISOString().slice(0, 10);
+      }
+      
+      timeSlots.push(timeKey);
+      
+      // Move to next time slot
+      current.setTime(current.getTime() + timeSlotSize);
+    }
+
+    // Create data points
+    timeSlots.forEach(timeKey => {
+      const casesForPeriod = groupedCases.get(timeKey) || [];
+      
+      // Count cases by type - use caseType for proper categorization
+      const stemi = casesForPeriod.filter(c => c.caseType === 'STEMI').length;
+      const stroke = casesForPeriod.filter(c => c.caseType === 'STROKE').length;
+      const trauma = casesForPeriod.filter(c => c.caseType === 'TRAUMA').length;
+      const other = casesForPeriod.filter(c => !['STEMI', 'STROKE', 'TRAUMA'].includes(c.caseType)).length;
+      
+      // Format date for display
+      let displayDate: string;
+      const date = new Date(timeKey);
+      
+      if (period === 'daily') {
+        displayDate = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      } else if (period === 'weekly') {
+        displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      } else {
+        displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      
+      dataPoints.push({
+        date: displayDate,
+        stemi,
+        stroke,
+        trauma,
+        other,
+      });
+    });
+
+    return dataPoints;
+  }
+
+  private calculateGlobalMetrics(cases: any[], period: 'daily' | 'weekly' | 'monthly') {
+    const currentPeriodCases = this.getCasesForCurrentPeriod(cases, period);
+    const previousPeriodCases = this.getCasesForPreviousPeriod(cases, period);
+    
+    const current = currentPeriodCases.length;
+    const previous = previousPeriodCases.length;
+    
+    const previousChange = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+    const averageChange = this.calculateAverageChange(cases, period);
+    
+    return {
+      current,
+      previousChange: Math.round(previousChange * 100) / 100,
+      averageChange: Math.round(averageChange * 100) / 100,
+    };
+  }
+
+  private calculateDailySummary(cases: any[], period: 'daily' | 'weekly' | 'monthly') {
+    const currentPeriodCases = this.getCasesForCurrentPeriod(cases, period);
+    const previousPeriodCases = this.getCasesForPreviousPeriod(cases, period);
+    
+    const currentPeriod = currentPeriodCases.length;
+    const previousPeriod = previousPeriodCases.length;
+    const average = this.calculateAverageCases(cases, period);
+    
+    return {
+      currentPeriod,
+      previousPeriod,
+      average: Math.round(average),
+    };
+  }
+
+  private calculateChangeAnalysis(cases: any[], period: 'daily' | 'weekly' | 'monthly') {
+    const currentPeriodCases = this.getCasesForCurrentPeriod(cases, period);
+    const previousPeriodCases = this.getCasesForPreviousPeriod(cases, period);
+    
+    const current = currentPeriodCases.length;
+    const previous = previousPeriodCases.length;
+    
+    const vsPreviousPeriod = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+    const vsAverage = this.calculateAverageChange(cases, period);
+    
+    let trend: 'up' | 'down' | 'stable' = 'stable';
+    if (vsPreviousPeriod > 5) trend = 'up';
+    else if (vsPreviousPeriod < -5) trend = 'down';
+    
+    return {
+      vsPreviousPeriod: Math.round(vsPreviousPeriod * 100) / 100,
+      vsAverage: Math.round(vsAverage * 100) / 100,
+      trend,
+    };
+  }
+
+  private getCasesForCurrentPeriod(cases: any[], period: 'daily' | 'weekly' | 'monthly') {
+    const now = new Date();
+    let startDate: Date;
+    
+    if (period === 'daily') {
+      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    } else if (period === 'weekly') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    return cases.filter(case_ => 
+      case_.admissionTime && new Date(case_.admissionTime) >= startDate
+    );
+  }
+
+  private getCasesForPreviousPeriod(cases: any[], period: 'daily' | 'weekly' | 'monthly') {
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (period === 'daily') {
+      endDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      startDate = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    } else if (period === 'weekly') {
+      endDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      startDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    } else {
+      endDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      startDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    }
+    
+    return cases.filter(case_ => 
+      case_.admissionTime && 
+      new Date(case_.admissionTime) >= startDate && 
+      new Date(case_.admissionTime) < endDate
+    );
+  }
+
+  private calculateAverageCases(cases: any[], period: 'daily' | 'weekly' | 'monthly') {
+    const now = new Date();
+    let periodsBack: number;
+    
+    if (period === 'daily') {
+      periodsBack = 7; // Average over last 7 days
+    } else if (period === 'weekly') {
+      periodsBack = 4; // Average over last 4 weeks
+    } else {
+      periodsBack = 3; // Average over last 3 months
+    }
+    
+    // Calculate the start date based on the period
+    let startDate: Date;
+    if (period === 'daily') {
+      startDate = new Date(now.getTime() - periodsBack * 24 * 60 * 60 * 1000);
+    } else if (period === 'weekly') {
+      startDate = new Date(now.getTime() - periodsBack * 7 * 24 * 60 * 60 * 1000);
+    } else {
+      startDate = new Date(now.getTime() - periodsBack * 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    const recentCases = cases.filter(case_ => 
+      case_.admissionTime && new Date(case_.admissionTime) >= startDate
+    );
+    
+    return recentCases.length / periodsBack;
+  }
+
+  private calculateAverageChange(cases: any[], period: 'daily' | 'weekly' | 'monthly') {
+    const currentPeriodCases = this.getCasesForCurrentPeriod(cases, period);
+    const average = this.calculateAverageCases(cases, period);
+    
+    return average > 0 ? ((currentPeriodCases.length - average) / average) * 100 : 0;
+  }
 }

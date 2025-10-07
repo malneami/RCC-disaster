@@ -53,7 +53,7 @@ const DailySummary: React.FC<DailySummaryProps> = ({ data }) => {
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: 'white' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
         Daily Summary
       </Typography>
       
@@ -61,10 +61,10 @@ const DailySummary: React.FC<DailySummaryProps> = ({ data }) => {
         {summaryItems.map((item, index) => (
           <Box key={index}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
+              <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
                 {item.label}
               </Typography>
-              <Typography variant="body2" sx={{ color: 'white', fontWeight: 600 }}>
+              <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>
                 {item.value}
               </Typography>
             </Box>
@@ -74,7 +74,7 @@ const DailySummary: React.FC<DailySummaryProps> = ({ data }) => {
               sx={{
                 height: 12,
                 borderRadius: 6,
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
                 '& .MuiLinearProgress-bar': {
                   backgroundColor: item.color,
                   borderRadius: 6,

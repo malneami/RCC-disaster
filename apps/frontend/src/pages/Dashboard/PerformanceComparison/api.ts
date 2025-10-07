@@ -30,7 +30,7 @@ export interface PerformanceComparisonData {
 export const performanceComparisonApi = {
   async getPerformanceData(period: 'daily' | 'weekly' | 'monthly'): Promise<PerformanceComparisonData> {
     try {
-      const response = await apiClient.get(`/performance/comparison?period=${period}`);
+      const response = await apiClient.get(`/stroke-command-center/performance/comparison?period=${period}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching performance comparison data:', error);

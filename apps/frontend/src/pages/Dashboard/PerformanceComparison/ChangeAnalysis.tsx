@@ -80,7 +80,7 @@ const ChangeAnalysis: React.FC<ChangeAnalysisProps> = ({ data }) => {
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: 'white' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
         Change Analysis
       </Typography>
       
@@ -89,8 +89,8 @@ const ChangeAnalysis: React.FC<ChangeAnalysisProps> = ({ data }) => {
           <Card
             key={index}
             sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(0, 0, 0, 0.02)',
+              border: '1px solid rgba(0, 0, 0, 0.1)',
               borderRadius: 2,
             }}
           >
@@ -117,7 +117,7 @@ const ChangeAnalysis: React.FC<ChangeAnalysisProps> = ({ data }) => {
               <Typography
                 variant="body2"
                 sx={{
-                  color: 'rgba(255, 255, 255, 0.7)',
+                  color: 'text.secondary',
                   fontSize: '0.875rem',
                   mt: 0.5,
                 }}
