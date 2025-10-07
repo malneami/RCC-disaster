@@ -75,8 +75,10 @@ const DashboardPage: React.FC = () => {
       color: '#9c27b0',
       activeCount: '107 Active',
       metrics: [
-        { label: 'Door to Needle Target: ≤60 min', value: '45 min avg', progress: 75, color: '#4caf50' },
         { label: 'Door to CT Scan Target: ≤25 min', value: '22 min avg', progress: 88, color: '#4caf50' },
+        { label: 'Door to Needle Target: ≤60 min', value: '45 min avg', progress: 75, color: '#4caf50' },
+        { label: 'Door to Physician Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
+        { label: 'Stroke Unit Admission Target: ≥80%', value: '85% achieved', progress: 85, color: '#4caf50' },
       ],
     },
     {
@@ -86,6 +88,8 @@ const DashboardPage: React.FC = () => {
       metrics: [
         { label: 'Door-to-Balloon Target: ≤90 min', value: '78 min avg', progress: 87, color: '#4caf50' },
         { label: 'First ECG Target: ≤10 min', value: '8 min avg', progress: 80, color: '#4caf50' },
+        { label: 'Door to Needle Target: ≤30 min', value: '25 min avg', progress: 83, color: '#4caf50' },
+        { label: 'RCC Activation Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
       ],
     },
     {
@@ -93,7 +97,9 @@ const DashboardPage: React.FC = () => {
       color: '#ff5722',
       activeCount: '56 Active',
       metrics: [
-        { label: 'Triage Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
+        { label: 'Response Time Target: ≤8 min', value: '6 min avg', progress: 75, color: '#4caf50' },
+        { label: 'Assessment Time Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
+        { label: 'Triage Time Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
         { label: 'CT Scan Target: ≤30 min', value: '25 min avg', progress: 83, color: '#4caf50' },
       ],
     },
@@ -203,16 +209,6 @@ const DashboardPage: React.FC = () => {
             </Grid>
           ))}
 
-          {/* Performance Comparison */}
-          <Grid item xs={12}>
-            <PerformanceComparison />
-          </Grid>
-
-          {/* EMS Status Update Demo */}
-          <Grid item xs={12}>
-            <EMSStatusDemo />
-          </Grid>
-
           {/* Critical Performance Metrics */}
           <Grid item xs={12}>
             <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
@@ -296,6 +292,16 @@ const DashboardPage: React.FC = () => {
                 </Grid>
               </CardContent>
             </Card>
+          </Grid>
+
+          {/* Performance Comparison */}
+          <Grid item xs={12}>
+            <PerformanceComparison />
+          </Grid>
+
+          {/* EMS Status Update Demo */}
+          <Grid item xs={12}>
+            <EMSStatusDemo />
           </Grid>
 
           {/* Recent Activity */}
