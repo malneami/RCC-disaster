@@ -269,10 +269,26 @@ export class StrokeCommandCenterService {
     console.log(`📊 Step 1 - Eligible candidates: ${eligibleCandidates.length}`);
     console.log('Eligible cases:', eligibleCandidates.map(c => ({ id: c.id, thrombolysisGiven: c.ivThrombolysisGiven })));
     
-    // STEP 2: Count how many eligible candidates actually received thrombolysis
-    const treatedCases = eligibleCandidates.filter(case_ => 
-      case_.ivThrombolysisGiven === 'YES'
-    );
+    // STEP 2: Count how many eligible candidates actually received thrombolysis within 4.5 hours
+    const treatedCases = eligibleCandidates.filter(case_ => {
+      if (!case_ || case_.ivThrombolysisGiven !== 'YES') {
+        return false;
+      }
+      
+      // Check if thrombolysis was given within 4.5 hours (270 minutes) of symptom onset
+      if (!case_.timeOfSymptomOnset || !case_.ivThrombolysisAdministrationTime) {
+        return false; // Cannot calculate time if either field is missing
+      }
+      
+      const symptomOnset = new Date(case_.timeOfSymptomOnset);
+      const thrombolysisTime = new Date(case_.ivThrombolysisAdministrationTime);
+      
+      // Calculate time difference in minutes
+      const timeDiffMinutes = (thrombolysisTime.getTime() - symptomOnset.getTime()) / (1000 * 60);
+      
+      // Only count as treated if within 4.5 hours (270 minutes)
+      return timeDiffMinutes >= 0 && timeDiffMinutes <= 270;
+    });
     
     console.log(`✅ Step 2 - Treated cases: ${treatedCases.length}`);
     console.log('Treated cases:', treatedCases.map(c => ({ id: c.id, thrombolysisGiven: c.ivThrombolysisGiven })));
@@ -290,18 +306,18 @@ export class StrokeCommandCenterService {
       ? (swallowingMet / cases.length) * 100 
       : 0;
     
-    // STEP 5: Build response
+    // STEP 5: Build response with validated data
     const response = {
       thrombolyticTherapy: {
         successRate: Math.round(successRate * 10) / 10,
-        treated: treatedCases.length,
-        total: eligibleCandidates.length,
+        treated: Math.max(0, treatedCases.length),
+        total: Math.max(0, eligibleCandidates.length),
         target: 5,
       },
       swallowingScreening: {
         successRate: Math.round(swallowingSuccessRate * 10) / 10,
-        screened: swallowingMet,
-        total: cases.length,
+        screened: Math.max(0, swallowingMet),
+        total: Math.max(0, cases.length),
         target: 85,
       },
     };
