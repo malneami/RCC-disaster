@@ -18,7 +18,6 @@ import {
   faUserCircle,
   faCog,
   faSignOutAlt,
-  faHospital,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -79,7 +78,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </IconButton>
 
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <FontAwesomeIcon icon={faHospital} style={{ marginRight: '16px', color: '#1976d2' }} />
+            <img 
+              src="/jazan-health-cluster-logo.png" 
+              alt="Jazan Health Cluster Logo" 
+              style={{ 
+                height: '40px', 
+                marginRight: '16px',
+                objectFit: 'contain'
+              }} 
+            />
             <Typography variant="h6" noWrap component="div">
               RCC Healthcare Platform
             </Typography>

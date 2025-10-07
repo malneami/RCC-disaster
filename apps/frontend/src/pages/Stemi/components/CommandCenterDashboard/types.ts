@@ -23,7 +23,6 @@ export interface HospitalPerformance {
     d2b: KPIMetric;
     d2n: KPIMetric;
     dido: KPIMetric;
-    pciSuccess: KPIMetric;
     mortality: KPIMetric;
   };
 }

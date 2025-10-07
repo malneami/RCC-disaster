@@ -86,7 +86,6 @@ export class HospitalPerformanceDto {
     d2b: KPIMetricDto;
     d2n: KPIMetricDto;
     dido: KPIMetricDto;
-    pciSuccess: KPIMetricDto;
     mortality: KPIMetricDto;
   };
 }

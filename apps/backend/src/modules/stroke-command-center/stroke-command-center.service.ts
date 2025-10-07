@@ -534,16 +534,6 @@ export class StrokeCommandCenterService {
         trend: 'stable',
       },
       {
-        id: 'doorToCTReport',
-        name: 'Door to CT Report',
-        target: '≤30 min',
-        currentValue: 0, // Not used in traffic light system
-        targetValue: 30,
-        percentage: Math.round(kpi6Percentage * 10) / 10,
-        status: this.getKpiStatus(kpi6Percentage, 80),
-        trend: 'stable',
-      },
-      {
         id: 'doorToNeedle',
         name: 'Door to Needle',
         target: '≤60 min',

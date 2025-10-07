@@ -13,7 +13,6 @@ import {
   Error as ErrorIcon,
   Person as PersonIcon,
   Scanner as ScannerIcon,
-  Assignment as AssignmentIcon,
   Medication as MedicationIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
@@ -42,7 +41,6 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
       doorToCT: <ScannerIcon />,
       doorToNeedle: <MedicationIcon />,
       doorToMechanicalThrombectomy: <SettingsIcon />,
-      doorToCTReport: <AssignmentIcon />,
     };
 
     const nameMap: { [key: string]: { en: string; ar: string } } = {
@@ -50,7 +48,6 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
       doorToCT: { en: 'Door to CT Scan', ar: 'من الباب إلى الأشعة المقطعية' },
       doorToNeedle: { en: 'Door to Needle', ar: 'من الباب إلى الإبرة' },
       doorToMechanicalThrombectomy: { en: 'Door to Mechanical Thrombectomy', ar: 'من الباب إلى استئصال الخثرة الميكانيكي' },
-      doorToCTReport: { en: 'Door to CT Report', ar: 'من الباب إلى تقرير الأشعة' },
     };
 
       const targetMap: { [key: string]: string } = {
@@ -58,7 +55,6 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
         doorToCT: '≤20min', 
         doorToNeedle: '≤60min',
         doorToMechanicalThrombectomy: '≤120min',
-        doorToCTReport: '≤45min',
       };
 
       return {
@@ -97,7 +93,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
 
           // Last 2 KPIs take full width, others take 1/3 width
           const isLastTwo = index >= strokeKPIs.length - 2;
-          const gridSize = isLastTwo ? { xs: 12, sm: 12, md: 6 } : { xs: 12, sm: 6, md: 4 };
+          const gridSize = isLastTwo ? { xs: 12, sm: 12, md: 6 } : { xs: 12, sm: 6, md: 6 };
 
           return (
             <Grid item {...gridSize} key={index}>

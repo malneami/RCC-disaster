@@ -32,7 +32,7 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
   };
 
   const complianceMetrics = data.kpis
-    .filter(kpi => kpi.id !== 'mortality') // Exclude mortality KPI
+    .filter(kpi => kpi.id !== 'mortality' && kpi.id !== 'pciSuccess') // Exclude mortality and PCI success KPIs
     .map(kpi => ({
       name: kpi.name,
       value: kpi.value,
@@ -56,9 +56,12 @@ const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
           const status = getComplianceStatus(metric.value);
           const IconComponent = status.icon;
           const isMet = metric.value >= metric.target;
+          
+          // First 4 cards get md={3}, remaining cards get md={4}
+          const gridSize = index < 4 ? 3 : 4;
 
           return (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grid item xs={12} sm={6} md={gridSize} key={index}>
               <Box
                 sx={{
                   p: 2,
