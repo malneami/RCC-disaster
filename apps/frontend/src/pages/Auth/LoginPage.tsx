@@ -159,18 +159,6 @@ const LoginPage: React.FC = () => {
                     </Link>
                   </Typography>
                 </Box>
-
-                <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    <strong>Development Login Credentials:</strong><br />
-                    Admin: admin@rcc-healthcare.com<br />
-                    RCC: coordinator@rcc-healthcare.com<br />
-                    EMS: ems@rcc-healthcare.com<br />
-                    Data Collector: datacollector@rcc-healthcare.com<br />
-                    Cath Lab: cathlab@rcc-healthcare.com<br />
-                    Password: Healthcare@2024
-                  </Typography>
-                </Box>
               </form>
             </CardContent>
           </Card>

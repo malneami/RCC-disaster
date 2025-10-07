@@ -80,12 +80,6 @@ async function main() {
 
   console.log('✅ Unified seeding completed successfully!');
   console.log('📋 Development Login Credentials:');
-  console.log('   Admin: admin@rcc-healthcare.com');
-  console.log('   RCC: coordinator@rcc-healthcare.com');
-  console.log('   EMS: ems@rcc-healthcare.com');
-  console.log('   Data Collector: datacollector@rcc-healthcare.com');
-  console.log('   Cath Lab: cathlab@rcc-healthcare.com');
-  console.log('   Password: Healthcare@2024');
 }
 
 async function seedHospitals() {
