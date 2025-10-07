@@ -17,6 +17,7 @@ export interface PatientInfo {
   medications?: string;
   originHospitalId: string;
   destinationHospitalId?: string;
+  caseType?: 'DIRECT' | 'TRANSFER';
 }
 
 export interface CriticalTimestamps {
@@ -231,6 +232,7 @@ export interface CreateStemiCaseData {
 
 export interface UpdateStemiCaseData {
   patientInfo?: PatientInfo;
+  caseType?: 'DIRECT' | 'TRANSFER';
   admissionTime?: string;
   modeOfArrival?: 'AMBULANCE_RED_CRESCENT' | 'PRIVATE_CAR' | 'TRANSFERRED_FROM_ANOTHER_HOSPITAL';
   transferRequestDateTime?: string;

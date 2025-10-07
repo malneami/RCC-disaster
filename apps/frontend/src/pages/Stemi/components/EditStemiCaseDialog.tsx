@@ -142,6 +142,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         medications: (stemiCase.patient as any)?.medications || '',
         originHospitalId: stemiCase.originHospitalId || '',
         destinationHospitalId: stemiCase.destinationHospitalId || '',
+        caseType: stemiCase.caseType as 'DIRECT' | 'TRANSFER' || 'DIRECT',
       });
 
       setAdmissionDetails({
@@ -211,6 +212,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
 
       // Prepare data for submission (matching UpdateStemiCaseData interface)
       const submitData: UpdateStemiCaseData = {
+        caseType: patientInfo.caseType,
         admissionTime: StemiDatetimeService.formatForUTC(admissionDetails.admissionTime),
         modeOfArrival: admissionDetails.modeOfArrival,
         transferRequestDateTime: admissionDetails.transferRequestDateTime ? StemiDatetimeService.formatForUTC(admissionDetails.transferRequestDateTime) : undefined,

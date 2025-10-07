@@ -335,6 +335,9 @@ export class StemiCasesService {
       if (stemiData.ecgFindings !== undefined) {
         updateData.ecgFindings = stemiData.ecgFindings;
       }
+      if (stemiData.caseType !== undefined) {
+        updateData.caseType = stemiData.caseType;
+      }
       
       // Add admission details if provided (check for existence, not truthiness)
       if (stemiData.admissionTime !== undefined && stemiData.admissionTime !== null && stemiData.admissionTime !== '') {

@@ -20,7 +20,7 @@ import PerformanceChart from './PerformanceChart';
 export type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
 const PerformanceComparison: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('daily');
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('monthly');
   const { data, isLoading, error } = usePerformanceComparison(selectedPeriod);
 
   if (isLoading) {

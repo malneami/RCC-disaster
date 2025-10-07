@@ -1,16 +1,18 @@
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
   Card,
   CardContent,
   Typography,
-  Button,
+  // Button,
   Chip,
   LinearProgress,
   Avatar,
   Stack,
   Paper,
   alpha,
+  CircularProgress,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -25,26 +27,57 @@ import {
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../contexts/AuthContext';
 import PerformanceComparison from './PerformanceComparison';
-import LivePerformanceMetrics from './LivePerformanceMetrics';
-import PeakAnalysisDashboard from './PeakAnalysisDashboard';
-import EMSStatusDemo from './EMSStatusDemo';
+import GlobalCriticalCaseTracker from '../../components/Dashboard/GlobalCriticalCaseTracker';
+import { dashboardService, DashboardMetrics, PathwayPerformanceMetrics } from '../../services/dashboardService';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
+  const [pathwayMetrics, setPathwayMetrics] = useState<PathwayPerformanceMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Main KPI Cards
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [metricsData, pathwayData] = await Promise.all([
+          dashboardService.getDashboardMetrics(),
+          dashboardService.getPathwayPerformanceMetrics(),
+        ]);
+        
+        setDashboardMetrics(metricsData);
+        setPathwayMetrics(pathwayData);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Main KPI Cards - now using dynamic data
   const kpiCards = [
     {
       title: 'Active Transfers',
-      value: '0',
+      value: dashboardMetrics?.activeTransfers?.toString() || '0',
       subtitle: 'Currently in progress',
-      // icon: <FontAwesomeIcon icon={faTrendingUp} />,
       color: '#2196f3',
       bgColor: alpha('#2196f3', 0.1),
     },
     {
       title: 'Urgent Pathway Cases',
-      value: '0',
+      value: dashboardMetrics?.urgentPathwayCases?.toString() || '0',
       subtitle: 'Requiring immediate attention',
       icon: <FontAwesomeIcon icon={faExclamationTriangle} />,
       color: '#ff5722',
@@ -52,7 +85,7 @@ const DashboardPage: React.FC = () => {
     },
     {
       title: 'Completed Today',
-      value: '0',
+      value: dashboardMetrics?.completedToday?.toString() || '0',
       subtitle: 'Successfully transferred',
       icon: <FontAwesomeIcon icon={faCheckCircle} />,
       color: '#4caf50',
@@ -60,87 +93,13 @@ const DashboardPage: React.FC = () => {
     },
     {
       title: 'Delayed Transfers',
-      value: '0',
+      value: dashboardMetrics?.delayedTransfers?.toString() || '0',
       subtitle: 'Exceeding target time',
       icon: <FontAwesomeIcon icon={faClock} />,
       color: '#ff9800',
       bgColor: alpha('#ff9800', 0.1),
     },
   ];
-
-  // Pathway Performance Metrics
-  const pathwayMetrics = [
-    {
-      pathway: 'Stroke Pathway',
-      color: '#9c27b0',
-      activeCount: '107 Active',
-      metrics: [
-        { label: 'Door to CT Scan Target: ≤25 min', value: '22 min avg', progress: 88, color: '#4caf50' },
-        { label: 'Door to Needle Target: ≤60 min', value: '45 min avg', progress: 75, color: '#4caf50' },
-        { label: 'Door to Physician Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
-        { label: 'Stroke Unit Admission Target: ≥80%', value: '85% achieved', progress: 85, color: '#4caf50' },
-      ],
-    },
-    {
-      pathway: 'STEMI Pathway',
-      color: '#d32f2f',
-      activeCount: '122 Active',
-      metrics: [
-        { label: 'Door-to-Balloon Target: ≤90 min', value: '78 min avg', progress: 87, color: '#4caf50' },
-        { label: 'First ECG Target: ≤10 min', value: '8 min avg', progress: 80, color: '#4caf50' },
-        { label: 'Door to Needle Target: ≤30 min', value: '25 min avg', progress: 83, color: '#4caf50' },
-        { label: 'RCC Activation Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
-      ],
-    },
-    {
-      pathway: 'Trauma Pathway',
-      color: '#ff5722',
-      activeCount: '56 Active',
-      metrics: [
-        { label: 'Response Time Target: ≤8 min', value: '6 min avg', progress: 75, color: '#4caf50' },
-        { label: 'Assessment Time Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
-        { label: 'Triage Time Target: ≤15 min', value: '12 min avg', progress: 80, color: '#4caf50' },
-        { label: 'CT Scan Target: ≤30 min', value: '25 min avg', progress: 83, color: '#4caf50' },
-      ],
-    },
-  ];
-
-  const recentTickets = [
-    {
-      id: 'T-2024-001',
-      patient: 'John D.',
-      pathway: 'STEMI',
-      priority: 'CRITICAL',
-      time: '15 min ago',
-    },
-    {
-      id: 'T-2024-002',
-      patient: 'Sarah M.',
-      pathway: 'STROKE',
-      priority: 'HIGH',
-      time: '32 min ago',
-    },
-    {
-      id: 'T-2024-003',
-      patient: 'Robert L.',
-      pathway: 'TRAUMA',
-      priority: 'MEDIUM',
-      time: '1 hour ago',
-    },
-  ];
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return 'error';
-      case 'HIGH':
-        return 'warning';
-      case 'MEDIUM':
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
 
   return (
     <>
@@ -156,7 +115,27 @@ const DashboardPage: React.FC = () => {
           Regional Coordination Center Dashboard
         </Typography>
 
-        <Grid container spacing={3}>
+        {loading && (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+            <CircularProgress sx={{ mr: 2 }} />
+            <Typography>Loading dashboard data...</Typography>
+          </Box>
+        )}
+
+        {error && (
+          <Box p={3} mb={3}>
+            <Typography color="error" variant="h6">
+              Error: {error}
+            </Typography>
+            <Typography color="text.secondary">
+              Please refresh the page or try again later.
+            </Typography>
+          </Box>
+        )}
+
+        {!loading && !error && (
+          <>
+            <Grid container spacing={3}>
           {/* Main KPI Cards */}
           {kpiCards.map((card, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
@@ -209,6 +188,11 @@ const DashboardPage: React.FC = () => {
             </Grid>
           ))}
 
+          {/* Global Critical Case Tracker */}
+          <Grid item xs={12}>
+            <GlobalCriticalCaseTracker />
+          </Grid>
+
           {/* Critical Performance Metrics */}
           <Grid item xs={12}>
             <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
@@ -224,7 +208,7 @@ const DashboardPage: React.FC = () => {
                 </Box>
                 
                 <Grid container spacing={3}>
-                  {pathwayMetrics.map((pathway, index) => (
+                  {(pathwayMetrics?.pathways || []).map((pathway, index) => (
                     <Grid item xs={12} md={4} key={index}>
                       <Paper
                         elevation={0}
@@ -246,7 +230,7 @@ const DashboardPage: React.FC = () => {
                         </Box>
                         
                         <Chip
-                          label={pathway.activeCount}
+                          label={`${pathway.activeCount} Active`}
                           size="small"
                           sx={{
                             bgcolor: pathway.color,
@@ -299,13 +283,9 @@ const DashboardPage: React.FC = () => {
             <PerformanceComparison />
           </Grid>
 
-          {/* EMS Status Update Demo */}
-          <Grid item xs={12}>
-            <EMSStatusDemo />
-          </Grid>
-
+        
           {/* Recent Activity */}
-          <Grid item xs={12} md={8}>
+          {/* <Grid item xs={12} md={8}>
             <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
@@ -354,16 +334,10 @@ const DashboardPage: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-
-          {/* Live Performance Metrics and Peak Analysis */}
-          <Grid item xs={12} md={6}>
-            <LivePerformanceMetrics />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <PeakAnalysisDashboard />
-          </Grid>
+          </Grid> */}
         </Grid>
+          </>
+        )}
       </Box>
     </>
   );

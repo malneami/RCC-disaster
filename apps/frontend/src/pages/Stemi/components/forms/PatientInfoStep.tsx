@@ -34,7 +34,21 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
   const handleHospitalChange = (field: 'originHospitalId' | 'destinationHospitalId') => (
     hospitalId: string
   ) => {
-    onChange({ ...data, [field]: hospitalId });
+    const newData = { ...data, [field]: hospitalId };
+    
+    // Automatically determine case type based on hospital selection
+    const originHospitalId = field === 'originHospitalId' ? hospitalId : data.originHospitalId;
+    const destinationHospitalId = field === 'destinationHospitalId' ? hospitalId : data.destinationHospitalId;
+    
+    // If origin and destination are different (and destination is not empty), it's a TRANSFER
+    // If they're the same or destination is empty, it's DIRECT
+    if (originHospitalId && destinationHospitalId && originHospitalId !== destinationHospitalId) {
+      newData.caseType = 'TRANSFER';
+    } else {
+      newData.caseType = 'DIRECT';
+    }
+    
+    onChange(newData);
   };
 
   return (

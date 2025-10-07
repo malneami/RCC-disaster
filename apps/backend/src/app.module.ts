@@ -21,6 +21,7 @@ import { TraumaCasesModule } from './modules/trauma-cases/trauma-cases.module';
 import { StemiCasesModule } from './modules/stemi-cases/stemi-cases.module';
 import { StemiCommandCenterModule } from './modules/stemi-command-center/stemi-command-center.module';
 import { StrokeCommandCenterModule } from './modules/stroke-command-center/stroke-command-center.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -92,6 +93,7 @@ import { RepliesModule } from './modules/replies/replies.module';
     StemiCasesModule,
     StemiCommandCenterModule,
     StrokeCommandCenterModule,
+    DashboardModule,
   ],
   providers: [
     {

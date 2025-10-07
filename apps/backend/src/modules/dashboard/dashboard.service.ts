@@ -229,48 +229,48 @@ export class DashboardService {
 
   private async getStrokePathwayMetrics(startOfDay: Date, endOfDay: Date, lastWeek: Date): Promise<{ activeCount: number; metrics: PathwayMetric[] }> {
     try {
-      const [totalCases, recentCases] = await Promise.all([
-        // Total stroke cases
-        this.prisma.strokeCase.count({
-          where: {
-            deletedAt: null,
+      // Get recent cases count
+      const recentCases = await this.prisma.strokeCase.count({
+        where: {
+          createdAt: {
+            gte: lastWeek,
+            lt: endOfDay,
           },
-        }),
-        // Recent stroke cases (last week)
-        this.prisma.strokeCase.count({
-          where: {
-            createdAt: {
-              gte: lastWeek,
-              lt: endOfDay,
-            },
-            deletedAt: null,
-          },
-        }),
-      ]);
+          deletedAt: null,
+        },
+      });
 
-      // For now, use mock data until proper timing fields are available
-      const avgDoorToNeedle = 45; // Mock average
-      const avgCTTime = 22; // Mock average
-
-      const doorToNeedleProgress = Math.min(100, Math.max(0, 100 - (avgDoorToNeedle / 60) * 100)); // Target: ≤60 min
-      const ctProgress = Math.min(100, Math.max(0, 100 - (avgCTTime / 25) * 100)); // Target: ≤25 min
+      // For now, return mock data until we integrate with the stroke KPI calculator
+      const metrics: PathwayMetric[] = [
+        {
+          label: 'Door to CT Scan Target: ≤25 min',
+          value: '22 min avg',
+          progress: 88,
+          color: '#4caf50',
+        },
+        {
+          label: 'Door to Needle Target: ≤60 min',
+          value: '45 min avg',
+          progress: 75,
+          color: '#4caf50',
+        },
+        {
+          label: 'Door to Physician Target: ≤15 min',
+          value: '12 min avg',
+          progress: 80,
+          color: '#4caf50',
+        },
+        {
+          label: 'Stroke Unit Admission Target: ≥80%',
+          value: '85% achieved',
+          progress: 85,
+          color: '#4caf50',
+        },
+      ];
 
       return {
-        activeCount: recentCases, // Use recent cases as "active"
-        metrics: [
-          {
-            label: 'Door-to-Needle Target: ≤60 min',
-            value: `${avgDoorToNeedle} min avg`,
-            progress: doorToNeedleProgress,
-            color: doorToNeedleProgress >= 75 ? '#4caf50' : doorToNeedleProgress >= 50 ? '#ff9800' : '#f44336',
-          },
-          {
-            label: 'CT Scan Target: ≤25 min',
-            value: `${avgCTTime} min avg`,
-            progress: ctProgress,
-            color: ctProgress >= 75 ? '#4caf50' : ctProgress >= 50 ? '#ff9800' : '#f44336',
-          },
-        ],
+        activeCount: recentCases,
+        metrics,
       };
     } catch (error) {
       this.logger.error('Error calculating stroke pathway metrics:', error);
@@ -280,48 +280,48 @@ export class DashboardService {
 
   private async getStemiPathwayMetrics(startOfDay: Date, endOfDay: Date, lastWeek: Date): Promise<{ activeCount: number; metrics: PathwayMetric[] }> {
     try {
-      const [totalCases, recentCases] = await Promise.all([
-        // Total STEMI cases
-        this.prisma.stemiCase.count({
-          where: {
-            deletedAt: null,
+      // Get recent cases count
+      const recentCases = await this.prisma.stemiCase.count({
+        where: {
+          createdAt: {
+            gte: lastWeek,
+            lt: endOfDay,
           },
-        }),
-        // Recent STEMI cases (last week)
-        this.prisma.stemiCase.count({
-          where: {
-            createdAt: {
-              gte: lastWeek,
-              lt: endOfDay,
-            },
-            deletedAt: null,
-          },
-        }),
-      ]);
+          deletedAt: null,
+        },
+      });
 
-      // For now, use mock data until proper timing fields are available
-      const avgDoorToBalloon = 78; // Mock average
-      const avgFirstECG = 8; // Mock average
-
-      const doorToBalloonProgress = Math.min(100, Math.max(0, 100 - (avgDoorToBalloon / 90) * 100)); // Target: ≤90 min
-      const firstECGProgress = Math.min(100, Math.max(0, 100 - (avgFirstECG / 10) * 100)); // Target: ≤10 min
+      // For now, return mock data until we integrate with the STEMI KPI service
+      const metrics: PathwayMetric[] = [
+        {
+          label: 'Door-to-Balloon Target: ≤90 min',
+          value: '78 min avg',
+          progress: 87,
+          color: '#4caf50',
+        },
+        {
+          label: 'First ECG Target: ≤10 min',
+          value: '8 min avg',
+          progress: 80,
+          color: '#4caf50',
+        },
+        {
+          label: 'Door to Needle Target: ≤30 min',
+          value: '25 min avg',
+          progress: 83,
+          color: '#4caf50',
+        },
+        {
+          label: 'RCC Activation Target: ≤15 min',
+          value: '12 min avg',
+          progress: 80,
+          color: '#4caf50',
+        },
+      ];
 
       return {
-        activeCount: recentCases, // Use recent cases as "active"
-        metrics: [
-          {
-            label: 'Door-to-Balloon Target: ≤90 min',
-            value: `${avgDoorToBalloon} min avg`,
-            progress: doorToBalloonProgress,
-            color: doorToBalloonProgress >= 75 ? '#4caf50' : doorToBalloonProgress >= 50 ? '#ff9800' : '#f44336',
-          },
-          {
-            label: 'First ECG Target: ≤10 min',
-            value: `${avgFirstECG} min avg`,
-            progress: firstECGProgress,
-            color: firstECGProgress >= 75 ? '#4caf50' : firstECGProgress >= 50 ? '#ff9800' : '#f44336',
-          },
-        ],
+        activeCount: recentCases,
+        metrics,
       };
     } catch (error) {
       this.logger.error('Error calculating STEMI pathway metrics:', error);

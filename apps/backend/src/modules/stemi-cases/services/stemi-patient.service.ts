@@ -92,23 +92,50 @@ export class StemiPatientService {
     } = patientInfo;
 
     try {
+      // First, get the current patient to check if nationalId is changing
+      const currentPatient = await this.prisma.patient.findUnique({
+        where: { id: patientId },
+        select: { nationalId: true }
+      });
+
+      if (!currentPatient) {
+        throw new Error(`Patient with ID ${patientId} not found`);
+      }
+
+      // Build update data, only including nationalId if it's actually changing
+      const updateData: any = {
+        firstName,
+        lastName,
+        age: age || undefined,
+        gender,
+        phoneNumber: phoneNumber !== undefined ? (phoneNumber || null) : undefined,
+        address: address !== undefined ? (address || null) : undefined,
+        emergencyContact: emergencyContact !== undefined ? (emergencyContact || null) : undefined,
+        emergencyPhone: emergencyPhone !== undefined ? (emergencyPhone || null) : undefined,
+        medicalHistory: medicalHistory !== undefined ? (medicalHistory || null) : undefined,
+        allergies: allergies !== undefined ? (allergies || null) : undefined,
+        medications: medications !== undefined ? (medications || null) : undefined,
+        updatedAt: new Date(),
+      };
+
+      // Only update nationalId if it's different from the current value
+      if (nationalId && nationalId !== currentPatient.nationalId) {
+        // Check if the new nationalId already exists for another patient
+        const existingPatient = await this.prisma.patient.findUnique({
+          where: { nationalId },
+          select: { id: true }
+        });
+        
+        if (existingPatient && existingPatient.id !== patientId) {
+          throw new Error(`A patient with national ID ${nationalId} already exists`);
+        }
+        
+        updateData.nationalId = nationalId;
+      }
+
       const patient = await this.prisma.patient.update({
         where: { id: patientId },
-        data: {
-          firstName,
-          lastName,
-          nationalId,
-          age: age || undefined,
-          gender,
-          phoneNumber: phoneNumber !== undefined ? (phoneNumber || null) : undefined,
-          address: address !== undefined ? (address || null) : undefined,
-          emergencyContact: emergencyContact !== undefined ? (emergencyContact || null) : undefined,
-          emergencyPhone: emergencyPhone !== undefined ? (emergencyPhone || null) : undefined,
-          medicalHistory: medicalHistory !== undefined ? (medicalHistory || null) : undefined,
-          allergies: allergies !== undefined ? (allergies || null) : undefined,
-          medications: medications !== undefined ? (medications || null) : undefined,
-          updatedAt: new Date(),
-        },
+        data: updateData,
       });
 
       return patient;
