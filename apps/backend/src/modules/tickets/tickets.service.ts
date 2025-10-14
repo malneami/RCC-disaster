@@ -307,6 +307,36 @@ export class TicketsService {
               role: true,
             },
           },
+          emsAssignments: {
+            include: {
+              ambulance: {
+                select: {
+                  id: true,
+                  status: true,
+                },
+              },
+              driver: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  phoneNumber: true,
+                },
+              },
+              createdByUser: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+            orderBy: {
+              assignedAt: 'desc',
+            },
+          },
         },
         orderBy: this.buildOrderBy(filters?.sortBy, filters?.sortOrder),
       }),
@@ -600,7 +630,45 @@ export class TicketsService {
     // Map EMS status to ticket status
     const newTicketStatus = StatusMappingService.mapEMSToTicket(emsStatus);
 
-    // Update both EMS status and ticket status simultaneously
+    // Find the latest EMS assignment for this ticket
+    const latestAssignment = await this.prisma.eMSAssignment.findFirst({
+      where: { ticketId: id },
+      orderBy: { assignedAt: 'desc' },
+    });
+
+    if (!latestAssignment) {
+      // Create a new EMS assignment if none exists
+      await this.prisma.eMSAssignment.create({
+        data: {
+          ticketId: id,
+          assignedAt: new Date(),
+          status: emsStatus,
+          createdBy: userId,
+          // Update timing fields based on status
+          ...(emsStatus === AssignmentStatus.EMS_CONTACT && { emsContactTime: new Date() }),
+          ...(emsStatus === AssignmentStatus.EMS_ARRIVAL && { actualArrivalTime: new Date() }),
+          ...(emsStatus === AssignmentStatus.DEPARTED && { journeyStartTime: new Date() }),
+          ...(emsStatus === AssignmentStatus.ARRIVED && { journeyEndTime: new Date() }),
+          ...(notes && { notes }),
+        },
+      });
+    } else {
+      // Update the existing EMS assignment status
+      await this.prisma.eMSAssignment.update({
+        where: { id: latestAssignment.id },
+        data: {
+          status: emsStatus,
+          // Update timing fields based on status
+          ...(emsStatus === AssignmentStatus.EMS_CONTACT && { emsContactTime: new Date() }),
+          ...(emsStatus === AssignmentStatus.EMS_ARRIVAL && { actualArrivalTime: new Date() }),
+          ...(emsStatus === AssignmentStatus.DEPARTED && { journeyStartTime: new Date() }),
+          ...(emsStatus === AssignmentStatus.ARRIVED && { journeyEndTime: new Date() }),
+          ...(notes && { notes }),
+        },
+      });
+    }
+
+    // Update ticket status and EMS status fields
     const updatedTicket = await this.prisma.ticket.update({
       where: { id },
       data: {
@@ -682,10 +750,46 @@ export class TicketsService {
 
     const [total, pending, assigned, inTransport, completed, cancelled] = await Promise.all([
       this.prisma.ticket.count({ where }),
-      this.prisma.ticket.count({ where: { ...where, status: TicketStatus.PENDING } }),
-      this.prisma.ticket.count({ where: { ...where, status: TicketStatus.ASSIGNED } }),
-      this.prisma.ticket.count({ where: { ...where, status: TicketStatus.IN_TRANSPORT } }),
-      this.prisma.ticket.count({ where: { ...where, status: TicketStatus.COMPLETED } }),
+      this.prisma.ticket.count({ 
+        where: { 
+          ...where, 
+          emsAssignments: {
+            some: {
+              status: 'EMS_CONTACT'
+            }
+          }
+        } 
+      }),
+      this.prisma.ticket.count({ 
+        where: { 
+          ...where, 
+          emsAssignments: {
+            some: {
+              status: 'EMS_ARRIVAL'
+            }
+          }
+        } 
+      }),
+      this.prisma.ticket.count({ 
+        where: { 
+          ...where, 
+          emsAssignments: {
+            some: {
+              status: 'DEPARTED'
+            }
+          }
+        } 
+      }),
+      this.prisma.ticket.count({ 
+        where: { 
+          ...where, 
+          emsAssignments: {
+            some: {
+              status: 'ARRIVED'
+            }
+          }
+        } 
+      }),
       this.prisma.ticket.count({ where: { ...where, status: TicketStatus.CANCELLED } }),
     ]);
 

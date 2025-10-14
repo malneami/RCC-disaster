@@ -151,6 +151,40 @@ export interface Ticket {
     email: string;
     role: string;
   };
+  emsAssignments?: Array<{
+    id: string;
+    ticketId: string;
+    ambulanceId?: string;
+    driverId?: string;
+    assignedAt: string;
+    status: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
+    emsContactTime?: string;
+    actualArrivalTime?: string;
+    journeyStartTime?: string;
+    journeyEndTime?: string;
+    distanceKm?: number;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+    ambulance?: {
+      id: string;
+      unitNumber: string;
+      status: string;
+    };
+    driver?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber?: string;
+    };
+    createdByUser: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  }>;
   activities?: Array<{
     id: string;
     type: string;

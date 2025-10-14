@@ -76,20 +76,19 @@ const HospitalDashboardPage: React.FC = () => {
       setHospital(hospitalData);
 
       // Load critical cases and tickets
-      const [criticalCasesData, hospitalTicketsData, transferTicketsData] = await Promise.all([
+      const [criticalCasesData, transferTicketsData] = await Promise.all([
         hospitalService.getActiveCriticalCases(hospitalId!),
-        hospitalService.getHospitalTickets(hospitalId!),
         hospitalService.getTransferTicketsForHospital(hospitalId!),
       ]);
 
       setCriticalCases(criticalCasesData);
-      setRelatedTickets(hospitalTicketsData);
+      setRelatedTickets([]); // Empty since transferTickets now includes hospital tickets
       setTransferTickets(Array.isArray(transferTicketsData) ? transferTicketsData : []);
       
       // Debug logging
       console.log('Hospital Dashboard Data Loaded:', {
         criticalCases: criticalCasesData?.length || 0,
-        hospitalTickets: hospitalTicketsData?.length || 0,
+        hospitalTickets: 0, // Now included in transferTickets
         transferTickets: transferTicketsData?.length || 0,
         hospital: hospitalData?.name,
       });

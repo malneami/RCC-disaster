@@ -93,9 +93,9 @@ const TicketCard: React.FC<TicketCardProps> = ({
 
   const getLocationInfo = () => {
     if (ticket.type === 'TRANSFER') {
-      return ticket.originHospital?.name 
-        ? `From: ${ticket.originHospital.name}`
-        : 'Origin hospital not specified';
+      const origin = ticket.originHospital?.name || 'Unknown origin';
+      const destination = ticket.destinationHospital?.name || 'Unknown destination';
+      return `From: ${origin} → To: ${destination}`;
     }
     return ticket.hospitalId ? 'Internal Hospital Ticket' : 'Hospital ticket';
   };

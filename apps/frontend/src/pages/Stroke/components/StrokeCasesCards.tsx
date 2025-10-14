@@ -205,21 +205,8 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       },
     ];
 
-    // Data completeness - use backend percentage if available
-    const dataCompleteness = strokeCase.outcomePercentageCompleteness !== undefined 
-      ? {
-          percentage: strokeCase.outcomePercentageCompleteness,
-          completed: Math.round((strokeCase.outcomePercentageCompleteness / 100) * 20), // Assuming 20 total fields
-          total: 20,
-        }
-      : calculateDataCompleteness(strokeCase);
-
-    // Case details
-    const caseDetails = {
-      'mRS Score': strokeCase.mrsBaseline || 'N/A',
-      'NIHSS Score': strokeCase.nihssBaseline || 'N/A',
-      'Discharge To': strokeCase.dischargeDestination || 'N/A',
-    };
+    // Data completeness - use the same comprehensive calculation as table view
+    const dataCompleteness = calculateComprehensiveDataCompleteness(strokeCase);
 
     // Actions
     const actions: CaseAction[] = [
@@ -298,6 +285,24 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
             />
           ))}
         </Box>
+        
+        <Divider sx={{ my: 2 }} />
+        
+        <Typography variant="subtitle2" gutterBottom>
+          Case Details
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <Typography variant="body2" color="text.secondary">
+              mRS Score: {strokeCase.modifiedRankinScaleAt90Days || 'N/A'}
+            </Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="body2" color="text.secondary">
+              Discharge To: {strokeCase.dischargeDate || 'N/A'}
+            </Typography>
+          </Grid>
+        </Grid>
       </Box>
     );
 
@@ -311,7 +316,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       performanceIndicators,
       timeMetrics,
       dataCompleteness,
-      caseDetails,
+      dataCompletenessTooltip: getDataCompletenessTooltipText(strokeCase),
       actions,
       expandableContent,
     };
@@ -342,31 +347,158 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     return `${met}/${total}`;
   };
 
-  const calculateDataCompleteness = (strokeCase: StrokeCase) => {
-    const fields = [
-      'strokeType',
-      'currentStatus',
-      'modeOfArrival',
-      'nihssBaseline',
-      'mrsBaseline',
-      'eligibleForThrombolysis',
-      'eligibleForThrombectomy',
-      'selectedTreatment',
-      'doorToPhysicianMinutes',
-      'doorToCtMinutes',
-      'doorToCtReportMinutes',
-    ];
-
-    const completed = fields.filter(field => {
-      const value = (strokeCase as any)[field];
-      return value !== null && value !== undefined && value !== '';
-    }).length;
-
+  const calculateComprehensiveDataCompleteness = (strokeCase: StrokeCase) => {
+    // Calculate outcome form completeness (50% weight)
+    const outcomeCompleteness = strokeCase.outcomePercentageCompleteness || 0;
+    const outcomeWeight = 0.5;
+    
+    // Calculate case data completeness (50% weight)
+    const caseDataCompleteness = calculateCaseDataCompleteness(strokeCase);
+    const caseDataWeight = 0.5;
+    
+    // Calculate combined completeness
+    const combinedCompleteness = Math.round(
+      (outcomeCompleteness * outcomeWeight) + (caseDataCompleteness * caseDataWeight)
+    );
+    
+    // Calculate total fields for display
+    const totalFields = calculateTotalFields(strokeCase);
+    const completedFields = Math.round((combinedCompleteness / 100) * totalFields);
+    
     return {
-      percentage: Math.round((completed / fields.length) * 100),
-      completed,
-      total: fields.length,
+      percentage: combinedCompleteness,
+      completed: completedFields,
+      total: totalFields,
     };
+  };
+
+  const calculateCaseDataCompleteness = (strokeCase: StrokeCase): number => {
+    // Core required fields for stroke cases
+    const requiredFields = [
+      'modeOfArrival',
+      'timeOfTriage',
+      'timeOfPhysicianAssessment',
+      'strokeTypeDetailed',
+      'ctScanPerformed',
+      'candidateForIVThrombolysis',
+      'candidateForMechanicalThrombectomy',
+      'disposition',
+    ];
+    
+    let completedFields = 0;
+    let totalFields = requiredFields.length;
+    
+    // Check basic required fields
+    requiredFields.forEach(field => {
+      const value = strokeCase[field as keyof StrokeCase];
+      if (value !== null && value !== undefined && value !== '') {
+        completedFields++;
+      }
+    });
+    
+    // If CT scan was performed, check CT-related fields
+    if (strokeCase.ctScanPerformed === true) {
+      const ctFields = ['timeOfCtScanStart', 'timeOfCtReportFinal', 'ctFindings'];
+      let ctCompleted = 0;
+      
+      ctFields.forEach(field => {
+        const value = strokeCase[field as keyof StrokeCase];
+        if (value !== null && value !== undefined && value !== '') {
+          ctCompleted++;
+        }
+      });
+      
+      totalFields += ctFields.length;
+      completedFields += ctCompleted;
+    }
+    
+    // If candidate for IV thrombolysis, check thrombolysis fields
+    if (strokeCase.candidateForIVThrombolysis === 'YES') {
+      const thrombolysisFields = ['thrombolysisOrderTime', 'ivThrombolysisAdministrationTime', 'ivThrombolysisGiven'];
+      let thrombolysisCompleted = 0;
+      
+      thrombolysisFields.forEach(field => {
+        const value = strokeCase[field as keyof StrokeCase];
+        if (value !== null && value !== undefined && value !== '') {
+          thrombolysisCompleted++;
+        }
+      });
+      
+      totalFields += thrombolysisFields.length;
+      completedFields += thrombolysisCompleted;
+    }
+    
+    // If candidate for mechanical thrombectomy, check thrombectomy fields
+    if (strokeCase.candidateForMechanicalThrombectomy === 'YES') {
+      const thrombectomyFields = ['timeOfMechanicalThrombectomyPuncture', 'mechanicalThrombectomyPerformed', 'timeOfThrombectomyComplete'];
+      let thrombectomyCompleted = 0;
+      
+      thrombectomyFields.forEach(field => {
+        const value = strokeCase[field as keyof StrokeCase];
+        if (value !== null && value !== undefined && value !== '') {
+          thrombectomyCompleted++;
+        }
+      });
+      
+      totalFields += thrombectomyFields.length;
+      completedFields += thrombectomyCompleted;
+    }
+    
+    // If transfer to another hospital, check transfer fields
+    if (strokeCase.transferToAnotherHospital === true) {
+      const transferFields = ['timeOfTransferActivation', 'timeOfTransferDeparture', 'prehospitalNotificationBySrca'];
+      let transferCompleted = 0;
+      
+      transferFields.forEach(field => {
+        const value = strokeCase[field as keyof StrokeCase];
+        if (value !== null && value !== undefined && value !== '') {
+          transferCompleted++;
+        }
+      });
+      
+      totalFields += transferFields.length;
+      completedFields += transferCompleted;
+    }
+    
+    return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+  };
+
+  const calculateTotalFields = (strokeCase: StrokeCase): number => {
+    // Calculate total fields for display purposes
+    let totalFields = 8; // Base required fields
+    
+    // Add conditional fields
+    if (strokeCase.ctScanPerformed === true) {
+      totalFields += 3; // CT fields
+    }
+    if (strokeCase.candidateForIVThrombolysis === 'YES') {
+      totalFields += 3; // Thrombolysis fields
+    }
+    if (strokeCase.candidateForMechanicalThrombectomy === 'YES') {
+      totalFields += 3; // Thrombectomy fields
+    }
+    if (strokeCase.transferToAnotherHospital === true) {
+      totalFields += 3; // Transfer fields
+    }
+    
+    // Add outcome form fields (9 fields)
+    totalFields += 9;
+    
+    return totalFields;
+  };
+
+  const getDataCompletenessTooltipText = (strokeCase: StrokeCase): string => {
+    const outcomeCompleteness = strokeCase.outcomePercentageCompleteness || 0;
+    const caseDataCompleteness = calculateCaseDataCompleteness(strokeCase);
+    const combinedCompleteness = Math.round(
+      (outcomeCompleteness * 0.5) + (caseDataCompleteness * 0.5)
+    );
+    
+    const outcomeText = `Outcome Form: ${outcomeCompleteness}%`;
+    const caseDataText = `Case Data: ${caseDataCompleteness}%`;
+    const combinedText = `Combined: ${combinedCompleteness}%`;
+    
+    return `${outcomeText}\n${caseDataText}\n${combinedText}`;
   };
 
   const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'info' => {

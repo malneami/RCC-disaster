@@ -59,7 +59,7 @@ const TicketList: React.FC<TicketListProps> = ({
   const handleUpdateStatusClick = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setStatusDialogOpen(true);
-    setCurrentStatus(ticket.status);
+    setCurrentStatus(ticket?.emsAssignments?.[0]?.status || 'EMS_CONTACT');
   };
 
   const getPriorityColor = (priority: string) => {

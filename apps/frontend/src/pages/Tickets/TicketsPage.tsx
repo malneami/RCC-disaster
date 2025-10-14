@@ -158,21 +158,21 @@ const TicketsPage: React.FC = () => {
 
   const handleStatusUpdate = async (ticketId: string, status: string, notes?: string) => {
     try {
-      await ticketService.updateTicketStatus(ticketId, status as any, notes);
-      setNotification({ message: 'Ticket status updated successfully', type: 'success' });
+      await ticketService.updateEMSStatus(ticketId, status as any, notes);
+      setNotification({ message: 'EMS assignment status updated successfully', type: 'success' });
       loadData(); // Refresh the list
     } catch (error) {
-      console.error('Error updating ticket status:', error);
-      setNotification({ message: 'Failed to update ticket status', type: 'error' });
+      console.error('Error updating EMS status:', error);
+      setNotification({ message: 'Failed to update EMS assignment status', type: 'error' });
     }
   };
 
   const getFilteredTickets = () => {
     if (tabValue === 0) return tickets; // All tickets
-    if (tabValue === 1) return tickets.filter(t => t.status === 'PENDING');
-    if (tabValue === 2) return tickets.filter(t => t.status === 'ASSIGNED');
-    if (tabValue === 3) return tickets.filter(t => t.status === 'IN_TRANSPORT');
-    if (tabValue === 4) return tickets.filter(t => t.status === 'COMPLETED');
+    if (tabValue === 1) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'EMS_CONTACT');
+    if (tabValue === 2) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'EMS_ARRIVAL');
+    if (tabValue === 3) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'DEPARTED');
+    if (tabValue === 4) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'ARRIVED');
     return tickets;
   };
 

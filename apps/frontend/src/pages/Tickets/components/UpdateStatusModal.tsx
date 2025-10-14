@@ -32,28 +32,28 @@ interface UpdateStatusModalProps {
 
 const statusOptions = [
   {
-    value: 'PENDING',
-    label: 'Pending',
+    value: 'EMS_CONTACT',
+    label: 'EMS Contact',
     icon: <PendingIcon />,
-    description: 'Ticket is waiting for assignment or action',
+    description: 'EMS has been contacted and is responding',
   },
   {
-    value: 'ASSIGNED',
-    label: 'Assigned',
+    value: 'EMS_ARRIVAL',
+    label: 'EMS Arrival',
     icon: <AssignedIcon />,
-    description: 'Ticket has been assigned to an EMS unit',
+    description: 'EMS unit has arrived at the origin location',
   },
   {
-    value: 'IN_TRANSPORT',
-    label: 'In Transport',
+    value: 'DEPARTED',
+    label: 'Departed',
     icon: <InTransportIcon />,
     description: 'Patient is currently being transported',
   },
   {
-    value: 'COMPLETED',
-    label: 'Completed',
+    value: 'ARRIVED',
+    label: 'Arrived',
     icon: <CompletedIcon />,
-    description: 'Transport has been completed successfully',
+    description: 'Patient has arrived at destination',
   },
   {
     value: 'CANCELLED',
@@ -108,13 +108,13 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PENDING':
+      case 'EMS_CONTACT':
         return 'warning';
-      case 'ASSIGNED':
+      case 'EMS_ARRIVAL':
         return 'info';
-      case 'IN_TRANSPORT':
+      case 'DEPARTED':
         return 'primary';
-      case 'COMPLETED':
+      case 'ARRIVED':
         return 'success';
       case 'CANCELLED':
         return 'error';
@@ -133,7 +133,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
       fullWidth
     >
       <DialogTitle>
-        Update Ticket Status
+        Update EMS Assignment Status
       </DialogTitle>
       
       <DialogContent>

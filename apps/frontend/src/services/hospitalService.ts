@@ -274,17 +274,49 @@ class HospitalService {
     return response.data?.data || response.data || [];
   }
 
-  // Get transfer tickets for a hospital (as destination)
+  // Get all tickets for a hospital (transfer tickets as origin/destination + hospital tickets)
   async getTransferTicketsForHospital(hospitalId?: string): Promise<any[]> {
     if (!hospitalId) return [];
-    const params = new URLSearchParams({
-      destinationHospitalId: hospitalId,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    });
-    const response = await apiClient.get(`/tickets?${params}`);
-    // Handle paginated response
-    return response.data?.data || response.data || [];
+    
+    try {
+      // Make three API calls to get all tickets related to the hospital
+      const [originTickets, destinationTickets, hospitalTickets] = await Promise.all([
+        apiClient.get(`/tickets?originHospitalId=${hospitalId}&sortBy=createdAt&sortOrder=desc`),
+        apiClient.get(`/tickets?destinationHospitalId=${hospitalId}&sortBy=createdAt&sortOrder=desc`),
+        apiClient.get(`/hospital-tickets?hospitalId=${hospitalId}&sortBy=createdAt&sortOrder=desc`)
+      ]);
+      
+      // Combine and deduplicate tickets
+      const originData = originTickets.data?.data || originTickets.data || [];
+      const destinationData = destinationTickets.data?.data || destinationTickets.data || [];
+      const hospitalData = hospitalTickets.data?.data || hospitalTickets.data || [];
+      
+      // Create a Map to avoid duplicates based on ticket ID
+      const ticketMap = new Map();
+      
+      // Add origin tickets
+      originData.forEach((ticket: any) => {
+        ticketMap.set(ticket.id, ticket);
+      });
+      
+      // Add destination tickets (will not duplicate if same ID)
+      destinationData.forEach((ticket: any) => {
+        ticketMap.set(ticket.id, ticket);
+      });
+      
+      // Add hospital tickets (will not duplicate if same ID)
+      hospitalData.forEach((ticket: any) => {
+        ticketMap.set(ticket.id, ticket);
+      });
+      
+      // Convert back to array and sort by createdAt
+      const allTickets = Array.from(ticketMap.values());
+      return allTickets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+    } catch (error) {
+      console.error('Error fetching transfer tickets:', error);
+      return [];
+    }
   }
 
   async getOpenHospitalTickets(hospitalId?: string): Promise<HospitalTicket[]> {

@@ -15,6 +15,7 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Tooltip,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -90,6 +91,7 @@ export interface UnifiedCaseCardProps {
     completed: number;
     total: number;
   };
+  dataCompletenessTooltip?: string;
   
   // Case-specific details
   caseDetails?: CaseDetails;
@@ -115,6 +117,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
   performanceIndicators = [],
   timeMetrics = [],
   dataCompleteness,
+  dataCompletenessTooltip,
   caseDetails = {},
   actions,
   expandableContent,
@@ -315,7 +318,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
               mt: { xs: 1, sm: 0 },
             }}
           >
-            <Chip 
+            {/* <Chip 
               label={status.replace(/_/g, ' ')} 
               size="small" 
               color={getStatusColor(status) as any}
@@ -330,7 +333,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                   whiteSpace: 'nowrap',
                 },
               }}
-            />
+            /> */}
             {severity && (
               <Chip 
                 label={severity} 
@@ -449,7 +452,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                   color={getTimeMetricColor(metric.met, metric.percentage)}
                   sx={{ height: 6, borderRadius: 3 }}
                 />
-                <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+               {/* <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
                   <Typography variant="caption" color="text.secondary">
                     {metric.met ? '✓ Target Met' : '✗ Target Missed'}
                   </Typography>
@@ -458,7 +461,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                       {Math.abs(metric.percentage)}% of target
                     </Typography>
                   )}
-                </Box>
+                </Box>*/}
               </Box>
             ))}
           </Box>
@@ -466,32 +469,39 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
 
         {/* Data Completeness */}
         {dataCompleteness && (
-          <Box mb={2}>
-            <Typography variant="subtitle2" gutterBottom>
-              Data Completeness
-            </Typography>
-            <Box display="flex" alignItems="center" gap={2}>
-              <LinearProgress
-                variant="determinate"
-                value={dataCompleteness.percentage}
-                sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
-                color={dataCompleteness.percentage >= 90 ? 'success' : dataCompleteness.percentage >= 70 ? 'warning' : 'error'}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {dataCompleteness.completed} of {dataCompleteness.total} fields completed
+          <Tooltip 
+            title={dataCompletenessTooltip || ''} 
+            arrow 
+            placement="top"
+            enterDelay={500}
+          >
+            <Box mb={2}>
+              <Typography variant="subtitle2" gutterBottom>
+                Data Completeness
               </Typography>
-              {dataCompleteness.percentage >= 90 ? (
-                <CheckCircleIcon color="success" fontSize="small" />
-              ) : (
-                <WarningIcon color="warning" fontSize="small" />
-              )}
+              <Box display="flex" alignItems="center" gap={2}>
+                <LinearProgress
+                  variant="determinate"
+                  value={dataCompleteness.percentage}
+                  sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
+                  color={dataCompleteness.percentage >= 90 ? 'success' : dataCompleteness.percentage >= 70 ? 'warning' : 'error'}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  {dataCompleteness.completed} of {dataCompleteness.total} fields completed
+                </Typography>
+                {dataCompleteness.percentage >= 90 ? (
+                  <CheckCircleIcon color="success" fontSize="small" />
+                ) : (
+                  <WarningIcon color="warning" fontSize="small" />
+                )}
+              </Box>
             </Box>
-          </Box>
+          </Tooltip>
         )}
 
         {/* Case Details */}
         {Object.keys(caseDetails).length > 0 && (
-          <Box mb={2}>
+          <Box mb={5}>
             <Grid container spacing={2}>
               {Object.entries(caseDetails).map(([key, value]) => (
                 <Grid item xs={6} key={key}>
