@@ -2,472 +2,668 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import * as ExcelJS from 'exceljs';
 
+interface StemiCaseData {
+  id: string;
+  ticketId: string | null;
+  pathwayStarted: Date | null;
+  modeOfArrival: string | null;
+  triageTime: Date | null;
+  firstEcgTime: Date | null;
+  thrombolyticGiven: boolean | null;
+  thrombolyticAdminTime: Date | null;
+  doorOutTime: Date | null;
+  balloonInflationTime: Date | null;
+  pciLocation: string | null;
+  doorToEcgMinutes: number | null;
+  doorToNeedleMinutes: number | null;
+  doorInDoorOutMinutes: number | null;
+  doorToBalloonMinutes: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+  createdById: string;
+  patient: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    nationalId: string | null;
+    age: number | null;
+    gender: string;
+    phoneNumber: string | null;
+    email: string | null;
+  } | null;
+  originHospital: {
+    id: string;
+    name: string;
+    cluster: string;
+    hasCardiologyCenter: boolean;
+  } | null;
+  destinationHospital: {
+    id: string;
+    name: string;
+    cluster: string;
+    hasCardiologyCenter: boolean;
+  } | null;
+}
+
 @Injectable()
 export class StemiExportService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async exportStemiCasesToExcel(filters?: any) {
-    // Get all STEMI cases with related data
-    const stemiCases = await this.prisma.stemiCase.findMany({
-      select: {
-        id: true,
-        modeOfArrival: true,
-        thrombolyticGiven: true,
-        pciType: true,
-        triageTime: true,
-        firstEcgTime: true,
-        thrombolyticAdminTime: true,
-        doorOutTime: true,
-        balloonInflationTime: true,
-        pciProcedureStartTime: true,
-        pathwayStarted: true,
-        createdAt: true,
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            nationalId: true,
-            age: true,
-            gender: true,
-          }
+  async exportStemiCasesToExcel() {
+    try {
+      // Fetch all STEMI cases with related data
+      const stemiCases = await this.prisma.stemiCase.findMany({
+        select: {
+          id: true,
+          ticketId: true,
+          pathwayStarted: true,
+          modeOfArrival: true,
+          triageTime: true,
+          firstEcgTime: true,
+          thrombolyticGiven: true,
+          thrombolyticAdminTime: true,
+          doorOutTime: true,
+          balloonInflationTime: true,
+          pciLocation: true,
+          doorToEcgMinutes: true,
+          doorToNeedleMinutes: true,
+          doorInDoorOutMinutes: true,
+          doorToBalloonMinutes: true,
+          createdAt: true,
+          updatedAt: true,
+          createdById: true,
+          patient: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              nationalId: true,
+              age: true,
+              gender: true,
+              phoneNumber: true,
+              email: true,
+            },
+          },
+          originHospital: {
+            select: {
+              id: true,
+              name: true,
+              cluster: true,
+              hasCardiologyCenter: true,
+            },
+          },
+          destinationHospital: {
+            select: {
+              id: true,
+              name: true,
+              cluster: true,
+              hasCardiologyCenter: true,
+            },
+          },
         },
-        originHospital: {
-          select: {
-            id: true,
-            name: true,
-            cluster: true,
-            hasCardiologyCenter: true,
-          }
+        orderBy: {
+          createdAt: 'desc',
         },
-        destinationHospital: {
-          select: {
-            id: true,
-            name: true,
-            cluster: true,
-            hasCardiologyCenter: true,
-          }
-        },
-        ticket: {
-          select: {
-            id: true,
-            ticketNumber: true,
-            createdAt: true,
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    // Create Excel workbook
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('STEMI Cases');
-
-    // Define headers
-    const headers = [
-      'Date of admission',
-      'Patient ID (National ID or IQAMA Numer or Passport)',
-      'Gender',
-      'Age',
-      'Mode of arrival',
-      'Referred From Hospital',
-      'Triage Time (hh:mm)',
-      'Time of first ECG (hh:mm)',
-      'Did the patient given bolus thrombolytic medication',
-      'Time of thrombolytic administration (hh:mm)',
-      'Door out time (hh:mm)',
-      'Time of 1st PCI began (hh:mm)',
-      'PCI location',
-      'Facility name',
-      '', // Empty column
-      'Cluster name',
-      '1-Door to ECG',
-      '1-Door to Needle',
-      '1-Door Out time',
-      '1-Door to Balloon (1ry PCI)',
-      'Door to ECG',
-      'Door to Needle',
-      'Door (In-Out) time',
-      'Door to Balloon',
-      'Door to ECG 2',
-      'Door to Needle 2',
-      'Door (In-Out) time',
-      'Door to Balloon (1ry PCI)',
-      'Mode of arrival: By ambulance',
-      'Mode of arrival: By private car',
-      'Mode of arrival: Transferred',
-      'Validity: Date of admission',
-      'Validity: Pt ID',
-      '', // Empty column
-      'Validity: Age',
-      '', // Empty column
-      'Given FIBRONOLYTICS?',
-      'Arrived by Ambulance or car',
-      'Arrived by Ambulance or car AND candidate for Fibrinolysis',
-      'PCI capable',
-      'Non-PCI capable',
-      'Door to Balloon for Transferred patients',
-    ];
-
-    // Add headers
-    worksheet.addRow(headers);
-
-    // Style the header row
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
-    };
-
-    // Add data rows
-    stemiCases.forEach((case_, index) => {
-      const patient = case_.patient;
-      const originHospital = case_.originHospital;
-      const destinationHospital = case_.destinationHospital;
-
-      worksheet.addRow({
-        'Date of admission': this.formatDate(case_.pathwayStarted || case_.createdAt),
-        'Patient ID (National ID or IQAMA Numer or Passport)': patient.nationalId || '',
-        'Gender': patient.gender || '',
-        'Age': patient.age || 0,
-        'Mode of arrival': this.formatModeOfArrival(case_.modeOfArrival),
-        'Referred From Hospital': this.formatReferredFromHospital(originHospital?.name),
-        'Triage Time (hh:mm)': this.formatTime(case_.triageTime),
-        'Time of first ECG (hh:mm)': this.formatTime(case_.firstEcgTime),
-        'Did the patient given bolus thrombolytic medication': case_.thrombolyticGiven ? 'Yes' : 'No',
-        'Time of thrombolytic administration (hh:mm)': this.formatTime(case_.thrombolyticAdminTime),
-        'Door out time (hh:mm)': this.formatTime(case_.doorOutTime),
-        'Time of 1st PCI began (hh:mm)': this.formatTime(case_.pciProcedureStartTime),
-        'PCI location': this.formatPciLocation(destinationHospital?.name),
-        'Facility name': originHospital?.name || '',
-        '': '',
-        'Cluster name': originHospital?.cluster || '',
-        '1-Door to ECG': this.calculateDoorToEcg(case_),
-        '1-Door to Needle': this.calculateDoorToNeedle(case_),
-        '1-Door Out time': this.calculateDoorOutTime(case_),
-        '1-Door to Balloon (1ry PCI)': this.calculateDoorToBalloon(case_),
-        'Door to ECG': this.calculateDoorToEcg(case_),
-        'Door to Needle': this.calculateDoorToNeedle(case_),
-        'Door (In-Out) time': this.calculateDoorOutTime(case_),
-        'Door to Balloon': this.calculateDoorToBalloon(case_),
-        'Door to ECG 2': this.calculateDoorToEcg(case_),
-        'Door to Needle 2': this.calculateDoorToNeedle(case_),
-        'Door (In-Out) time 2': this.calculateDoorOutTime(case_),
-        'Door to Balloon (1ry PCI)': this.calculateDoorToBalloon(case_),
-        'Mode of arrival: By ambulance': this.isModeByAmbulance(case_.modeOfArrival) ? 'Yes' : 'No',
-        'Mode of arrival: By private car': this.isModeByPrivateCar(case_.modeOfArrival) ? 'Yes' : 'No',
-        'Mode of arrival: Transferred': this.isModeTransferred(case_.modeOfArrival) ? 'Yes' : 'No',
-        'Validity: Date of admission': this.validateDate(case_.pathwayStarted || case_.createdAt),
-        'Validity: Pt ID': this.validatePatientId(patient.nationalId),
-        '': '',
-        'Validity: Age': this.validateAge(patient.age),
-        '': '',
-        'Given FIBRONOLYTICS?': case_.thrombolyticGiven ? 'Yes' : 'No',
-        'Arrived by Ambulance or car': this.isArrivedByAmbulanceOrCar(case_.modeOfArrival) ? 'Yes' : 'No',
-        'Arrived by Ambulance or car AND candidate for Fibrinolysis': this.isCandidateForFibrinolysis(case_) ? 'Yes' : 'No',
-        'PCI capable': originHospital?.hasCardiologyCenter ? 'Yes' : 'No',
-        'Non-PCI capable': !originHospital?.hasCardiologyCenter ? 'Yes' : 'No',
-        'Door to Balloon for Transferred patients': this.isModeTransferred(case_.modeOfArrival) ? this.calculateDoorToBalloon(case_) : '',
       });
 
-      // Add alternating row colors
-      if (index % 2 === 1) {
-        const row = worksheet.getRow(index + 2);
-        row.fill = {
+      // Transform data for Excel export
+      const exportData = stemiCases.map((case_) => this.transformCaseForExport(case_));
+
+      // Calculate aggregated KPI data
+      const kpiData = this.calculateAggregatedKPIs(stemiCases);
+      
+      // Add KPI row after the case data - matching spreadsheet structure (no KPI columns)
+      const kpiRow = {
+        'Date of admission (dd/mm/yyyy)': '',
+        'Patient ID (National ID or IQAMA Number or Passport)': '',
+        'Gender': '',
+        'Age in years': '',
+        'Mode of arrival': '',
+        'Referred From Hospital': '',
+        'Triage Time (hh:mm)': '',
+        'Time of first ECG (hh:mm)': '',
+        'Has the patient given intravenous thrombolytic medication?': '',
+        'Time of thrombolytic administration (hh:mm)': '',
+        'Door out time (hh:mm)': '',
+        'Time of 1st PCI began (hh:mm)': '',
+        'PCI location': '',
+        'Facility name (Origin)': '',
+        'Cluster name (Origin)': '',
+        'Facility name (Destination)': '',
+        'Cluster name (Destination)': '',
+        '1-Door to ECG': '',
+        '1-Door to Needle': '',
+        '1-Door Out time': '',
+        '1-Door to Balloon (1ry PCI)': '',
+        'Door to ECG': '',
+        'Door to Needle': '',
+        'Door (In-Out) time': '',
+        'Door to Balloon': '',
+        'Door to ECG 2': '',
+        'Door to Needle 2': '',
+        'Door (In-Out) time 2': '',
+        'Door to Balloon (1ry PCI)': '',
+        'Mode of arrival: By ambulance': '',
+        'Mode of arrival: By private car': '',
+        'Mode of arrival: Transferred': '',
+        'Validity: Date of admission (Valid=1, Blank=2, Invalid=3)': '',
+        'Validity: Pt ID (Valid=1, Blank=2, Invalid=3)': '',
+        'Validity: Age (Valid=1, Blank=2, Invalid=3)': '',
+        'Given FIBRINOLYTICS? (Yes=1, No=0)': '',
+        'Arrived by Ambulance or car (Yes=1, No=0)': '',
+        'Arrived by Ambulance or car AND candidate for Fibrinolysis (Yes=1, No=0)': '',
+        'PCI capable (Yes=1, No=0)': '',
+        'Non-PCI capable (Yes=1, No=0)': '',
+        'Door to Balloon for Transferred patients (Yes=1, No=0)': '',
+      };
+
+      // Combine case data with KPI row
+      const allData = [...exportData, kpiRow];
+
+      // Create workbook and worksheet using ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('STEMI Cases');
+
+      // Define headers - matching exact spreadsheet format
+      const headers = [
+        'Date of admission (dd/mm/yyyy)',
+        'Patient ID (National ID or IQAMA Number or Passport)',
+        'Gender',
+        'Age in years',
+        'Mode of arrival',
+        'Referred From Hospital',
+        'Triage Time (hh:mm)',
+        'Time of first ECG (hh:mm)',
+        'Has the patient given intravenous thrombolytic medication?',
+        'Time of thrombolytic administration (hh:mm)',
+        'Door out time (hh:mm)',
+        'Time of 1st PCI began (hh:mm)',
+        'PCI location',
+        'Facility name (Origin)',
+        'Cluster name (Origin)',
+        'Facility name (Destination)',
+        'Cluster name (Destination)',
+        '1-Door to ECG',
+        '1-Door to Needle',
+        '1-Door Out time',
+        '1-Door to Balloon (1ry PCI)',
+        'Door to ECG',
+        'Door to Needle',
+        'Door (In-Out) time',
+        'Door to Balloon',
+        'Door to ECG 2',
+        'Door to Needle 2',
+        'Door (In-Out) time 2',
+        'Door to Balloon (1ry PCI)',
+        'Mode of arrival: By ambulance',
+        'Mode of arrival: By private car',
+        'Mode of arrival: Transferred',
+        'Validity: Date of admission (Valid=1, Blank=2, Invalid=3)',
+        'Validity: Pt ID (Valid=1, Blank=2, Invalid=3)',
+        'Validity: Age (Valid=1, Blank=2, Invalid=3)',
+        'Given FIBRINOLYTICS? (Yes=1, No=0)',
+        'Arrived by Ambulance or car (Yes=1, No=0)',
+        'Arrived by Ambulance or car AND candidate for Fibrinolysis (Yes=1, No=0)',
+        'PCI capable (Yes=1, No=0)',
+        'Non-PCI capable (Yes=1, No=0)',
+        'Door to Balloon for Transferred patients (Yes=1, No=0)',
+      ];
+
+      // Add header row with styling - matching spreadsheet color scheme
+      const headerRow = worksheet.addRow(headers);
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        
+        // Color scheme based on column position
+        let backgroundColor = 'FF808080'; // Default grey
+        
+        if (colNumber >= 18 && colNumber <= 32) {
+          // Orange section (columns R-AI) - 1-Door to ECG through Mode of arrival: Transferred
+          backgroundColor = 'FFFF8C00'; // Orange
+        } else if (colNumber >= 33 && colNumber <= 41) {
+          // Dark orange section (columns AJ-AQ) - Validity through Door to Balloon for Transferred patients
+          backgroundColor = 'FFCC6600'; // Dark orange
+        } else {
+          // Light grey section (columns A-Q) - Demographics and timestamps
+          backgroundColor = 'FF808080'; // Light grey
+        }
+        
+        cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFF8F8F8' }
+          fgColor: { argb: backgroundColor }
         };
-      }
-    });
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+        cell.alignment = { 
+          vertical: 'middle', 
+          horizontal: 'center',
+          wrapText: true
+        };
+      });
 
-    // Set column widths
-    worksheet.columns = [
-      { width: 15 }, // Date of admission
-      { width: 30 }, // Patient ID
-      { width: 10 }, // Gender
-      { width: 8 },  // Age
-      { width: 20 }, // Mode of arrival
-      { width: 25 }, // Referred From Hospital
-      { width: 15 }, // Triage Time
-      { width: 20 }, // Time of first ECG
-      { width: 35 }, // Did the patient given bolus thrombolytic medication
-      { width: 25 }, // Time of thrombolytic administration
-      { width: 15 }, // Door out time
-      { width: 20 }, // Time of 1st PCI began
-      { width: 15 }, // PCI location
-      { width: 25 }, // Facility name
-      { width: 5 },  // Empty column
-      { width: 15 }, // Cluster name
-      { width: 15 }, // 1-Door to ECG
-      { width: 15 }, // 1-Door to Needle
-      { width: 15 }, // 1-Door Out time
-      { width: 20 }, // 1-Door to Balloon
-      { width: 15 }, // Door to ECG
-      { width: 15 }, // Door to Needle
-      { width: 15 }, // Door (In-Out) time
-      { width: 15 }, // Door to Balloon
-      { width: 15 }, // Door to ECG 2
-      { width: 15 }, // Door to Needle 2
-      { width: 15 }, // Door (In-Out) time
-      { width: 20 }, // Door to Balloon (1ry PCI)
-      { width: 25 }, // Mode of arrival: By ambulance
-      { width: 25 }, // Mode of arrival: By private car
-      { width: 25 }, // Mode of arrival: Transferred
-      { width: 20 }, // Validity: Date of admission
-      { width: 15 }, // Validity: Pt ID
-      { width: 5 },  // Empty column
-      { width: 15 }, // Validity: Age
-      { width: 5 },  // Empty column
-      { width: 20 }, // Given FIBRONOLYTICS?
-      { width: 25 }, // Arrived by Ambulance or car
-      { width: 35 }, // Arrived by Ambulance or car AND candidate for Fibrinolysis
-      { width: 15 }, // PCI capable
-      { width: 15 }, // Non-PCI capable
-      { width: 25 }, // Door to Balloon for Transferred patients
-    ];
+      // Set column widths - updated for 41 columns matching spreadsheet
+      const columnWidths = [
+        20, 35, 8, 12, 20, 20, 15, 20, 35, 25, 15, 25, 20, 25, 15, 25, 15, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 15, 15, 15, 20, 15, 15, 20, 25, 35, 15, 15, 25
+      ];
+      
+      worksheet.columns.forEach((column, index) => {
+        column.width = columnWidths[index] || 15;
+      });
 
-    // Add data validation
-    this.addDataValidation(worksheet);
+      // Add data rows
+      allData.forEach((rowData) => {
+        const row = worksheet.addRow(Object.values(rowData));
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          cell.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'left',
+            wrapText: true
+          };
+        });
+      });
 
-    // Generate Excel buffer
-    const buffer = await workbook.xlsx.writeBuffer();
+      // Add data validation (dropdowns) for categorical fields
+      this.addDataValidation(worksheet);
+
+      // Generate Excel file buffer
+      const excelBuffer = await workbook.xlsx.writeBuffer();
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `stemi-cases-export-${timestamp}.xlsx`;
+
+      return {
+        buffer: excelBuffer,
+        filename: filename,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      };
+
+    } catch (error) {
+      console.error('Error exporting STEMI cases to Excel:', error);
+      throw new Error('Failed to export STEMI cases to Excel');
+    }
+  }
+
+  private transformCaseForExport(case_: StemiCaseData): Record<string, string | number | null> {
+    const admissionDate = case_.pathwayStarted || case_.createdAt;
+    const patient = case_.patient;
+    const originHospital = case_.originHospital;
+    const destinationHospital = case_.destinationHospital;
+
+    // Get patient age
+    const age = patient?.age || 0;
+
+    // Mode of arrival calculations
+    const modeOfArrival = this.formatModeOfArrival(case_.modeOfArrival || '');
+    const modeByAmbulance = case_.modeOfArrival === 'AMBULANCE' ? 1 : 0;
+    const modeByPrivateCar = case_.modeOfArrival === 'PRIVATE_VEHICLE' ? 1 : 0;
+    const modeTransferred = case_.modeOfArrival === 'TRANSFERRED_FROM_HOSPITAL' ? 1 : 0;
+
+    // Time calculations (in minutes)
+    const doorToEcg = case_.doorToEcgMinutes || this.calculateTimeDifference(admissionDate, case_.firstEcgTime);
+    const doorToNeedle = case_.doorToNeedleMinutes || this.calculateTimeDifference(admissionDate, case_.thrombolyticAdminTime);
+    const doorOutTime = case_.doorInDoorOutMinutes || this.calculateTimeDifference(admissionDate, case_.doorOutTime);
+    const doorToBalloon = case_.doorToBalloonMinutes || this.calculateTimeDifference(admissionDate, case_.balloonInflationTime);
+
+    // Data validation
+    const dateValidity = this.validateDate(admissionDate);
+    const patientIdValidity = this.validatePatientId(patient?.nationalId || '');
+    const ageValidity = this.validateAge(age);
+
+    // Treatment analysis - return numeric values for consistency
+    const thrombolyticGiven = case_.thrombolyticGiven ? 1 : 0;
+    const arrivedByAmbulanceOrCar = (case_.modeOfArrival === 'AMBULANCE' || case_.modeOfArrival === 'PRIVATE_VEHICLE') ? 1 : 0;
+    const candidateForFibrinolysis = arrivedByAmbulanceOrCar === 1 && case_.thrombolyticGiven ? 1 : 0;
+    
+    // PCI capability analysis - ensure logical consistency (one must be 1, other must be 0)
+    const isPciCapable = originHospital?.hasCardiologyCenter || false;
+    const pciCapable = isPciCapable ? 1 : 0;
+    const nonPciCapable = !isPciCapable ? 1 : 0;
+
+    // Door to Balloon for Transferred patients
+    const doorToBalloonTransferred = modeTransferred === 1 ? doorToBalloon : 0;
+
+    // Calculate formula-based columns
+    const oneDoorToEcg = this.calculateOneDoorToEcg(case_.triageTime, case_.firstEcgTime);
+    const oneDoorToNeedle = this.calculateOneDoorToNeedle(case_.triageTime, case_.thrombolyticAdminTime);
+    const oneDoorOutTime = this.calculateOneDoorOutTime(case_.triageTime, case_.doorOutTime);
+    const oneDoorToBalloon = this.calculateOneDoorToBalloon(case_.triageTime, case_.balloonInflationTime);
+    
+    const doorToEcg2 = this.calculateDoorToEcg2(doorToEcg);
+    const doorToNeedle2 = this.calculateDoorToNeedle2(doorToNeedle);
+    const doorInOutTime2 = this.calculateDoorInOutTime2(doorOutTime);
+    const doorToBalloon2 = this.calculateDoorToBalloon2(doorToBalloon, case_.pciLocation || '');
 
     return {
-      buffer,
-      filename: `stemi-cases-export-${new Date().toISOString().split('T')[0]}.xlsx`,
-      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      // Basic Demographics
+      'Date of admission (dd/mm/yyyy)': this.formatDate(admissionDate),
+      'Patient ID (National ID or IQAMA Number or Passport)': patient?.nationalId || '',
+      'Gender': patient?.gender || '',
+      'Age in years': age,
+      'Mode of arrival': modeOfArrival,
+      'Referred From Hospital': originHospital?.name || '',
+
+      // Timestamps
+      'Triage Time (hh:mm)': this.formatTime(case_.triageTime),
+      'Time of first ECG (hh:mm)': this.formatTime(case_.firstEcgTime),
+      'Has the patient given intravenous thrombolytic medication?': case_.thrombolyticGiven ? 'YES' : 'NO',
+      'Time of thrombolytic administration (hh:mm)': this.formatTime(case_.thrombolyticAdminTime),
+      'Door out time (hh:mm)': this.formatTime(case_.doorOutTime),
+      'Time of 1st PCI began (hh:mm)': this.formatTime(case_.balloonInflationTime),
+      'PCI location': case_.pciLocation || 'NA',
+
+      // Hospital Information
+      'Facility name (Origin)': originHospital?.name || '',
+      'Cluster name (Origin)': originHospital?.cluster || '',
+      'Facility name (Destination)': destinationHospital?.name || '',
+      'Cluster name (Destination)': destinationHospital?.cluster || '',
+
+      // Formula-based Time Metrics (1-Door series)
+      '1-Door to ECG': oneDoorToEcg,
+      '1-Door to Needle': oneDoorToNeedle,
+      '1-Door Out time': oneDoorOutTime,
+      '1-Door to Balloon (1ry PCI)': oneDoorToBalloon,
+
+      // Formula-based Time Metrics (Door series)
+      'Door to ECG': this.calculateDoorToEcg(case_.triageTime, case_.firstEcgTime, oneDoorToEcg),
+      'Door to Needle': this.calculateDoorToNeedle(case_.triageTime, case_.thrombolyticAdminTime, oneDoorToNeedle),
+      'Door (In-Out) time': this.calculateDoorInOutTime(case_.triageTime, case_.doorOutTime, oneDoorOutTime),
+      'Door to Balloon': this.calculateDoorToBalloon(case_.triageTime, case_.balloonInflationTime, oneDoorToBalloon),
+
+      // Formula-based Time Metrics (2 series)
+      'Door to ECG 2': doorToEcg2,
+      'Door to Needle 2': doorToNeedle2,
+      'Door (In-Out) time 2': doorInOutTime2,
+      'Door to Balloon (1ry PCI)': doorToBalloon2,
+
+      // Mode of Arrival Analysis (formula-based)
+      'Mode of arrival: By ambulance': modeByAmbulance,
+      'Mode of arrival: By private car': modeByPrivateCar,
+      'Mode of arrival: Transferred': modeTransferred,
+
+      // Data Validation - matching spreadsheet format with codes
+      'Validity: Date of admission (Valid=1, Blank=2, Invalid=3)': dateValidity,
+      'Validity: Pt ID (Valid=1, Blank=2, Invalid=3)': patientIdValidity,
+      'Validity: Age (Valid=1, Blank=2, Invalid=3)': ageValidity,
+
+      // Treatment Analysis - matching spreadsheet format with codes
+      'Given FIBRINOLYTICS? (Yes=1, No=0)': thrombolyticGiven,
+      'Arrived by Ambulance or car (Yes=1, No=0)': arrivedByAmbulanceOrCar,
+      'Arrived by Ambulance or car AND candidate for Fibrinolysis (Yes=1, No=0)': candidateForFibrinolysis,
+      'PCI capable (Yes=1, No=0)': pciCapable,
+      'Non-PCI capable (Yes=1, No=0)': nonPciCapable,
+      'Door to Balloon for Transferred patients (Yes=1, No=0)': doorToBalloonTransferred,
     };
   }
 
-  private formatModeOfArrival(modeOfArrival: string | null): string {
-    const modeMap: { [key: string]: string } = {
-      'AMBULANCE': 'By Red crescent',
-      'PRIVATE_CAR': 'By Private car/walk-in',
-      'TRANSFERRED_FROM_ANOTHER_HOSPITAL': 'Transferred from another hospital',
-      'TRANSFERRED_FROM_HOSPITAL': 'Transferred from another hospital',
-      'WALK_IN': 'By Private car/walk-in',
-      'PRIVATE_VEHICLE': 'By Private car/walk-in',
-    };
-    return modeOfArrival ? (modeMap[modeOfArrival] || modeOfArrival) : '';
-  }
 
-  private formatReferredFromHospital(hospitalName: string): string {
-    return hospitalName || '';
-  }
-
-  private calculateDoorToEcg(case_: any): string {
-    const startTime = case_.pathwayStarted || case_.createdAt;
-    const ecgTime = case_.firstEcgTime;
-    
-    if (!ecgTime) return '';
-    
-    return this.calculateTransferTime(startTime, ecgTime);
-  }
-
-  private calculateDoorToNeedle(case_: any): string {
-    const startTime = case_.pathwayStarted || case_.createdAt;
-    const needleTime = case_.thrombolyticAdminTime;
-    
-    if (!needleTime) return '';
-    
-    return this.calculateTransferTime(startTime, needleTime);
-  }
-
-  private calculateDoorOutTime(case_: any): string {
-    const startTime = case_.pathwayStarted || case_.createdAt;
-    const doorOutTime = case_.doorOutTime;
-    
-    if (!doorOutTime) return '';
-    
-    return this.calculateTransferTime(startTime, doorOutTime);
-  }
-
-  private calculateDoorToBalloon(case_: any): string {
-    const startTime = case_.pathwayStarted || case_.createdAt;
-    const balloonTime = case_.balloonInflationTime || case_.pciProcedureStartTime;
-    
-    if (!balloonTime) return '';
-    
-    return this.calculateTransferTime(startTime, balloonTime);
-  }
-
-  private isModeByAmbulance(modeOfArrival: string | null): boolean {
-    return modeOfArrival === 'AMBULANCE';
-  }
-
-  private isModeByPrivateCar(modeOfArrival: string | null): boolean {
-    return modeOfArrival === 'PRIVATE_CAR' || modeOfArrival === 'PRIVATE_VEHICLE' || modeOfArrival === 'WALK_IN';
-  }
-
-  private isModeTransferred(modeOfArrival: string | null): boolean {
-    return modeOfArrival === 'TRANSFERRED_FROM_ANOTHER_HOSPITAL' || modeOfArrival === 'TRANSFERRED_FROM_HOSPITAL';
-  }
-
-  private isArrivedByAmbulanceOrCar(modeOfArrival: string | null): boolean {
-    return this.isModeByAmbulance(modeOfArrival) || this.isModeByPrivateCar(modeOfArrival);
-  }
-
-  private isCandidateForFibrinolysis(case_: any): boolean {
-    const arrivedByAmbulanceOrCar = this.isArrivedByAmbulanceOrCar(case_.modeOfArrival);
-    const thrombolyticGiven = case_.thrombolyticGiven;
-    
-    return arrivedByAmbulanceOrCar && thrombolyticGiven;
-  }
-
-  private formatPciLocation(hospitalName: string | undefined): string {
-    return hospitalName || '';
-  }
-
-  private calculateTransferTime(startTime: Date, endTime: Date): string {
-    if (!startTime || !endTime) return '';
-    
-    const diffMs = new Date(endTime).getTime() - new Date(startTime).getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const hours = Math.floor(diffMins / 60);
-    const minutes = diffMins % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  }
-
-  private calculateAverageTransferTime(cases: any[]): string {
-    if (cases.length === 0) return '';
-    
-    const totalMinutes = cases.reduce((sum, case_) => {
-      const startTime = case_.pathwayStarted || case_.createdAt;
-      const endTime = case_.doorOutTime;
-      
-      if (!startTime || !endTime) return sum;
-      
-      const diffMs = new Date(endTime).getTime() - new Date(startTime).getTime();
-      return sum + Math.floor(diffMs / (1000 * 60));
-    }, 0);
-    
-    const avgMinutes = Math.round(totalMinutes / cases.length);
-    const hours = Math.floor(avgMinutes / 60);
-    const minutes = avgMinutes % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  }
-
-  private countCompletedSeverityAssessments(cases: any[]): number {
-    // Count cases with completed outcome forms
-    return cases.filter(case_ => case_.outcomeFormCompleted).length;
-  }
-
-  private calculateSeverityAssessmentPercentage(cases: any[]): number {
-    if (cases.length === 0) return 0;
-    return Math.round((this.countCompletedSeverityAssessments(cases) / cases.length) * 100);
-  }
-
-  private countWeeklyDeaths(cases: any[]): number {
-    // Count cases with death outcome
-    return cases.filter(case_ => case_.outcome === 'DEATH').length;
-  }
-
-  private calculateActualMortalityRate(cases: any[]): number {
-    if (cases.length === 0) return 0;
-    return Math.round((this.countWeeklyDeaths(cases) / cases.length) * 100);
-  }
-
-  private calculateExpectedMortalityRate(cases: any[]): number {
-    if (cases.length === 0) return 0;
-    
-    const totalExpectedMortality = cases.reduce((sum, case_) => {
-      return sum + this.calculateExpectedMortality(case_);
-    }, 0);
-    
-    return Math.round(totalExpectedMortality / cases.length);
-  }
-
-  private calculateMortalityComparison(cases: any[]): string {
-    const actual = this.calculateActualMortalityRate(cases);
-    const expected = this.calculateExpectedMortalityRate(cases);
-    
-    if (actual === expected) return 'As Expected';
-    if (actual > expected) return 'Higher than Expected';
-    return 'Lower than Expected';
-  }
-
-  private calculateTimeDifference(startTime: Date, endTime: Date): number {
-    if (!startTime || !endTime) return 0;
-    
-    const diffMs = new Date(endTime).getTime() - new Date(startTime).getTime();
-    return Math.floor(diffMs / (1000 * 60)); // Return difference in minutes
+  private calculateTimeDifference(startTime: Date | null, endTime: Date | null): number | null {
+    if (!startTime || !endTime) return null;
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diffMs = end.getTime() - start.getTime();
+    return Math.round(diffMs / (1000 * 60)); // Convert to minutes
   }
 
   private formatDate(date: Date): string {
     if (!date) return '';
-    
     const d = new Date(date);
-    const day = d.getDate().toString().padStart(2, '0');
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
-    
     return `${day}/${month}/${year}`;
   }
 
   private formatTime(date: Date | null): string {
     if (!date) return '';
-    
     const d = new Date(date);
-    const hours = d.getHours().toString().padStart(2, '0');
-    const minutes = d.getMinutes().toString().padStart(2, '0');
-    
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
   }
 
-  private validateDate(date: Date): string {
-    if (!date) return 'Invalid';
-    
+  private validateDate(date: Date | null): string {
+    if (!date) return '2'; // Blank=2
     const d = new Date(date);
-    const now = new Date();
-    
-    // Check if date is valid and not in the future
-    if (isNaN(d.getTime()) || d > now) return 'Invalid';
-    
-    return 'Valid';
+    if (isNaN(d.getTime())) return '3'; // Invalid=3
+    return '1'; // Valid=1
   }
 
   private validatePatientId(nationalId: string | null): string {
-    if (!nationalId || nationalId.trim() === '') return 'Invalid';
-    
-    // Basic validation - should be non-empty string
-    return nationalId.trim().length > 0 ? 'Valid' : 'Invalid';
+    if (!nationalId || nationalId.trim() === '') return '2'; // Blank=2
+    // Add more sophisticated validation if needed
+    return '1'; // Valid=1
   }
 
   private validateAge(age: number | null): string {
-    if (age === null || age === undefined) return 'Invalid';
+    if (age === null || age === undefined) return '2'; // Blank=2
+    if (age === 0 || age < 0 || age > 150) return '3'; // Invalid=3
+    return '1'; // Valid=1
+  }
+
+  private formatModeOfArrival(modeOfArrival: string): string {
+    switch (modeOfArrival) {
+      case 'AMBULANCE': return 'By Ambulance';
+      case 'PRIVATE_VEHICLE': return 'By Private car/walk-in';
+      case 'WALK_IN': return 'By Private car/walk-in';
+      case 'TRANSFERRED_FROM_HOSPITAL': return 'Transferred from another hospital';
+      default: return 'By Private car/walk-in';
+    }
+  }
+
+  // Formula calculation methods based on Excel formulas
+  private calculateOneDoorToEcg(triageTime: Date | null, firstEcgTime: Date | null): string {
+    // IF(COUNTBLANK(H2),"NA",IF(COUNTBLANK(G2),"NA",IF((G2<H2),H2-G2,MOD(H2-G2,1))))
+    if (!firstEcgTime) return 'NA';
+    if (!triageTime) return 'NA';
     
-    // Age should be between 0 and 150
-    return (age >= 0 && age <= 150) ? 'Valid' : 'Invalid';
+    const triage = new Date(triageTime);
+    const ecg = new Date(firstEcgTime);
+    const diffMs = ecg.getTime() - triage.getTime();
+    const diffMinutes = Math.round(diffMs / (1000 * 60));
+    
+    return diffMinutes.toString();
   }
 
-  private calculateSurvivalProbability(case_: any): number {
-    // Placeholder for survival probability calculation
-    // This would typically involve complex medical algorithms
-    return Math.random() * 100; // Placeholder
+  private calculateOneDoorToNeedle(triageTime: Date | null, thrombolyticTime: Date | null): string {
+    // IF(COUNTBLANK(J2),"NA",IF(COUNTBLANK(G2),"NA",Q2IF((G2<J2),J2-G2,MOD(J2-G2,1))))
+    if (!thrombolyticTime) return 'NA';
+    if (!triageTime) return 'NA';
+    
+    const triage = new Date(triageTime);
+    const thrombolytic = new Date(thrombolyticTime);
+    const diffMs = thrombolytic.getTime() - triage.getTime();
+    const diffMinutes = Math.round(diffMs / (1000 * 60));
+    
+    return diffMinutes.toString();
   }
 
-  private calculateExpectedMortality(case_: any): number {
-    // Placeholder for expected mortality calculation
-    // This would typically involve complex medical algorithms
-    return Math.random() * 10; // Placeholder
+  private calculateOneDoorOutTime(triageTime: Date | null, doorOutTime: Date | null): string {
+    // IF(COUNTBLANK(K2),"NA",IF(COUNTBLANK(G2),"NA",IF((G2<K2),K2-G2,MOD(K2-G2,1))))
+    if (!doorOutTime) return 'NA';
+    if (!triageTime) return 'NA';
+    
+    const triage = new Date(triageTime);
+    const doorOut = new Date(doorOutTime);
+    const diffMs = doorOut.getTime() - triage.getTime();
+    const diffMinutes = Math.round(diffMs / (1000 * 60));
+    
+    return diffMinutes.toString();
+  }
+
+  private calculateOneDoorToBalloon(triageTime: Date | null, balloonTime: Date | null): string {
+    // IF(COUNTBLANK(L2),"NA",IF(COUNTBLANK(G2),"NA",IF((G2<L2),L2-G2,MOD(L2-G2,1))))
+    if (!balloonTime) return 'NA';
+    if (!triageTime) return 'NA';
+    
+    const triage = new Date(triageTime);
+    const balloon = new Date(balloonTime);
+    const diffMs = balloon.getTime() - triage.getTime();
+    const diffMinutes = Math.round(diffMs / (1000 * 60));
+    
+    return diffMinutes.toString();
+  }
+
+  private calculateDoorToEcg(triageTime: Date | null, firstEcgTime: Date | null, oneDoorToEcg: string): string {
+    // IF((COUNTBLANK(G2)+COUNTBLANK(H2))>0,"NA",P2)
+    if (!triageTime || !firstEcgTime) return 'NA';
+    return oneDoorToEcg;
+  }
+
+  private calculateDoorToNeedle(triageTime: Date | null, thrombolyticTime: Date | null, oneDoorToNeedle: string): string {
+    // IF((COUNTBLANK(G2)+COUNTBLANK(J2))>0,"NA",Q2)
+    if (!triageTime || !thrombolyticTime) return 'NA';
+    return oneDoorToNeedle;
+  }
+
+  private calculateDoorInOutTime(triageTime: Date | null, doorOutTime: Date | null, oneDoorOutTime: string): string {
+    // IF((COUNTBLANK(G2)+COUNTBLANK(K2))>0,"NA",R2)
+    if (!triageTime || !doorOutTime) return 'NA';
+    return oneDoorOutTime;
+  }
+
+  private calculateDoorToBalloon(triageTime: Date | null, balloonTime: Date | null, oneDoorToBalloon: string): string {
+    // IF((COUNTBLANK(G2)+COUNTBLANK(L2))>0,"NA",S2)
+    if (!triageTime || !balloonTime) return 'NA';
+    return oneDoorToBalloon;
+  }
+
+  private calculateDoorToEcg2(doorToEcg: number | null): number {
+    // IF(T2="NA","",COUNTIFS(T2,"<="&'Dropdown lists'!$H$3))
+    if (doorToEcg === null || doorToEcg === undefined) return 0;
+    // Assuming target is 10 minutes (equivalent to 'Dropdown lists'!$H$3)
+    return doorToEcg <= 10 ? 1 : 0;
+  }
+
+  private calculateDoorToNeedle2(doorToNeedle: number | null): number {
+    // IF(U2="NA","",COUNTIFS(U2,"<="&'Dropdown lists'!$I$3))
+    if (doorToNeedle === null || doorToNeedle === undefined) return 0;
+    // Assuming target is 30 minutes (equivalent to 'Dropdown lists'!$I$3)
+    return doorToNeedle <= 30 ? 1 : 0;
+  }
+
+  private calculateDoorInOutTime2(doorOutTime: number | null): number {
+    // IF(V2="NA","",COUNTIFS(V2,"<="&'Dropdown lists'!$L$3))
+    if (doorOutTime === null || doorOutTime === undefined) return 0;
+    // Assuming target is 90 minutes (equivalent to 'Dropdown lists'!$L$3)
+    return doorOutTime <= 90 ? 1 : 0;
+  }
+
+  private calculateDoorToBalloon2(doorToBalloon: number | null, pciLocation: string): number {
+    // IF(W2="NA","",COUNTIFS(W2,"<="&'Dropdown lists'!$K$6,M2,'Dropdown lists'!$AA$3))
+    if (doorToBalloon === null || doorToBalloon === undefined) return 0;
+    if (!pciLocation || pciLocation === 'NA') return 0;
+    // Assuming target is 90 minutes and PCI location is valid
+    return doorToBalloon <= 90 ? 1 : 0;
+  }
+
+  private calculateAggregatedKPIs(stemiCases: StemiCaseData[]): Record<string, string | number> {
+    const totalCases = stemiCases.length;
+    
+    if (totalCases === 0) {
+      return {
+        averageDoorToEcg: 0,
+        averageDoorToNeedle: 0,
+        averageDoorToBalloon: 0,
+        totalCases: 0,
+        casesWithThrombolytic: 0,
+        thrombolyticRate: '0.00%',
+        casesWithPCI: 0,
+        pciRate: '0.00%',
+        doorToEcgTarget: 'No Data',
+        doorToNeedleTarget: 'No Data',
+        doorToBalloonTarget: 'No Data',
+      };
+    }
+
+    // Calculate time metrics
+    const doorToEcgTimes = stemiCases
+      .map(case_ => case_.doorToEcgMinutes || this.calculateTimeDifference(case_.pathwayStarted || case_.createdAt, case_.firstEcgTime))
+      .filter(time => time !== null);
+    
+    const doorToNeedleTimes = stemiCases
+      .map(case_ => case_.doorToNeedleMinutes || this.calculateTimeDifference(case_.pathwayStarted || case_.createdAt, case_.thrombolyticAdminTime))
+      .filter(time => time !== null);
+    
+    const doorToBalloonTimes = stemiCases
+      .map(case_ => case_.doorToBalloonMinutes || this.calculateTimeDifference(case_.pathwayStarted || case_.createdAt, case_.balloonInflationTime))
+      .filter(time => time !== null);
+
+    const averageDoorToEcg = doorToEcgTimes.length > 0 
+      ? Math.round((doorToEcgTimes.reduce((a, b) => a + b, 0) / doorToEcgTimes.length) * 100) / 100 
+      : 0;
+    
+    const averageDoorToNeedle = doorToNeedleTimes.length > 0 
+      ? Math.round((doorToNeedleTimes.reduce((a, b) => a + b, 0) / doorToNeedleTimes.length) * 100) / 100 
+      : 0;
+    
+    const averageDoorToBalloon = doorToBalloonTimes.length > 0 
+      ? Math.round((doorToBalloonTimes.reduce((a, b) => a + b, 0) / doorToBalloonTimes.length) * 100) / 100 
+      : 0;
+
+    // Calculate treatment metrics
+    const casesWithThrombolytic = stemiCases.filter(case_ => case_.thrombolyticGiven).length;
+    const casesWithPCI = stemiCases.filter(case_ => case_.balloonInflationTime).length;
+    
+    const thrombolyticRate = totalCases > 0 
+      ? Math.round((casesWithThrombolytic / totalCases) * 10000) / 100 
+      : 0;
+    
+    const pciRate = totalCases > 0 
+      ? Math.round((casesWithPCI / totalCases) * 10000) / 100 
+      : 0;
+
+    // Determine target achievement
+    const doorToEcgTarget = averageDoorToEcg <= 10 ? 'Achieved' : 'Not Achieved';
+    const doorToNeedleTarget = averageDoorToNeedle <= 30 ? 'Achieved' : 'Not Achieved';
+    const doorToBalloonTarget = averageDoorToBalloon <= 90 ? 'Achieved' : 'Not Achieved';
+
+    return {
+      averageDoorToEcg,
+      averageDoorToNeedle,
+      averageDoorToBalloon,
+      totalCases,
+      casesWithThrombolytic,
+      thrombolyticRate: `${thrombolyticRate}%`,
+      casesWithPCI,
+      pciRate: `${pciRate}%`,
+      doorToEcgTarget,
+      doorToNeedleTarget,
+      doorToBalloonTarget,
+    };
   }
 
   private addDataValidation(worksheet: ExcelJS.Worksheet): void {
-    // Add data validation for mode of arrival
+    // Define options for categorical fields
     const modeOfArrivalOptions = [
-      'By Red crescent',
+      'By Ambulance',
       'By Private car/walk-in',
       'Transferred from another hospital'
     ];
 
-    // Add validation for mode of arrival column (E - column 5)
+    const yesNoOptions = [
+      '1',
+      '0'
+    ];
+
+    const validityOptions = [
+      '1',
+      '2',
+      '3'
+    ];
+
+    // Mode of Arrival (column E)
     for (let row = 2; row <= 1000; row++) {
       const cellAddress = `E${row}`;
       worksheet.getCell(cellAddress).dataValidation = {
@@ -476,67 +672,47 @@ export class StemiExportService {
         formulae: [modeOfArrivalOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
         showErrorMessage: true,
         errorTitle: 'Invalid Selection',
-        error: 'Please select a valid mode of arrival from the dropdown list.',
+        error: 'Please select a valid mode of arrival.',
         showInputMessage: true,
         promptTitle: 'Select Mode of Arrival',
-        prompt: 'Choose the patient\'s mode of arrival from the dropdown list.'
+        prompt: 'Choose the mode of arrival from the dropdown list.'
       };
     }
 
-    // Add validation for Yes/No columns
-    const yesNoColumns = [
-      { col: 'I', name: 'Did the patient given bolus thrombolytic medication' }, // Column I
-      { col: 'U', name: 'Mode of arrival: By ambulance' }, // Column U
-      { col: 'V', name: 'Mode of arrival: By private car' }, // Column V
-      { col: 'W', name: 'Mode of arrival: Transferred' }, // Column W
-      { col: 'AB', name: 'Given FIBRONOLYTICS?' }, // Column AB
-      { col: 'AC', name: 'Arrived by Ambulance or car' }, // Column AC
-      { col: 'AD', name: 'Arrived by Ambulance or car AND candidate for Fibrinolysis' }, // Column AD
-      { col: 'AE', name: 'PCI capable' }, // Column AE
-      { col: 'AF', name: 'Non-PCI capable' }, // Column AF
-    ];
-
-    const yesNoOptions = ['Yes', 'No'];
-
-    yesNoColumns.forEach(({ col }) => {
+    // Yes/No fields (columns Z, AA, AB, AF, AG, AH, AI, AJ)
+    const yesNoColumns = ['Z', 'AA', 'AB', 'AF', 'AG', 'AH', 'AI', 'AJ'];
+    yesNoColumns.forEach(column => {
       for (let row = 2; row <= 1000; row++) {
-        const cellAddress = `${col}${row}`;
+        const cellAddress = `${column}${row}`;
         worksheet.getCell(cellAddress).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: [yesNoOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
           showErrorMessage: true,
           errorTitle: 'Invalid Selection',
-          error: 'Please select Yes or No from the dropdown list.',
+          error: 'Please select Yes or No.',
           showInputMessage: true,
-          promptTitle: 'Select Yes/No',
+          promptTitle: 'Select Option',
           prompt: 'Choose Yes or No from the dropdown list.'
         };
       }
     });
 
-    // Add validation for validity columns
-    const validityColumns = [
-      { col: 'X', name: 'Validity: Date of admission' }, // Column X
-      { col: 'Y', name: 'Validity: Pt ID' }, // Column Y
-      { col: 'AA', name: 'Validity: Age' }, // Column AA
-    ];
-
-    const validityOptions = ['Valid', 'Invalid'];
-
-    validityColumns.forEach(({ col }) => {
+    // Validity fields (columns AC, AD, AE)
+    const validityColumns = ['AC', 'AD', 'AE'];
+    validityColumns.forEach(column => {
       for (let row = 2; row <= 1000; row++) {
-        const cellAddress = `${col}${row}`;
+        const cellAddress = `${column}${row}`;
         worksheet.getCell(cellAddress).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: [validityOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
           showErrorMessage: true,
           errorTitle: 'Invalid Selection',
-          error: 'Please select Valid or Invalid from the dropdown list.',
+          error: 'Please select a valid option.',
           showInputMessage: true,
           promptTitle: 'Select Validity',
-          prompt: 'Choose Valid or Invalid from the dropdown list.'
+          prompt: 'Choose the validity status from the dropdown list.'
         };
       }
     });
