@@ -451,7 +451,8 @@ const HospitalDashboardPage: React.FC = () => {
             <Box sx={{ p: 3 }}>
               <RelatedTicketsManager
                 hospitalTickets={relatedTickets}
-                transferTickets={transferTickets}                onRefresh={loadHospitalData}
+                transferTickets={transferTickets}                
+                onRefresh={loadHospitalData}
                 onViewTicket={handleViewTicket}
                 onEditTicket={handleEditTicket}
                 isLoading={loading}

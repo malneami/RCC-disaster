@@ -19,15 +19,30 @@ import PerformanceChart from './PerformanceChart';
 
 export type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
-const PerformanceComparison: React.FC = () => {
+export interface PerformanceComparisonFilters {
+  hospitalId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+interface PerformanceComparisonProps {
+  filters?: PerformanceComparisonFilters;
+}
+
+const PerformanceComparison: React.FC<PerformanceComparisonProps> = ({ filters }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('monthly');
-  const { data, isLoading, error } = usePerformanceComparison(selectedPeriod);
+  const { data, isLoading, error } = usePerformanceComparison(selectedPeriod, filters);
 
   if (isLoading) {
     return (
-      <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+      <Card sx={{ 
+        borderRadius: 3, 
+        border: '1px solid #333',
+        backgroundColor: '#1e1e1e',
+        background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%)'
+      }}>
         <CardContent sx={{ p: 3 }}>
-          <Typography>Loading performance data...</Typography>
+          <Typography sx={{ color: '#ffffff' }}>Loading performance data...</Typography>
         </CardContent>
       </Card>
     );
@@ -35,9 +50,13 @@ const PerformanceComparison: React.FC = () => {
 
   if (error) {
     return (
-      <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+      <Card sx={{ 
+        borderRadius: 3, 
+        border: '1px solid #d32f2f',
+        backgroundColor: '#2d1b1b'
+      }}>
         <CardContent sx={{ p: 3 }}>
-          <Typography color="error">
+          <Typography sx={{ color: '#f44336' }}>
             Error loading performance data: {(error as Error)?.message || 'Unknown error'}
           </Typography>
         </CardContent>
@@ -52,16 +71,21 @@ const PerformanceComparison: React.FC = () => {
   };
 
   return (
-    <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+    <Card sx={{ 
+      borderRadius: 3, 
+      border: '1px solid #333',
+      backgroundColor: '#1e1e1e',
+      background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%)'
+    }}>
       <CardContent sx={{ p: 3 }}>
         {/* Header Section */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <FontAwesomeIcon 
               icon={faChartLine} 
-              style={{ color: '#1976d2', marginRight: '16px', fontSize: '28px' }} 
+              style={{ color: '#2196f3', marginRight: '16px', fontSize: '28px' }} 
             />
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: '#ffffff' }}>
               Performance Comparison
             </Typography>
           </Box>
@@ -88,11 +112,17 @@ const PerformanceComparison: React.FC = () => {
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
+                color: selectedPeriod === 'daily' ? '#ffffff' : '#b0b0b0',
+                borderColor: '#555',
+                '&:hover': {
+                  borderColor: '#777',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
                 ...(selectedPeriod === 'daily' && {
-                  bgcolor: '#1976d2',
+                  bgcolor: '#2196f3',
                   color: 'white',
                   '&:hover': {
-                    bgcolor: '#1565c0',
+                    bgcolor: '#1976d2',
                   },
                 }),
               }}
@@ -106,11 +136,17 @@ const PerformanceComparison: React.FC = () => {
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
+                color: selectedPeriod === 'weekly' ? '#ffffff' : '#b0b0b0',
+                borderColor: '#555',
+                '&:hover': {
+                  borderColor: '#777',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
                 ...(selectedPeriod === 'weekly' && {
-                  bgcolor: '#1976d2',
+                  bgcolor: '#2196f3',
                   color: 'white',
                   '&:hover': {
-                    bgcolor: '#1565c0',
+                    bgcolor: '#1976d2',
                   },
                 }),
               }}
@@ -124,11 +160,17 @@ const PerformanceComparison: React.FC = () => {
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
+                color: selectedPeriod === 'monthly' ? '#ffffff' : '#b0b0b0',
+                borderColor: '#555',
+                '&:hover': {
+                  borderColor: '#777',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
                 ...(selectedPeriod === 'monthly' && {
-                  bgcolor: '#1976d2',
+                  bgcolor: '#2196f3',
                   color: 'white',
                   '&:hover': {
-                    bgcolor: '#1565c0',
+                    bgcolor: '#1976d2',
                   },
                 }),
               }}

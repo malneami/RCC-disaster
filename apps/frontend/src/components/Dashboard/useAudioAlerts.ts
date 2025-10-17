@@ -5,26 +5,21 @@ export const useAudioAlerts = () => {
   const alertCooldown = 60 * 1000; // 1 minute cooldown
 
   const playAlert = useCallback((pathway: 'GENERAL' | 'STEMI' | 'STROKE' | 'TRAUMA') => {
-    console.log(`🎵 Audio alert triggered for ${pathway}`);
     const now = Date.now();
     
     // Check if enough time has passed since last alert
     if (now - lastAlertTime.current < alertCooldown) {
-      console.log(`⏰ Alert on cooldown, ${alertCooldown - (now - lastAlertTime.current)}ms remaining`);
       return;
     }
 
     lastAlertTime.current = now;
-    console.log(`🔊 Playing audio alert for ${pathway}`);
 
     try {
       // Create audio context for sound generation
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      console.log(`🎛️ Audio context created:`, audioContext);
       
       // Generate warning sound (beep pattern)
       const generateBeep = (frequency: number, duration: number, delay: number = 0) => {
-        console.log(`🔔 Generating beep: ${frequency}Hz, ${duration}s, delay: ${delay}s`);
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         
@@ -43,14 +38,12 @@ export const useAudioAlerts = () => {
       };
 
       // Play warning beep pattern
-      console.log(`🔊 Starting beep sequence`);
       generateBeep(800, 0.2, 0);    // First beep
       generateBeep(800, 0.2, 0.3);  // Second beep
       generateBeep(800, 0.2, 0.6);  // Third beep
 
       // Use Web Speech API for voice alerts
       if ('speechSynthesis' in window) {
-        console.log(`🗣️ Speech synthesis available`);
         const utterance = new SpeechSynthesisUtterance();
         
         if (pathway === 'STEMI') {
@@ -67,14 +60,13 @@ export const useAudioAlerts = () => {
         utterance.rate = 0.9;
         utterance.pitch = 1.2;
         
-        console.log(`🗣️ Speaking: "${utterance.text}"`);
         
         // Delay voice alert slightly after beeps
         setTimeout(() => {
           speechSynthesis.speak(utterance);
         }, 1000);
       } else {
-        console.log(`❌ Speech synthesis not available`);
+       return
       }
 
       // Fallback: Use browser notification if available

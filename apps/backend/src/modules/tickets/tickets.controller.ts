@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto, UpdateTicketStatusDto, AssignTicketDto } from './dto/update-ticket.dto';
@@ -9,6 +10,8 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 
+@ApiTags('Tickets')
+@ApiBearerAuth()
 @Controller('tickets')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TicketsController {
@@ -78,6 +81,29 @@ export class TicketsController {
   @Get('statistics/pathway')
   async getTicketsByPathway(@Request() req: any) {
     return this.ticketsService.getTicketsByPathway(req.user.role, req.user.hospitalId);
+  }
+
+  @Get('performance/comparison')
+  @ApiOperation({ summary: 'Get performance comparison data by time period' })
+  @ApiQuery({ name: 'period', required: true, description: 'Time period: daily, weekly, or monthly' })
+  @ApiQuery({ name: 'hospitalId', required: false, description: 'Filter by hospital ID' })
+  @ApiQuery({ name: 'startDate', required: false, description: 'Start date (ISO string)' })
+  @ApiQuery({ name: 'endDate', required: false, description: 'End date (ISO string)' })
+  async getPerformanceComparison(
+    @Query('period') period: 'daily' | 'weekly' | 'monthly',
+    @Request() req: any,
+    @Query('hospitalId') hospitalId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string
+  ) {
+    return this.ticketsService.getPerformanceComparison(
+      period,
+      req.user.role,
+      req.user.hospitalId,
+      hospitalId,
+      startDate,
+      endDate
+    );
   }
 
   @Get(':id')

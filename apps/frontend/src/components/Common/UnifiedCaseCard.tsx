@@ -193,14 +193,8 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower.includes('progress') || statusLower.includes('active')) return 'info';
-    if (statusLower.includes('completed') || statusLower.includes('discharged')) return 'success';
-    if (statusLower.includes('critical') || statusLower.includes('severe')) return 'error';
-    if (statusLower.includes('pending') || statusLower.includes('suspected')) return 'warning';
-    return 'default';
-  };
+  // Bind status to a data- attribute to avoid unused warning while preserving API
+  const dataStatus = status;
 
   const formatTimeValue = (value: string | number, unit: string) => {
     if (value === 'N/A' || value === null || value === undefined) return 'N/A';
@@ -224,6 +218,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
   return (
     <Card 
       ref={cardRef}
+      data-status={dataStatus}
       elevation={elevation}
       sx={{ 
         mb: 2,

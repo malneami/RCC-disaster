@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { StrokeKPICalculatorService } from '../stroke-cases/services/stroke-kpi-calculator.service';
+import { StemiKpiService } from '../stemi-cases/services/stemi-kpi.service';
+import { TraumaKpiService } from '../trauma-cases/services/trauma-kpi.service';
+import { StrokeCasesService } from '../stroke-cases/stroke-cases.service';
 
 export interface DashboardMetrics {
   activeTransfers: number;
@@ -28,17 +32,39 @@ export interface PathwayPerformanceMetrics {
   timestamp: string;
 }
 
+export interface DashboardFilters {
+  hospitalId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 @Injectable()
 export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly strokeKpiCalculator: StrokeKPICalculatorService,
+    private readonly stemiKpiService: StemiKpiService,
+    private readonly traumaKpiService: TraumaKpiService,
+    private readonly strokeCasesService: StrokeCasesService,
+  ) {}
 
-  async getDashboardMetrics(): Promise<DashboardMetrics> {
+  async getDashboardMetrics(filters?: DashboardFilters): Promise<DashboardMetrics> {
     try {
+      // Parse date filters
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      let startOfDay: Date;
+      let endOfDay: Date;
+
+      if (filters?.startDate && filters?.endDate) {
+        startOfDay = new Date(filters.startDate + 'T00:00:00.000Z');
+        endOfDay = new Date(filters.endDate + 'T23:59:59.999Z');
+      } else {
+        // Default to today if no date filters provided
+        startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      }
 
       // Get all metrics in parallel for better performance
       const [
@@ -47,10 +73,10 @@ export class DashboardService {
         completedToday,
         delayedTransfers,
       ] = await Promise.all([
-        this.getActiveTransfers(),
-        this.getUrgentPathwayCases(),
-        this.getCompletedToday(startOfDay, endOfDay),
-        this.getDelayedTransfers(startOfDay, endOfDay),
+        this.getActiveTransfers(filters?.hospitalId),
+        this.getUrgentPathwayCases(filters?.hospitalId),
+        this.getCompletedToday(startOfDay, endOfDay, filters?.hospitalId),
+        this.getDelayedTransfers(startOfDay, endOfDay, filters?.hospitalId),
       ]);
 
       this.logger.log(`Dashboard metrics calculated: Active=${activeTransfers}, Urgent=${urgentPathwayCases}, Completed=${completedToday}, Delayed=${delayedTransfers}`);
@@ -75,19 +101,29 @@ export class DashboardService {
     }
   }
 
-  private async getActiveTransfers(): Promise<number> {
+  private async getActiveTransfers(hospitalId?: string): Promise<number> {
     try {
-      // Count EMS assignments that are currently in progress
-      const count = await this.prisma.eMSAssignment.count({
-        where: {
-          status: {
-            in: ['EMS_CONTACT', 'EMS_ARRIVAL', 'DEPARTED'],
-          },
-          deletedAt: null,
+      // Count open tickets that are currently active
+      const whereClause: any = {
+        status: {
+          in: ['PENDING', 'ASSIGNED', 'IN_TRANSPORT'],
         },
+        deletedAt: null,
+      };
+
+      // Add hospital filter if provided
+      if (hospitalId) {
+        whereClause.OR = [
+          { originHospitalId: hospitalId },
+          { destinationHospitalId: hospitalId },
+        ];
+      }
+
+      const count = await this.prisma.ticket.count({
+        where: whereClause,
       });
 
-      this.logger.debug(`Active transfers count: ${count}`);
+      this.logger.debug(`Active transfers count (from tickets): ${count}`);
       return count;
     } catch (error) {
       this.logger.error('Error counting active transfers:', error);
@@ -95,26 +131,40 @@ export class DashboardService {
     }
   }
 
-  private async getUrgentPathwayCases(): Promise<number> {
+  private async getUrgentPathwayCases(hospitalId?: string): Promise<number> {
     try {
+      // Build where clauses for both queries
+      const ticketWhereClause: any = {
+        priority: 'CRITICAL',
+        status: {
+          in: ['PENDING', 'ASSIGNED', 'IN_TRANSPORT'],
+        },
+        deletedAt: null,
+      };
+
+      const criticalCaseWhereClause: any = {
+        status: 'ACTIVE',
+        deletedAt: null,
+      };
+
+      // Add hospital filter if provided
+      if (hospitalId) {
+        ticketWhereClause.OR = [
+          { originHospitalId: hospitalId },
+          { destinationHospitalId: hospitalId },
+        ];
+        criticalCaseWhereClause.hospitalId = hospitalId;
+      }
+
       // Count tickets with high priority and critical emergency cases
       const [urgentTickets, criticalCases] = await Promise.all([
         // High priority tickets that are active
         this.prisma.ticket.count({
-          where: {
-            priority: 'CRITICAL',
-            status: {
-              in: ['PENDING', 'ASSIGNED', 'IN_TRANSPORT'],
-            },
-            deletedAt: null,
-          },
+          where: ticketWhereClause,
         }),
         // Active critical cases (STEMI, Stroke, Trauma)
         this.prisma.criticalCase.count({
-          where: {
-            status: 'ACTIVE',
-            deletedAt: null,
-          },
+          where: criticalCaseWhereClause,
         }),
       ]);
 
@@ -127,18 +177,28 @@ export class DashboardService {
     }
   }
 
-  private async getCompletedToday(startOfDay: Date, endOfDay: Date): Promise<number> {
+  private async getCompletedToday(startOfDay: Date, endOfDay: Date, hospitalId?: string): Promise<number> {
     try {
       // Count completed EMS assignments today
-      const completedAssignments = await this.prisma.eMSAssignment.count({
-        where: {
-          status: 'ARRIVED',
-          journeyEndTime: {
-            gte: startOfDay,
-            lt: endOfDay,
-          },
-          deletedAt: null,
+      const whereClause: any = {
+        status: 'ARRIVED',
+        journeyEndTime: {
+          gte: startOfDay,
+          lt: endOfDay,
         },
+        deletedAt: null,
+      };
+
+      // Add hospital filter if provided
+      if (hospitalId) {
+        whereClause.OR = [
+          { originHospitalId: hospitalId },
+          { destinationHospitalId: hospitalId },
+        ];
+      }
+
+      const completedAssignments = await this.prisma.eMSAssignment.count({
+        where: whereClause,
       });
 
       this.logger.debug(`Completed transfers today: ${completedAssignments}`);
@@ -149,23 +209,33 @@ export class DashboardService {
     }
   }
 
-  private async getDelayedTransfers(startOfDay: Date, endOfDay: Date): Promise<number> {
+  private async getDelayedTransfers(startOfDay: Date, endOfDay: Date, hospitalId?: string): Promise<number> {
     try {
       // Count transfers that exceeded target time (assuming 30 minutes as target)
       // This includes assignments that took longer than 30 minutes from assignment to completion
-      const delayedAssignments = await this.prisma.eMSAssignment.count({
-        where: {
-          status: 'ARRIVED',
-          journeyEndTime: {
-            gte: startOfDay,
-            lt: endOfDay,
-          },
-          deletedAt: null,
-          // Check if the duration exceeds 30 minutes (1800000 milliseconds)
-          assignedAt: {
-            lt: new Date(endOfDay.getTime() - 30 * 60 * 1000), // 30 minutes ago
-          },
+      const whereClause: any = {
+        status: 'ARRIVED',
+        journeyEndTime: {
+          gte: startOfDay,
+          lt: endOfDay,
         },
+        deletedAt: null,
+        // Check if the duration exceeds 30 minutes (1800000 milliseconds)
+        assignedAt: {
+          lt: new Date(endOfDay.getTime() - 30 * 60 * 1000), // 30 minutes ago
+        },
+      };
+
+      // Add hospital filter if provided
+      if (hospitalId) {
+        whereClause.OR = [
+          { originHospitalId: hospitalId },
+          { destinationHospitalId: hospitalId },
+        ];
+      }
+
+      const delayedAssignments = await this.prisma.eMSAssignment.count({
+        where: whereClause,
       });
 
       this.logger.debug(`Delayed transfers today: ${delayedAssignments}`);
@@ -176,18 +246,30 @@ export class DashboardService {
     }
   }
 
-  async getPathwayPerformanceMetrics(): Promise<PathwayPerformanceMetrics> {
+  async getPathwayPerformanceMetrics(filters?: DashboardFilters): Promise<PathwayPerformanceMetrics> {
     try {
+      // Parse date filters
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-      const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      let startOfDay: Date;
+      let endOfDay: Date;
+      let lastWeek: Date;
+
+      if (filters?.startDate && filters?.endDate) {
+        startOfDay = new Date(filters.startDate + 'T00:00:00.000Z');
+        endOfDay = new Date(filters.endDate + 'T23:59:59.999Z');
+        lastWeek = new Date(startOfDay.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else {
+        // Default to today if no date filters provided
+        startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+        lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
 
       // Get pathway performance data in parallel
       const [strokeMetrics, stemiMetrics, traumaMetrics] = await Promise.all([
-        this.getStrokePathwayMetrics(startOfDay, endOfDay, lastWeek),
-        this.getStemiPathwayMetrics(startOfDay, endOfDay, lastWeek),
-        this.getTraumaPathwayMetrics(startOfDay, endOfDay, lastWeek),
+        this.getStrokePathwayMetrics(startOfDay, endOfDay, lastWeek, filters?.hospitalId),
+        this.getStemiPathwayMetrics(startOfDay, endOfDay, lastWeek, filters?.hospitalId),
+        this.getTraumaPathwayMetrics(startOfDay, endOfDay, lastWeek, filters?.hospitalId),
       ]);
 
       const pathways = [
@@ -227,44 +309,59 @@ export class DashboardService {
     }
   }
 
-  private async getStrokePathwayMetrics(startOfDay: Date, endOfDay: Date, lastWeek: Date): Promise<{ activeCount: number; metrics: PathwayMetric[] }> {
+  private async getStrokePathwayMetrics(startOfDay: Date, endOfDay: Date, lastWeek: Date, hospitalId?: string): Promise<{ activeCount: number; metrics: PathwayMetric[] }> {
     try {
+      // Build where clause for recent cases count
+      const whereClause: any = {
+        createdAt: {
+          gte: lastWeek,
+          lt: endOfDay,
+        },
+        deletedAt: null,
+      };
+
+      // Add hospital filter if provided
+      if (hospitalId) {
+        whereClause.originHospitalId = hospitalId;
+      }
+
       // Get recent cases count
       const recentCases = await this.prisma.strokeCase.count({
-        where: {
-          createdAt: {
-            gte: lastWeek,
-            lt: endOfDay,
-          },
-          deletedAt: null,
-        },
+        where: whereClause,
       });
 
-      // For now, return mock data until we integrate with the stroke KPI calculator
+      // Get dynamic KPI data using the stroke cases service
+      const strokeKpiData = await this.strokeCasesService.getKPISummary({
+        hospitalId: hospitalId,
+        startDate: startOfDay.toISOString().split('T')[0],
+        endDate: endOfDay.toISOString().split('T')[0],
+      });
+
+      // Transform KPI data to PathwayMetric format
       const metrics: PathwayMetric[] = [
         {
-          label: 'Door to CT Scan Target: ≤25 min',
-          value: '22 min avg',
-          progress: 88,
-          color: '#4caf50',
+          label: 'Door to CT Scan Target: ≤20 min',
+          value: strokeKpiData.averageTimings?.doorToCtScan ? `${strokeKpiData.averageTimings.doorToCtScan.toFixed(1)} min avg` : 'No data',
+          progress: strokeKpiData.kpiPerformance?.kpi2?.percentage || 0,
+          color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi2?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Door to Needle Target: ≤60 min',
-          value: '45 min avg',
-          progress: 75,
-          color: '#4caf50',
+          value: strokeKpiData.averageTimings?.doorToNeedle ? `${strokeKpiData.averageTimings.doorToNeedle.toFixed(1)} min avg` : 'No data',
+          progress: strokeKpiData.kpiPerformance?.kpi3?.percentage || 0,
+          color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi3?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Door to Physician Target: ≤15 min',
-          value: '12 min avg',
-          progress: 80,
-          color: '#4caf50',
+          value: strokeKpiData.averageTimings?.doorToPhysician ? `${strokeKpiData.averageTimings.doorToPhysician.toFixed(1)} min avg` : 'No data',
+          progress: strokeKpiData.kpiPerformance?.kpi1?.percentage || 0,
+          color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi1?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Stroke Unit Admission Target: ≥80%',
-          value: '85% achieved',
-          progress: 85,
-          color: '#4caf50',
+          value: strokeKpiData.kpiPerformance?.kpi6?.percentage ? `${strokeKpiData.kpiPerformance.kpi6.percentage.toFixed(1)}% achieved` : 'No data',
+          progress: strokeKpiData.kpiPerformance?.kpi6?.percentage || 0,
+          color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi6?.percentage, 80, false), // Higher is better
         },
       ];
 
@@ -278,44 +375,59 @@ export class DashboardService {
     }
   }
 
-  private async getStemiPathwayMetrics(startOfDay: Date, endOfDay: Date, lastWeek: Date): Promise<{ activeCount: number; metrics: PathwayMetric[] }> {
+  private async getStemiPathwayMetrics(startOfDay: Date, endOfDay: Date, lastWeek: Date, hospitalId?: string): Promise<{ activeCount: number; metrics: PathwayMetric[] }> {
     try {
+      // Build where clause for recent cases count
+      const whereClause: any = {
+        createdAt: {
+          gte: lastWeek,
+          lt: endOfDay,
+        },
+        deletedAt: null,
+      };
+
+      // Add hospital filter if provided
+      if (hospitalId) {
+        whereClause.originHospitalId = hospitalId;
+      }
+
       // Get recent cases count
       const recentCases = await this.prisma.stemiCase.count({
-        where: {
-          createdAt: {
-            gte: lastWeek,
-            lt: endOfDay,
-          },
-          deletedAt: null,
-        },
+        where: whereClause,
       });
 
-      // For now, return mock data until we integrate with the STEMI KPI service
+      // Get dynamic KPI data using the STEMI KPI service
+      const stemiKpiData = await this.stemiKpiService.getKpiSummary(
+        hospitalId,
+        startOfDay.toISOString().split('T')[0],
+        endOfDay.toISOString().split('T')[0]
+      );
+
+      // Transform KPI data to PathwayMetric format
       const metrics: PathwayMetric[] = [
         {
           label: 'Door-to-Balloon Target: ≤90 min',
-          value: '78 min avg',
-          progress: 87,
-          color: '#4caf50',
+          value: stemiKpiData.averageDoorToBalloonTime ? `${stemiKpiData.averageDoorToBalloonTime} min avg` : 'No data',
+          progress: stemiKpiData.kpi2?.percentage || 0,
+          color: this.getKpiColor(stemiKpiData.kpi2?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'First ECG Target: ≤10 min',
-          value: '8 min avg',
-          progress: 80,
-          color: '#4caf50',
+          value: stemiKpiData.kpi1?.percentage ? `${stemiKpiData.kpi1.percentage}% achieved` : 'No data',
+          progress: stemiKpiData.kpi1?.percentage || 0,
+          color: this.getKpiColor(stemiKpiData.kpi1?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Door to Needle Target: ≤30 min',
-          value: '25 min avg',
-          progress: 83,
-          color: '#4caf50',
+          value: stemiKpiData.averageDoorToNeedleTime ? `${stemiKpiData.averageDoorToNeedleTime} min avg` : 'No data',
+          progress: stemiKpiData.kpi3?.percentage || 0,
+          color: this.getKpiColor(stemiKpiData.kpi3?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'RCC Activation Target: ≤15 min',
-          value: '12 min avg',
-          progress: 80,
-          color: '#4caf50',
+          value: stemiKpiData.kpi4?.percentage ? `${stemiKpiData.kpi4.percentage}% achieved` : 'No data',
+          progress: stemiKpiData.kpi4?.percentage || 0,
+          color: this.getKpiColor(stemiKpiData.kpi4?.percentage, 90, false), // Higher percentage is better
         },
       ];
 
@@ -329,54 +441,91 @@ export class DashboardService {
     }
   }
 
-  private async getTraumaPathwayMetrics(startOfDay: Date, endOfDay: Date, lastWeek: Date): Promise<{ activeCount: number; metrics: PathwayMetric[] }> {
+  private async getTraumaPathwayMetrics(startOfDay: Date, endOfDay: Date, lastWeek: Date, hospitalId?: string): Promise<{ activeCount: number; metrics: PathwayMetric[] }> {
     try {
-      const [totalCases, recentCases] = await Promise.all([
-        // Total trauma cases
-        this.prisma.traumaCase.count({
-          where: {
-            deletedAt: null,
-          },
-        }),
-        // Recent trauma cases (last week)
-        this.prisma.traumaCase.count({
-          where: {
-            createdAt: {
-              gte: lastWeek,
-              lt: endOfDay,
-            },
-            deletedAt: null,
-          },
-        }),
-      ]);
+      // Build where clause for recent cases count
+      const recentWhereClause: any = {
+        createdAt: {
+          gte: lastWeek,
+          lt: endOfDay,
+        },
+        deletedAt: null,
+      };
 
-      // For now, use mock data until proper timing fields are available
-      const avgResponseTime = 6; // Mock average
-      const avgAssessmentTime = 12; // Mock average
+      // Add hospital filter if provided
+      if (hospitalId) {
+        recentWhereClause.originHospitalId = hospitalId;
+      }
 
-      const responseTimeProgress = Math.min(100, Math.max(0, 100 - (avgResponseTime / 8) * 100)); // Target: ≤8 min
-      const assessmentProgress = Math.min(100, Math.max(0, 100 - (avgAssessmentTime / 15) * 100)); // Target: ≤15 min
+      // Get recent cases count
+      const recentCases = await this.prisma.traumaCase.count({
+        where: recentWhereClause,
+      });
+
+      // Get dynamic KPI data using the trauma KPI service
+      let traumaKpiData = await this.traumaKpiService.getKPISummary(
+        hospitalId,
+        startOfDay.toISOString().split('T')[0],
+        endOfDay.toISOString().split('T')[0]
+      );
+
+      // If no data found with date filtering, try without date filtering to get overall metrics
+      if (traumaKpiData.totalCases === 0) {
+        this.logger.debug('No trauma cases found with date filtering, trying without date filter');
+        traumaKpiData = await this.traumaKpiService.getKPISummary(hospitalId);
+      }
+
+      this.logger.debug(`Trauma KPI data for hospital ${hospitalId}:`, {
+        totalCases: traumaKpiData.totalCases,
+        mortalityRate: traumaKpiData.mortalityRate,
+        averageResponseTime: traumaKpiData.averageResponseTime,
+        dateRange: `${startOfDay.toISOString().split('T')[0]} to ${endOfDay.toISOString().split('T')[0]}`
+      });
+
+      // Transform KPI data to PathwayMetric format
+      const metrics: PathwayMetric[] = [
+        {
+          label: 'Response Time Target: ≤8 min',
+          value: traumaKpiData.averageResponseTime ? `${traumaKpiData.averageResponseTime} min avg` : 'No data',
+          progress: traumaKpiData.averageResponseTime ? Math.min(100, Math.max(0, 100 - (traumaKpiData.averageResponseTime / 8) * 100)) : 0,
+          color: this.getKpiColor(traumaKpiData.averageResponseTime, 8, true), // Lower is better
+        },
+        {
+          label: 'Mortality Rate Target: ≤5%',
+          value: traumaKpiData.mortalityRate ? `${traumaKpiData.mortalityRate}% mortality` : 'No data',
+          progress: traumaKpiData.mortalityRate ? Math.min(100, Math.max(0, 100 - (traumaKpiData.mortalityRate / 5) * 100)) : 0,
+          color: this.getKpiColor(traumaKpiData.mortalityRate, 5, true), // Lower is better
+        },
+      ];
 
       return {
-        activeCount: recentCases, // Use recent cases as "active"
-        metrics: [
-          {
-            label: 'Response Time Target: ≤8 min',
-            value: `${avgResponseTime} min avg`,
-            progress: responseTimeProgress,
-            color: responseTimeProgress >= 75 ? '#4caf50' : responseTimeProgress >= 50 ? '#ff9800' : '#f44336',
-          },
-          {
-            label: 'Assessment Target: ≤15 min',
-            value: `${avgAssessmentTime} min avg`,
-            progress: assessmentProgress,
-            color: assessmentProgress >= 75 ? '#4caf50' : assessmentProgress >= 50 ? '#ff9800' : '#f44336',
-          },
-        ],
+        activeCount: recentCases,
+        metrics,
       };
     } catch (error) {
       this.logger.error('Error calculating trauma pathway metrics:', error);
       return { activeCount: 0, metrics: [] };
+    }
+  }
+
+  /**
+   * Helper method to determine KPI color based on performance
+   */
+  private getKpiColor(value: number | undefined, target: number, lowerIsBetter: boolean): string {
+    if (value === undefined || value === null) {
+      return '#757575'; // Gray for no data
+    }
+
+    if (lowerIsBetter) {
+      // For time-based KPIs where lower is better
+      if (value <= target) return '#4caf50'; // Green
+      if (value <= target * 1.5) return '#ff9800'; // Orange
+      return '#f44336'; // Red
+    } else {
+      // For percentage KPIs where higher is better
+      if (value >= target) return '#4caf50'; // Green
+      if (value >= target * 0.75) return '#ff9800'; // Orange
+      return '#f44336'; // Red
     }
   }
 

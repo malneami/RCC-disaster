@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -10,11 +10,6 @@ import {
   Stack,
   alpha,
   Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -24,32 +19,35 @@ import {
   faBrain,
   faClock,
   faMapMarkerAlt,
-  faFilter,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { useCriticalCases, CriticalCase } from '../../hooks/useCriticalCases';
+import { useCriticalCases, CriticalCase, CriticalCasesFilters } from '../../hooks/useCriticalCases';
 import { useAudioAlerts } from './useAudioAlerts';
 import { getEMSStatusInfo, getEMSStatusColor, EMSAssignmentStatus } from '../../utils/emsStatusUtils';
 import { useHospitals } from '../../hooks/useHospitals';
 
-const GlobalCriticalCaseTracker: React.FC = () => {
-  const { data: criticalCases, isLoading, error, refetch } = useCriticalCases();
+interface GlobalCriticalCaseTrackerProps {
+  selectedHospital?: string;
+  onHospitalChange?: (hospitalId: string) => void;
+}
+
+const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({ 
+  selectedHospital = 'all',
+  onHospitalChange: _onHospitalChange,
+}) => {
+  
+  // Build filters for the hook with stable reference
+  const filters: CriticalCasesFilters = useMemo(() => ({
+    hospitalId: selectedHospital !== 'all' ? selectedHospital : undefined,
+  }), [selectedHospital]);
+  
+  const { data: criticalCases, isLoading, error, refetch } = useCriticalCases(filters);
   const { data: hospitals } = useHospitals();
   const { playAlert } = useAudioAlerts();
-  const [selectedHospital, setSelectedHospital] = useState<string>('all');
 
-  // Filter cases based on selected hospital and other criteria
+  // Filter cases based on other criteria (hospital filtering is now done in the hook)
   const filteredCases = criticalCases?.filter((case_: CriticalCase) => {
-    // Filter by hospital if not "all"
-    if (selectedHospital !== 'all') {
-      const isFromHospital = case_.originHospital?.id === selectedHospital;
-      const isToHospital = case_.destinationHospital?.id === selectedHospital;
-      if (!isFromHospital && !isToHospital) {
-        return false;
-      }
-    }
-
-    // Must be STEMI or Stroke pathway
+    // Must be STEMI or Stroke pathway (already filtered in hook, but keeping for safety)
     if (case_.pathway !== 'STEMI' && case_.pathway !== 'STROKE') {
       return false;
     }
@@ -75,24 +73,19 @@ const GlobalCriticalCaseTracker: React.FC = () => {
         const timeLimit = case_.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000; 
         const percentage = Math.min(100, (elapsed / timeLimit) * 100);
         
-        console.log(`Case ${case_.id}: ${case_.pathway}, elapsed: ${elapsed}ms, timeLimit: ${timeLimit}ms, percentage: ${percentage}%`);
         
         // Play alert only when deadline is missed (100%)
         return percentage >= 100;
       });
 
-      console.log(`Found ${criticalCases.length} critical cases that need alerts`);
 
       if (criticalCases.length > 0) {
-        console.log(`Playing alert for ${criticalCases[0].pathway}`);
         playAlert(criticalCases[0].pathway as 'STEMI' | 'STROKE' | 'TRAUMA' | 'GENERAL');
       }
     }
   }, [filteredCases, playAlert]);
 
-  const handleHospitalFilterChange = (event: SelectChangeEvent) => {
-    setSelectedHospital(event.target.value);
-  };
+  // Removed unused hospital filter handler
 
   const CriticalCaseCard = ({ criticalCase }: { criticalCase: CriticalCase }) => {
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -203,16 +196,19 @@ const GlobalCriticalCaseTracker: React.FC = () => {
           borderRadius: 2,
           border: isCritical 
             ? '2px solid #d32f2f' 
-            : '1px solid rgba(0,0,0,0.08)',
+            : '1px solid rgba(255,255,255,0.1)',
           backgroundColor: isCritical 
-            ? alpha('#d32f2f', 0.05) 
-            : 'white',
+            ? alpha('#d32f2f', 0.1) 
+            : 'rgba(255,255,255,0.05)',
           transition: 'all 0.3s ease-in-out',
           '&:hover': {
             boxShadow: isCritical 
               ? '0 8px 25px rgba(211, 47, 47, 0.3)' 
-              : '0 4px 12px rgba(0,0,0,0.15)',
+              : '0 4px 12px rgba(255,255,255,0.1)',
             transform: 'translateY(-2px)',
+            backgroundColor: isCritical 
+              ? alpha('#d32f2f', 0.15) 
+              : 'rgba(255,255,255,0.08)',
           },
         }}
       >
@@ -229,10 +225,10 @@ const GlobalCriticalCaseTracker: React.FC = () => {
                 }} 
               />
               <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, color: '#ffffff' }}>
                   {criticalCase.pathway} Emergency
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                   Patient: {criticalCase.patient?.firstName} {criticalCase.patient?.lastName}
                   {criticalCase.patient?.mrn && ` (MRN: ${criticalCase.patient.mrn})`}
                 </Typography>
@@ -288,7 +284,7 @@ const GlobalCriticalCaseTracker: React.FC = () => {
                     variant="h6" 
                     sx={{ 
                       fontWeight: 600,
-                      color: isCritical ? '#d32f2f' : 'inherit'
+                      color: isCritical ? '#d32f2f' : '#ffffff'
                     }}
                   >
                     {criticalCase.status === 'COMPLETED' 
@@ -297,7 +293,7 @@ const GlobalCriticalCaseTracker: React.FC = () => {
                         ? formatTime(timeRemaining) 
                         : 'TIME EXPIRED'}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                  <Typography variant="body2" sx={{ ml: 1, color: '#b0b0b0' }}>
                     {criticalCase.status === 'COMPLETED' 
                       ? '' 
                       : timeRemaining > 0 
@@ -305,7 +301,7 @@ const GlobalCriticalCaseTracker: React.FC = () => {
                         : ''}
                   </Typography>
                 </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                <Typography variant="caption" sx={{ textAlign: 'center', color: '#b0b0b0' }}>
                   {criticalCase.status === 'COMPLETED' 
                     ? 'Case completed successfully' 
                     : `${Math.round(progressPercentage)}% of time limit elapsed`}
@@ -320,17 +316,17 @@ const GlobalCriticalCaseTracker: React.FC = () => {
                       icon={faMapMarkerAlt} 
                       style={{ color: '#666', marginRight: '8px', fontSize: '14px' }} 
                     />
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                       From: {criticalCase.originHospital?.name}
                     </Typography>
                   </Box>
                   {criticalCase.destinationHospital && (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                       To: {criticalCase.destinationHospital.name}
                     </Typography>
                   )}
                   {criticalCase.estimatedArrival && (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                       ETA: {new Date(criticalCase.estimatedArrival).toLocaleString()}
                     </Typography>
                   )}
@@ -352,6 +348,20 @@ const GlobalCriticalCaseTracker: React.FC = () => {
               {/* Right side - Circular Progress Bar */}
               <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                  {/* Background ring for uncompleted portion */}
+                  <CircularProgress
+                    variant="determinate"
+                    value={100}
+                    size={80}
+                    thickness={6}
+                    sx={{
+                      color: 'rgba(255, 255, 255, 0.1)',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                    }}
+                  />
+                  {/* Progress ring */}
                   <CircularProgress
                     variant="determinate"
                     value={progressPercentage}
@@ -379,8 +389,7 @@ const GlobalCriticalCaseTracker: React.FC = () => {
                     <Typography
                       variant="caption"
                       component="div"
-                      color="text.secondary"
-                      sx={{ fontSize: '0.75rem', fontWeight: 600 }}
+                      sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#b0b0b0' }}
                     >
                       {`${Math.round(progressPercentage)}%`}
                     </Typography>
@@ -391,8 +400,8 @@ const GlobalCriticalCaseTracker: React.FC = () => {
           </Box>
 
           {/* Chief Complaint */}
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            <strong>Chief Complaint:</strong> {criticalCase.chiefComplaint}
+          <Typography variant="body2" sx={{ mb: 2, color: '#b0b0b0' }}>
+            <strong style={{ color: '#ffffff' }}>Chief Complaint:</strong> {criticalCase.chiefComplaint}
           </Typography>
         </CardContent>
       </Card>
@@ -401,10 +410,15 @@ const GlobalCriticalCaseTracker: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+      <Card sx={{ 
+        borderRadius: 3, 
+        border: '1px solid #333',
+        backgroundColor: '#1e1e1e',
+        background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%)'
+      }}>
         <CardContent sx={{ p: 3 }}>
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-            <CircularProgress />
+            <CircularProgress sx={{ color: '#ff9800' }} />
           </Box>
         </CardContent>
       </Card>
@@ -413,19 +427,24 @@ const GlobalCriticalCaseTracker: React.FC = () => {
 
   if (error) {
     return (
-      <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+      <Card sx={{ 
+        borderRadius: 3, 
+        border: '1px solid #333',
+        backgroundColor: '#1e1e1e',
+        background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%)'
+      }}>
         <CardContent sx={{ p: 3 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <FontAwesomeIcon 
               icon={faExclamationTriangle} 
-              style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }} 
+              style={{ color: '#ff9800', marginRight: '16px', fontSize: '28px' }} 
             />
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: '#d32f2f' }}>
+              <Typography variant="h5" sx={{ fontWeight: 600, color: '#ffffff' }}>
                 Global Critical Case Tracker
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                 Live countdown tracking for STEMI (120 min) and Stroke (4.5 hr) cases across all hospitals.
               </Typography>
             </Box>
@@ -434,20 +453,20 @@ const GlobalCriticalCaseTracker: React.FC = () => {
           {/* Error Card */}
           <Card sx={{ 
             borderRadius: 2, 
-            border: '1px solid rgba(211, 47, 47, 0.3)',
-            backgroundColor: alpha('#d32f2f', 0.05),
+            border: '1px solid #d32f2f',
+            backgroundColor: '#2d1b1b',
           }}>
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <FontAwesomeIcon 
                   icon={faExclamationTriangle} 
-                  style={{ color: '#d32f2f', marginRight: '8px' }} 
+                  style={{ color: '#f44336', marginRight: '8px' }} 
                 />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#d32f2f' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#f44336' }}>
                   Error Loading Alerts
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2, color: '#b0b0b0' }}>
                 Failed to load critical ticket alerts. Please try again.
               </Typography>
               <Button
@@ -455,11 +474,11 @@ const GlobalCriticalCaseTracker: React.FC = () => {
                 startIcon={<FontAwesomeIcon icon={faRedo} />}
                 onClick={() => refetch()}
                 sx={{
-                  borderColor: '#666',
-                  color: '#666',
+                  borderColor: '#f44336',
+                  color: '#f44336',
                   '&:hover': {
                     borderColor: '#d32f2f',
-                    color: '#d32f2f',
+                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
                   },
                 }}
               >
@@ -473,53 +492,38 @@ const GlobalCriticalCaseTracker: React.FC = () => {
   }
 
   return (
-    <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+    <Card sx={{ 
+      borderRadius: 3, 
+      border: '1px solid #333',
+      backgroundColor: '#1e1e1e',
+      background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%)'
+    }}>
       <CardContent sx={{ p: 3 }}>
         {/* Header with Hospital Filter */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <FontAwesomeIcon 
               icon={faExclamationTriangle} 
-              style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }} 
+              style={{ color: '#ff9800', marginRight: '16px', fontSize: '28px' }} 
             />
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: '#d32f2f' }}>
+              <Typography variant="h5" sx={{ fontWeight: 600, color: '#ffffff' }}>
                 Global Critical Case Tracker
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                 Live countdown tracking for STEMI (120 min) and Stroke (4.5 hr) cases across all hospitals.
               </Typography>
             </Box>
           </Box>
-
-          {/* Hospital Filter */}
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel id="hospital-filter-label">Filter by Hospital</InputLabel>
-            <Select
-              labelId="hospital-filter-label"
-              id="hospital-filter"
-              value={selectedHospital}
-              label="Filter by Hospital"
-              onChange={handleHospitalFilterChange}
-              startAdornment={<FontAwesomeIcon icon={faFilter} style={{ marginRight: '8px', color: '#666' }} />}
-            >
-              <MenuItem value="all">All Hospitals</MenuItem>
-              {hospitals?.map((hospital: any) => (
-                <MenuItem key={hospital.id} value={hospital.id}>
-                  {hospital.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
         </Box>
 
         {/* Summary Stats */}
         {filteredCases.length > 0 && (
-          <Box sx={{ mb: 3, p: 2, backgroundColor: alpha('#d32f2f', 0.05), borderRadius: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          <Box sx={{ mb: 3, p: 2, backgroundColor: alpha('#d32f2f', 0.1), borderRadius: 2, border: '1px solid rgba(211, 47, 47, 0.2)' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#ffffff' }}>
               Active Critical Cases Summary
               {selectedHospital !== 'all' && (
-                <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                <Typography component="span" variant="body2" sx={{ ml: 1, color: '#b0b0b0' }}>
                   (Filtered by: {hospitals?.find((h: any) => h.id === selectedHospital)?.name || 'Unknown Hospital'})
                 </Typography>
               )}
@@ -527,13 +531,13 @@ const GlobalCriticalCaseTracker: React.FC = () => {
             <Stack direction="row" spacing={3} sx={{ mb: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <FontAwesomeIcon icon={faHeart} style={{ color: '#d32f2f', marginRight: '8px' }} />
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ color: '#ffffff' }}>
                   STEMI: {filteredCases.filter((c: CriticalCase) => c.pathway === 'STEMI').length}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <FontAwesomeIcon icon={faBrain} style={{ color: '#d32f2f', marginRight: '8px' }} />
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ color: '#ffffff' }}>
                   Stroke: {filteredCases.filter((c: CriticalCase) => c.pathway === 'STROKE').length}
                 </Typography>
               </Box>
@@ -541,13 +545,13 @@ const GlobalCriticalCaseTracker: React.FC = () => {
             <Stack direction="row" spacing={3}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Chip label="TOTAL ACTIVE" size="small" sx={{ backgroundColor: '#d32f2f', color: 'white', mr: 1 }} />
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ color: '#ffffff' }}>
                   {filteredCases.length}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Chip label="CRITICAL (OVERDUE)" size="small" sx={{ backgroundColor: '#d32f2f', color: 'white', mr: 1 }} />
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ color: '#ffffff' }}>
                   {filteredCases.filter((c: CriticalCase) => {
                     const elapsed = Date.now() - new Date(c.createdAt).getTime();
                     const timeLimit = c.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000;
@@ -561,7 +565,20 @@ const GlobalCriticalCaseTracker: React.FC = () => {
 
         {/* Cases Display */}
         {filteredCases.length === 0 ? (
-          <Alert severity="success" sx={{ borderRadius: 2 }}>
+          <Alert 
+            severity="success" 
+            sx={{ 
+              borderRadius: 2, 
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              border: '1px solid rgba(76, 175, 80, 0.3)',
+              '& .MuiAlert-message': {
+                color: '#ffffff'
+              },
+              '& .MuiAlert-icon': {
+                color: '#4caf50'
+              }
+            }}
+          >
             {selectedHospital === 'all' 
               ? 'No active STEMI or Stroke cases requiring critical tracking across all hospitals.'
               : `No active STEMI or Stroke cases for the selected hospital.`

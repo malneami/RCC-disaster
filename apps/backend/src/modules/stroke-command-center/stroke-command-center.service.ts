@@ -25,14 +25,23 @@ export class StrokeCommandCenterService {
     // Build where clause for filtering
     const whereClause: any = {};
     
-    // Temporarily disable date filtering to show all data
-    // TODO: Implement proper date filtering logic later
-
+    // Apply hospital filter
     if (hospitalId && hospitalId !== 'all') {
       whereClause.OR = [
         { originHospitalId: hospitalId },
         { destinationHospitalId: hospitalId },
       ];
+    }
+
+    // Apply date filtering
+    if (startDate || endDate) {
+      whereClause.dateOfAdmission = {};
+      if (startDate) {
+        whereClause.dateOfAdmission.gte = new Date(startDate);
+      }
+      if (endDate) {
+        whereClause.dateOfAdmission.lte = new Date(endDate + 'T23:59:59.999Z');
+      }
     }
 
     // Debug logging

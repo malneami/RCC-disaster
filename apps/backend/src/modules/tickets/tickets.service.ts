@@ -846,4 +846,227 @@ export class TicketsService {
 
     return pathways;
   }
+
+  // Get performance comparison data
+  async getPerformanceComparison(
+    period: 'daily' | 'weekly' | 'monthly',
+    userRole?: UserRole,
+    userHospitalId?: string,
+    filterHospitalId?: string,
+    startDate?: string,
+    endDate?: string
+  ) {
+    
+    // Build base where clause
+    let where: any = { deletedAt: null };
+
+    // Apply hospital filter
+    const hospitalId = filterHospitalId || userHospitalId;
+    if (hospitalId && userRole !== UserRole.ADMIN && userRole !== UserRole.RCC) {
+      where.OR = [
+        { originHospitalId: hospitalId },
+        { destinationHospitalId: hospitalId },
+      ];
+    } else if (filterHospitalId) {
+      where.OR = [
+        { originHospitalId: filterHospitalId },
+        { destinationHospitalId: filterHospitalId },
+      ];
+    }
+
+    // Apply date filters
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate);
+      }
+    }
+
+    // Calculate date ranges based on period
+    const now = new Date();
+    let dateRange: { start: Date; end: Date };
+    
+    if (startDate || endDate) {
+      // Use provided date range
+      dateRange = {
+        start: startDate ? new Date(startDate) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+        end: endDate ? new Date(endDate) : now
+      };
+    } else {
+      // Use default ranges based on period
+      switch (period) {
+        case 'daily':
+          dateRange = {
+            start: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+            end: now
+          };
+          break;
+        case 'weekly':
+          dateRange = {
+            start: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+            end: now
+          };
+          break;
+        case 'monthly':
+          dateRange = {
+            start: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+            end: now
+          };
+          break;
+      }
+    }
+
+
+    // Get all tickets in the date range
+    const tickets = await this.prisma.ticket.findMany({
+      where: {
+        ...where,
+        createdAt: {
+          gte: dateRange.start,
+          lte: dateRange.end
+        }
+      },
+      select: {
+        id: true,
+        pathway: true,
+        createdAt: true,
+        status: true,
+        priority: true
+      }
+    });
+
+
+    // Generate chart data based on period
+    const chartData = this.generateChartDataFromTickets(tickets, period, dateRange);
+    
+
+    // Calculate metrics
+    const totalCases = tickets.length;
+    const pathwayCounts = tickets.reduce((acc, ticket) => {
+      acc[ticket.pathway] = (acc[ticket.pathway] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Calculate previous period for comparison
+    const previousPeriodStart = new Date(dateRange.start.getTime() - (dateRange.end.getTime() - dateRange.start.getTime()));
+    const previousTickets = await this.prisma.ticket.findMany({
+      where: {
+        ...where,
+        createdAt: {
+          gte: previousPeriodStart,
+          lt: dateRange.start
+        }
+      }
+    });
+
+    const previousTotalCases = previousTickets.length;
+    const previousChange = previousTotalCases > 0 
+      ? Math.round(((totalCases - previousTotalCases) / previousTotalCases) * 100) 
+      : 0;
+
+    // Calculate average (simplified - could be more sophisticated)
+    const averageCases = Math.floor((totalCases + previousTotalCases) / 2);
+    const averageChange = averageCases > 0 
+      ? Math.round(((totalCases - averageCases) / averageCases) * 100) 
+      : 0;
+
+    return {
+      globalMetrics: {
+        current: totalCases,
+        previousChange: previousChange,
+        averageChange: averageChange,
+      },
+      dailySummary: {
+        currentPeriod: totalCases,
+        previousPeriod: previousTotalCases,
+        average: averageCases,
+      },
+      changeAnalysis: {
+        vsPreviousPeriod: previousChange,
+        vsAverage: averageChange,
+        trend: previousChange > 5 ? 'up' : previousChange < -5 ? 'down' : 'stable',
+      },
+      chartData: {
+        data: chartData,
+      },
+    };
+  }
+
+  private generateChartDataFromTickets(
+    tickets: any[],
+    period: 'daily' | 'weekly' | 'monthly',
+    dateRange: { start: Date; end: Date }
+  ) {
+    const data = [];
+    const now = new Date();
+
+    if (period === 'daily') {
+      // Generate hourly data
+      for (let i = 23; i >= 0; i--) {
+        const hour = new Date(now);
+        hour.setHours(hour.getHours() - i);
+        
+        const hourStart = new Date(hour);
+        hourStart.setMinutes(0, 0, 0);
+        const hourEnd = new Date(hour);
+        hourEnd.setMinutes(59, 59, 999);
+
+        const hourTickets = tickets.filter(ticket => {
+          const ticketDate = new Date(ticket.createdAt);
+          return ticketDate >= hourStart && ticketDate <= hourEnd;
+        });
+
+        const stemi = hourTickets.filter(t => t.pathway === 'STEMI').length;
+        const stroke = hourTickets.filter(t => t.pathway === 'STROKE').length;
+        const trauma = hourTickets.filter(t => t.pathway === 'TRAUMA').length;
+        const other = hourTickets.filter(t => !['STEMI', 'STROKE', 'TRAUMA'].includes(t.pathway)).length;
+
+        data.push({
+          date: hour.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          stemi,
+          stroke,
+          trauma,
+          other,
+        });
+      }
+    } else {
+      // Generate daily data for weekly/monthly
+      const daysDiff = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+      const maxDays = period === 'weekly' ? 7 : Math.min(30, daysDiff);
+      
+      for (let i = maxDays - 1; i >= 0; i--) {
+        const day = new Date(now);
+        day.setDate(day.getDate() - i);
+        
+        const dayStart = new Date(day);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(day);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const dayTickets = tickets.filter(ticket => {
+          const ticketDate = new Date(ticket.createdAt);
+          return ticketDate >= dayStart && ticketDate <= dayEnd;
+        });
+
+        const stemi = dayTickets.filter(t => t.pathway === 'STEMI').length;
+        const stroke = dayTickets.filter(t => t.pathway === 'STROKE').length;
+        const trauma = dayTickets.filter(t => t.pathway === 'TRAUMA').length;
+        const other = dayTickets.filter(t => !['STEMI', 'STROKE', 'TRAUMA'].includes(t.pathway)).length;
+        
+
+        data.push({
+          date: day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          stemi,
+          stroke,
+          trauma,
+          other,
+        });
+      }
+    }
+
+    return data;
+  }
 }

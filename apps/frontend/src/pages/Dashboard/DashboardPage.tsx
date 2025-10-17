@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -13,7 +13,21 @@ import {
   Paper,
   alpha,
   CircularProgress,
+  IconButton,
+  Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  Button,
 } from '@mui/material';
+import {
+  Fullscreen as FullscreenIcon,
+  FullscreenExit as FullscreenExitIcon,
+  Image as ImageIcon,
+  Refresh as RefreshIcon,
+} from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faCheckCircle,
@@ -26,45 +40,147 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFullscreen } from '../../contexts/FullscreenContext';
 import PerformanceComparison from './PerformanceComparison';
 import GlobalCriticalCaseTracker from '../../components/Dashboard/GlobalCriticalCaseTracker';
-import { dashboardService, DashboardMetrics, PathwayPerformanceMetrics } from '../../services/dashboardService';
+import { dashboardService, DashboardMetrics, PathwayPerformanceMetrics, DashboardFilters } from '../../services/dashboardService';
+import { useHospitals } from '../Hospitals/hooks/useHospitals';
+import html2canvas from 'html2canvas';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { isFullscreen, setIsFullscreen } = useFullscreen();
+  const { hospitals } = useHospitals();
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
   const [pathwayMetrics, setPathwayMetrics] = useState<PathwayPerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Filter states (not functional yet)
+  const [selectedHospital, setSelectedHospital] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  // Create filters object
+  const getFilters = (): DashboardFilters => ({
+    hospitalId: selectedHospital !== 'all' ? selectedHospital : undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+  });
 
   // Fetch dashboard data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const [metricsData, pathwayData] = await Promise.all([
-          dashboardService.getDashboardMetrics(),
-          dashboardService.getPathwayPerformanceMetrics(),
-        ]);
-        
-        setDashboardMetrics(metricsData);
-        setPathwayMetrics(pathwayData);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const filters = getFilters();
+      
+      const [metricsData, pathwayData] = await Promise.all([
+        dashboardService.getDashboardMetrics(filters),
+        dashboardService.getPathwayPerformanceMetrics(filters),
+      ]);
+      
+      setDashboardMetrics(metricsData);
+      setPathwayMetrics(pathwayData);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedHospital, startDate, endDate]);
 
+  useEffect(() => {
     fetchDashboardData();
     
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDashboardData]);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, [setIsFullscreen]);
+
+  // Fullscreen handler
+  const handleFullscreenToggle = async () => {
+    try {
+      if (!isFullscreen) {
+        const element = document.documentElement;
+        if (element.requestFullscreen) {
+          await element.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling fullscreen:', error);
+    }
+  };
+
+  // Download PNG handler
+  const handleDownloadPNG = async () => {
+    try {
+      const element = document.getElementById('dashboard-content');
+      if (element) {
+        const canvas = await html2canvas(element, {
+          background: '#121212',
+          useCORS: true,
+          allowTaint: true,
+        });
+        
+        const link = document.createElement('a');
+        link.download = 'rcc-dashboard.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      }
+    } catch (error) {
+      console.error('Error downloading PNG:', error);
+    }
+  };
+
+  // Refresh handler
+  const handleRefresh = () => {
+    fetchDashboardData();
+  };
+
+  // Filter handlers
+  const handleHospitalChange = (hospitalId: string) => {
+    setSelectedHospital(hospitalId);
+    // Data will be refetched on next auto-refresh or manual refresh
+  };
+
+  const handleDateRangeChange = (newStartDate: string, newEndDate: string) => {
+    setStartDate(newStartDate);
+    setEndDate(newEndDate);
+    // Data will be refetched on next auto-refresh or manual refresh
+  };
+
+  const clearFilters = () => {
+    setSelectedHospital('all');
+    setStartDate('');
+    setEndDate('');
+    // Data will be refetched on next auto-refresh or manual refresh
+  };
+
 
   // Main KPI Cards - now using dynamic data
   const kpiCards = [
@@ -107,47 +223,254 @@ const DashboardPage: React.FC = () => {
         <title>Dashboard - RCC Healthcare Platform</title>
       </Helmet>
 
-      <Box>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-          Welcome back, {user?.firstName}
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Regional Coordination Center Dashboard
-        </Typography>
+      <Box sx={{ 
+        p: isFullscreen ? 0 : 3,
+        backgroundColor: '#121212',
+        minHeight: '100vh',
+        color: '#ffffff'
+      }}>
+        {/* Command Center Header */}
+        <Paper
+          elevation={3}
+          sx={{
+            p: 2,
+            mb: 2,
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #333',
+            borderRadius: 2,
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+            {/* Logo and Title */}
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <img 
+                src="/jazan-health-cluster-logo.png" 
+                alt="Jazan Health Cluster Logo" 
+                style={{ 
+                  height: '40px', 
+                  marginRight: '16px',
+                  objectFit: 'contain'
+                }} 
+              />
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+                  fontSize: { xs: '1.5rem', md: '2rem' },
+                }}
+              >
+                RCC Command Center Dashboard
+              </Typography>
+            </Box>
+
+            {/* Filters */}
+            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+              {/* Hospital Filter */}
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel sx={{ color: '#ffffff' }}>Hospital</InputLabel>
+                <Select
+                  value={selectedHospital}
+                  onChange={(e) => handleHospitalChange(e.target.value)}
+                  label="Hospital"
+                  sx={{
+                    color: '#ffffff',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#555',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#777',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#2196f3',
+                    },
+                    '& .MuiSvgIcon-root': {
+                      color: '#ffffff',
+                    },
+                  }}
+                >
+                  <MenuItem value="all">All Hospitals</MenuItem>
+                  {hospitals.map((hospital) => (
+                    <MenuItem key={hospital.id} value={hospital.id}>
+                      {hospital.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Date Range Filters */}
+              <TextField
+                size="small"
+                type="date"
+                label="Start Date"
+                value={startDate}
+                onChange={(e) => {
+                  const newStartDate = e.target.value;
+                  const newEndDate = endDate;
+                  handleDateRangeChange(newStartDate, newEndDate);
+                }}
+                InputLabelProps={{ shrink: true }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: '#ffffff',
+                    '& fieldset': {
+                      borderColor: '#555',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#777',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#2196f3',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#ffffff',
+                  },
+                }}
+              />
+
+              <TextField
+                size="small"
+                type="date"
+                label="End Date"
+                value={endDate}
+                onChange={(e) => {
+                  const newStartDate = startDate;
+                  const newEndDate = e.target.value;
+                  handleDateRangeChange(newStartDate, newEndDate);
+                }}
+                InputLabelProps={{ shrink: true }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: '#ffffff',
+                    '& fieldset': {
+                      borderColor: '#555',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#777',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#2196f3',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#ffffff',
+                  },
+                }}
+              />
+
+              {/* Clear Filters Button */}
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={clearFilters}
+                sx={{
+                  color: '#ffffff',
+                  borderColor: '#555',
+                  '&:hover': {
+                    borderColor: '#777',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
+              >
+                Clear
+              </Button>
+            </Stack>
+
+            {/* Action Buttons */}
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Refresh Data">
+                <IconButton
+                  onClick={handleRefresh}
+                  sx={{
+                    color: '#ffffff',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Download PNG">
+                <IconButton
+                  onClick={handleDownloadPNG}
+                  sx={{
+                    color: '#ffffff',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  <ImageIcon />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}>
+                <IconButton
+                  onClick={handleFullscreenToggle}
+                  sx={{
+                    color: '#ffffff',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          </Box>
+        </Paper>
+
+        {/* Welcome Message */}
+        {!isFullscreen && (
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, color: '#ffffff' }}>
+              Welcome back, {user?.firstName}
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#b0b0b0' }}>
+              Regional Coordination Center Dashboard
+            </Typography>
+          </Box>
+        )}
 
         {loading && (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-            <CircularProgress sx={{ mr: 2 }} />
-            <Typography>Loading dashboard data...</Typography>
+            <CircularProgress sx={{ mr: 2, color: '#2196f3' }} />
+            <Typography sx={{ color: '#ffffff' }}>Loading dashboard data...</Typography>
           </Box>
         )}
 
         {error && (
-          <Box p={3} mb={3}>
-            <Typography color="error" variant="h6">
+          <Box p={3} mb={3} sx={{ backgroundColor: '#2d1b1b', border: '1px solid #d32f2f', borderRadius: 2 }}>
+            <Typography sx={{ color: '#f44336' }} variant="h6">
               Error: {error}
             </Typography>
-            <Typography color="text.secondary">
+            <Typography sx={{ color: '#b0b0b0' }}>
               Please refresh the page or try again later.
             </Typography>
           </Box>
         )}
 
         {!loading && !error && (
-          <>
+          <Box id="dashboard-content">
             <Grid container spacing={3}>
           {/* Main KPI Cards */}
           {kpiCards.map((card, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
               <Card
                 sx={{
-                  background: `linear-gradient(135deg, ${card.bgColor} 0%, ${alpha(card.color, 0.05)} 100%)`,
-                  border: `1px solid ${alpha(card.color, 0.2)}`,
+                  background: `linear-gradient(135deg, ${alpha(card.color, 0.15)} 0%, ${alpha(card.color, 0.05)} 100%)`,
+                  border: `1px solid ${alpha(card.color, 0.3)}`,
                   borderRadius: 3,
                   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                  backgroundColor: '#1e1e1e',
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    boxShadow: `0 8px 25px ${alpha(card.color, 0.15)}`,
+                    boxShadow: `0 8px 25px ${alpha(card.color, 0.25)}`,
                   },
                 }}
               >
@@ -177,10 +500,10 @@ const DashboardPage: React.FC = () => {
                       </Typography>
                     </Box>
                   </Stack>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, color: '#ffffff' }}>
                     {card.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                     {card.subtitle}
                   </Typography>
                 </CardContent>
@@ -190,19 +513,27 @@ const DashboardPage: React.FC = () => {
 
           {/* Global Critical Case Tracker */}
           <Grid item xs={12}>
-            <GlobalCriticalCaseTracker />
+            <GlobalCriticalCaseTracker 
+              selectedHospital={selectedHospital}
+              onHospitalChange={setSelectedHospital}
+            />
           </Grid>
 
           {/* Critical Performance Metrics */}
           <Grid item xs={12}>
-            <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+            <Card sx={{ 
+              borderRadius: 3, 
+              border: '1px solid #333', 
+              backgroundColor: '#1e1e1e',
+              background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%)'
+            }}>
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                  <FontAwesomeIcon icon={faChartLine} style={{ color: '#1976d2', marginRight: '16px', fontSize: '28px' }} />
-                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  <FontAwesomeIcon icon={faChartLine} style={{ color: '#2196f3', marginRight: '16px', fontSize: '28px' }} />
+                  <Typography variant="h5" sx={{ fontWeight: 600, color: '#ffffff' }}>
                     Critical Performance Metrics
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                  <Typography variant="body2" sx={{ ml: 2, color: '#b0b0b0' }}>
                     Real-time pathway performance indicators
                   </Typography>
                 </Box>
@@ -215,8 +546,9 @@ const DashboardPage: React.FC = () => {
                         sx={{
                           p: 3,
                           borderRadius: 3,
-                          background: `linear-gradient(135deg, ${alpha(pathway.color, 0.08)} 0%, ${alpha(pathway.color, 0.02)} 100%)`,
-                          border: `1px solid ${alpha(pathway.color, 0.15)}`,
+                          background: `linear-gradient(135deg, ${alpha(pathway.color, 0.15)} 0%, ${alpha(pathway.color, 0.05)} 100%)`,
+                          border: `1px solid ${alpha(pathway.color, 0.3)}`,
+                          backgroundColor: '#2a2a2a',
                           height: '100%',
                         }}
                       >
@@ -244,7 +576,7 @@ const DashboardPage: React.FC = () => {
                           {pathway.metrics.map((metric, metricIndex) => (
                             <Box key={metricIndex}>
                               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 500, color: '#ffffff' }}>
                                   {metric.label}
                                 </Typography>
                                 <Typography
@@ -280,7 +612,7 @@ const DashboardPage: React.FC = () => {
 
           {/* Performance Comparison */}
           <Grid item xs={12}>
-            <PerformanceComparison />
+            <PerformanceComparison filters={getFilters()} />
           </Grid>
 
         
@@ -336,7 +668,7 @@ const DashboardPage: React.FC = () => {
             </Card>
           </Grid> */}
         </Grid>
-          </>
+          </Box>
         )}
       </Box>
     </>

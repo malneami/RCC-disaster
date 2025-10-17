@@ -27,14 +27,50 @@ export interface PathwayPerformanceMetrics {
   timestamp: string;
 }
 
+export interface DashboardFilters {
+  hospitalId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 class DashboardService {
-  async getDashboardMetrics(): Promise<DashboardMetrics> {
-    const response = await apiClient.get('/dashboard/metrics');
+  async getDashboardMetrics(filters?: DashboardFilters): Promise<DashboardMetrics> {
+    const params = new URLSearchParams();
+    
+    if (filters?.hospitalId && filters.hospitalId !== 'all') {
+      params.append('hospitalId', filters.hospitalId);
+    }
+    if (filters?.startDate) {
+      params.append('startDate', filters.startDate);
+    }
+    if (filters?.endDate) {
+      params.append('endDate', filters.endDate);
+    }
+
+    const queryString = params.toString();
+    const url = queryString ? `/dashboard/metrics?${queryString}` : '/dashboard/metrics';
+    
+    const response = await apiClient.get(url);
     return response.data;
   }
 
-  async getPathwayPerformanceMetrics(): Promise<PathwayPerformanceMetrics> {
-    const response = await apiClient.get('/dashboard/pathway-metrics');
+  async getPathwayPerformanceMetrics(filters?: DashboardFilters): Promise<PathwayPerformanceMetrics> {
+    const params = new URLSearchParams();
+    
+    if (filters?.hospitalId && filters.hospitalId !== 'all') {
+      params.append('hospitalId', filters.hospitalId);
+    }
+    if (filters?.startDate) {
+      params.append('startDate', filters.startDate);
+    }
+    if (filters?.endDate) {
+      params.append('endDate', filters.endDate);
+    }
+
+    const queryString = params.toString();
+    const url = queryString ? `/dashboard/pathway-metrics?${queryString}` : '/dashboard/pathway-metrics';
+    
+    const response = await apiClient.get(url);
     return response.data;
   }
 }
