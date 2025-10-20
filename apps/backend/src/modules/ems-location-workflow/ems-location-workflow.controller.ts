@@ -4,6 +4,7 @@ import { EmsLocationWorkflowService } from '../../common/services/ems-location-w
 @Controller('ems-location-workflow')
 export class EmsLocationWorkflowController {
   private readonly logger = new Logger(EmsLocationWorkflowController.name);
+  private lastRequestAtByAssignment: Record<string, number> = {};
 
   constructor(
     private emsLocationWorkflowService: EmsLocationWorkflowService
@@ -15,6 +16,14 @@ export class EmsLocationWorkflowController {
   @Post('location-update/:assignmentId')
   async processLocationUpdate(@Param('assignmentId') assignmentId: string) {
     this.logger.log(`Processing location update for assignment ${assignmentId}`);
+    // Throttle: prevent multiple updates per minute per assignment
+    const now = Date.now();
+    const last = this.lastRequestAtByAssignment[assignmentId];
+    if (last && now - last < 60_000) {
+      this.logger.warn(`Throttled location update for ${assignmentId}. Last call ${(now - last) / 1000}s ago.`);
+      return { throttled: true, nextAllowedInSeconds: Math.ceil((60_000 - (now - last)) / 1000) };
+    }
+    this.lastRequestAtByAssignment[assignmentId] = now;
     return await this.emsLocationWorkflowService.processLocationUpdate(assignmentId);
   }
 

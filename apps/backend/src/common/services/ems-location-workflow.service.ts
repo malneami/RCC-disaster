@@ -127,13 +127,33 @@ export class EmsLocationWorkflowService {
         assignment.ticket.destinationHospital.longitude!
       );
 
-      const isInOriginZone = originDistance <= 1; // 1km radius
-      const isInDestinationZone = destinationDistance <= 1; // 1km radius
+      const isInOriginZone = originDistance <= 2; // 2km radius
+      const isInDestinationZone = destinationDistance <= 2; // 2km radius
 
       this.logger.log(`Ambulance distances - Origin: ${originDistance.toFixed(3)}km, Destination: ${destinationDistance.toFixed(3)}km`);
       this.logger.log(`In origin zone: ${isInOriginZone}, In destination zone: ${isInDestinationZone}`);
 
-      // 3. Determine new status based on current status and location
+      // 3. Enforce minimum interval between status transitions (60 seconds)
+      const candidateTransitionTimes: (Date | null | undefined)[] = [
+        assignment.emsContactTime as any,
+        assignment.actualArrivalTime as any,
+        assignment.journeyStartTime as any,
+        assignment.journeyEndTime as any,
+      ];
+      const lastTransitionAt = candidateTransitionTimes
+        .filter(Boolean)
+        .map((d) => new Date(d as Date))
+        .sort((a, b) => b.getTime() - a.getTime())[0];
+
+      const nowForInterval = new Date();
+      if (lastTransitionAt && nowForInterval.getTime() - lastTransitionAt.getTime() < 60_000) {
+        this.logger.log(
+          `Skipping transition due to min-interval guard. Last at: ${lastTransitionAt.toISOString()} (delta ${(nowForInterval.getTime() - lastTransitionAt.getTime()) / 1000}s)`
+        );
+        return null;
+      }
+
+      // 4. Determine new status based on current status and location
       let newStatus: string | null = null;
       let reason = '';
       let hospitalName = '';
@@ -168,7 +188,7 @@ export class EmsLocationWorkflowService {
           break;
       }
 
-      // 4. Update assignment status if needed
+      // 5. Update assignment status if needed
       if (newStatus && newStatus !== currentStatus) {
         const now = new Date();
         
