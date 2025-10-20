@@ -151,7 +151,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
         icon: <FontAwesomeIcon icon={faAmbulance} />,
         completed: ['EMS_ARRIVAL', 'DEPARTED', 'ARRIVED'].includes(assignment.status),
         active: assignment.status === 'EMS_ARRIVAL',
-        timestamp: assignment.journeyStartTime ? new Date(assignment.journeyStartTime).toLocaleTimeString() : undefined,
+        timestamp: assignment.actualArrivalTime ? new Date(assignment.actualArrivalTime).toLocaleTimeString() : undefined,
       },
       {
         id: 'departed',
@@ -159,7 +159,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
         icon: <FontAwesomeIcon icon={faMapMarkerAlt} />,
         completed: ['DEPARTED', 'ARRIVED'].includes(assignment.status),
         active: assignment.status === 'DEPARTED',
-        timestamp: assignment.actualArrivalTime ? new Date(assignment.actualArrivalTime).toLocaleTimeString() : undefined,
+        timestamp: assignment.journeyStartTime ? new Date(assignment.journeyStartTime).toLocaleTimeString() : undefined,
       },
       {
         id: 'arrived_destination',
