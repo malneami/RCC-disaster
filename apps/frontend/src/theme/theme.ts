@@ -57,7 +57,8 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    // Include Arabic-capable fonts with sensible fallbacks
+    fontFamily: '"Tajawal", "Noto Naskh Arabic", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontSize: '2.5rem',
       fontWeight: 500,
