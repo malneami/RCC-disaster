@@ -10,6 +10,13 @@ export interface HospitalCriticalCase {
   status: 'PENDING' | 'ASSIGNED' | 'IN_TRANSPORT' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   updatedAt: string;
+  acknowledgedAt?: string;
+  acknowledgedBy?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
   patient: {
     firstName: string;
     lastName: string;
@@ -78,6 +85,8 @@ export const useHospitalCriticalCases = (hospitalId: string) => {
           status: ticket.status,
           createdAt: ticket.createdAt,
           updatedAt: ticket.updatedAt,
+          acknowledgedAt: ticket.acknowledgedAt,
+          acknowledgedBy: ticket.acknowledgedBy,
           patient: ticket.patient,
           originHospital: ticket.originHospital,
           destinationHospital: ticket.destinationHospital,

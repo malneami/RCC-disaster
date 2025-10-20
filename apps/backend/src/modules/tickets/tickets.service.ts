@@ -1069,4 +1069,117 @@ export class TicketsService {
 
     return data;
   }
+
+  // Acknowledge a critical case ticket
+  async acknowledge(ticketId: string, userId: string, userRole: UserRole) {
+    const ticket = await this.findById(ticketId);
+    
+    // Check if ticket is already acknowledged
+    if (ticket.acknowledgedAt) {
+      throw new BadRequestException('Ticket has already been acknowledged');
+    }
+
+    // Update ticket with acknowledgment
+    const updatedTicket = await this.prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        acknowledgedAt: new Date(),
+        acknowledgedById: userId,
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            mrn: true,
+            nationalId: true,
+          },
+        },
+        originHospital: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+        destinationHospital: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        acknowledgedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        emsStatusUpdatedByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        activities: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    // Log the acknowledgment activity
+    await this.prisma.activity.create({
+      data: {
+        type: 'TICKET_ACKNOWLEDGED',
+        description: `Ticket ${ticket.ticketNumber} acknowledged`,
+        ticketId: ticketId,
+        userId: userId,
+        metadata: JSON.stringify({
+          ticketNumber: ticket.ticketNumber,
+          pathway: ticket.pathway,
+          priority: ticket.priority,
+        }),
+      },
+    });
+
+    this.logger.log(`Ticket ${ticket.ticketNumber} acknowledged by user ${userId}`);
+    
+    return updatedTicket;
+  }
 }

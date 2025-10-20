@@ -31,6 +31,7 @@ model User {
   assignedTickets   Ticket[]    @relation("TicketAssignee")
   completedTickets  Ticket[]    @relation("TicketCompleter")
   emsStatusUpdatedTickets Ticket[] @relation("TicketEMSStatusUpdater")
+  acknowledgedTickets Ticket[]  @relation("TicketAcknowledger")
   
   // Patient Relations
   createdPatients   Patient[]   @relation("PatientCreator")

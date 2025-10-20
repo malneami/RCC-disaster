@@ -310,7 +310,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       caseType: 'trauma' as const,
       status: traumaCase.edDisposition || 'UNKNOWN',
       severity: getInjurySeverity(traumaCase),
-      pathway: traumaCase.ticket?.pathway,
+      pathway: 'TRAUMA', // Default to TRAUMA pathway for trauma cases
       targetsMet,
       performanceIndicators,
       timeMetrics,

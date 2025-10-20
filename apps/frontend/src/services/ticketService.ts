@@ -118,6 +118,8 @@ export interface Ticket {
   updatedAt: string;
   createdById: string;
   assignedToId?: string;
+  acknowledgedAt?: string;
+  acknowledgedById?: string;
   patient: {
     firstName: string;
     lastName: string;
@@ -146,6 +148,12 @@ export interface Ticket {
     role: string;
   };
   emsStatusUpdatedByUser?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
+  acknowledgedBy?: {
     firstName: string;
     lastName: string;
     email: string;
@@ -339,6 +347,12 @@ class TicketService {
       emsStatus,
       notes,
     });
+    return response.data;
+  }
+
+  // Acknowledge a critical case ticket
+  async acknowledgeTicket(ticketId: string): Promise<Ticket> {
+    const response = await apiClient.put(`/tickets/${ticketId}/acknowledge`);
     return response.data;
   }
 }

@@ -60,6 +60,10 @@ model Ticket {
   completedById       String?         @map("completed_by_id")
   completedAt         DateTime?       @map("completed_at")
   
+  // Acknowledgment Fields
+  acknowledgedAt      DateTime?       @map("acknowledged_at")
+  acknowledgedById    String?         @map("acknowledged_by_id")
+  
   // Relations
   patient             Patient         @relation(fields: [patientId], references: [id])
   originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
@@ -68,6 +72,7 @@ model Ticket {
   assignedTo          User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
   completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
   emsStatusUpdatedByUser User?        @relation("TicketEMSStatusUpdater", fields: [emsStatusUpdatedBy], references: [id])
+  acknowledgedBy      User?           @relation("TicketAcknowledger", fields: [acknowledgedById], references: [id])
   activities          Activity[]
   
   // Stroke Relations

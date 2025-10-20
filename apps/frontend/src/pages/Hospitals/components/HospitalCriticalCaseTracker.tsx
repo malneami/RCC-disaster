@@ -24,6 +24,7 @@ import {
 import { useHospitalCriticalCases } from '../hooks/useHospitalCriticalCases';
 import { useAudioAlerts } from '../../Dashboard/CriticalCaseTracker/useAudioAlerts';
 import { getEMSStatusInfo, getEMSStatusColor } from '../../../utils/emsStatusUtils';
+import { ticketService } from '../../../services/ticketService';
 
 interface HospitalCriticalCaseTrackerProps {
   hospitalId: string;
@@ -35,7 +36,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
   const { data: criticalCases, isLoading, error, refetch } = useHospitalCriticalCases(hospitalId);
   const { playAlert } = useAudioAlerts();
 
-  // Filter for STEMI and Stroke cases only, excluding completed cases and cases older than 24 hours
+  // Filter for STEMI and Stroke cases only, excluding completed cases, acknowledged cases, and cases older than 24 hours
   const stemiStrokeCases = criticalCases?.filter(case_ => {
     // Must be STEMI or Stroke pathway
     if (case_.pathway !== 'STEMI' && case_.pathway !== 'STROKE') {
@@ -44,6 +45,11 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     
     // Exclude completed cases
     if (case_.status === 'COMPLETED') {
+      return false;
+    }
+    
+    // Exclude acknowledged cases
+    if (case_.acknowledgedAt) {
       return false;
     }
     
@@ -373,6 +379,50 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             <strong>Chief Complaint:</strong> {criticalCase.chiefComplaint}
           </Typography>
+
+          {/* Acknowledge Button */}
+          {!criticalCase.acknowledgedAt && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={async () => {
+                  try {
+                    await ticketService.acknowledgeTicket(criticalCase.id);
+                    // Refresh the data
+                    refetch();
+                  } catch (error) {
+                    console.error('Failed to acknowledge ticket:', error);
+                  }
+                }}
+                sx={{
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: '#45a049',
+                  },
+                }}
+              >
+                Acknowledge Case
+              </Button>
+            </Box>
+          )}
+
+          {/* Acknowledgment Status */}
+          {criticalCase.acknowledgedAt && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Chip
+                label={`Acknowledged by ${criticalCase.acknowledgedBy?.firstName} ${criticalCase.acknowledgedBy?.lastName} at ${new Date(criticalCase.acknowledgedAt).toLocaleString()}`}
+                size="small"
+                sx={{
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  fontWeight: 500,
+                }}
+              />
+            </Box>
+          )}
         </CardContent>
       </Card>
     );
@@ -473,7 +523,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
         {stemiStrokeCases.length > 0 && (
           <Box sx={{ mb: 3, p: 2, backgroundColor: alpha('#d32f2f', 0.05), borderRadius: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-              Active Critical Cases Summary
+              Unacknowledged Critical Cases Summary
             </Typography>
             <Stack direction="row" spacing={3} sx={{ mb: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -508,7 +558,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
         {/* Cases Display */}
         {stemiStrokeCases.length === 0 ? (
           <Alert severity="success" sx={{ borderRadius: 2 }}>
-            No active STEMI or Stroke cases requiring critical tracking.
+            No unacknowledged STEMI or Stroke cases requiring critical tracking.
           </Alert>
         ) : (
           <Stack spacing={2}>

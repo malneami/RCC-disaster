@@ -154,4 +154,14 @@ export class TicketsController {
       updateEMSStatusDto.notes
     );
   }
+
+  @Put(':id/acknowledge')
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.HOSPITAL_USER, UserRole.CATH_LAB_USER)
+  @ApiOperation({ summary: 'Acknowledge a critical case ticket' })
+  async acknowledge(
+    @Param('id') id: string,
+    @Request() req: any
+  ) {
+    return this.ticketsService.acknowledge(id, req.user.id, req.user.role);
+  }
 }

@@ -25,6 +25,7 @@ import { useCriticalCases, CriticalCase, CriticalCasesFilters } from '../../hook
 import { useAudioAlerts } from './useAudioAlerts';
 import { getEMSStatusInfo, getEMSStatusColor, EMSAssignmentStatus } from '../../utils/emsStatusUtils';
 import { useHospitals } from '../../hooks/useHospitals';
+import { ticketService } from '../../services/ticketService';
 
 interface GlobalCriticalCaseTrackerProps {
   selectedHospital?: string;
@@ -57,12 +58,19 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
       return false;
     }
     
+    // Exclude acknowledged cases
+    if (case_.acknowledgedAt
+
+    ) {
+      return false;
+    }
+    
     // Exclude cases older than 24 hours
     const creationTime = new Date(case_.createdAt).getTime();
     const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     const isWithin24Hours = (Date.now() - creationTime) < twentyFourHours;
     
-    return isWithin24Hours;
+    return isWithin24Hours && case_.acknowledgedAt === null;
   }) || [];
 
   // Check for critical time warnings and play alerts
@@ -403,6 +411,50 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
           <Typography variant="body2" sx={{ mb: 2, color: '#b0b0b0' }}>
             <strong style={{ color: '#ffffff' }}>Chief Complaint:</strong> {criticalCase.chiefComplaint}
           </Typography>
+
+          {/* Acknowledge Button */}
+          {!criticalCase.acknowledgedAt && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={async () => {
+                  try {
+                    await ticketService.acknowledgeTicket(criticalCase.id);
+                    // Refresh the data
+                    refetch();
+                  } catch (error) {
+                    console.error('Failed to acknowledge ticket:', error);
+                  }
+                }}
+                sx={{
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: '#45a049',
+                  },
+                }}
+              >
+                Acknowledge Case
+              </Button>
+            </Box>
+          )}
+
+          {/* Acknowledgment Status */}
+          {criticalCase.acknowledgedAt && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Chip
+                label={`Acknowledged by ${criticalCase.acknowledgedBy?.firstName} ${criticalCase.acknowledgedBy?.lastName} at ${new Date(criticalCase.acknowledgedAt).toLocaleString()}`}
+                size="small"
+                sx={{
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  fontWeight: 500,
+                }}
+              />
+            </Box>
+          )}
         </CardContent>
       </Card>
     );
@@ -521,7 +573,7 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
         {filteredCases.length > 0 && (
           <Box sx={{ mb: 3, p: 2, backgroundColor: alpha('#d32f2f', 0.1), borderRadius: 2, border: '1px solid rgba(211, 47, 47, 0.2)' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#ffffff' }}>
-              Active Critical Cases Summary
+              Unacknowledged Critical Cases Summary
               {selectedHospital !== 'all' && (
                 <Typography component="span" variant="body2" sx={{ ml: 1, color: '#b0b0b0' }}>
                   (Filtered by: {hospitals?.find((h: any) => h.id === selectedHospital)?.name || 'Unknown Hospital'})
@@ -544,7 +596,7 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
             </Stack>
             <Stack direction="row" spacing={3}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Chip label="TOTAL ACTIVE" size="small" sx={{ backgroundColor: '#d32f2f', color: 'white', mr: 1 }} />
+                <Chip label="TOTAL UNACKNOWLEDGED" size="small" sx={{ backgroundColor: '#d32f2f', color: 'white', mr: 1 }} />
                 <Typography variant="body2" sx={{ color: '#ffffff' }}>
                   {filteredCases.length}
                 </Typography>
@@ -580,8 +632,8 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
             }}
           >
             {selectedHospital === 'all' 
-              ? 'No active STEMI or Stroke cases requiring critical tracking across all hospitals.'
-              : `No active STEMI or Stroke cases for the selected hospital.`
+              ? 'No unacknowledged STEMI or Stroke cases requiring critical tracking across all hospitals.'
+              : `No unacknowledged STEMI or Stroke cases for the selected hospital.`
             }
           </Alert>
         ) : (
