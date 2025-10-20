@@ -60,7 +60,8 @@ export interface PatientInfo {
   nationalId?: string;
   mrn?: string;
   admissionDate: string;
-  modeOfArrival?: string;
+  originHospital?: string;
+  destinationHospital?: string;
 }
 
 export interface CaseDetails {
@@ -76,6 +77,7 @@ export interface UnifiedCaseCardProps {
   caseType: 'stroke' | 'trauma' | 'stemi';
   status: string;
   severity?: string;
+  pathway?: string;
   
   // Performance Overview
   targetsMet?: string; // e.g., "3/3", "0/1"
@@ -112,6 +114,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
   caseType,
   status,
   severity,
+  pathway,
   targetsMet,
   overallScore,
   performanceIndicators = [],
@@ -349,6 +352,26 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                 }}
               />
             )}
+            {pathway && (
+              <Chip 
+                label={pathway} 
+                size="small" 
+                variant="filled"
+                sx={{ 
+                  textTransform: 'capitalize',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  maxWidth: { xs: '120px', sm: 'none' },
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  },
+                }}
+              />
+            )}
             {actions.length > 0 && (
               <IconButton
                 size="small"
@@ -403,7 +426,12 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <Typography variant="body2" color="text.secondary">
-                Mode of Arrival: {patient.modeOfArrival || 'N/A'}
+                Origin Hospital: {patient.originHospital || 'N/A'}
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="body2" color="text.secondary">
+                Destination Hospital: {patient.destinationHospital || 'N/A'}
               </Typography>
             </Grid>
             {patient.nationalId && (

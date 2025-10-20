@@ -18,9 +18,6 @@ import { EmsAssignmentsModule } from '../ems-assignments/ems-assignments.module'
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET') || 'your-super-secret-jwt-key-for-development-only',
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION', '1h'),
-        },
       }),
       inject: [ConfigService],
     }),

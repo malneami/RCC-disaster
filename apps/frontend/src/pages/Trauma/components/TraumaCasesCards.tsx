@@ -172,7 +172,8 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       nationalId: traumaCase.patient?.nationalId,
       mrn: traumaCase.patient?.mrn,
       admissionDate: traumaCase.arrivalDateTime,
-      modeOfArrival: traumaCase.modeOfArrival,
+      originHospital: traumaCase.originHospital?.name || 'N/A',
+      destinationHospital: traumaCase.destinationHospital?.name || 'N/A',
     };
 
     // Calculate targets met based on trauma-specific metrics
@@ -309,6 +310,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       caseType: 'trauma' as const,
       status: traumaCase.edDisposition || 'UNKNOWN',
       severity: getInjurySeverity(traumaCase),
+      pathway: traumaCase.ticket?.pathway,
       targetsMet,
       performanceIndicators,
       timeMetrics,

@@ -68,7 +68,8 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
       nationalId: stemiCase.patient?.nationalId,
       mrn: stemiCase.patient?.nationalId,
       admissionDate: stemiCase.createdAt,
-      modeOfArrival: stemiCase.modeOfArrival,
+      originHospital: stemiCase.originHospital?.name || 'N/A',
+      destinationHospital: stemiCase.destinationHospital?.name || 'N/A',
     };
 
     // Calculate targets met
@@ -287,6 +288,7 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
       caseId: stemiCase.id,
       caseType: 'stemi' as const,
       status: stemiCase.currentStatus,
+      pathway: stemiCase.ticket?.pathway,
       targetsMet,
       overallScore,
       performanceIndicators,

@@ -157,7 +157,8 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       nationalId: strokeCase.patient?.nationalId,
       mrn: strokeCase.patient?.mrn,
       admissionDate: strokeCase.createdAt,
-      modeOfArrival: strokeCase.modeOfArrival,
+      originHospital: strokeCase.originHospital?.name || 'N/A',
+      destinationHospital: strokeCase.destinationHospital?.name || 'N/A',
     };
 
     // Calculate targets met
@@ -312,6 +313,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       caseType: 'stroke' as const,
       status: strokeCase.currentStatus,
       severity: strokeCase.strokeSeverity,
+      pathway: strokeCase.ticket?.pathway,
       targetsMet,
       performanceIndicators,
       timeMetrics,

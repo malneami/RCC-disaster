@@ -73,7 +73,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION', '7d'),
+      expiresIn: 0,
     });
 
     // Update user with refresh token and last login
@@ -135,8 +135,7 @@ export class AuthService {
 
     const newAccessToken = this.jwtService.sign(payload);
     const newRefreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION', '7d'),
+      secret: this.configService.get('JWT_REFRESH_SECRET')
     });
 
     await this.usersService.updateRefreshToken(userId, newRefreshToken);
