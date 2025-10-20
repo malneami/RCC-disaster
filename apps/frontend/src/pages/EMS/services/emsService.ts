@@ -257,19 +257,28 @@ class EMSService {
   }
 
   // EMS Drivers
-  async getEMSDrivers(): Promise<any[]> {
+  async getEMSDrivers(params?: { page?: number; pageSize?: number; search?: string }): Promise<{ data: any[]; total: number; page: number; pageSize: number; }> {
+    const { page = 1, pageSize = 10, search } = params || {};
     try {
-      const response = await apiClient.get(`${this.baseUrl}/drivers`);
-      return response.data?.data || [];
+      const response = await apiClient.get(`${this.baseUrl}/drivers`, { params: { page, limit: pageSize, search } });
+      const r = response.data || {};
+      // Handle backend response format: {data: [...], total: 4, page: 1, pages: 1, limit: 10}
+      const data = r.data || [];
+      const total = r.total || 0;
+      const currentPage = r.page || page;
+      // Use frontend's pageSize instead of backend's limit to prevent override
+      const currentPageSize = pageSize;
+      return { data, total, page: currentPage, pageSize: currentPageSize };
     } catch (error) {
       console.error('Failed to fetch EMS drivers:', error);
-      // Return mock data for development
-      return [
+      // Return mock paginated data for development
+      const data = [
         { id: '1', firstName: 'Ahmed', lastName: 'Al-Rashid', email: 'driver1@jazan-ems.com', phoneNumber: '+966501234567', status: 'ACTIVE' },
         { id: '2', firstName: 'Fatima', lastName: 'Al-Zahra', email: 'driver2@jazan-ems.com', phoneNumber: '+966501234568', status: 'ACTIVE' },
         { id: '3', firstName: 'Mohammed', lastName: 'Al-Sabah', email: 'driver3@jazan-ems.com', phoneNumber: '+966501234569', status: 'ACTIVE' },
         { id: '4', firstName: 'Sara', lastName: 'Al-Mansouri', email: 'driver4@jazan-ems.com', phoneNumber: '+966501234570', status: 'ACTIVE' },
       ];
+      return { data, total: data.length, page, pageSize };
     }
   }
 

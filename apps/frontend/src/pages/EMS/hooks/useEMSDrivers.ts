@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useState } from 'react';
 import { emsService } from '../services/emsService';
 
 export interface EMSDriver {
@@ -13,10 +14,13 @@ export interface EMSDriver {
 
 export const useEMSDrivers = () => {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState<string | undefined>(undefined);
   
   const query = useQuery(
-    'ems-drivers',
-    () => emsService.getEMSDrivers(),
+    ['ems-drivers', page, pageSize, search],
+    () => emsService.getEMSDrivers({ page, pageSize, search }),
     {
       refetchInterval: 300000, // Refetch every 5 minutes
     }
@@ -56,9 +60,16 @@ export const useEMSDrivers = () => {
   );
 
   return {
-    drivers: query.data || [],
+    drivers: query.data?.data || [],
+    total: query.data?.total || 0,
+    page: query.data?.page || page,
+    pageSize: query.data?.pageSize || pageSize,
     isLoading: query.isLoading,
     error: query.error,
+    setPage,
+    setPageSize,
+    search,
+    setSearch,
     createDriver: createDriverMutation.mutateAsync,
     updateDriver: updateDriverMutation.mutateAsync,
     deleteDriver: deleteDriverMutation.mutateAsync,

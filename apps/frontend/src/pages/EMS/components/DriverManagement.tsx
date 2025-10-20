@@ -5,6 +5,7 @@ import {
   CardContent,
   Typography,
   Grid,
+  TablePagination,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -21,7 +22,12 @@ import EmptyState from '../../../components/Common/EmptyState';
 
 const DriverManagement: React.FC = () => {
   const { 
-    drivers, 
+    drivers,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
     isLoading, 
     error, 
     createDriver, 
@@ -117,7 +123,7 @@ const DriverManagement: React.FC = () => {
 
   // Calculate statistics
   const stats = {
-    total: drivers?.length || 0,
+    total: total || drivers?.length || 0,
     active: drivers?.filter(d => d.status === 'ACTIVE').length || 0,
     inactive: drivers?.filter(d => d.status === 'INACTIVE').length || 0,
   };
@@ -230,6 +236,17 @@ const DriverManagement: React.FC = () => {
             onDelete={deleteDriver}
             getStatusColor={getStatusColor}
           />
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            <TablePagination
+              component="div"
+              count={total}
+              page={(page - 1)}
+              onPageChange={(_e, newPage) => setPage(newPage + 1)}
+              rowsPerPage={pageSize}
+              onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); }}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+            />
+          </Box>
         </CardContent>
       </Card>
 
