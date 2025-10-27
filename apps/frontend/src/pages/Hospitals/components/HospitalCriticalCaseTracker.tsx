@@ -61,6 +61,33 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     return isWithin24Hours;
   }) || [];
 
+  // Filter for non-STEMI/STROKE cases with CRITICAL or EMERGENCY priority
+  const otherCriticalCases = criticalCases?.filter(case_ => {
+    // Must not be STEMI or Stroke pathway
+    if (case_.pathway === 'STEMI' || case_.pathway === 'STROKE') {
+      return false;
+    }
+    
+    // Must have CRITICAL or EMERGENCY priority
+    if (case_.priority !== 'CRITICAL' && case_.priority !== 'EMERGENCY') {
+      return false;
+    }
+    
+    // Exclude completed cases
+    if (case_.status === 'COMPLETED') {
+      return false;
+    }
+    
+    // Exclude acknowledged cases
+    if (case_.acknowledgedAt) {
+      return false;
+    }
+    
+    return true;
+  }) || [];
+
+  const allCriticalCases = [...stemiStrokeCases, ...otherCriticalCases];
+
   // Check for critical time warnings and play alerts
   useEffect(() => {
     if (stemiStrokeCases.length > 0) {
@@ -80,12 +107,22 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
   }, [stemiStrokeCases, playAlert]);
 
   const CriticalCaseCard = ({ criticalCase }: { criticalCase: any }) => {
+    // Determine if this case should show a timer (STEMI or STROKE)
+    const showTimer = criticalCase.pathway === 'STEMI' || criticalCase.pathway === 'STROKE';
+    
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
     const [progressPercentage, setProgressPercentage] = useState<number>(0);
     const [isCritical, setIsCritical] = useState<boolean>(false);
 
-    // Calculate time remaining and progress
+    // Calculate time remaining and progress (only for STEMI/STROKE)
     useEffect(() => {
+      if (!showTimer) {
+        setTimeRemaining(0);
+        setProgressPercentage(0);
+        setIsCritical(false);
+        return;
+      }
+
       const calculateTime = () => {
         // Don't run countdown if ticket is completed
         if (criticalCase.status === 'COMPLETED') {
@@ -125,7 +162,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
       const interval = setInterval(calculateTime, 1000); // Update every second
 
       return () => clearInterval(interval);
-    }, [criticalCase.createdAt, criticalCase.pathway, criticalCase.status]);
+    }, [showTimer, criticalCase.createdAt, criticalCase.pathway, criticalCase.status]);
 
     const formatTime = (milliseconds: number) => {
       const totalSeconds = Math.floor(milliseconds / 1000);
@@ -255,50 +292,52 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
             </Box>
           </Box>
 
-          {/* Time Remaining */}
+          {/* Route Information */}
           <Box sx={{ mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-evenly' }}>
-              {/* Left side - Time info */}
-              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <FontAwesomeIcon 
-                    icon={faClock} 
-                    style={{ 
-                      color: isCritical ? '#d32f2f' : '#666', 
-                      marginRight: '8px',
-                      fontSize: '14px'
-                    }} 
-                  />
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 600,
-                      color: isCritical ? '#d32f2f' : 'inherit'
-                    }}
-                  >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: showTimer ? 'space-evenly' : 'center' }}>
+              {/* Left side - Time info (only for STEMI/STROKE) */}
+              {showTimer && (
+                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <FontAwesomeIcon 
+                      icon={faClock} 
+                      style={{ 
+                        color: isCritical ? '#d32f2f' : '#666', 
+                        marginRight: '8px',
+                        fontSize: '14px'
+                      }} 
+                    />
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        fontWeight: 600,
+                        color: isCritical ? '#d32f2f' : 'inherit'
+                      }}
+                    >
+                      {criticalCase.status === 'COMPLETED' 
+                        ? 'COMPLETED' 
+                        : timeRemaining > 0 
+                          ? formatTime(timeRemaining) 
+                          : 'TIME EXPIRED'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                      {criticalCase.status === 'COMPLETED' 
+                        ? '' 
+                        : timeRemaining > 0 
+                          ? 'remaining' 
+                          : ''}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
                     {criticalCase.status === 'COMPLETED' 
-                      ? 'COMPLETED' 
-                      : timeRemaining > 0 
-                        ? formatTime(timeRemaining) 
-                        : 'TIME EXPIRED'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                    {criticalCase.status === 'COMPLETED' 
-                      ? '' 
-                      : timeRemaining > 0 
-                        ? 'remaining' 
-                        : ''}
+                      ? 'Case completed successfully' 
+                      : `${Math.round(progressPercentage)}% of time limit elapsed`}
                   </Typography>
                 </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                  {criticalCase.status === 'COMPLETED' 
-                    ? 'Case completed successfully' 
-                    : `${Math.round(progressPercentage)}% of time limit elapsed`}
-                </Typography>
-              </Box>
+              )}
               
               {/* Middle - Route Information */}
-              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mx: 2 }}>
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mx: showTimer ? 2 : 0 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                     <FontAwesomeIcon 
@@ -334,44 +373,46 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
                 </Box>
               </Box>
               
-              {/* Right side - Circular Progress Bar */}
-              <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                  <CircularProgress
-                    variant="determinate"
-                    value={progressPercentage}
-                    size={80}
-                    thickness={6}
-                    sx={{
-                      color: getProgressColor(),
-                      '& .MuiCircularProgress-circle': {
-                        strokeLinecap: 'round',
-                      },
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      right: 0,
-                      position: 'absolute',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      component="div"
-                      color="text.secondary"
-                      sx={{ fontSize: '0.75rem', fontWeight: 600 }}
+              {/* Right side - Circular Progress Bar (only for STEMI/STROKE) */}
+              {showTimer && (
+                <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                    <CircularProgress
+                      variant="determinate"
+                      value={progressPercentage}
+                      size={80}
+                      thickness={6}
+                      sx={{
+                        color: getProgressColor(),
+                        '& .MuiCircularProgress-circle': {
+                          strokeLinecap: 'round',
+                        },
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        right: 0,
+                        position: 'absolute',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      {`${Math.round(progressPercentage)}%`}
-                    </Typography>
+                      <Typography
+                        variant="caption"
+                        component="div"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.75rem', fontWeight: 600 }}
+                      >
+                        {`${Math.round(progressPercentage)}%`}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
+              )}
             </Box>
           </Box>
 
@@ -520,7 +561,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
           </Box>
         </Box>
         {/* Summary Stats */}
-        {stemiStrokeCases.length > 0 && (
+        {allCriticalCases.length > 0 && (
           <Box sx={{ mb: 3, p: 2, backgroundColor: alpha('#d32f2f', 0.05), borderRadius: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
               Unacknowledged Critical Cases Summary
@@ -538,31 +579,37 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
                   Stroke: {stemiStrokeCases.filter(c => c.pathway === 'STROKE').length}
                 </Typography>
               </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: '#d32f2f', marginRight: '8px' }} />
+                <Typography variant="body2">
+                  Other Critical: {otherCriticalCases.length}
+                </Typography>
+              </Box>
             </Stack>
             <Stack direction="row" spacing={3}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Chip label="INCOMING" size="small" sx={{ backgroundColor: '#4caf50', color: 'white', mr: 1 }} />
                 <Typography variant="body2">
-                  {stemiStrokeCases.filter(c => c.originHospital?.id !== hospitalId).length}
+                  {allCriticalCases.filter(c => c.originHospital?.id !== hospitalId).length}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Chip label="OUTGOING" size="small" sx={{ backgroundColor: '#ff9800', color: 'white', mr: 1 }} />
                 <Typography variant="body2">
-                  {stemiStrokeCases.filter(c => c.originHospital?.id === hospitalId).length}
+                  {allCriticalCases.filter(c => c.originHospital?.id === hospitalId).length}
                 </Typography>
               </Box>
             </Stack>
           </Box>
         )}
         {/* Cases Display */}
-        {stemiStrokeCases.length === 0 ? (
+        {allCriticalCases.length === 0 ? (
           <Alert severity="success" sx={{ borderRadius: 2 }}>
-            No unacknowledged STEMI or Stroke cases requiring critical tracking.
+            No unacknowledged critical cases requiring tracking.
           </Alert>
         ) : (
           <Stack spacing={2}>
-            {stemiStrokeCases.map((case_) => (
+            {allCriticalCases.map((case_) => (
               <CriticalCaseCard
                 key={case_.id}
                 criticalCase={case_}

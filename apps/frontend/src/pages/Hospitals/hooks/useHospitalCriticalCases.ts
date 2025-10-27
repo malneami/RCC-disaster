@@ -68,7 +68,7 @@ export const useHospitalCriticalCases = (hospitalId: string) => {
         
         // Filter for STEMI and Stroke cases only
         const criticalCases = uniqueTickets.filter((ticket: any) => 
-          ticket.pathway === 'STEMI' || ticket.pathway === 'STROKE'
+          ticket.pathway === 'STEMI' || ticket.pathway === 'STROKE' || ticket.priority === 'CRITICAL' || ticket.priority === 'EMERGENCY'
         );
 
         // Sort by newest first (createdAt desc)

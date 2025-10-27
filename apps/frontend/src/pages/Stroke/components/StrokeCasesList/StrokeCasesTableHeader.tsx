@@ -23,7 +23,7 @@ const StrokeCasesTableHeader: React.FC = () => {
         </TableCell>
         <TableCell>
           <Typography variant="subtitle2" fontWeight="bold">
-            Status
+            Admission Time
           </Typography>
         </TableCell>
         <TableCell>
@@ -31,11 +31,7 @@ const StrokeCasesTableHeader: React.FC = () => {
             Hospital
           </Typography>
         </TableCell>
-        <TableCell>
-          <Typography variant="subtitle2" fontWeight="bold">
-            Created
-          </Typography>
-        </TableCell>
+        
         <TableCell align="center">
           <Tooltip title="Door to Physician ≤15min">
             <Typography variant="caption" fontWeight="bold">

@@ -340,6 +340,12 @@ export class DashboardService {
       // Transform KPI data to PathwayMetric format
       const metrics: PathwayMetric[] = [
         {
+          label: 'Door to Physician Target: ≤15 min',
+          value: strokeKpiData.averageTimings?.doorToPhysician ? `${strokeKpiData.averageTimings.doorToPhysician.toFixed(1)} min avg` : 'No data',
+          progress: strokeKpiData.kpiPerformance?.kpi1?.percentage || 0,
+          color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi1?.percentage, 90, false), // Higher percentage is better
+        },
+        {
           label: 'Door to CT Scan Target: ≤20 min',
           value: strokeKpiData.averageTimings?.doorToCtScan ? `${strokeKpiData.averageTimings.doorToCtScan.toFixed(1)} min avg` : 'No data',
           progress: strokeKpiData.kpiPerformance?.kpi2?.percentage || 0,
@@ -350,12 +356,6 @@ export class DashboardService {
           value: strokeKpiData.averageTimings?.doorToNeedle ? `${strokeKpiData.averageTimings.doorToNeedle.toFixed(1)} min avg` : 'No data',
           progress: strokeKpiData.kpiPerformance?.kpi3?.percentage || 0,
           color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi3?.percentage, 90, false), // Higher percentage is better
-        },
-        {
-          label: 'Door to Physician Target: ≤15 min',
-          value: strokeKpiData.averageTimings?.doorToPhysician ? `${strokeKpiData.averageTimings.doorToPhysician.toFixed(1)} min avg` : 'No data',
-          progress: strokeKpiData.kpiPerformance?.kpi1?.percentage || 0,
-          color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi1?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Stroke Unit Admission Target: ≥80%',
@@ -406,12 +406,6 @@ export class DashboardService {
       // Transform KPI data to PathwayMetric format
       const metrics: PathwayMetric[] = [
         {
-          label: 'Door-to-Balloon Target: ≤90 min',
-          value: stemiKpiData.averageDoorToBalloonTime ? `${stemiKpiData.averageDoorToBalloonTime} min avg` : 'No data',
-          progress: stemiKpiData.kpi2?.percentage || 0,
-          color: this.getKpiColor(stemiKpiData.kpi2?.percentage, 90, false), // Higher percentage is better
-        },
-        {
           label: 'First ECG Target: ≤10 min',
           value: stemiKpiData.kpi1?.percentage ? `${stemiKpiData.kpi1.percentage}% achieved` : 'No data',
           progress: stemiKpiData.kpi1?.percentage || 0,
@@ -424,11 +418,23 @@ export class DashboardService {
           color: this.getKpiColor(stemiKpiData.kpi3?.percentage, 90, false), // Higher percentage is better
         },
         {
+          label: 'Door In Door Out Target: ≤30 min',
+          value: stemiKpiData.kpi5?.percentage ? `${stemiKpiData.kpi5.percentage}% achieved` : 'No data',
+          progress: stemiKpiData.kpi5?.percentage || 0,
+          color: this.getKpiColor(stemiKpiData.kpi5?.percentage, 90, false), // Higher percentage is better
+        },
+        {
           label: 'RCC Activation Target: ≤15 min',
           value: stemiKpiData.kpi4?.percentage ? `${stemiKpiData.kpi4.percentage}% achieved` : 'No data',
           progress: stemiKpiData.kpi4?.percentage || 0,
           color: this.getKpiColor(stemiKpiData.kpi4?.percentage, 90, false), // Higher percentage is better
         },
+        {
+          label: 'Door-to-Balloon Target: ≤90 min',
+          value: stemiKpiData.averageDoorToBalloonTime ? `${stemiKpiData.averageDoorToBalloonTime} min avg` : 'No data',
+          progress: stemiKpiData.kpi2?.percentage || 0,
+          color: this.getKpiColor(stemiKpiData.kpi2?.percentage, 90, false), // Higher percentage is better
+        }
       ];
 
       return {

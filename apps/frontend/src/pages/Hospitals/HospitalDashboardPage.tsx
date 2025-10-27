@@ -29,7 +29,10 @@ import {
   Person as PatientIcon,
   Refresh as RefreshIcon,
   ArrowBack as ArrowBackIcon,
+  Fullscreen as FullscreenIcon,
+  FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material';
+import { useFullscreen } from '../../contexts/FullscreenContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { hospitalService, Hospital, CriticalCase, HospitalTicket } from '../../services/hospitalService';
@@ -41,6 +44,7 @@ import { UnifiedTicket } from './types/tickets';
 const HospitalDashboardPage: React.FC = () => {
   const { hospitalId } = useParams<{ hospitalId: string }>();
   const navigate = useNavigate();
+  const { isFullscreen, setIsFullscreen } = useFullscreen();
   const [hospital, setHospital] = useState<Hospital | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const [criticalCases, setCriticalCases] = useState<CriticalCase[]>([]);
@@ -66,6 +70,42 @@ const HospitalDashboardPage: React.FC = () => {
     }
   }, [hospitalId]);
 
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, [setIsFullscreen]);
+
+  const handleFullscreenToggle = async () => {
+    try {
+      if (!isFullscreen) {
+        const element = document.documentElement;
+        if (element.requestFullscreen) {
+          await element.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling fullscreen:', error);
+    }
+  };
+
   const loadHospitalData = async () => {
     try {
       setLoading(true);
@@ -85,13 +125,6 @@ const HospitalDashboardPage: React.FC = () => {
       setRelatedTickets([]); // Empty since transferTickets now includes hospital tickets
       setTransferTickets(Array.isArray(transferTicketsData) ? transferTicketsData : []);
       
-      // Debug logging
-      console.log('Hospital Dashboard Data Loaded:', {
-        criticalCases: criticalCasesData?.length || 0,
-        hospitalTickets: 0, // Now included in transferTickets
-        transferTickets: transferTicketsData?.length || 0,
-        hospital: hospitalData?.name,
-      });
     } catch (err) {
       setError('Failed to load hospital data');
       console.error('Error loading hospital data:', err);
@@ -206,9 +239,9 @@ const HospitalDashboardPage: React.FC = () => {
         <title>{hospital.name} - Hospital Dashboard - RCC Healthcare</title>
       </Helmet>
 
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: isFullscreen ? 0 : 3 }}>
         {/* Breadcrumbs */}
-        <Breadcrumbs sx={{ mb: 3 }}>
+        <Breadcrumbs sx={{ mb: 3, display: isFullscreen ? 'none' : 'flex' }}>
           <Link
             color="inherit"
             href="/hospitals"
@@ -254,11 +287,18 @@ const HospitalDashboardPage: React.FC = () => {
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Back to Hospitals">
-              <IconButton onClick={() => navigate('/hospitals')}>
-                <ArrowBackIcon />
+            <Tooltip title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}>
+              <IconButton onClick={handleFullscreenToggle}>
+                {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
               </IconButton>
             </Tooltip>
+            {!isFullscreen && (
+              <Tooltip title="Back to Hospitals">
+                <IconButton onClick={() => navigate('/hospitals')}>
+                  <ArrowBackIcon />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         </Box>
 
@@ -390,59 +430,6 @@ const HospitalDashboardPage: React.FC = () => {
               <Box sx={{ mb: 4 }}>
                 <HospitalCriticalCaseTracker hospitalId={hospitalId!} />
               </Box>
-
-              {/* Traditional Critical Cases List */}
-              <Typography variant="h6" gutterBottom>
-                All Critical Cases ({criticalCases.length})
-              </Typography>
-
-              {criticalCases.length === 0 ? (
-                <Alert severity="success">No active critical cases at this time.</Alert>
-              ) : (
-                <List>
-                  {criticalCases.map((criticalCase, index) => (
-                    <React.Fragment key={criticalCase.id}>
-                      <ListItem>
-                        <ListItemIcon>{getCaseTypeIcon(criticalCase.caseType)}</ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                              <Typography variant="subtitle1">
-                                {criticalCase.patientName}
-                              </Typography>
-                              <Box display="flex" gap={1}>
-                                <Chip label={criticalCase.caseType} size="small" color="primary" />
-                                <Chip
-                                  label={criticalCase.severity}
-                                  size="small"
-                                  color={getSeverityColor(criticalCase.severity) as any}
-                                />
-                                <Chip
-                                  label={criticalCase.status}
-                                  size="small"
-                                  color={getStatusColor(criticalCase.status) as any}
-                                />
-                              </Box>
-                            </Box>
-                          }
-                          secondary={
-                            <Box mt={1}>
-                              <Typography variant="body2" color="text.secondary">
-                                {criticalCase.description}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" mt={1}>
-                                Started: {new Date(criticalCase.startTime).toLocaleString()} | Last
-                                Update: {new Date(criticalCase.lastUpdate).toLocaleString()}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      {index < criticalCases.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                </List>
-              )}
             </Box>
           )}
 

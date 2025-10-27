@@ -257,6 +257,10 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
                         <TableCell><strong>Presenting Symptoms</strong></TableCell>
                         <TableCell>{stemiCase.presentingSymptoms || 'N/A'}</TableCell>
                       </TableRow>
+                      <TableRow>
+                        <TableCell><strong>Created By</strong></TableCell>
+                        <TableCell>{stemiCase.createdBy?.firstName} {stemiCase.createdBy?.lastName} ({stemiCase.createdBy?.email})</TableCell>
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -352,6 +356,10 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
                       <TableRow>
                         <TableCell><strong>Balloon Inflation</strong></TableCell>
                         <TableCell>{stemiCase.balloonInflationTime ? formatDate(stemiCase.balloonInflationTime) : 'N/A'}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell><strong>Door Out Time</strong></TableCell>
+                        <TableCell>{stemiCase.doorOutTime ? formatDate(stemiCase.doorOutTime) : 'N/A'}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>

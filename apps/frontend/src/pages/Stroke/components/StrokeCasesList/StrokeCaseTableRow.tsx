@@ -258,24 +258,16 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
       
       
       <TableCell>
-        <Chip
-          label={StrokeService.getStrokeStatusLabel(strokeCase.currentStatus)}
-          size="small"
-          color={getStatusColor(strokeCase.currentStatus) as any}
-        />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FontAwesomeIcon icon={faClock} style={{ color: '#1976d2', fontSize: '14px' }} />
+          {formatDateTime(strokeCase.dateOfAdmission)}
+        </Box>
       </TableCell>
       
       <TableCell>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <FontAwesomeIcon icon={faHospital} style={{ color: '#1976d2', fontSize: '14px' }} />
           {strokeCase.originHospital?.name || 'N/A'}
-        </Box>
-      </TableCell>
-      
-      <TableCell>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FontAwesomeIcon icon={faClock} style={{ color: '#1976d2', fontSize: '14px' }} />
-          {formatDateTime(strokeCase.createdAt)}
         </Box>
       </TableCell>
       

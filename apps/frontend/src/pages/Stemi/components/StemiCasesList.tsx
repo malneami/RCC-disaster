@@ -418,7 +418,7 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {formatDate(case_.createdAt)}
+                          {formatDate(case_.pathwayStarted)}
                         </Typography>
                       </TableCell>
                       <TableCell>

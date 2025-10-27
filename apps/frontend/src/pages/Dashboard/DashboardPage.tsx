@@ -200,7 +200,7 @@ const DashboardPage: React.FC = () => {
       bgColor: alpha('#ff5722', 0.1),
     },
     {
-      title: 'Completed Today',
+      title: 'Completed Cases',
       value: dashboardMetrics?.completedToday?.toString() || '0',
       subtitle: 'Successfully transferred',
       icon: <FontAwesomeIcon icon={faCheckCircle} />,
