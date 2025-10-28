@@ -94,13 +94,25 @@ export class CaseNotesController {
    * Get case notes for a specific case
    */
   @Get('case/:caseType/:caseId')
+  @UseGuards(JwtAuthGuard)
   async getCaseNotes(
     @Param('caseType') caseType: CaseType,
     @Param('caseId') caseId: string,
     @Request() req: any,
   ) {
-    const userId = req.user.id;
-    return this.caseNotesService.getCaseNotes(caseType, caseId, userId);
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new Error('User ID not found in request');
+      }
+      console.log(`[Case Notes Controller] Getting case notes for caseType: ${caseType}, caseId: ${caseId}, userId: ${userId}`);
+      const result = await this.caseNotesService.getCaseNotes(caseType, caseId, userId);
+      console.log(`[Case Notes Controller] Found ${result.length} case notes`);
+      return result;
+    } catch (error) {
+      console.error('[Case Notes Controller] Error getting case notes:', error);
+      throw error;
+    }
   }
 
   /**

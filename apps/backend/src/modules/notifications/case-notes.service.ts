@@ -216,49 +216,73 @@ export class CaseNotesService {
 
   /**
    * Get case notes for a specific case
+   * Returns all case notes for the case, not just those where the user is a recipient
    */
   async getCaseNotes(caseType: CaseType, caseId: string, userId: string) {
-    const caseNotes = await this.prisma.caseNote.findMany({
-      where: {
-        caseType,
-        caseId,
-        recipients: {
-          some: { userId },
+    try {
+      const caseNotes = await this.prisma.caseNote.findMany({
+        where: {
+          caseType,
+          caseId,
         },
-      },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+        select: {
+          id: true,
+          content: true,
+          priority: true,
+          caseType: true,
+          caseId: true,
+          ticketId: true,
+          patientId: true,
+          patientName: true,
+          notifyTeam: true,
+          metadata: true,
+          createdAt: true,
+          updatedAt: true,
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          recipients: {
+            select: {
+              id: true,
+              userId: true,
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+              isRead: true,
+              readAt: true,
+              deliveryStatus: true,
+              deliveryMethod: true,
+            },
+          },
+          patient: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              age: true,
+              gender: true,
+            },
           },
         },
-        recipients: {
-          where: { userId },
-          select: {
-            id: true,
-            isRead: true,
-            readAt: true,
-            deliveryStatus: true,
-            deliveryMethod: true,
-          },
-        },
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            age: true,
-            gender: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      });
 
-    return caseNotes;
+      this.logger.log(`Found ${caseNotes.length} case notes for case ${caseId}`);
+      return caseNotes;
+    } catch (error) {
+      this.logger.error(`Error getting case notes: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
   }
 
   /**

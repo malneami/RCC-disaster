@@ -3,7 +3,7 @@
  * Read-only view of trauma case details
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -24,9 +24,19 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Avatar,
+  Stack,
+  CircularProgress,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComment } from '@fortawesome/free-solid-svg-icons';
+import {
+  faComment,
+  faCheckCircle,
+  faInfoCircle,
+  faExclamationTriangle,
+} from '@fortawesome/free-solid-svg-icons';
 import {
   Person,
   LocalHospital,
@@ -38,7 +48,7 @@ import {
 
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
-import { notificationService } from '../../../services/notificationService';
+import { notificationService, CaseNote } from '../../../services/notificationService';
 
 interface ViewTraumaCaseDialogProps {
   open: boolean;
@@ -51,7 +61,30 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
   onClose,
   traumaCase,
 }) => {
+  const theme = useTheme();
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
+  const [caseNotes, setCaseNotes] = useState<CaseNote[]>([]);
+  const [loadingCaseNotes, setLoadingCaseNotes] = useState(false);
+
+  useEffect(() => {
+    if (open && traumaCase) {
+      loadCaseNotes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, traumaCase]);
+
+  const loadCaseNotes = async () => {
+    if (!traumaCase) return;
+    try {
+      setLoadingCaseNotes(true);
+      const notes = await notificationService.getCaseNotes('TRAUMA', traumaCase.id);
+      setCaseNotes(notes);
+    } catch (error) {
+      console.error('Error loading case notes:', error);
+    } finally {
+      setLoadingCaseNotes(false);
+    }
+  };
 
   if (!traumaCase) return null;
 
@@ -63,10 +96,10 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
     try {
       await notificationService.createCaseNote(data);
       setShowCaseNoteModal(false);
-      // You could add a success notification here
+      // Reload case notes after creating a new one
+      await loadCaseNotes();
     } catch (error) {
       console.error('Error creating case note:', error);
-      // You could add an error notification here
     }
   };
 
@@ -500,14 +533,90 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
             </Card>
           </Grid>
 
-          {/* Quick Case Note Section */}
+          {/* Case Notes Section */}
           <Grid item xs={12}>
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={2}>
                   <FontAwesomeIcon icon={faComment} />
-                  <Typography variant="h6">Quick Case Note</Typography>
+                  <Typography variant="h6">Case Notes</Typography>
                 </Box>
+                
+                {/* Existing Case Notes */}
+                {loadingCaseNotes ? (
+                  <Box display="flex" justifyContent="center" py={3}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : caseNotes.length > 0 ? (
+                  <Box sx={{ mb: 2, maxHeight: '400px', overflowY: 'auto' }}>
+                    <Stack spacing={2}>
+                      {caseNotes.map((note) => (
+                        <Box
+                          key={note.id}
+                          sx={{
+                            p: 2,
+                            borderRadius: 1,
+                            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                            borderLeft: `4px solid ${
+                              note.priority === 'HIGH' ? theme.palette.error.main :
+                              note.priority === 'MEDIUM' ? theme.palette.warning.main :
+                              theme.palette.success.main
+                            }`,
+                          }}
+                        >
+                          <Box display="flex" alignItems="flex-start" gap={2}>
+                            <Avatar 
+                              sx={{ 
+                                bgcolor: note.priority === 'HIGH' ? 'error.main' :
+                                        note.priority === 'MEDIUM' ? 'warning.main' :
+                                        'success.main',
+                                width: 32,
+                                height: 32
+                              }}
+                            >
+                              {note.priority === 'HIGH' && <FontAwesomeIcon icon={faExclamationTriangle} />}
+                              {note.priority === 'MEDIUM' && <FontAwesomeIcon icon={faInfoCircle} />}
+                              {note.priority === 'LOW' && <FontAwesomeIcon icon={faCheckCircle} />}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                <Typography variant="subtitle2" fontWeight={600}>
+                                  {note.createdBy.firstName} {note.createdBy.lastName}
+                                </Typography>
+                                <Chip 
+                                  label={note.priority} 
+                                  size="small" 
+                                  color={
+                                    note.priority === 'HIGH' ? 'error' :
+                                    note.priority === 'MEDIUM' ? 'warning' :
+                                    'success'
+                                  }
+                                  sx={{ height: 20, fontSize: '0.7rem' }}
+                                />
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                                  {new Date(note.createdAt).toLocaleString()}
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" color="text.secondary">
+                                {note.content}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                ) : (
+                  <Box py={2} textAlign="center">
+                    <Typography variant="body2" color="text.secondary">
+                      No case notes yet. Click below to add one.
+                    </Typography>
+                  </Box>
+                )}
+                
+                <Divider sx={{ my: 2 }} />
+                
+                {/* Add Case Note Button */}
                 <Button 
                   onClick={handleAddCaseNote} 
                   variant="outlined" 
