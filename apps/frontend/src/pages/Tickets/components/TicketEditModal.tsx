@@ -284,7 +284,7 @@ const MedicalInfoStep: React.FC<{
                 onChange={(e) => handleCheckboxChange('isEmergency', e.target.checked)}
               />
             }
-            label="Emergency Case"
+            label="Life Saving"
           />
         </Grid>
         

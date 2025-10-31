@@ -120,8 +120,12 @@ export interface UpdateHospitalCapacityDto {
   standardBedsAvailable?: number;
   nicuBeds?: number;
   nicuBedsAvailable?: number;
-  updateSource?: string;
-  updatedBy?: string;
+  // Services
+  hasStemiService?: boolean;
+  hasStrokeService?: boolean;
+  hasTraumaService?: boolean;
+  hasStrokeUnit?: boolean;
+  hasCardiologyCenter?: boolean;
 }
 
 export interface CriticalCase {

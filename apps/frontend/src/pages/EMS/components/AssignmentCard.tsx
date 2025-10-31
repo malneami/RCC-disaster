@@ -454,6 +454,14 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
                   }}
                 />
               )}
+              {assignment.ticket?.isEmergency && (
+                <Chip
+                  label="Life Saving"
+                  color="error"
+                  size="small"
+                  icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
+                />
+              )}
               {isCritical && (
                 <IconButton
                   size="small"

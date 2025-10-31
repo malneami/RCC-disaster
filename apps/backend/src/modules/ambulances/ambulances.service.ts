@@ -4,6 +4,7 @@ import { CreateAmbulanceDto } from './dto/create-ambulance.dto';
 import { UpdateAmbulanceDto } from './dto/update-ambulance.dto';
 import { AmbulanceFilterDto } from './dto/ambulance-filter.dto';
 import { Ambulance, Prisma, AmbulanceStatus, AmbulanceType, EquipmentStatus } from '@prisma/client';
+import axios from 'axios';
 
 interface AmbulanceFilters {
   status?: AmbulanceStatus;
@@ -82,6 +83,17 @@ export class AmbulancesService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async findAllGPS(filters: AmbulanceFilters = {}): Promise<any[]> {
+    const response = await axios.get('http://gps3.tawasolmap.com/new_api/', {
+      params: {
+        api_key: "7798AA377F99763506758557AC7741A1",
+        service: "objects",
+        imeis: "*"
+      }
+    });
+    return response.data;
   }
 
   async findById(id: string): Promise<Ambulance> {

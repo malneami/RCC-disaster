@@ -86,6 +86,16 @@ class EMSService {
     return response.data;
   }
 
+  async getAmbulancesGPS(): Promise<any> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/ambulances/gps`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch GPS data:', error);
+      throw error;
+    }
+  }
+
 
   // EMS Assignments
   async getEMSAssignments(filter?: AssignmentFilter): Promise<EMSAssignment[]> {

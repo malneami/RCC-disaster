@@ -192,7 +192,7 @@ const TicketList: React.FC<TicketListProps> = ({
                   )}
                   {ticket.isEmergency && (
                     <Chip
-                      label="EMERGENCY"
+                      label="Life Saving"
                       color="error"
                       size="small"
                       icon={<EmergencyIcon />}

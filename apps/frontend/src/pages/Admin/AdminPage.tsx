@@ -3,6 +3,7 @@ import { Typography, Box, Tabs, Tab } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
 import UserRegistrationRequests from './components/UserRegistrationRequests';
 import UserManagement from './components/UserManagement';
+import AmbulanceTrackingData from './components/AmbulanceTrackingData';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -55,6 +56,7 @@ const AdminPage: React.FC = () => {
           <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab label="Registration Requests" />
             <Tab label="User Management" />
+            <Tab label="Ambulance Tracking" />
           </Tabs>
         </Box>
 
@@ -64,6 +66,10 @@ const AdminPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={1}>
           <UserManagement />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={2}>
+          <AmbulanceTrackingData />
         </TabPanel>
       </Box>
     </>

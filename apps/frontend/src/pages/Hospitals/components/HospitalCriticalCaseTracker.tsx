@@ -283,6 +283,18 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
                   }}
                 />
               )}
+              {criticalCase.isEmergency && (
+                <Chip
+                  label="Life Saving"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#d32f2f',
+                    color: 'white',
+                    fontWeight: 600,
+                  }}
+                  icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
+                />
+              )}
               {isCritical && (
                 <FontAwesomeIcon 
                   icon={faExclamationTriangle} 

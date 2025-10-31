@@ -11,6 +11,7 @@ export interface CriticalCase {
   estimatedArrival?: string;
   emsAssignmentStatus?: string;
   acknowledgedAt?: string;
+  isEmergency?: boolean;
   acknowledgedBy?: {
     firstName: string;
     lastName: string;
@@ -80,6 +81,7 @@ export const useCriticalCases = (filters?: CriticalCasesFilters) => {
           estimatedArrival: ticket.estimatedArrival,
           emsAssignmentStatus: ticket.emsAssignmentStatus,
           acknowledgedAt: ticket.acknowledgedAt,
+          isEmergency: ticket.isEmergency,
           acknowledgedBy: ticket.acknowledgedBy,
           patient: ticket.patient,
           originHospital: ticket.originHospital,

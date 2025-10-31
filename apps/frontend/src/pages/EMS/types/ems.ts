@@ -49,6 +49,7 @@ export interface EMSAssignment {
     status: string;
     pathway?: string;
     createdAt?: string;
+    isEmergency?: boolean;
     patient?: {
       id: string;
       firstName: string;

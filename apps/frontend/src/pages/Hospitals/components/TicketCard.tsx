@@ -18,6 +18,7 @@ import {
   AccessTime as TimeIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
+  Warning as EmergencyIcon,
 } from '@mui/icons-material';
 import { UnifiedTicket } from '../types/tickets';
 import { getEMSStatusInfo, getEMSStatusColor } from '../../../utils/emsStatusUtils';
@@ -169,6 +170,14 @@ const TicketCard: React.FC<TicketCardProps> = ({
                 color: 'white',
                 fontWeight: 500,
               }}
+            />
+          )}
+          {ticket.isEmergency && (
+            <Chip
+              label="Life Saving"
+              color="error"
+              size="small"
+              icon={<EmergencyIcon />}
             />
           )}
           <Chip

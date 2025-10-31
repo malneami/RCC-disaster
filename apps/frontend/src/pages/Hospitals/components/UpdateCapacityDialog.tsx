@@ -34,7 +34,11 @@ const UpdateCapacityDialog: React.FC<UpdateCapacityDialogProps> = ({
         standardBedsAvailable: hospital.standardBedsAvailable,
         nicuBeds: hospital.nicuBeds,
         nicuBedsAvailable: hospital.nicuBedsAvailable,
-        updateSource: 'MANUAL',
+        hasStemiService: hospital.hasStemiService,
+        hasStrokeService: hospital.hasStrokeService,
+        hasTraumaService: hospital.hasTraumaService,
+        hasStrokeUnit: hospital.hasStrokeUnit,
+        hasCardiologyCenter: hospital.hasCardiologyCenter,
       });
     }
   }, [hospital]);
@@ -195,7 +199,7 @@ const UpdateCapacityDialog: React.FC<UpdateCapacityDialogProps> = ({
       key: 'nicuBeds',
       label: 'Total NICU Beds',
       type: 'number',
-      required: true,
+      required: false,
       gridSize: { xs: 12, sm: 6 },
       validation: (value) => value < 0 ? 'Cannot be negative' : null,
     },
@@ -203,7 +207,7 @@ const UpdateCapacityDialog: React.FC<UpdateCapacityDialogProps> = ({
       key: 'nicuBedsAvailable',
       label: 'Available NICU Beds',
       type: 'number',
-      required: true,
+      required: false,
       gridSize: { xs: 12, sm: 6 },
       validation: (value) => {
         if (value < 0) return 'Cannot be negative';
@@ -214,18 +218,41 @@ const UpdateCapacityDialog: React.FC<UpdateCapacityDialogProps> = ({
         return null;
       },
     },
-    // Update Source
+    // Hospital Services Section
     {
-      key: 'updateSource',
-      label: 'Update Source',
-      type: 'select',
-      required: true,
+      key: 'hasStemiService',
+      label: 'Has STEMI Service',
+      type: 'boolean',
+      required: false,
       gridSize: { xs: 12, sm: 6 },
-      options: [
-        { value: 'MANUAL', label: 'Manual' },
-        { value: 'API', label: 'API' },
-        { value: 'SCHEDULED_SYNC', label: 'Scheduled Sync' },
-      ],
+    },
+    {
+      key: 'hasStrokeService',
+      label: 'Has Stroke Service',
+      type: 'boolean',
+      required: false,
+      gridSize: { xs: 12, sm: 6 },
+    },
+    {
+      key: 'hasTraumaService',
+      label: 'Has Trauma Service',
+      type: 'boolean',
+      required: false,
+      gridSize: { xs: 12, sm: 6 },
+    },
+    {
+      key: 'hasStrokeUnit',
+      label: 'Has Stroke Unit',
+      type: 'boolean',
+      required: false,
+      gridSize: { xs: 12, sm: 6 },
+    },
+    {
+      key: 'hasCardiologyCenter',
+      label: 'Has Cardiology Center',
+      type: 'boolean',
+      required: false,
+      gridSize: { xs: 12, sm: 6 },
     },
   ];
 

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsNumber, IsString } from 'class-validator';
+import { IsOptional, IsNumber, IsBoolean } from 'class-validator';
 
 export class UpdateHospitalCapacityDto {
   // ICU Beds
@@ -78,14 +78,29 @@ export class UpdateHospitalCapacityDto {
   @IsNumber()
   nicuBedsAvailable?: number;
 
-  // Update source
-  @ApiProperty({ description: 'Update source (manual, api, scheduled)', required: false })
+  // Services
+  @ApiProperty({ description: 'Has STEMI service', required: false })
   @IsOptional()
-  @IsString()
-  updateSource?: string;
+  @IsBoolean()
+  hasStemiService?: boolean;
 
-  @ApiProperty({ description: 'Updated by user ID', required: false })
+  @ApiProperty({ description: 'Has Stroke service', required: false })
   @IsOptional()
-  @IsString()
-  updatedBy?: string;
+  @IsBoolean()
+  hasStrokeService?: boolean;
+
+  @ApiProperty({ description: 'Has Trauma service', required: false })
+  @IsOptional()
+  @IsBoolean()
+  hasTraumaService?: boolean;
+
+  @ApiProperty({ description: 'Has Stroke Unit', required: false })
+  @IsOptional()
+  @IsBoolean()
+  hasStrokeUnit?: boolean;
+
+  @ApiProperty({ description: 'Has Cardiology Center', required: false })
+  @IsOptional()
+  @IsBoolean()
+  hasCardiologyCenter?: boolean;
 }

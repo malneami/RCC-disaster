@@ -28,6 +28,7 @@ interface CriticalCase {
   status: string;
   emsAssignmentStatus?: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
   createdAt: string;
+  isEmergency?: boolean;
   patient: {
     firstName: string;
     lastName: string;
@@ -216,6 +217,18 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
                   color: 'white',
                   fontWeight: 500,
                 }}
+              />
+            )}
+            {criticalCase.isEmergency && (
+              <Chip
+                label="Life Saving"
+                size="small"
+                sx={{
+                  backgroundColor: '#d32f2f',
+                  color: 'white',
+                  fontWeight: 600,
+                }}
+                icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
               />
             )}
             {isCritical && (

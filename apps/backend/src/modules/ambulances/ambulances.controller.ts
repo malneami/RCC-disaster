@@ -45,6 +45,14 @@ export class AmbulancesController {
     return this.ambulancesService.findAll(filter);
   }
 
+  @Get('gps')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Get all ambulances with optional filtering' })
+  @ApiResponse({ status: 200, description: 'List of ambulances retrieved successfully' })
+  async findAllGPS(@Query() filter: AmbulanceFilterDto) {
+    return this.ambulancesService.findAllGPS(filter);
+  }
+
   @Get('available')
   @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
   @ApiOperation({ summary: 'Get all available ambulances' })
