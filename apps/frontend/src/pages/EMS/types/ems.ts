@@ -47,6 +47,8 @@ export interface EMSAssignment {
     ticketNumber: string;
     priority: string;
     status: string;
+    pathway?: string;
+    createdAt?: string;
     patient?: {
       id: string;
       firstName: string;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -26,6 +26,9 @@ import {
   faEdit,
   faTrash,
   faUserPlus,
+  faHeart,
+  faBrain,
+  faExclamationTriangle,
 } from '@fortawesome/free-solid-svg-icons';
 import { alpha } from '@mui/material/styles';
 import { EMSAssignment } from '../types/ems';
@@ -58,9 +61,9 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   onMarkArrived,
   onCompleteAssignment,
 }) => {
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [ambulanceDriverModalOpen, setAmbulanceDriverModalOpen] = React.useState(false);
-  const [loadingStates, setLoadingStates] = React.useState<{
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [ambulanceDriverModalOpen, setAmbulanceDriverModalOpen] = useState(false);
+  const [loadingStates, setLoadingStates] = useState<{
     startAssignment: boolean;
     markArrived: boolean;
     completeAssignment: boolean;
@@ -71,6 +74,12 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     completeAssignment: false,
     delete: false,
   });
+  
+  // Countdown timer state for STEMI/Stroke cases
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [progressPercentage, setProgressPercentage] = useState<number>(0);
+  const [isCritical, setIsCritical] = useState<boolean>(false);
+  
   const open = Boolean(anchorEl);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -133,6 +142,47 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     // Optionally refresh the assignment data or show a success message
     console.log('Ambulance and driver assigned successfully');
   };
+
+  // Calculate countdown timer for STEMI/Stroke cases
+  useEffect(() => {
+    const pathway = assignment.ticket?.pathway;
+    const createdAt = assignment.ticket?.createdAt;
+    
+    // Only show countdown for STEMI or STROKE cases
+    if (pathway !== 'STEMI' && pathway !== 'STROKE') {
+      setTimeRemaining(0);
+      setProgressPercentage(0);
+      setIsCritical(false);
+      return;
+    }
+
+    if (!createdAt) {
+      setTimeRemaining(0);
+      setProgressPercentage(0);
+      setIsCritical(false);
+      return;
+    }
+
+    const calculateTime = () => {
+      const creationTime = new Date(createdAt).getTime();
+      const elapsed = Date.now() - creationTime;
+      const timeLimit = pathway === 'STEMI' 
+        ? 120 * 60 * 1000  // 120 minutes
+        : 4.5 * 60 * 60 * 1000; // 4.5 hours
+      
+      const remaining = Math.max(0, timeLimit - elapsed);
+      const percentage = Math.min(100, (elapsed / timeLimit) * 100);
+      
+      setTimeRemaining(remaining);
+      setProgressPercentage(percentage);
+      setIsCritical(percentage >= 100);
+    };
+
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, [assignment.ticket?.pathway, assignment.ticket?.createdAt]);
 
   const getTimelineSteps = (): TimelineStep[] => {
     console.log(assignment.createdAt,"createdAt: timezoned", new Date(assignment.createdAt).toLocaleString());
@@ -209,6 +259,56 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   const statusInfo = getStatusInfo();
   const priorityInfo = getPriorityInfo();
   const timelineSteps = getTimelineSteps();
+
+  // Format time for countdown display
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
+
+  const getProgressColor = () => {
+    if (progressPercentage >= 100) return '#d32f2f'; // Red for missed deadline
+    if (progressPercentage >= 75) return '#ff9800'; // Orange for warning
+    return '#4caf50'; // Green for normal
+  };
+
+  const getPathwayIcon = () => {
+    const pathway = assignment.ticket?.pathway;
+    switch (pathway) {
+      case 'STEMI':
+        return faHeart;
+      case 'STROKE':
+        return faBrain;
+      case 'TRAUMA':
+        return faAmbulance;
+      default:
+        return faClock;
+    }
+  };
+
+  const getPathwayColor = () => {
+    const pathway = assignment.ticket?.pathway;
+    switch (pathway) {
+      case 'STEMI':
+        return '#f44336'; // Red
+      case 'STROKE':
+        return '#ff9800'; // Orange
+      case 'TRAUMA':
+        return '#2196f3'; // Blue
+      default:
+        return '#757575'; // Grey
+    }
+  };
 
   const getActionButtons = () => {
     const buttons: React.ReactElement[] = [];
@@ -324,7 +424,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
       <CardContent sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
               Assignment #{assignment.id.slice(-8).toUpperCase()}
             </Typography>
@@ -341,6 +441,30 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
                 size="small"
                 variant="outlined"
               />
+              {(assignment.ticket?.pathway === 'STEMI' || assignment.ticket?.pathway === 'STROKE') && (
+                <Chip
+                  icon={<FontAwesomeIcon icon={getPathwayIcon()} />}
+                  label={assignment.ticket.pathway}
+                  size="small"
+                  sx={{
+                    backgroundColor: getPathwayColor(),
+                    color: 'white',
+                    fontWeight: 600,
+                    alignItems: 'center',
+                  }}
+                />
+              )}
+              {isCritical && (
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: '#d32f2f',
+                    '&:hover': { bgcolor: alpha('#d32f2f', 0.1) }
+                  }}
+                >
+                  <FontAwesomeIcon icon={faExclamationTriangle} />
+                </IconButton>
+              )}
             </Box>
           </Box>
           
@@ -380,6 +504,98 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             </MenuItem>
           </Menu>
         </Box>
+
+        {/* Countdown Timer for STEMI/Stroke */}
+        {(assignment.ticket?.pathway === 'STEMI' || assignment.ticket?.pathway === 'STROKE') && timeRemaining > 0 && (
+          <Box 
+            sx={{ 
+              mb: 3,
+              p: 2,
+              borderRadius: 2,
+              border: isCritical ? '2px solid #d32f2f' : '1px solid rgba(0,0,0,0.1)',
+              backgroundColor: isCritical ? alpha('#d32f2f', 0.1) : alpha('#1976d2', 0.05),
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                  {/* Background ring */}
+                  <CircularProgress
+                    variant="determinate"
+                    value={100}
+                    size={60}
+                    thickness={5}
+                    sx={{
+                      color: 'rgba(0, 0, 0, 0.1)',
+                      position: 'absolute',
+                    }}
+                  />
+                  {/* Progress ring */}
+                  <CircularProgress
+                    variant="determinate"
+                    value={progressPercentage}
+                    size={60}
+                    thickness={5}
+                    sx={{
+                      color: getProgressColor(),
+                      '& .MuiCircularProgress-circle': {
+                        strokeLinecap: 'round',
+                      },
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      top: 0,
+                      left: 0,
+                      bottom: 0,
+                      right: 0,
+                      position: 'absolute',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      component="div"
+                      sx={{ fontSize: '0.7rem', fontWeight: 600 }}
+                    >
+                      {`${Math.round(progressPercentage)}%`}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                    <FontAwesomeIcon 
+                      icon={getPathwayIcon()} 
+                      style={{ 
+                        color: getPathwayColor(), 
+                        marginRight: 8,
+                        fontSize: '16px'
+                      }} 
+                    />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {assignment.ticket.pathway} Time Remaining
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: isCritical ? '#d32f2f' : 'text.primary'
+                    }}
+                  >
+                    {formatTime(timeRemaining)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {Math.round(progressPercentage)}% of time limit elapsed
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        )}
 
         {/* Assignment Details */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mb: 3 }}>
@@ -425,6 +641,16 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
               <Typography variant="body2">
                 <strong>Ticket:</strong> {assignment.ticket?.ticketNumber || 'N/A'}
               </Typography>
+              {assignment.ticket?.pathway && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar sx={{ width: 24, height: 24, bgcolor: getPathwayColor() }}>
+                    <FontAwesomeIcon icon={getPathwayIcon()} size="sm" />
+                  </Avatar>
+                  <Typography variant="body2">
+                    <strong>Case Type:</strong> {assignment.ticket.pathway}
+                  </Typography>
+                </Box>
+              )}
               <Typography variant="body2">
                 <strong>Patient:</strong> {assignment.ticket?.patient?.firstName} {assignment.ticket?.patient?.lastName}
               </Typography>

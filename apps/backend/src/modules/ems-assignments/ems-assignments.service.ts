@@ -240,6 +240,8 @@ export class EmsAssignmentsService {
           ticketNumber: true,
           priority: true,
           status: true,
+          pathway: true,
+          createdAt: true,
           patient: {
             select: {
               id: true,
@@ -290,6 +292,8 @@ export class EmsAssignmentsService {
           ticketNumber: true,
           priority: true,
           status: true,
+          pathway: true,
+          createdAt: true,
           patient: {
             select: {
               id: true,
