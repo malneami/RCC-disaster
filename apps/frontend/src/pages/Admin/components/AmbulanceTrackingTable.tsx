@@ -8,7 +8,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
   Typography,
   IconButton,
   Tooltip,
@@ -19,34 +18,33 @@ import {
   faMapMarkerAlt,
   faLocationArrow
 } from '@fortawesome/free-solid-svg-icons';
-import { Ambulance } from '../../EMS/types/ems';
+
+interface GPSAmbulance {
+  imei: string;
+  name?: string;
+  lat?: number;
+  lng?: number;
+  speed?: number;
+  direction?: number;
+  timestamp?: string;
+  [key: string]: any;
+}
 
 interface AmbulanceTrackingTableProps {
-  ambulances: Ambulance[];
-  onViewGPS: (ambulance: Ambulance) => void;
+  ambulances: GPSAmbulance[];
+  onViewGPS: (ambulance: GPSAmbulance) => void;
 }
 
 const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
   ambulances,
   onViewGPS,
 }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'AVAILABLE': return 'success';
-      case 'IN_USE': return 'warning';
-      case 'MAINTENANCE': return 'error';
-      case 'OUT_OF_SERVICE': return 'default';
-      default: return 'default';
-    }
+  const formatSpeed = (speed?: number) => {
+    return speed !== undefined ? `${speed} km/h` : 'N/A';
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'BASIC': return 'primary';
-      case 'ADVANCED': return 'secondary';
-      case 'CRITICAL_CARE': return 'error';
-      default: return 'default';
-    }
+  const formatDirection = (direction?: number) => {
+    return direction !== undefined ? `${direction}°` : 'N/A';
   };
 
   return (
@@ -54,19 +52,18 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Call Sign</TableCell>
-            <TableCell>Plate Number</TableCell>
-            <TableCell>Tracking IMEI</TableCell>
-            <TableCell>Type</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Driver</TableCell>
+            <TableCell>Vehicle</TableCell>
+            <TableCell>IMEI</TableCell>
             <TableCell>Location</TableCell>
+            <TableCell>Speed</TableCell>
+            <TableCell>Direction</TableCell>
+            <TableCell>Last Update</TableCell>
             <TableCell>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {ambulances.map((ambulance: Ambulance) => (
-            <TableRow key={ambulance.id} hover>
+          {ambulances.map((ambulance: GPSAmbulance, index: number) => (
+            <TableRow key={ambulance.imei || index} hover>
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <FontAwesomeIcon 
@@ -74,14 +71,9 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
                     style={{ marginRight: 8, color: '#1976d2' }} 
                   />
                   <Typography variant="body2" fontWeight={600}>
-                    {ambulance.callSign}
+                    {ambulance.name || ambulance.imei}
                   </Typography>
                 </Box>
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2">
-                  {ambulance.plateNumber}
-                </Typography>
               </TableCell>
               <TableCell>
                 <Typography 
@@ -92,36 +84,11 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
                     color: 'primary.main'
                   }}
                 >
-                  {ambulance.vehicleImei}
+                  {ambulance.imei}
                 </Typography>
               </TableCell>
               <TableCell>
-                <Chip
-                  label={ambulance.type}
-                  color={getTypeColor(ambulance.type) as any}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={ambulance.status}
-                  color={getStatusColor(ambulance.status) as any}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                {ambulance.driver ? (
-                  <Typography variant="body2">
-                    {ambulance.driver.firstName} {ambulance.driver.lastName}
-                  </Typography>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No Driver
-                  </Typography>
-                )}
-              </TableCell>
-              <TableCell>
-                {ambulance.currentLocationAddress ? (
+                {ambulance.lat && ambulance.lng ? (
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <FontAwesomeIcon 
                       icon={faMapMarkerAlt} 
@@ -130,19 +97,35 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
                     />
                     <Typography 
                       variant="body2" 
-                      sx={{ 
-                        maxWidth: 200, 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
+                      sx={{ fontFamily: 'monospace' }}
                     >
-                      {ambulance.currentLocationAddress}
+                      {ambulance.lat.toFixed(6)}, {ambulance.lng.toFixed(6)}
                     </Typography>
                   </Box>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    Unknown
+                    No location
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">
+                  {formatSpeed(ambulance.speed)}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">
+                  {formatDirection(ambulance.direction)}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                {ambulance.timestamp ? (
+                  <Typography variant="body2" color="text.secondary">
+                    {new Date(ambulance.timestamp).toLocaleString()}
+                  </Typography>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    N/A
                   </Typography>
                 )}
               </TableCell>

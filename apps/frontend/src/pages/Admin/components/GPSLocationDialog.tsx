@@ -14,14 +14,20 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faLocationArrow,
-  faTimes
+  faTimes,
+  faMapMarkerAlt,
 } from '@fortawesome/free-solid-svg-icons';
-import { Ambulance } from '../../EMS/types/ems';
+
+interface GPSAmbulance {
+  imei: string;
+  name?: string;
+  [key: string]: any;
+}
 
 interface GPSLocationDialogProps {
   open: boolean;
   onClose: () => void;
-  ambulance: Ambulance | null;
+  ambulance: GPSAmbulance | null;
   gpsData: any | null;
   loadingGPS: boolean;
   gpsError: string | null;
@@ -77,13 +83,10 @@ const GPSLocationDialog: React.FC<GPSLocationDialogProps> = ({
             </Typography>
             <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                <strong>Call Sign:</strong> {ambulance?.callSign}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                <strong>Plate Number:</strong> {ambulance?.plateNumber}
+                <strong>Name:</strong> {ambulance?.name || 'N/A'}
               </Typography>
               <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                <strong>IMEI:</strong> {ambulance?.vehicleImei}
+                <strong>IMEI:</strong> {ambulance?.imei}
               </Typography>
             </Box>
 
@@ -94,9 +97,29 @@ const GPSLocationDialog: React.FC<GPSLocationDialogProps> = ({
               <Typography variant="h6" sx={{ mb: 1 }}>
                 {typeof gpsData.lat === 'number' ? gpsData.lat.toFixed(6) : gpsData.lat}, {typeof gpsData.lng === 'number' ? gpsData.lng.toFixed(6) : gpsData.lng}
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ mb: 2 }}>
                 Real-time location from TawasolMap GPS
               </Typography>
+              {gpsData.lat && gpsData.lng && (
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={<FontAwesomeIcon icon={faMapMarkerAlt} />}
+                  onClick={() => {
+                    const url = `https://www.google.com/maps?q=${gpsData.lat},${gpsData.lng}`;
+                    window.open(url, '_blank');
+                  }}
+                  sx={{
+                    bgcolor: 'white',
+                    color: 'primary.main',
+                    '&:hover': {
+                      bgcolor: 'grey.100',
+                    },
+                  }}
+                >
+                  View on Google Maps
+                </Button>
+              )}
             </Box>
 
             {gpsData.speed !== undefined && (

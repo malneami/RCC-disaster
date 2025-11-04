@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -14,22 +14,53 @@ import {
   faAmbulance, 
   faSearch,
 } from '@fortawesome/free-solid-svg-icons';
-import { useAmbulances } from '../../EMS/hooks/useAmbulances';
-import { Ambulance } from '../../EMS/types/ems';
 import { emsService } from '../../EMS/services/emsService';
 import GPSLocationDialog from './GPSLocationDialog';
 import AmbulanceTrackingTable from './AmbulanceTrackingTable';
 
+interface GPSAmbulance {
+  imei: string;
+  name?: string;
+  [key: string]: any;
+}
+
 const AmbulanceTrackingData: React.FC = () => {
-  const { ambulances, isLoading, error } = useAmbulances();
+  const [ambulances, setAmbulances] = useState<GPSAmbulance[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [gpsDialogOpen, setGpsDialogOpen] = useState(false);
-  const [selectedAmbulance, setSelectedAmbulance] = useState<Ambulance | null>(null);
+  const [selectedAmbulance, setSelectedAmbulance] = useState<GPSAmbulance | null>(null);
   const [gpsData, setGpsData] = useState<any>(null);
   const [loadingGPS, setLoadingGPS] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
-  const handleViewGPS = async (ambulance: Ambulance) => {
+  useEffect(() => {
+    const fetchGPSData = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const allGPSData = await emsService.getAmbulancesGPS();
+        
+        // Extract array of GPS data from API response
+        if (allGPSData?.data && Array.isArray(allGPSData.data)) {
+          setAmbulances(allGPSData.data);
+        } else {
+          setError('Invalid GPS data format');
+        }
+      } catch (error: any) {
+        console.error('Failed to fetch GPS data:', error);
+        setError(error.response?.data?.message || 'Failed to fetch GPS data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGPSData();
+  }, []);
+
+  const handleViewGPS = async (ambulance: GPSAmbulance) => {
     setSelectedAmbulance(ambulance);
     setGpsDialogOpen(true);
     setLoadingGPS(true);
@@ -37,19 +68,8 @@ const AmbulanceTrackingData: React.FC = () => {
     setGpsData(null);
 
     try {
-      const allGPSData = await emsService.getAmbulancesGPS();
-      
-      // Find the GPS data for this specific ambulance by IMEI
-      if (allGPSData?.data && Array.isArray(allGPSData.data)) {
-        const ambulanceGPS = allGPSData.data.find((item: any) => item.imei === ambulance.vehicleImei);
-        if (ambulanceGPS) {
-          setGpsData(ambulanceGPS);
-        } else {
-          setGpsError('No GPS data found for this ambulance');
-        }
-      } else {
-        setGpsError('Invalid GPS data format');
-      }
+      // GPS data is already fetched, just use it
+      setGpsData(ambulance);
     } catch (error: any) {
       console.error('Failed to fetch GPS data:', error);
       setGpsError(error.response?.data?.message || 'Failed to fetch GPS location data');
@@ -66,16 +86,13 @@ const AmbulanceTrackingData: React.FC = () => {
   };
 
   const filteredAmbulances = useMemo(() => {
-    if (!ambulances) return [];
+    if (!ambulances || ambulances.length === 0) return [];
     
     const query = searchQuery.toLowerCase();
-    return ambulances.filter((ambulance: Ambulance) => {
+    return ambulances.filter((ambulance: GPSAmbulance) => {
       return (
-        ambulance.callSign.toLowerCase().includes(query) ||
-        ambulance.plateNumber.toLowerCase().includes(query) ||
-        ambulance.vehicleImei.toLowerCase().includes(query) ||
-        ambulance.driver?.firstName.toLowerCase().includes(query) ||
-        ambulance.driver?.lastName.toLowerCase().includes(query)
+        ambulance.imei?.toLowerCase().includes(query) ||
+        ambulance.name?.toLowerCase().includes(query)
       );
     });
   }, [ambulances, searchQuery]);
@@ -105,7 +122,7 @@ const AmbulanceTrackingData: React.FC = () => {
         
         <TextField
           fullWidth
-          placeholder="Search by call sign, plate number, IMEI, or driver name..."
+          placeholder="Search by IMEI or name..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{

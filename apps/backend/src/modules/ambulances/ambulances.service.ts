@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateAmbulanceDto } from './dto/create-ambulance.dto';
 import { UpdateAmbulanceDto } from './dto/update-ambulance.dto';
 import { AmbulanceFilterDto } from './dto/ambulance-filter.dto';
 import { Ambulance, Prisma, AmbulanceStatus, AmbulanceType, EquipmentStatus } from '@prisma/client';
 import axios from 'axios';
+import { GPSMappingService } from '../../common/services/gps-mapping.service';
+import { AmbulanceValidationService } from './services/ambulance-validation.service';
 
 interface AmbulanceFilters {
   status?: AmbulanceStatus;
@@ -16,34 +18,40 @@ interface AmbulanceFilters {
   search?: string;
 }
 
+interface GPSApiResponse {
+  status: boolean;
+  data: any[];
+}
+
 @Injectable()
 export class AmbulancesService {
   private readonly logger = new Logger(AmbulancesService.name);
+  private readonly driverInclude = {
+    driver: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+      },
+    },
+  };
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gpsMappingService: GPSMappingService,
+    private readonly validationService: AmbulanceValidationService,
+  ) {}
 
   async create(createAmbulanceDto: CreateAmbulanceDto): Promise<Ambulance> {
-    // Validate IMEI format if provided
-    if (createAmbulanceDto.vehicleImei && !/^\d{15}$/.test(createAmbulanceDto.vehicleImei)) {
-      throw new BadRequestException('IMEI must be exactly 15 digits');
-    }
-
-    await this.checkUniqueConstraints(createAmbulanceDto);
-    await this.validateDriver(createAmbulanceDto.driverId);
+    this.validationService.validateIMEIFormat(createAmbulanceDto.vehicleImei);
+    await this.validationService.checkUniqueConstraints(createAmbulanceDto);
+    await this.validationService.validateDriver(createAmbulanceDto.driverId);
 
     const ambulance = await this.prisma.ambulance.create({
       data: createAmbulanceDto,
-      include: {
-        driver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-      },
+      include: this.driverInclude,
     });
 
     this.logger.log(`Ambulance created: ${ambulance.callSign}`);
@@ -70,46 +78,39 @@ export class AmbulancesService {
 
     return this.prisma.ambulance.findMany({
       where,
-      include: {
-        driver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-      },
+      include: this.driverInclude,
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findAllGPS(filters: AmbulanceFilters = {}): Promise<any[]> {
-    const response = await axios.get('http://gps3.tawasolmap.com/new_api/', {
-      params: {
-        api_key: "7798AA377F99763506758557AC7741A1",
-        service: "objects",
-        imeis: "*"
+  async findAllGPS(filters: AmbulanceFilters = {}): Promise<any> {
+    const response = await axios.post<GPSApiResponse>('http://gps3.tawasolmap.com/new_api/', {
+      api_key: "7798AA377F99763506758557AC7741A1",
+      service: "objects",
+      imeis: "*"
+    }, {
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json'
       }
     });
+    
+    // Map GPS objects to consistent format
+    if (response.data.status && response.data.data) {
+      const mappedData = this.gpsMappingService.mapGPSObjects(response.data.data);
+      return {
+        status: response.data.status,
+        data: mappedData,
+      };
+    }
+    
     return response.data;
   }
 
   async findById(id: string): Promise<Ambulance> {
     const ambulance = await this.prisma.ambulance.findFirst({
       where: { id, deletedAt: null },
-      include: {
-        driver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-      },
+      include: this.driverInclude,
     });
 
     if (!ambulance) {
@@ -136,27 +137,17 @@ export class AmbulancesService {
     await this.findById(id);
 
     if (updateAmbulanceDto.vehicleImei || updateAmbulanceDto.callSign || updateAmbulanceDto.plateNumber) {
-      await this.checkUniqueConstraints(updateAmbulanceDto, id);
+      await this.validationService.checkUniqueConstraints(updateAmbulanceDto, id);
     }
 
     if (updateAmbulanceDto.driverId !== undefined) {
-      await this.validateDriver(updateAmbulanceDto.driverId);
+      await this.validationService.validateDriver(updateAmbulanceDto.driverId);
     }
 
     return this.prisma.ambulance.update({
       where: { id },
       data: updateAmbulanceDto,
-      include: {
-        driver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-      },
+      include: this.driverInclude,
     });
   }
 
@@ -176,17 +167,7 @@ export class AmbulancesService {
         isActive: true,
         equipmentStatus: 'OPERATIONAL',
       },
-      include: {
-        driver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-      },
+      include: this.driverInclude,
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -203,45 +184,5 @@ export class AmbulancesService {
         lastUpdated: new Date(),
       },
     });
-  }
-
-
-  private async checkUniqueConstraints(dto: CreateAmbulanceDto | UpdateAmbulanceDto, excludeId?: string): Promise<void> {
-    const where: Prisma.AmbulanceWhereInput = excludeId ? { id: { not: excludeId } } : {};
-
-    const checks = [
-      { field: 'vehicleImei', value: dto.vehicleImei },
-      { field: 'callSign', value: dto.callSign },
-      { field: 'plateNumber', value: dto.plateNumber },
-      { field: 'vin', value: dto.vin },
-    ];
-
-    for (const check of checks) {
-      if (check.value) {
-        const existing = await this.prisma.ambulance.findFirst({
-          where: { ...where, [check.field]: check.value },
-        });
-        if (existing) {
-          throw new ConflictException(`${check.field} ${check.value} already exists`);
-        }
-      }
-    }
-  }
-
-  private async validateDriver(driverId?: string): Promise<void> {
-    if (driverId) {
-      const driver = await this.prisma.user.findUnique({
-        where: { id: driverId },
-      });
-
-      if (!driver) {
-        throw new NotFoundException(`Driver with ID ${driverId} not found`);
-      }
-
-      // Check if driver is active
-      if (driver.status !== 'ACTIVE') {
-        throw new ConflictException(`Driver ${driver.firstName} ${driver.lastName} is not active`);
-      }
-    }
   }
 }

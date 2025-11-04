@@ -259,7 +259,6 @@ export class UpdatePatientDto {
 
   @ApiPropertyOptional({ description: 'Email Address' })
   @IsOptional()
-  @IsEmail()
   email?: string;
 
   @ApiPropertyOptional({ description: 'Address' })
@@ -300,7 +299,6 @@ export class UpdatePatientDto {
 
   @ApiPropertyOptional({ description: 'Emergency Email' })
   @IsOptional()
-  @IsEmail()
   emergencyEmail?: string;
 
   @ApiPropertyOptional({ description: 'Emergency Contact Relationship' })
