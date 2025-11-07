@@ -4,7 +4,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import { CommandCenterHeader } from '../../../../components/common/CommandCenterHeader';
+import { CommandCenterHeader } from '../../../../components/Common/CommandCenterHeader';
 import LiveClock from './components/LiveClock';
 import KPIMetrics from './components/KPIMetrics';
 import VisualAnalytics from './components/VisualAnalytics';

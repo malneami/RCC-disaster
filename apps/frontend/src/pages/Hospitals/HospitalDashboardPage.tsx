@@ -6,11 +6,6 @@ import {
   CardContent,
   Grid,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
   Alert,
   CircularProgress,
   Tabs,
@@ -23,10 +18,6 @@ import {
   Button,
 } from '@mui/material';
 import {
-  LocalHospital as HospitalIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Person as PatientIcon,
   Refresh as RefreshIcon,
   ArrowBack as ArrowBackIcon,
   Fullscreen as FullscreenIcon,
@@ -147,47 +138,6 @@ const HospitalDashboardPage: React.FC = () => {
                          (hospital.pediatricBedsAvailable || 0) + (hospital.standardBedsAvailable || 0) + 
                          (hospital.nicuBedsAvailable || 0);
     return totalBeds > 0 ? Math.round((availableBeds / totalBeds) * 100) : 0;
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'CRITICAL':
-        return 'error';
-      case 'URGENT':
-        return 'warning';
-      case 'STABLE':
-        return 'success';
-      default:
-        return 'default';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-      case 'OPEN':
-        return 'error';
-      case 'IN_PROGRESS':
-        return 'warning';
-      case 'RESOLVED':
-      case 'CLOSED':
-        return 'success';
-      default:
-        return 'default';
-    }
-  };
-
-  const getCaseTypeIcon = (caseType: string) => {
-    switch (caseType) {
-      case 'STEMI':
-        return <ErrorIcon color="error" />;
-      case 'STROKE':
-        return <WarningIcon color="warning" />;
-      case 'TRAUMA':
-        return <HospitalIcon color="primary" />;
-      default:
-        return <PatientIcon />;
-    }
   };
 
   const handleViewTicket = (ticket: UnifiedTicket) => {

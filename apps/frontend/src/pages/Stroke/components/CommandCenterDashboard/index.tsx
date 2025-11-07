@@ -6,7 +6,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-import { CommandCenterHeader } from '../../../../components/common/CommandCenterHeader';
+import { CommandCenterHeader } from '../../../../components/Common/CommandCenterHeader';
 import LiveClock from './components/LiveClock';
 import StrokeKPICards from './components/StrokeKPICards';
 import StrokeDistributionCharts from './components/StrokeDistributionCharts';
@@ -15,7 +15,9 @@ import AdmissionFollowupCharts from './components/AdmissionFollowupCharts';
 import StrokeTypeDistribution from './components/StrokeTypeDistribution';
 import PerformanceTrendChart from './components/PerformanceTrendChart';
 import StrokeTrafficLightSystem from './components/StrokeTrafficLightSystem';
-import HospitalPerformanceTable from './components/HospitalPerformanceTable';
+import HospitalPerformanceTable, {
+  HospitalPerformanceData,
+} from './components/HospitalPerformanceTable';
 import { useStrokeCommandCenterData } from './hooks/useStrokeCommandCenterData';
 import { useFullscreen } from '../../../../contexts/FullscreenContext';
 import { StrokeCommandCenterFilters } from './types';
@@ -184,7 +186,9 @@ const StrokeCommandCenterDashboard: React.FC = () => {
         {/* Hospital Performance Table */}
         {data?.hospitalPerformance && (
           <Box mt={3}>
-            <HospitalPerformanceTable data={data.hospitalPerformance as any} />
+            <HospitalPerformanceTable
+              data={data.hospitalPerformance as HospitalPerformanceData[]}
+            />
           </Box>
         )}
       </Box>

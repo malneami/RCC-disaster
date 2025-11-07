@@ -23,10 +23,10 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faUser, faHospital } from '@fortawesome/free-solid-svg-icons';
 
-import { StrokeCase, StrokeService, StrokeStatus } from '../../../../services/strokeService';
+import { StrokeCase, StrokeService } from '../../../../services/strokeService';
 import StrokeCaseCompleteness from '../StrokeCaseCompleteness';
 import CaseNoteModal from '../../../../pages/NotificationCenter/components/CaseNoteModal';
-import { notificationService } from '../../../../services/notificationService';
+import { notificationService, CreateCaseNoteData } from '../../../../services/notificationService';
 
 interface StrokeCaseTableRowProps {
   strokeCase: StrokeCase;
@@ -147,7 +147,7 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
     handleMenuClose();
   };
 
-  const handleCaseNoteSubmit = async (data: any) => {
+  const handleCaseNoteSubmit = async (data: CreateCaseNoteData) => {
     try {
       await notificationService.createCaseNote(data);
       setShowCaseNoteModal(false);
@@ -157,25 +157,6 @@ const StrokeCaseTableRow: React.FC<StrokeCaseTableRowProps> = ({
       // Handle error - could show a toast notification
     }
   };
-
-  const getStatusColor = (status: StrokeStatus): string => {
-    const colors: Record<StrokeStatus, string> = {
-      SUSPECTED: 'default',
-      CONFIRMED: 'primary',
-      IMAGING_PENDING: 'warning',
-      IMAGING_COMPLETE: 'info',
-      TREATMENT_EVALUATION: 'warning',
-      THROMBOLYSIS_STARTED: 'secondary',
-      THROMBECTOMY_STARTED: 'secondary',
-      TREATMENT_COMPLETE: 'success',
-      STROKEUNIT_ADMITTED: 'info',
-      REHABILITATION_STARTED: 'info',
-      DISCHARGED: 'success',
-      FOLLOW_UP: 'default',
-    };
-    return colors[status] || 'default';
-  };
-
 
   const formatDateTime = (dateString?: string): string => {
     if (!dateString) return 'N/A';

@@ -29,7 +29,7 @@ import {
   Assessment
 } from "@mui/icons-material";
 
-type HospitalPerformanceData = {
+export type HospitalPerformanceData = {
   hospitalName: string;
   status: 'ACTIVE' | 'INACTIVE';
   cases: number;
@@ -63,7 +63,7 @@ type SortColumn =
 
 type SortDirection = 'asc' | 'desc';
 
-interface HospitalPerformanceTableProps {
+export interface HospitalPerformanceTableProps {
   data?: HospitalPerformanceData[];
   loading?: boolean;
   error?: string;
