@@ -49,11 +49,15 @@ const LiveFilterDialog: React.FC<LiveFilterDialogProps> = ({
     setLocalValues(values);
   }, [values]);
 
+  React.useEffect(() => {
+    if (!open) {
+      setLocalValues(values);
+    }
+  }, [open, values]);
+
   const handleChange = (key: string, value: any) => {
     const newValues = { ...localValues, [key]: value };
     setLocalValues(newValues);
-    // Apply filters live as user changes them
-    onApply(newValues);
   };
 
   const handleApply = () => {
@@ -64,7 +68,6 @@ const LiveFilterDialog: React.FC<LiveFilterDialogProps> = ({
   const handleReset = () => {
     const resetValues = resetFilters(fields);
     setLocalValues(resetValues);
-    onApply(resetValues);
     if (onReset) {
       onReset();
     }

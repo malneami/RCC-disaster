@@ -24,6 +24,7 @@ import {
   Card,
   Menu,
   MenuItem,
+  TablePagination,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -49,6 +50,11 @@ interface StemiCasesListProps {
   onDeleteCase: (id: string) => void;
   onOutcomeFormUpdate?: (caseId: string, updatedData: any) => void;
   onAddCaseNote?: (case_: StemiCase) => void;
+  totalCount: number;
+  page: number;
+  rowsPerPage: number;
+  onPageChange: (event: unknown, newPage: number) => void;
+  onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 // Helper functions to calculate KPI status
@@ -117,6 +123,11 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
   onDeleteCase,
   onOutcomeFormUpdate,
   onAddCaseNote,
+  totalCount,
+  page,
+  rowsPerPage,
+  onPageChange,
+  onRowsPerPageChange,
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -513,7 +524,19 @@ const StemiCasesList: React.FC<StemiCasesListProps> = ({
             </TableBody>
         </Table>
       </TableContainer>
-
+      <TablePagination
+        rowsPerPageOptions={[10, 20, 50]}
+        component="div"
+        count={totalCount}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={onPageChange}
+        onRowsPerPageChange={onRowsPerPageChange}
+        labelRowsPerPage="Rows per page:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
+        }
+      />
       </Card>
 
       {/* Action Menu */}

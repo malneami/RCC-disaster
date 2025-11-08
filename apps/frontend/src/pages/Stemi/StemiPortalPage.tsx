@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab, Button, Tooltip, TablePagination, Paper, Typography, TextField, InputAdornment, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Box, Tabs, Tab, CircularProgress, LinearProgress, Fab, Button, Tooltip, TablePagination, Paper, Typography, TextField, InputAdornment, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { Add as AddIcon, Assessment, Timeline, Dashboard, Warning, Schedule, FileDownload, Search as SearchIcon, FilterList as FilterIcon, ViewModule as CardsIcon, TableChart as TableIcon } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
@@ -44,7 +44,9 @@ const StemiPortalPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [stemiCases, setStemiCases] = useState<StemiCase[]>([]);
   const [kpiSummary, setKpiSummary] = useState<StemiKpiResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [kpiLoading, setKpiLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -55,12 +57,14 @@ const StemiPortalPage: React.FC = () => {
     startDate?: string;
     endDate?: string;
   }>({});
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [hospitals, setHospitals] = useState<Array<{id: string, name: string}>>([]);
+  const [totalCases, setTotalCases] = useState(0);
+  const requestRef = useRef(0);
+  const kpiRequestRef = useRef(0);
   
   // Unified filters state for both views
   const [unifiedFilters, setUnifiedFilters] = useState<StemiFilterParams>({
@@ -75,6 +79,7 @@ const StemiPortalPage: React.FC = () => {
     startDate: '',
     endDate: '',
   });
+  const [searchInput, setSearchInput] = useState(unifiedFilters.search ?? '');
 
   // const isAdmin = user?.role === 'ADMIN';
 
@@ -89,6 +94,24 @@ const StemiPortalPage: React.FC = () => {
     loadData();
   }, [page, rowsPerPage, unifiedFilters]);
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setUnifiedFilters(prev => {
+        const currentSearch = prev.search ?? '';
+        if (currentSearch === searchInput) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          search: searchInput,
+        };
+      });
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
   // Load hospitals on component mount
   useEffect(() => {
     const loadHospitals = async () => {
@@ -102,12 +125,6 @@ const StemiPortalPage: React.FC = () => {
     };
     loadHospitals();
   }, []);
-
-  useEffect(() => {
-    if (stemiCases.length > 0) {
-      loadTimelineEvents();
-    }
-  }, [stemiCases]);
 
   const convertStemiCasesToTimelineEvents = (cases: StemiCase[]): TimelineEvent[] => {
     const events: TimelineEvent[] = [];
@@ -306,14 +323,25 @@ const StemiPortalPage: React.FC = () => {
 
   const getModeOfArrivalLabel = (mode?: string) => {
     switch (mode) {
-      case 'AMBULANCE': return 'Ambulance';
-      case 'PRIVATE_VEHICLE': return 'Private Vehicle';
-      case 'AIR_TRANSPORT': return 'Air Transport';
-      case 'WALK_IN': return 'Walk-in';
-      case 'POLICE': return 'Police Transport';
-      case 'TRANSFERRED_FROM_HOSPITAL': return 'Hospital Transfer';
-      case 'OTHER': return 'Other';
-      default: return 'Unknown';
+      case 'AMBULANCE_RED_CRESCENT':
+      case 'AMBULANCE':
+        return 'Ambulance';
+      case 'PRIVATE_CAR':
+      case 'PRIVATE_VEHICLE':
+        return 'Private Vehicle';
+      case 'TRANSFERRED_FROM_ANOTHER_HOSPITAL':
+      case 'TRANSFERRED_FROM_HOSPITAL':
+        return 'Hospital Transfer';
+      case 'AIR_TRANSPORT':
+        return 'Air Transport';
+      case 'WALK_IN':
+        return 'Walk-in';
+      case 'POLICE':
+        return 'Police Transport';
+      case 'OTHER':
+        return 'Other';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -343,14 +371,10 @@ const StemiPortalPage: React.FC = () => {
     }
   };
 
-  const loadTimelineEvents = async () => {
-    try {
-      const timelineEvents = convertStemiCasesToTimelineEvents(stemiCases);
-      setTimelineEvents(timelineEvents);
-    } catch (err) {
-      console.error('Error loading timeline events:', err);
-    }
-  };
+  const timelineEvents = useMemo(
+    () => convertStemiCasesToTimelineEvents(stemiCases),
+    [stemiCases]
+  );
 
   // Filter fields configuration
   const filterFields = useMemo(() => [
@@ -365,13 +389,9 @@ const StemiPortalPage: React.FC = () => {
       label: 'Mode of Arrival',
       type: 'select' as const,
       options: [
-        { value: 'AMBULANCE', label: 'Ambulance' },
-        { value: 'PRIVATE_VEHICLE', label: 'Private Vehicle' },
-        { value: 'AIR_TRANSPORT', label: 'Air Transport' },
-        { value: 'WALK_IN', label: 'Walk-in' },
-        { value: 'POLICE', label: 'Police' },
-        { value: 'TRANSFERRED_FROM_HOSPITAL', label: 'Hospital Transfer' },
-        { value: 'OTHER', label: 'Other' },
+        { value: 'AMBULANCE_RED_CRESCENT', label: 'Ambulance (Red Crescent)' },
+        { value: 'PRIVATE_CAR', label: 'Private Vehicle' },
+        { value: 'TRANSFERRED_FROM_ANOTHER_HOSPITAL', label: 'Hospital Transfer' },
       ],
     },
     {
@@ -460,29 +480,78 @@ const StemiPortalPage: React.FC = () => {
     },
   ], [hospitals]);
 
-  const loadData = async () => {
+  const loadData = async (options?: { forceGlobalSpinner?: boolean }) => {
+    const requestId = ++requestRef.current;
+    const useGlobalSpinner = initialLoading || options?.forceGlobalSpinner;
+
+    if (useGlobalSpinner) {
+      setInitialLoading(true);
+    } else {
+      setDataLoading(true);
+    }
+
+    setError(null);
+
+    const paginationParams = {
+      ...unifiedFilters,
+      limit: rowsPerPage,
+      offset: page * rowsPerPage,
+    };
+
+    let casesFailed = false;
+
     try {
-      setLoading(true);
-      setError(null);
+      const casesResponse = await StemiService.getStemiCases(paginationParams);
 
-      const paginationParams = {
-        ...unifiedFilters,
-        limit: rowsPerPage,
-        offset: page * rowsPerPage,
-      };
-
-      const [casesResponse, kpiResponse] = await Promise.all([
-        StemiService.getStemiCases(paginationParams),
-        StemiService.getKpiSummary(kpiFilters.hospitalId, kpiFilters.startDate, kpiFilters.endDate),
-      ]);
+      if (requestRef.current !== requestId) {
+        return;
+      }
 
       setStemiCases(casesResponse.cases);
-      setKpiSummary(kpiResponse);
+      setTotalCases(casesResponse.total);
     } catch (err: any) {
-      console.error('Error loading STEMI data:', err);
+      if (requestRef.current !== requestId) {
+        return;
+      }
+
+      console.error('Error loading STEMI cases:', err);
       setError(err.response?.data?.message || 'Failed to load STEMI data');
+      casesFailed = true;
     } finally {
-      setLoading(false);
+      if (requestRef.current === requestId) {
+        if (useGlobalSpinner) {
+          setInitialLoading(false);
+        } else {
+          setDataLoading(false);
+        }
+      }
+    }
+
+    if (casesFailed || requestRef.current !== requestId) {
+      return;
+    }
+
+    const kpiRequestId = ++kpiRequestRef.current;
+    setKpiLoading(true);
+
+    try {
+      const kpiResponse = await StemiService.getKpiSummary(
+        kpiFilters.hospitalId,
+        kpiFilters.startDate,
+        kpiFilters.endDate
+      );
+
+      if (requestRef.current === requestId && kpiRequestRef.current === kpiRequestId) {
+        setKpiSummary(kpiResponse);
+      }
+    } catch (err) {
+      if (requestRef.current === requestId && kpiRequestRef.current === kpiRequestId) {
+        console.error('Error loading KPI data:', err);
+      }
+    } finally {
+      if (kpiRequestRef.current === kpiRequestId) {
+        setKpiLoading(false);
+      }
     }
   };
 
@@ -584,21 +653,35 @@ const StemiPortalPage: React.FC = () => {
 
   const handleKpiFilterChange = async (newFilters: { hospitalId?: string; startDate?: string; endDate?: string }) => {
     setKpiFilters(newFilters);
-    // Load KPI data with the new filters directly instead of relying on state
+    const kpiRequestId = ++kpiRequestRef.current;
+    setKpiLoading(true);
     try {
-      const kpiResponse = await StemiService.getKpiSummary(newFilters.hospitalId, newFilters.startDate, newFilters.endDate);
-      setKpiSummary(kpiResponse);
-    } catch (err: any) {
-      console.error('Error loading KPI data:', err);
-      setError(err.response?.data?.message || 'Failed to load KPI data');
+      const kpiResponse = await StemiService.getKpiSummary(
+        newFilters.hospitalId,
+        newFilters.startDate,
+        newFilters.endDate
+      );
+
+      if (kpiRequestRef.current === kpiRequestId) {
+        setKpiSummary(kpiResponse);
+      }
+    } catch (err) {
+      if (kpiRequestRef.current === kpiRequestId) {
+        console.error('Error loading KPI data:', err);
+      }
+    } finally {
+      if (kpiRequestRef.current === kpiRequestId) {
+        setKpiLoading(false);
+      }
     }
   };
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
-  const handleRowsPerPageChange = (newRowsPerPage: number) => {
+  const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
     setRowsPerPage(newRowsPerPage);
     setPage(0); // Reset to first page when changing rows per page
   };
@@ -606,12 +689,13 @@ const StemiPortalPage: React.FC = () => {
   // Unified filter handlers
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    setUnifiedFilters(prev => ({ ...prev, search: value }));
+    setSearchInput(value);
     setPage(0); // Reset to first page when searching
   };
 
   const handleFilterChange = (newFilters: StemiFilterParams) => {
     setUnifiedFilters(newFilters);
+    setSearchInput(newFilters.search ?? '');
     setPage(0); // Reset to first page when filtering
   };
 
@@ -629,11 +713,12 @@ const StemiPortalPage: React.FC = () => {
       endDate: '',
     };
     setUnifiedFilters(clearedFilters);
+    setSearchInput('');
     setPage(0);
   };
 
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
@@ -647,7 +732,12 @@ const StemiPortalPage: React.FC = () => {
         <Box textAlign="center">
           <h2>Error Loading STEMI Portal</h2>
           <p>{error}</p>
-          <button onClick={loadData}>Retry</button>
+          <Button
+            variant="contained"
+            onClick={() => loadData({ forceGlobalSpinner: true })}
+          >
+            Retry
+          </Button>
         </Box>
       </Box>
     );
@@ -668,31 +758,39 @@ const StemiPortalPage: React.FC = () => {
   const kpiCards = [
     {
       title: 'Total Cases',
-      value: kpiSummary?.totalCases || 0,
+      value: kpiLoading ? '...' : (kpiSummary?.totalCases ?? 0),
       color: '#388e3c',
       icon: <Assessment />,
     },
     {
       title: 'Cases This Month',
-      value: kpiSummary?.casesThisMonth || 0,
+      value: kpiLoading ? '...' : (kpiSummary?.casesThisMonth ?? 0),
       color: '#1976d2',
       icon: <Schedule />,
     },
     {
       title: 'Cases This Week',
-      value: kpiSummary?.casesThisWeek || 0,
+      value: kpiLoading ? '...' : (kpiSummary?.casesThisWeek ?? 0),
       color: '#ed6c02',
       icon: <Timeline />,
     },
     {
       title: 'Avg Door-to-Balloon',
-      value: kpiSummary?.averageDoorToBalloonTime ? `${Math.round(kpiSummary.averageDoorToBalloonTime)} min` : 'N/A',
+      value: kpiLoading
+        ? '...'
+        : kpiSummary?.averageDoorToBalloonTime
+          ? `${Math.round(kpiSummary.averageDoorToBalloonTime)} min`
+          : 'N/A',
       color: '#2e7d32',
       icon: <Schedule />,
     },
     {
       title: 'Mortality Rate',
-      value: kpiSummary?.kpi9?.percentage !== undefined ? `${kpiSummary.kpi9.percentage.toFixed(1)}%` : 'N/A',
+      value: kpiLoading
+        ? '...'
+        : kpiSummary?.kpi9?.percentage !== undefined
+          ? `${kpiSummary.kpi9.percentage.toFixed(1)}%`
+          : 'N/A',
       color: '#d32f2f',
       icon: <Warning />,
     },
@@ -711,7 +809,7 @@ const StemiPortalPage: React.FC = () => {
         portalType="stemi"
         steps={portalSteps}
         activeStep={activeTab}
-        onRefresh={loadData}
+        onRefresh={() => loadData({ forceGlobalSpinner: true })}
         headerActions={headerActions}
         kpiCards={kpiCards}
       >
@@ -762,7 +860,7 @@ const StemiPortalPage: React.FC = () => {
                 STEMI Cases
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                {stemiCases.length} of {kpiSummary?.totalCases || 0} cases
+                {stemiCases.length} of {totalCases} cases
               </Typography>
             </Box>
             <Box display="flex" gap={2}>
@@ -801,7 +899,7 @@ const StemiPortalPage: React.FC = () => {
             <TextField
               fullWidth
               placeholder="Search STEMI cases..."
-              value={unifiedFilters.search}
+              value={searchInput}
               onChange={handleSearch}
               InputProps={{
                 startAdornment: (
@@ -813,47 +911,56 @@ const StemiPortalPage: React.FC = () => {
             />
           </Box>
 
+          {dataLoading && (
+            <Box mb={3}>
+              <LinearProgress />
+            </Box>
+          )}
+
           {viewMode === 'table' ? (
             <StemiCasesList
-            cases={stemiCases}
-            loading={loading}
-            onEditCase={handleEditCase}
-            onViewCase={handleViewCase}
-            onDeleteCase={handleDeleteCase}
-            onAddCaseNote={handleAddCaseNote}
-            onOutcomeFormUpdate={handleOutcomeFormUpdate}
-          />
-          ) : (
-            <StemiCasesCards
               cases={stemiCases}
-              loading={loading}
+              loading={dataLoading}
               onEditCase={handleEditCase}
               onViewCase={handleViewCase}
               onDeleteCase={handleDeleteCase}
+              onAddCaseNote={handleAddCaseNote}
+              onOutcomeFormUpdate={handleOutcomeFormUpdate}
+              totalCount={totalCases}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handlePageChange}
+              onRowsPerPageChange={handleRowsPerPageChange}
             />
+          ) : (
+            <>
+              <StemiCasesCards
+                cases={stemiCases}
+                loading={dataLoading}
+                onEditCase={handleEditCase}
+                onViewCase={handleViewCase}
+                onDeleteCase={handleDeleteCase}
+              />
+              <Box sx={{ mt: 2 }}>
+                <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                  <TablePagination
+                    rowsPerPageOptions={[10, 20, 50]}
+                    component="div"
+                    count={totalCases}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={handlePageChange}
+                    onRowsPerPageChange={handleRowsPerPageChange}
+                    labelRowsPerPage="Rows per page:"
+                    labelDisplayedRows={({ from, to, count }) =>
+                      `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
+                    }
+                  />
+                </Paper>
+              </Box>
+            </>
           )}
         </TabPanel>
-
-        {/* Global Pagination for Cases Tab */}
-        {activeTab === 0 && (
-          <Box sx={{ mt: 2 }}>
-            <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-              <TablePagination
-                rowsPerPageOptions={[10, 20, 50]}
-                component="div"
-                count={kpiSummary?.totalCases || 0}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={(_event, newPage) => handlePageChange(newPage)}
-                onRowsPerPageChange={(event) => handleRowsPerPageChange(parseInt(event.target.value, 10))}
-                labelRowsPerPage="Rows per page:"
-                labelDisplayedRows={({ from, to, count }) => 
-                  `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
-                }
-              />
-            </Paper>
-          </Box>
-        )}
 
         <TabPanel value={activeTab} index={1}>
           <StemiKPIDashboard 
@@ -952,8 +1059,7 @@ const StemiPortalPage: React.FC = () => {
         }}
         onReset={handleClearFilters}
         fields={filterFields}
-        values={unifiedFilters}
-        applyButtonText="Close"
+        values={{ ...unifiedFilters, search: searchInput }}
         resetButtonText="Reset All"
       />
     </>
