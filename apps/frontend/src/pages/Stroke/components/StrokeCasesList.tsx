@@ -13,6 +13,8 @@ import {
   IconButton,
   ToggleButton,
   ToggleButtonGroup,
+  TablePagination,
+  Card,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -66,6 +68,8 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
     status: '',
     severity: '',
   });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     applyFiltersAndSearch();
@@ -103,11 +107,26 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
     }
 
     setFilteredCases(filtered);
+    setPage(0);
   };
 
   const handleViewDetails = (case_: StrokeCase) => {
     setSelectedCase(case_);
     setDetailsDialogOpen(true);
+  };
+
+  const paginatedCases = filteredCases.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const handleEditCase = (case_: StrokeCase) => {
@@ -211,16 +230,21 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
     <Box>
       {/* Header and Actions */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6">
-          Stroke Cases ({filteredCases.length})
-        </Typography>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Stroke Cases
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            {filteredCases.length} of {cases.length} cases
+          </Typography>
+        </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
             startIcon={<FilterIcon />}
             onClick={() => setFilterDialogOpen(true)}
           >
-            Filter
+            Filters
           </Button>
           {onViewModeChange && (
             <ToggleButtonGroup
@@ -242,7 +266,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
             startIcon={<AddIcon />}
             onClick={onCreateCase}
           >
-            New Case
+            Create Case
           </Button>
         </Box>
       </Box>
@@ -251,7 +275,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
       <Box sx={{ mb: 3 }}>
         <TextField
           fullWidth
-          placeholder="Search by patient name, MRN, or National ID..."
+          placeholder="Search stroke cases..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
@@ -292,25 +316,40 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
       )}
 
       {/* Cases Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <StrokeCasesTableHeader />
-          <TableBody>
-            {filteredCases.map((strokeCase) => (
-              <StrokeCaseTableRow
-                key={strokeCase.id}
-                strokeCase={strokeCase}
-                onViewDetails={handleViewDetails}
-                onEditCase={handleEditCase}
-                onDeleteCase={handleDeleteCase}
-                onOpenOutcomeForm={handleOpenOutcomeForm}
-                onAddCaseNote={onAddCaseNote}
-                isAdmin={isAdmin}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Card elevation={0}>
+        <TableContainer component={Paper} elevation={0}>
+          <Table>
+            <StrokeCasesTableHeader />
+            <TableBody>
+              {paginatedCases.map((strokeCase) => (
+                <StrokeCaseTableRow
+                  key={strokeCase.id}
+                  strokeCase={strokeCase}
+                  onViewDetails={handleViewDetails}
+                  onEditCase={handleEditCase}
+                  onDeleteCase={handleDeleteCase}
+                  onOpenOutcomeForm={handleOpenOutcomeForm}
+                  onAddCaseNote={onAddCaseNote}
+                  isAdmin={isAdmin}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={filteredCases.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Rows per page:"
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
+          }
+        />
+      </Card>
 
       {/* Dialogs */}
       <StrokeCasesFilters

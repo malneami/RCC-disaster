@@ -563,16 +563,21 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     <Box>
       {/* Header and Actions */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6">
-          Stroke Cases ({filteredCases.length})
-        </Typography>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Stroke Cases
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            {filteredCases.length} of {cases.length} cases
+          </Typography>
+        </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
             startIcon={<FilterIcon />}
             onClick={() => setFilterDialogOpen(true)}
           >
-            Filter
+            Filters
           </Button>
           {onViewModeChange && (
             <ToggleButtonGroup
@@ -594,7 +599,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
             startIcon={<AddIcon />}
             onClick={onCreateCase}
           >
-            New Case
+            Create Case
           </Button>
         </Box>
       </Box>
@@ -603,7 +608,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       <Box sx={{ mb: 3 }}>
         <TextField
           fullWidth
-          placeholder="Search by patient name, MRN, or National ID..."
+          placeholder="Search stroke cases..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
@@ -639,6 +644,8 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
           );
         })}
       </Grid>
+
+      {/* No pagination in cards view to mirror trauma portal design */}
 
       {/* Filter Dialog */}
       <StrokeCasesFilters
