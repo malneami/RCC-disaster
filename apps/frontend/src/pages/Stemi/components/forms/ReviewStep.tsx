@@ -45,6 +45,23 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
     });
   };
 
+  const cardStyles = {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    borderRadius: 3,
+    boxShadow: '0px 12px 30px rgba(15, 23, 42, 0.08)',
+    border: '1px solid rgba(15, 23, 42, 0.05)',
+  };
+
+  const cardContentStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 1.25,
+    px: 3,
+    py: 3,
+  };
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -54,11 +71,11 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
         Please review all the information before submitting the STEMI case.
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} alignItems="stretch">
         {/* Patient Information */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+          <Card sx={cardStyles}>
+            <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Patient Information
               </Typography>
@@ -90,8 +107,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Admission Details */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+          <Card sx={cardStyles}>
+            <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Admission Details
               </Typography>
@@ -107,8 +124,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Critical Timestamps */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+          <Card sx={cardStyles}>
+            <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Critical Timestamps
               </Typography>
@@ -124,8 +141,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Interventions and Treatments */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+          <Card sx={cardStyles}>
+            <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Interventions & Treatments
               </Typography>
@@ -171,8 +188,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Clinical Assessment */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+          <Card sx={cardStyles}>
+            <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Clinical Assessment
               </Typography>
@@ -207,8 +224,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Additional Information */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+          <Card sx={cardStyles}>
+            <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Additional Information
               </Typography>
@@ -230,8 +247,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                   <strong>ECG Result:</strong> {additionalData.ecgResult.replace(/_/g, ' ')}
                 </Typography>
               )}
-              <Typography variant="body2">
-              </Typography>
               {additionalData.troponinValue && (
                 <Typography variant="body2">
                   <strong>Troponin Value:</strong> {additionalData.troponinValue}
