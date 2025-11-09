@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { CreateStemiCaseData, PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment } from '../services/stemiService';
 import { StemiDatetimeService } from '../services/stemiDatetimeService';
+import { Hospital } from '../../../services/hospitalService';
 import PatientInfoStep from './forms/PatientInfoStep';
 import AdmissionDetailsStep from './forms/AdmissionDetailsStep';
 import CriticalTimestampsStep from './forms/CriticalTimestampsStep';
@@ -37,6 +38,9 @@ const steps = [
   'Review & Submit',
 ];
 
+const DESTINATION_REQUIRED_MESSAGE =
+  'Please select a destination hospital because the selected origin hospital does not provide STEMI service.';
+
 const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   open,
   onClose,
@@ -46,6 +50,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [originHospital, setOriginHospital] = useState<Hospital | null>(null);
 
   // Form data state
   const [patientInfo, setPatientInfo] = useState<PatientInfo>({
@@ -109,6 +114,40 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     additionalNotes: '',
   });
 
+  const handlePatientInfoChange = useCallback((updated: PatientInfo) => {
+    setPatientInfo(updated);
+
+    if (updated.destinationHospitalId) {
+      setValidationErrors((prev) => {
+        if (!prev['patientInfo.destinationHospitalId']) {
+          return prev;
+        }
+
+        const { ['patientInfo.destinationHospitalId']: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, []);
+
+  const handleOriginHospitalSelect = useCallback((hospital: Hospital | null) => {
+    setOriginHospital(hospital);
+
+    setValidationErrors((prev) => {
+      if (!prev['patientInfo.destinationHospitalId']) {
+        return prev;
+      }
+
+      if (!hospital || hospital.hasStemiService) {
+        const { ['patientInfo.destinationHospitalId']: _, ...rest } = prev;
+        return rest;
+      }
+
+      return prev;
+    });
+  }, []);
+
+  const originRequiresDestination = !!originHospital && !originHospital.hasStemiService;
+
   const handleNext = () => {
     const errors = validateStep(activeStep);
     setValidationErrors(errors);
@@ -126,6 +165,16 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (originRequiresDestination && !patientInfo.destinationHospitalId) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        'patientInfo.destinationHospitalId': DESTINATION_REQUIRED_MESSAGE,
+      }));
+      setActiveStep(0);
+      setError(DESTINATION_REQUIRED_MESSAGE);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -210,6 +259,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         troponinValue: undefined,
         additionalNotes: '',
       });
+      setOriginHospital(null);
+      setValidationErrors({});
     } catch (err: any) {
       console.error('Error creating STEMI case:', err);
       setError(err.response?.data?.message || 'Failed to create STEMI case');
@@ -223,6 +274,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
       setActiveStep(0);
       setError(null);
       setValidationErrors({});
+      setOriginHospital(null);
       onClose();
     }
   };
@@ -249,6 +301,9 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         }
         if (!patientInfo.originHospitalId) {
           errors['patientInfo.originHospitalId'] = 'Origin Hospital is required';
+        }
+        if (originRequiresDestination && !patientInfo.destinationHospitalId) {
+          errors['patientInfo.destinationHospitalId'] = DESTINATION_REQUIRED_MESSAGE;
         }
         break;
       case 1: // Admission Details
@@ -282,8 +337,10 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         return (
           <PatientInfoStep
             data={patientInfo}
-            onChange={setPatientInfo}
+            onChange={handlePatientInfoChange}
             validationErrors={validationErrors}
+            onOriginHospitalSelect={handleOriginHospitalSelect}
+            destinationRequired={originRequiresDestination}
           />
         );
       case 1:

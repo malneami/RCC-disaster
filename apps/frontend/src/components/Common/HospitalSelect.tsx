@@ -3,7 +3,7 @@
  * Reusable component for selecting hospitals in forms
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   FormControl,
   InputLabel,
@@ -13,7 +13,9 @@ import {
   Alert,
   Box,
   Typography,
+  Chip,
 } from '@mui/material';
+import { SelectChangeEvent } from '@mui/material/Select';
 import { hospitalService, Hospital } from '../../services/hospitalService';
 
 interface HospitalSelectProps {
@@ -25,6 +27,8 @@ interface HospitalSelectProps {
   helperText?: string;
   disabled?: boolean;
   placeholder?: string;
+  onHospitalSelect?: (hospital: Hospital | null) => void;
+  showServiceBadges?: boolean;
 }
 
 const HospitalSelect: React.FC<HospitalSelectProps> = ({
@@ -36,6 +40,8 @@ const HospitalSelect: React.FC<HospitalSelectProps> = ({
   helperText,
   disabled = false,
   placeholder = "Select a hospital",
+  onHospitalSelect,
+  showServiceBadges = false,
 }) => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +64,91 @@ const HospitalSelect: React.FC<HospitalSelectProps> = ({
 
     fetchHospitals();
   }, []);
+
+  const selectedHospital = useMemo(() => {
+    if (!value) {
+      return null;
+    }
+    return hospitals.find((hospital) => hospital.id === value) || null;
+  }, [hospitals, value]);
+
+  useEffect(() => {
+    if (onHospitalSelect) {
+      onHospitalSelect(selectedHospital);
+    }
+  }, [onHospitalSelect, selectedHospital]);
+
+  const getServiceBadges = (hospital: Hospital) => {
+    if (!showServiceBadges) {
+      return null;
+    }
+
+    const badges: React.ReactNode[] = [];
+
+    if (hospital.hasStemiService) {
+      badges.push(
+        <Chip
+          key="stemi"
+          label="STEMI"
+          size="small"
+          color="primary"
+          variant="outlined"
+          sx={{ mr: 0.5, mb: 0.5 }}
+        />
+      );
+    }
+
+    if (hospital.hasStrokeService) {
+      badges.push(
+        <Chip
+          key="stroke"
+          label="Stroke"
+          size="small"
+          color="secondary"
+          variant="outlined"
+          sx={{ mr: 0.5, mb: 0.5 }}
+        />
+      );
+    }
+
+    if (hospital.hasTraumaService) {
+      badges.push(
+        <Chip
+          key="trauma"
+          label="Trauma"
+          size="small"
+          color="warning"
+          variant="outlined"
+          sx={{ mr: 0.5, mb: 0.5 }}
+        />
+      );
+    }
+
+    if (!badges.length) {
+      return null;
+    }
+
+    return (
+      <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap' }}>
+        {badges}
+      </Box>
+    );
+  };
+
+  const handleSelectChange = (event: SelectChangeEvent<string>) => {
+    const selectedValue = event.target.value;
+    onChange(selectedValue);
+
+    if (onHospitalSelect) {
+      if (!selectedValue) {
+        onHospitalSelect(null);
+        return;
+      }
+
+      const hospital = hospitals.find((item) => item.id === selectedValue) || null;
+      onHospitalSelect(hospital);
+    }
+  };
 
   if (loading) {
     return (
@@ -83,7 +174,7 @@ const HospitalSelect: React.FC<HospitalSelectProps> = ({
       <InputLabel>{label}</InputLabel>
       <Select
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={handleSelectChange}
         label={label}
       >
         {!required && (
@@ -107,6 +198,7 @@ const HospitalSelect: React.FC<HospitalSelectProps> = ({
                   Cluster: {hospital.cluster}
                 </Typography>
               )}
+              {getServiceBadges(hospital)}
             </Box>
           </MenuItem>
         ))}

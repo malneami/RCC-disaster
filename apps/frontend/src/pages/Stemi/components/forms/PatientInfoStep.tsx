@@ -8,22 +8,28 @@ import {
   Select,
   MenuItem,
   Typography,
+  Alert,
 } from '@mui/material';
 import { PatientInfo } from '../../services/stemiService';
 import HospitalSelect from '../../../../components/Common/HospitalSelect';
 import StemiDestinationHospitalSelect from '../../../../components/Common/StemiDestinationHospitalSelect';
 import NationalIdInput from '../../../../components/Common/NationalIdInput';
+import { Hospital } from '../../../../services/hospitalService';
 
 interface PatientInfoStepProps {
   data: PatientInfo;
   onChange: (data: PatientInfo) => void;
   validationErrors?: Record<string, string>;
+  onOriginHospitalSelect?: (hospital: Hospital | null) => void;
+  destinationRequired?: boolean;
 }
 
 const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
   data,
   onChange,
   validationErrors = {},
+  onOriginHospitalSelect,
+  destinationRequired = false,
 }) => {
   const handleChange = (field: keyof PatientInfo) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -50,6 +56,11 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
     
     onChange(newData);
   };
+
+  const destinationError = validationErrors['patientInfo.destinationHospitalId'];
+  const destinationLabel = destinationRequired
+    ? 'Destination Hospital (Required)'
+    : 'Destination Hospital (Optional)';
 
   return (
     <Box>
@@ -164,32 +175,49 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           />
         </Grid>
 
-              {/* Hospital Information */}
-              <Grid item xs={12}>
-                <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-                  Hospital Information
-                </Typography>
-              </Grid>
-      
-              <Grid item xs={12} sm={6}>
-                <HospitalSelect
-                  label="Origin Hospital"
-                  value={data.originHospitalId}
-                  onChange={handleHospitalChange('originHospitalId')}
-                  required
-                  error={!!validationErrors['patientInfo.originHospitalId']}
-                  helperText={validationErrors['patientInfo.originHospitalId']}
-                />
-              </Grid>
-      
-              <Grid item xs={12} sm={6}>
-                <StemiDestinationHospitalSelect
-                  label="Destination Hospital (Optional)"
-                  value={data.destinationHospitalId || ''}
-                  onChange={handleHospitalChange('destinationHospitalId')}
-                  helperText="Only hospitals with STEMI or Cardiology services are shown"
-                />
-              </Grid>
+        {/* Hospital Information */}
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+            Hospital Information
+          </Typography>
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <HospitalSelect
+            label="Origin Hospital"
+            value={data.originHospitalId}
+            onChange={handleHospitalChange('originHospitalId')}
+            required
+            error={!!validationErrors['patientInfo.originHospitalId']}
+            helperText={validationErrors['patientInfo.originHospitalId']}
+            onHospitalSelect={onOriginHospitalSelect}
+            showServiceBadges
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <StemiDestinationHospitalSelect
+            label={destinationLabel}
+            value={data.destinationHospitalId || ''}
+            onChange={handleHospitalChange('destinationHospitalId')}
+            helperText={
+              destinationError
+                ? destinationError
+                : 'Only hospitals with STEMI or Cardiology services are shown'
+            }
+            error={!!destinationError}
+            required={destinationRequired}
+          />
+        </Grid>
+
+        {destinationRequired && (
+          <Grid item xs={12}>
+            <Alert severity="warning">
+              Please select a destination hospital because the selected origin hospital does not
+              provide STEMI service.
+            </Alert>
+          </Grid>
+        )}
         {/* Contact Information */}
         <Grid item xs={12}>
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
