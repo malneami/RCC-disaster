@@ -19,6 +19,7 @@ import {
   faCog,
   faSignOutAlt,
 } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { useFullscreen } from '../../contexts/FullscreenContext';
@@ -35,6 +36,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { isFullscreen } = useFullscreen();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const navigate = useNavigate();
+  const isAdmin = user?.role === 'ADMIN';
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -46,6 +49,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNavigate = (path: string) => {
+    handleClose();
+    navigate(path);
   };
 
   const handleLogout = () => {
@@ -120,21 +128,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 vertical: 'top',
                 horizontal: 'right',
               }}
+              disableScrollLock
+              disableAutoFocus
+              disableEnforceFocus
               open={Boolean(anchorEl)}
               onClose={handleClose}
             >
-              <MenuItem onClick={handleClose}>
+              <MenuItem onClick={() => handleNavigate('/profile')}>
                 <ListItemIcon>
                   <FontAwesomeIcon icon={faUserCircle} style={{ fontSize: '16px' }} />
                 </ListItemIcon>
                 Profile
               </MenuItem>
-              <MenuItem onClick={handleClose}>
-                <ListItemIcon>
-                  <FontAwesomeIcon icon={faCog} style={{ fontSize: '16px' }} />
-                </ListItemIcon>
-                Settings
-              </MenuItem>
+              {isAdmin && (
+                <MenuItem onClick={() => handleNavigate('/admin')}>
+                  <ListItemIcon>
+                    <FontAwesomeIcon icon={faCog} style={{ fontSize: '16px' }} />
+                  </ListItemIcon>
+                  Settings
+                </MenuItem>
+              )}
               <Divider />
               <MenuItem onClick={handleLogout}>
                 <ListItemIcon>
