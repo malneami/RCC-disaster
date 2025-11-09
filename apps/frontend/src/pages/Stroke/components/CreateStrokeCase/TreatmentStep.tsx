@@ -10,6 +10,8 @@ import {
   Divider,
   FormControlLabel,
   Checkbox,
+  Alert,
+  Box,
 } from '@mui/material';
 
 import { 
@@ -23,11 +25,13 @@ import { formatForDateTimeLocal, formatForUTC } from '../../../../helpers';
 interface TreatmentStepProps {
   formData: CreateStrokeCaseData;
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
+  timelineWarnings?: Record<string, string[]>;
 }
 
 const TreatmentStep: React.FC<TreatmentStepProps> = ({
   formData,
   updateFormData,
+  timelineWarnings = {},
 }) => {
   const handleDateTimeChange = (field: string, value: string) => {
     // Convert datetime-local input to ISO-8601 format for backend
@@ -37,6 +41,31 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
     } else {
       updateFormData(field as keyof CreateStrokeCaseData, null);
     }
+  };
+
+  const emphasizeKeywords = (text: string) => {
+    const keywords = [
+      'Thrombolysis',
+      'Thrombectomy',
+      'Transfer activation',
+      'Transfer departure',
+      'Admission',
+      'CT report',
+    ];
+    
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, index) => {
+      const isKeyword = keywords.some(
+        (keyword) => keyword.toLowerCase() === part.toLowerCase()
+      );
+      return isKeyword ? (
+        <Box key={`${part}-${index}`} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      );
+    });
   };
 
   // Conditional logic variables
@@ -62,7 +91,19 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
           <InputLabel>Candidate for IV Thrombolysis</InputLabel>
           <Select
             value={formData.candidateForIVThrombolysis || ''}
-            onChange={(e) => updateFormData('candidateForIVThrombolysis', e.target.value as CandidateAssessment)}
+            onChange={(e) => {
+              const newValue = e.target.value as CandidateAssessment;
+              const wasYes = formData.candidateForIVThrombolysis === 'YES';
+              updateFormData('candidateForIVThrombolysis', newValue);
+              if (wasYes && newValue !== 'YES') {
+                // Clear thrombolysis related fields when changed from YES
+                updateFormData('thrombolysisOrderTime', null);
+                updateFormData('ivThrombolysisAdministrationTime', null);
+                updateFormData('ivThrombolysisGiven', null);
+                updateFormData('reasonForNotAdministeringIV', null);
+              }
+            }}
+            label="Candidate for IV Thrombolysis"
           >
             <MenuItem value="YES">Yes</MenuItem>
             <MenuItem value="NO">No</MenuItem>
@@ -81,7 +122,15 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
               onChange={(e) => handleDateTimeChange('thrombolysisOrderTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
               helperText="When thrombolysis was ordered"
+              error={!!timelineWarnings['thrombolysisOrderTime']}
             />
+            {timelineWarnings['thrombolysisOrderTime']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {emphasizeKeywords(warning)}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
@@ -92,7 +141,15 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
               onChange={(e) => handleDateTimeChange('ivThrombolysisAdministrationTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
               helperText="When IV thrombolysis was administered (KPI#4)"
+              error={!!timelineWarnings['ivThrombolysisAdministrationTime']}
             />
+            {timelineWarnings['ivThrombolysisAdministrationTime']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {emphasizeKeywords(warning)}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
@@ -100,6 +157,7 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
               <Select
                 value={formData.ivThrombolysisGiven || ''}
                 onChange={(e) => updateFormData('ivThrombolysisGiven', e.target.value as IVThrombolysisGiven)}
+                label="IV Thrombolysis Given"
               >
                 <MenuItem value="YES">Yes</MenuItem>
                 <MenuItem value="NO">No</MenuItem>
@@ -129,7 +187,18 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
           <InputLabel>Candidate for Mechanical Thrombectomy</InputLabel>
           <Select
             value={formData.candidateForMechanicalThrombectomy || ''}
-            onChange={(e) => updateFormData('candidateForMechanicalThrombectomy', e.target.value as CandidateAssessment)}
+            onChange={(e) => {
+              const newValue = e.target.value as CandidateAssessment;
+              const wasYes = formData.candidateForMechanicalThrombectomy === 'YES';
+              updateFormData('candidateForMechanicalThrombectomy', newValue);
+              if (wasYes && newValue !== 'YES') {
+                // Clear thrombectomy related fields when changed from YES
+                updateFormData('timeOfMechanicalThrombectomyPuncture', null);
+                updateFormData('mechanicalThrombectomyPerformed', false);
+                updateFormData('timeOfThrombectomyComplete', null);
+              }
+            }}
+            label="Candidate for Mechanical Thrombectomy"
           >
             <MenuItem value="YES">Yes</MenuItem>
             <MenuItem value="NO">No</MenuItem>
@@ -148,14 +217,29 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
               onChange={(e) => handleDateTimeChange('timeOfMechanicalThrombectomyPuncture', e.target.value)}
               InputLabelProps={{ shrink: true }}
               helperText="When mechanical thrombectomy puncture was performed (KPI#8)"
+              error={!!timelineWarnings['timeOfMechanicalThrombectomyPuncture']}
             />
+            {timelineWarnings['timeOfMechanicalThrombectomyPuncture']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {emphasizeKeywords(warning)}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControlLabel
               control={
                 <Checkbox
                   checked={formData.mechanicalThrombectomyPerformed || false}
-                  onChange={(e) => updateFormData('mechanicalThrombectomyPerformed', e.target.checked)}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    updateFormData('mechanicalThrombectomyPerformed', isChecked);
+                    if (!isChecked) {
+                      // Clear thrombectomy complete time when unchecked
+                      updateFormData('timeOfThrombectomyComplete', null);
+                    }
+                  }}
                 />
               }
               label="Mechanical Thrombectomy Performed"
@@ -174,7 +258,15 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
             onChange={(e) => handleDateTimeChange('timeOfThrombectomyComplete', e.target.value)}
             InputLabelProps={{ shrink: true }}
             helperText="When thrombectomy was completed"
+            error={!!timelineWarnings['timeOfThrombectomyComplete']}
           />
+          {timelineWarnings['timeOfThrombectomyComplete']?.map((warning, idx) => (
+            <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {emphasizeKeywords(warning)}
+              </Typography>
+            </Alert>
+          ))}
         </Grid>
       )}
 
@@ -227,6 +319,7 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
           <Select
             value={formData.disposition || ''}
             onChange={(e) => updateFormData('disposition', e.target.value as StrokeDisposition)}
+            label="Disposition"
           >
             <MenuItem value="STROKE_UNIT">Stroke Unit</MenuItem>
             <MenuItem value="ICU">ICU</MenuItem>

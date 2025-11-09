@@ -10,6 +10,8 @@ import {
   Checkbox,
   Typography,
   Divider,
+  Alert,
+  Box,
 } from '@mui/material';
 
 import { 
@@ -23,11 +25,13 @@ import { formatForDateTimeLocal, formatForUTC } from '../../../../helpers';
 interface DiagnosisStepProps {
   formData: CreateStrokeCaseData;
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
+  timelineWarnings?: Record<string, string[]>;
 }
 
 const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
   formData,
   updateFormData,
+  timelineWarnings = {},
 }) => {
   const handleDateTimeChange = (field: string, value: string) => {
     // Convert datetime-local input to ISO-8601 format for backend
@@ -37,6 +41,29 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
     } else {
       updateFormData(field as keyof CreateStrokeCaseData, null);
     }
+  };
+
+  const emphasizeKeywords = (text: string) => {
+    const keywords = [
+      'CT scan',
+      'CT report',
+      'Swallowing screening',
+      'Admission',
+    ];
+    
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, index) => {
+      const isKeyword = keywords.some(
+        (keyword) => keyword.toLowerCase() === part.toLowerCase()
+      );
+      return isKeyword ? (
+        <Box key={`${part}-${index}`} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      );
+    });
   };
 
   const showCtFields = formData.ctScanPerformed === true;
@@ -59,7 +86,16 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
           control={
             <Checkbox
               checked={formData.ctScanPerformed || false}
-              onChange={(e) => updateFormData('ctScanPerformed', e.target.checked)}
+              onChange={(e) => {
+                const isChecked = e.target.checked;
+                updateFormData('ctScanPerformed', isChecked);
+                if (!isChecked) {
+                  // Clear CT scan related fields when unchecked
+                  updateFormData('timeOfCtScanStart', null);
+                  updateFormData('timeOfCtReportFinal', null);
+                  updateFormData('ctFindings', null);
+                }
+              }}
             />
           }
           label="CT Scan Performed"
@@ -77,7 +113,15 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
               onChange={(e) => handleDateTimeChange('timeOfCtScanStart', e.target.value)}
               InputLabelProps={{ shrink: true }}
               helperText="Time the CT scan was initiated (KPI#3)"
+              error={!!timelineWarnings['timeOfCtScanStart']}
             />
+            {timelineWarnings['timeOfCtScanStart']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {emphasizeKeywords(warning)}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -89,7 +133,15 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
               onChange={(e) => handleDateTimeChange('timeOfCtReportFinal', e.target.value)}
               InputLabelProps={{ shrink: true }}
               helperText="Time the radiologist finalized and signed the CT report"
+              error={!!timelineWarnings['timeOfCtReportFinal']}
             />
+            {timelineWarnings['timeOfCtReportFinal']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {emphasizeKeywords(warning)}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -98,6 +150,7 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
               <Select
                 value={formData.ctFindings || ''}
                 onChange={(e) => updateFormData('ctFindings', e.target.value as CTFindings)}
+                label="CT Findings"
               >
                 <MenuItem value="ISCHEMIC_CHANGES">Ischemic Changes</MenuItem>
                 <MenuItem value="HEMORRHAGE">Hemorrhage</MenuItem>
@@ -129,7 +182,15 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
           control={
             <Checkbox
               checked={formData.swallowingScreeningPerformed || false}
-              onChange={(e) => updateFormData('swallowingScreeningPerformed', e.target.checked)}
+              onChange={(e) => {
+                const isChecked = e.target.checked;
+                updateFormData('swallowingScreeningPerformed', isChecked);
+                if (!isChecked) {
+                  // Clear swallowing screening related fields when unchecked
+                  updateFormData('timeOfSwallowingScreening', null);
+                  updateFormData('swallowingScreeningResult', null);
+                }
+              }}
             />
           }
           label="Swallowing Screening Performed"
@@ -147,7 +208,15 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
               onChange={(e) => handleDateTimeChange('timeOfSwallowingScreening', e.target.value)}
               InputLabelProps={{ shrink: true }}
               helperText="Time swallowing screening was completed"
+              error={!!timelineWarnings['timeOfSwallowingScreening']}
             />
+            {timelineWarnings['timeOfSwallowingScreening']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {emphasizeKeywords(warning)}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -156,6 +225,7 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
               <Select
                 value={formData.swallowingScreeningResult || ''}
                 onChange={(e) => updateFormData('swallowingScreeningResult', e.target.value as SwallowingScreeningResult)}
+                label="Swallowing Screening Result"
               >
                 <MenuItem value="PASS">Pass</MenuItem>
                 <MenuItem value="FAIL">Fail</MenuItem>
@@ -170,6 +240,7 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
               <Select
                 value={formData.modifiedRankinScaleAt90Days || ''}
                 onChange={(e) => updateFormData('modifiedRankinScaleAt90Days', e.target.value as ModifiedRankinScale)}
+                label="Current Modified Rankin Scale"
               >
                 <MenuItem value="SCORE_0">Score 0 - No symptoms</MenuItem>
                 <MenuItem value="SCORE_1">Score 1 - No significant disability</MenuItem>

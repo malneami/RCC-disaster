@@ -7,6 +7,8 @@ import {
   Select,
   MenuItem,
   Typography,
+  Alert,
+  Box,
 } from '@mui/material';
 
 import { CreateStrokeCaseData } from '../../../../services/strokeService';
@@ -16,12 +18,14 @@ interface AssessmentStepProps {
   formData: CreateStrokeCaseData;
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
   validationErrors?: Record<string, string>;
+  timelineWarnings?: Record<string, string[]>;
 }
 
 const AssessmentStep: React.FC<AssessmentStepProps> = ({
   formData,
   updateFormData,
   validationErrors = {},
+  timelineWarnings = {},
 }) => {
   const handleDateTimeChange = (field: string, value: string) => {
     // Convert datetime-local input to ISO-8601 format for backend
@@ -31,6 +35,32 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
     } else {
       updateFormData(field as keyof CreateStrokeCaseData, null);
     }
+  };
+
+  const emphasizeKeywords = (text: string) => {
+    const keywords = [
+      'Symptom onset',
+      'Admission',
+      'Triage',
+      'Physician assessment',
+      'Transfer request',
+      'Transfer arrival',
+      'SRCA call',
+    ];
+    
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, index) => {
+      const isKeyword = keywords.some(
+        (keyword) => keyword.toLowerCase() === part.toLowerCase()
+      );
+      return isKeyword ? (
+        <Box key={`${part}-${index}`} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      );
+    });
   };
 
   return (
@@ -84,7 +114,15 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
             onChange={(e) => handleDateTimeChange('srcaCallTime', e.target.value)}
             InputLabelProps={{ shrink: true }}
             helperText="Time when SRCA was contacted (KPI#9)"
+            error={!!timelineWarnings['srcaCallTime']}
           />
+          {timelineWarnings['srcaCallTime']?.map((warning, idx) => (
+            <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {emphasizeKeywords(warning)}
+              </Typography>
+            </Alert>
+          ))}
         </Grid>
       )}
       
@@ -97,7 +135,15 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           onChange={(e) => handleDateTimeChange('timeOfSymptomOnset', e.target.value)}
           InputLabelProps={{ shrink: true }}
           helperText="When symptoms first appeared"
+          error={!!timelineWarnings['timeOfSymptomOnset']}
         />
+        {timelineWarnings['timeOfSymptomOnset']?.map((warning, idx) => (
+          <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {emphasizeKeywords(warning)}
+            </Typography>
+          </Alert>
+        ))}
       </Grid>
       
       <Grid item xs={12} sm={6}>
@@ -109,7 +155,15 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           onChange={(e) => handleDateTimeChange('dateOfAdmission', e.target.value)}
           InputLabelProps={{ shrink: true }}
           helperText="When patient was registered at hospital"
+          error={!!timelineWarnings['dateOfAdmission']}
         />
+        {timelineWarnings['dateOfAdmission']?.map((warning, idx) => (
+          <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {emphasizeKeywords(warning)}
+            </Typography>
+          </Alert>
+        ))}
       </Grid>
       <Grid item xs={12} sm={6}>
         <TextField
@@ -120,7 +174,15 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           onChange={(e) => handleDateTimeChange('timeOfTriage', e.target.value)}
           InputLabelProps={{ shrink: true }}
           helperText="When patient was triaged"
+          error={!!timelineWarnings['timeOfTriage']}
         />
+        {timelineWarnings['timeOfTriage']?.map((warning, idx) => (
+          <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {emphasizeKeywords(warning)}
+            </Typography>
+          </Alert>
+        ))}
       </Grid>
       <Grid item xs={12} sm={6}>
         <TextField
@@ -131,7 +193,15 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           onChange={(e) => handleDateTimeChange('timeOfPhysicianAssessment', e.target.value)}
           InputLabelProps={{ shrink: true }}
           helperText="When physician first assessed patient (KPI#1)"
+          error={!!timelineWarnings['timeOfPhysicianAssessment']}
         />
+        {timelineWarnings['timeOfPhysicianAssessment']?.map((warning, idx) => (
+          <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {emphasizeKeywords(warning)}
+            </Typography>
+          </Alert>
+        ))}
       </Grid>
 
 

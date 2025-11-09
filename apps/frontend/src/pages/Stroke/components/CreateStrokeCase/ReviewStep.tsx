@@ -3,6 +3,9 @@ import {
   Box,
   Typography,
   Grid,
+  Card,
+  CardContent,
+  Alert,
 } from '@mui/material';
 
 import { CreateStrokeCaseData, StrokeService } from '../../../../services/strokeService';
@@ -10,9 +13,10 @@ import { hospitalService, Hospital } from '../../../../services/hospitalService'
 
 interface ReviewStepProps {
   formData: CreateStrokeCaseData;
+  timelineWarnings?: Record<string, string[]>;
 }
 
-const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
+const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {} }) => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
 
   useEffect(() => {
@@ -33,116 +37,321 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
     return hospital ? hospital.name : hospitalId;
   };
 
+  const formatDateTime = (dateTime: string) => {
+    if (!dateTime) return 'Not specified';
+    return new Date(dateTime).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const hasWarnings = Object.keys(timelineWarnings).length > 0;
+
+  const emphasizeKeywords = (text: string) => {
+    const keywords = [
+      'Symptom onset',
+      'Admission',
+      'Triage',
+      'Physician assessment',
+      'CT scan',
+      'CT report',
+      'Swallowing screening',
+      'Thrombolysis',
+      'Thrombectomy',
+      'Transfer',
+      'SRCA call',
+    ];
+    
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, index) => {
+      const isKeyword = keywords.some(
+        (keyword) => keyword.toLowerCase() === part.toLowerCase()
+      );
+      return isKeyword ? (
+        <Box key={`${part}-${index}`} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      );
+    });
+  };
+
+  const cardStyles = (highlight = false) => ({
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    borderRadius: 3,
+    boxShadow: highlight
+      ? '0px 12px 30px rgba(234, 179, 8, 0.25)'
+      : '0px 12px 30px rgba(15, 23, 42, 0.08)',
+    border: `1px solid ${highlight ? 'rgba(234, 179, 8, 0.6)' : 'rgba(15, 23, 42, 0.05)'}`,
+    transition: 'border-color 0.3s ease',
+  });
+
+  const cardContentStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 1.25,
+    px: 3,
+    py: 3,
+  };
+
+  const getWarnings = (...fields: string[]) => {
+    return fields.flatMap((field) => timelineWarnings[field] || []);
+  };
+
+  const renderWarningsList = (warnings: string[]) => {
+    if (!warnings.length) {
+      return null;
+    }
+
+    return (
+      <Box mt={1.5} display="flex" flexDirection="column" gap={0.5}>
+        {warnings.map((warning, index) => (
+          <Alert key={`${warning}-${index}`} severity="warning" variant="outlined" sx={{ borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {emphasizeKeywords(warning)}
+            </Typography>
+          </Alert>
+        ))}
+      </Box>
+    );
+  };
+
+  const renderValue = (value: string, hasIssue: boolean) => (
+    <Box
+      component="span"
+      sx={
+        hasIssue
+          ? {
+              display: 'inline-block',
+              fontWeight: 700,
+              color: 'warning.main',
+              ml: 0.5,
+            }
+          : { ml: 0.5 }
+      }
+    >
+      {value}
+    </Box>
+  );
+
+  const assessmentWarnings = getWarnings(
+    'timeOfSymptomOnset',
+    'dateOfAdmission',
+    'timeOfTriage',
+    'timeOfPhysicianAssessment',
+    'transferRequestDateTime',
+    'transferArrivalDateTime',
+    'srcaCallTime'
+  );
+  const diagnosisWarnings = getWarnings(
+    'timeOfCtScanStart',
+    'timeOfCtReportFinal',
+    'timeOfSwallowingScreening'
+  );
+  const treatmentWarnings = getWarnings(
+    'thrombolysisOrderTime',
+    'ivThrombolysisAdministrationTime',
+    'timeOfMechanicalThrombectomyPuncture',
+    'timeOfThrombectomyComplete',
+    'timeOfTransferActivation',
+    'timeOfTransferDeparture'
+  );
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
         Review Stroke Case Details
       </Typography>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Patient Name:</Typography>
-          <Typography variant="body1">{formData.patientInfo?.firstName} {formData.patientInfo?.lastName}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">National ID:</Typography>
-          <Typography variant="body1">{formData.patientInfo?.nationalId || 'Not provided'}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Medical Record Number (MRN):</Typography>
-          <Typography variant="body1">{formData.patientInfo?.mrn || 'Not provided'}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Age:</Typography>
-          <Typography variant="body1">{formData.patientInfo?.age ? `${formData.patientInfo.age} years` : 'Not provided'}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Origin Hospital:</Typography>
-          <Typography variant="body1">{getHospitalName(formData.originHospitalId)}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Destination Hospital:</Typography>
-          <Typography variant="body1">
-            {formData.destinationHospitalId ? getHospitalName(formData.destinationHospitalId) : 'None'}
+      
+      {hasWarnings && (
+        <Alert severity="warning" variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, color: 'warning.dark' }}>
+            Please review the timeline warnings below. Some timestamps may have logical inconsistencies that need to be corrected before submission.
           </Typography>
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {/* Patient Information Card */}
+        <Grid item xs={12} md={6}>
+          <Card sx={cardStyles()}>
+            <CardContent sx={cardContentStyles}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                Patient Information
+              </Typography>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Patient Name:</Typography>
+                <Typography variant="body1">{formData.patientInfo?.firstName} {formData.patientInfo?.lastName}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">National ID:</Typography>
+                <Typography variant="body1">{formData.patientInfo?.nationalId || 'Not provided'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Age:</Typography>
+                <Typography variant="body1">{formData.patientInfo?.age ? `${formData.patientInfo.age} years` : 'Not provided'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Origin Hospital:</Typography>
+                <Typography variant="body1">{getHospitalName(formData.originHospitalId)}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Destination Hospital:</Typography>
+                <Typography variant="body1">
+                  {formData.destinationHospitalId ? getHospitalName(formData.destinationHospitalId) : 'None'}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Mode of Arrival:</Typography>
+                <Typography variant="body1">
+                  {formData.modeOfArrival ? StrokeService.getModeOfArrivalLabel(formData.modeOfArrival) : 'Not specified'}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Stroke Type:</Typography>
-          <Typography variant="body1">{StrokeService.getStrokeTypeLabel(formData.strokeType)}</Typography>
+
+        {/* Assessment & Timing Card */}
+        <Grid item xs={12} md={6}>
+          <Card sx={cardStyles(assessmentWarnings.length > 0)}>
+            <CardContent sx={cardContentStyles}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                Assessment & Timing
+              </Typography>
+              {formData.timeOfSymptomOnset && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Time of Symptom Onset:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.timeOfSymptomOnset), !!timelineWarnings['timeOfSymptomOnset'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.dateOfAdmission && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Date of Admission:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.dateOfAdmission), !!timelineWarnings['dateOfAdmission'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.timeOfTriage && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Time of Triage:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.timeOfTriage), !!timelineWarnings['timeOfTriage'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.timeOfPhysicianAssessment && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Time of Physician Assessment:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.timeOfPhysicianAssessment), !!timelineWarnings['timeOfPhysicianAssessment'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.srcaCallTime && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">SRCA Call Time:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.srcaCallTime), !!timelineWarnings['srcaCallTime'])}
+                  </Typography>
+                </Box>
+              )}
+              {renderWarningsList(assessmentWarnings)}
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Current Status:</Typography>
-          <Typography variant="body1">{StrokeService.getStrokeStatusLabel(formData.currentStatus)}</Typography>
+
+        {/* Diagnosis Card */}
+        <Grid item xs={12} md={6}>
+          <Card sx={cardStyles(diagnosisWarnings.length > 0)}>
+            <CardContent sx={cardContentStyles}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                Diagnosis
+              </Typography>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Stroke Type:</Typography>
+                <Typography variant="body1">{StrokeService.getStrokeTypeLabel(formData.strokeType)}</Typography>
+              </Box>
+              {formData.ctScanPerformed && formData.timeOfCtScanStart && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">CT Scan Start:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.timeOfCtScanStart), !!timelineWarnings['timeOfCtScanStart'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.ctScanPerformed && formData.timeOfCtReportFinal && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">CT Report Final:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.timeOfCtReportFinal), !!timelineWarnings['timeOfCtReportFinal'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.swallowingScreeningPerformed && formData.timeOfSwallowingScreening && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Swallowing Screening:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.timeOfSwallowingScreening), !!timelineWarnings['timeOfSwallowingScreening'])}
+                  </Typography>
+                </Box>
+              )}
+              {renderWarningsList(diagnosisWarnings)}
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Mode of Arrival:</Typography>
-          <Typography variant="body1">
-            {formData.modeOfArrival ? StrokeService.getModeOfArrivalLabel(formData.modeOfArrival) : 'Not specified'}
-          </Typography>
+
+        {/* Treatment Card */}
+        <Grid item xs={12} md={6}>
+          <Card sx={cardStyles(treatmentWarnings.length > 0)}>
+            <CardContent sx={cardContentStyles}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                Treatment
+              </Typography>
+              {formData.thrombolysisOrderTime && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Thrombolysis Order Time:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.thrombolysisOrderTime), !!timelineWarnings['thrombolysisOrderTime'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.ivThrombolysisAdministrationTime && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">IV Thrombolysis Administration:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.ivThrombolysisAdministrationTime), !!timelineWarnings['ivThrombolysisAdministrationTime'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.timeOfMechanicalThrombectomyPuncture && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Thrombectomy Puncture:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.timeOfMechanicalThrombectomyPuncture), !!timelineWarnings['timeOfMechanicalThrombectomyPuncture'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.timeOfThrombectomyComplete && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Thrombectomy Complete:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.timeOfThrombectomyComplete), !!timelineWarnings['timeOfThrombectomyComplete'])}
+                  </Typography>
+                </Box>
+              )}
+              {renderWarningsList(treatmentWarnings)}
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Chief Complaint:</Typography>
-          <Typography variant="body1">{formData.chiefComplaint || 'Not provided'}</Typography>
-        </Grid>
-        {formData.srcaCallTime && (
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">SRCA Call Time:</Typography>
-            <Typography variant="body1">{new Date(formData.srcaCallTime).toLocaleString()}</Typography>
-          </Grid>
-        )}
-        {formData.timeOfSymptomOnset && (
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">Time of Symptom Onset:</Typography>
-            <Typography variant="body1">{new Date(formData.timeOfSymptomOnset).toLocaleString()}</Typography>
-          </Grid>
-        )}
-        {formData.dateOfAdmission && (
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">Date of Admission:</Typography>
-            <Typography variant="body1">{new Date(formData.dateOfAdmission).toLocaleString()}</Typography>
-          </Grid>
-        )}
-        {formData.timeOfTriage && (
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">Time of Triage:</Typography>
-            <Typography variant="body1">{new Date(formData.timeOfTriage).toLocaleString()}</Typography>
-          </Grid>
-        )}
-        {formData.timeOfPhysicianAssessment && (
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">Time of Physician Assessment:</Typography>
-            <Typography variant="body1">{new Date(formData.timeOfPhysicianAssessment).toLocaleString()}</Typography>
-          </Grid>
-        )}
-        {formData.ctScanPerformed !== undefined && (
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">CT Scan Performed:</Typography>
-            <Typography variant="body1">{formData.ctScanPerformed ? 'Yes' : 'No'}</Typography>
-          </Grid>
-        )}
-        {formData.swallowingScreeningPerformed !== undefined && (
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">Swallowing Screening Performed:</Typography>
-            <Typography variant="body1">{formData.swallowingScreeningPerformed ? 'Yes' : 'No'}</Typography>
-          </Grid>
-        )}
-        {formData.presentingSymptoms && (
-          <Grid item xs={12}>
-            <Typography variant="body2" color="text.secondary">Presenting Symptoms:</Typography>
-            <Typography variant="body1">{formData.presentingSymptoms}</Typography>
-          </Grid>
-        )}
-        {formData.thrombolysisContraindications && (
-          <Grid item xs={12}>
-            <Typography variant="body2" color="text.secondary">Thrombolysis Contraindications:</Typography>
-            <Typography variant="body1">{formData.thrombolysisContraindications}</Typography>
-          </Grid>
-        )}
-        {formData.thrombectomyContraindications && (
-          <Grid item xs={12}>
-            <Typography variant="body2" color="text.secondary">Thrombectomy Contraindications:</Typography>
-            <Typography variant="body1">{formData.thrombectomyContraindications}</Typography>
-          </Grid>
-        )}
       </Grid>
     </Box>
   );

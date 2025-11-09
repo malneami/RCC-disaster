@@ -17,18 +17,25 @@ import { CreateStrokeCaseData } from '../../../../services/strokeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
 import NationalIdInput from '../../../../components/Common/NationalIdInput';
 import PortalPatientEdit from '../../../../components/Common/PortalPatientEdit';
+import HospitalSelect from '../../../../components/Common/HospitalSelect';
 import { Patient } from '../../../../services/patientService';
 
 interface PatientInformationStepProps {
   formData: CreateStrokeCaseData;
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
   validationErrors?: Record<string, string>;
+  onOriginHospitalSelect?: (hospital: Hospital | null) => void;
+  destinationRequired?: boolean;
+  timelineWarnings?: Record<string, string[]>;
 }
 
 const PatientStep: React.FC<PatientInformationStepProps> = ({
   formData,
   updateFormData,
   validationErrors = {},
+  onOriginHospitalSelect,
+  destinationRequired = false,
+  timelineWarnings = {},
 }) => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
@@ -205,10 +212,10 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
               ...formData.patientInfo, 
               gender: e.target.value 
             })}
+            label="Gender"
           >
             <MenuItem value="MALE">Male</MenuItem>
             <MenuItem value="FEMALE">Female</MenuItem>
-            <MenuItem value="UNKNOWN">Unknown</MenuItem>
           </Select>
           {validationErrors['patientInfo.gender'] && (
             <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
@@ -226,6 +233,8 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             ...formData.patientInfo, 
             phoneNumber: e.target.value 
           })}
+          error={!!validationErrors['patientInfo.phoneNumber']}
+          helperText={validationErrors['patientInfo.phoneNumber']}
         />
       </Grid>
       <Grid item xs={12} sm={6}>
@@ -237,6 +246,8 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             ...formData.patientInfo, 
             email: e.target.value 
           })}
+          error={!!validationErrors['patientInfo.email']}
+          helperText={validationErrors['patientInfo.email']}
         />
       </Grid>
 
@@ -252,113 +263,99 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
       </Grid>
       
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth required error={!!validationErrors['originHospitalId']}>
-          <InputLabel>Origin Hospital</InputLabel>
-          <Select
-            value={formData.originHospitalId || ''}
-            onChange={(e) => updateFormData('originHospitalId', e.target.value)}
-            disabled={loadingHospitals}
-          >
-            {loadingHospitals ? (
-              <MenuItem disabled>
-                <CircularProgress size={20} sx={{ mr: 1 }} />
-                Loading hospitals...
-              </MenuItem>
-            ) : (
-              hospitals.map((hospital) => (
-                <MenuItem key={hospital.id} value={hospital.id}>
-                  <Box>
-                    <Typography variant="body1">{hospital.name}</Typography>
-                    {hospital.address && (
-                      <Typography variant="caption" color="text.secondary">
-                        {hospital.address}
-                      </Typography>
-                    )}
-                    <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                      {hospital.hasStrokeUnit && (
-                        <Typography variant="caption" color="success.main">
-                          Stroke Unit
-                        </Typography>
-                      )}
-                      {hospital.hasThrombolysis && (
-                        <Typography variant="caption" color="info.main">
-                          Thrombolysis
-                        </Typography>
-                      )}
-                      {hospital.hasThrombectomy && (
-                        <Typography variant="caption" color="warning.main">
-                          Thrombectomy
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                </MenuItem>
-              ))
-            )}
-          </Select>
-          {validationErrors['originHospitalId'] && (
-            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-              {validationErrors['originHospitalId']}
-            </Typography>
-          )}
-        </FormControl>
+        <HospitalSelect
+          label="Origin Hospital"
+          value={formData.originHospitalId}
+          onChange={(hospitalId) => {
+            updateFormData('originHospitalId', hospitalId);
+            const hospital = hospitals.find(h => h.id === hospitalId);
+            onOriginHospitalSelect?.(hospital || null);
+          }}
+          required
+          error={!!validationErrors['originHospitalId']}
+          helperText={validationErrors['originHospitalId']}
+          showServiceBadges
+        />
       </Grid>
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth>
-          <InputLabel>Destination Hospital (Optional)</InputLabel>
+        <FormControl fullWidth required={destinationRequired} error={!!validationErrors['destinationHospitalId']}>
+          <InputLabel>{destinationRequired ? 'Destination Hospital (Required)' : 'Destination Hospital (Optional)'}</InputLabel>
           <Select
             value={formData.destinationHospitalId || ''}
             onChange={(e) => updateFormData('destinationHospitalId', e.target.value)}
             disabled={loadingHospitals}
+            label={destinationRequired ? 'Destination Hospital (Required)' : 'Destination Hospital (Optional)'}
           >
-            <MenuItem value="">
-              <em>No destination hospital</em>
-            </MenuItem>
+            {!destinationRequired && (
+              <MenuItem value="">
+                <em>No destination hospital</em>
+              </MenuItem>
+            )}
             {loadingHospitals ? (
               <MenuItem disabled>
                 <CircularProgress size={20} sx={{ mr: 1 }} />
                 Loading hospitals...
               </MenuItem>
             ) : (
-              hospitals.map((hospital) => (
-                <MenuItem key={hospital.id} value={hospital.id}>
-                  <Box>
-                    <Typography variant="body1">{hospital.name}</Typography>
-                    {hospital.address && (
-                      <Typography variant="caption" color="text.secondary">
-                        {hospital.address}
-                      </Typography>
-                    )}
-                    <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                      {hospital.hasStrokeUnit && (
-                        <Typography variant="caption" color="success.main">
-                          Stroke Unit
+              hospitals
+                .filter((hospital) => hospital.hasStrokeService || hospital.hasStrokeUnit || hospital.hasThrombolysis || hospital.hasThrombectomy)
+                .map((hospital) => (
+                  <MenuItem key={hospital.id} value={hospital.id}>
+                    <Box>
+                      <Typography variant="body1">{hospital.name}</Typography>
+                      {hospital.address && (
+                        <Typography variant="caption" color="text.secondary">
+                          {hospital.address}
                         </Typography>
                       )}
-                      {hospital.hasThrombolysis && (
-                        <Typography variant="caption" color="info.main">
-                          Thrombolysis
-                        </Typography>
-                      )}
-                      {hospital.hasThrombectomy && (
-                        <Typography variant="caption" color="warning.main">
-                          Thrombectomy
-                        </Typography>
-                      )}
+                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                        {hospital.hasStrokeUnit && (
+                          <Typography variant="caption" color="success.main">
+                            Stroke Unit
+                          </Typography>
+                        )}
+                        {hospital.hasThrombolysis && (
+                          <Typography variant="caption" color="info.main">
+                            Thrombolysis
+                          </Typography>
+                        )}
+                        {hospital.hasThrombectomy && (
+                          <Typography variant="caption" color="warning.main">
+                            Thrombectomy
+                          </Typography>
+                        )}
+                      </Box>
                     </Box>
-                  </Box>
-                </MenuItem>
-              ))
+                  </MenuItem>
+                ))
             )}
           </Select>
+          {validationErrors['destinationHospitalId'] && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {validationErrors['destinationHospitalId']}
+            </Typography>
+          )}
+          {!validationErrors['destinationHospitalId'] && destinationRequired && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 1.75 }}>
+              Only hospitals with Stroke, Stroke Unit, Thrombolysis, or Thrombectomy services are shown
+            </Typography>
+          )}
         </FormControl>
       </Grid>
+      {destinationRequired && (
+        <Grid item xs={12}>
+          <Alert severity="warning">
+            Please select a destination hospital because the selected origin hospital does not provide Stroke service.
+          </Alert>
+        </Grid>
+      )}
       <Grid item xs={12} sm={6}>
         <FormControl fullWidth required error={!!validationErrors['modeOfArrival']}>
           <InputLabel>Mode of Arrival</InputLabel>
           <Select
             value={formData.modeOfArrival || ''}
             onChange={(e) => updateFormData('modeOfArrival', e.target.value)}
+            label="Mode of Arrival"
           >
             <MenuItem value="AMBULANCE_RED_CRESCENT">Ambulance (Red Crescent)</MenuItem>
             <MenuItem value="PRIVATE_CAR">Private Car</MenuItem>
@@ -385,7 +382,15 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
               InputLabelProps={{
                 shrink: true,
               }}
+              error={!!timelineWarnings['transferRequestDateTime']}
             />
+            {timelineWarnings['transferRequestDateTime']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {warning}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
@@ -397,7 +402,15 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
               InputLabelProps={{
                 shrink: true,
               }}
+              error={!!timelineWarnings['transferArrivalDateTime']}
             />
+            {timelineWarnings['transferArrivalDateTime']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {warning}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
         </>
       )}

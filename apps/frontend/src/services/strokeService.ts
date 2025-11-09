@@ -520,71 +520,100 @@ export interface StrokeKPISummary {
 export class StrokeService {
   // Stroke Cases
   static async createStrokeCase(data: CreateStrokeCaseData): Promise<StrokeCase> {
+    // Helper function to clean values (remove empty strings, keep only valid values)
+    const cleanValue = (value: any): any => {
+      if (value === '' || value === null) return undefined;
+      if (typeof value === 'string' && value.trim() === '') return undefined;
+      return value;
+    };
+
+    // Clean patientInfo - only clean optional fields, keep required fields as-is
+    const cleanPatientInfo = data.patientInfo ? {
+      firstName: data.patientInfo.firstName, // Required, don't clean
+      lastName: data.patientInfo.lastName, // Required, don't clean
+      nationalId: data.patientInfo.nationalId, // Required, don't clean
+      age: data.patientInfo.age, // Required, don't clean
+      gender: data.patientInfo.gender, // Required, don't clean
+      mrn: cleanValue(data.patientInfo.mrn), // Optional
+      phoneNumber: cleanValue(data.patientInfo.phoneNumber), // Optional
+      email: cleanValue(data.patientInfo.email) // Optional
+    } : undefined;
+
+    // Remove undefined values from patientInfo (only optional fields)
+    if (cleanPatientInfo) {
+      const optionalFields = ['mrn', 'phoneNumber', 'email'];
+      optionalFields.forEach(key => {
+        if (cleanPatientInfo[key as keyof typeof cleanPatientInfo] === undefined) {
+          delete cleanPatientInfo[key as keyof typeof cleanPatientInfo];
+        }
+      });
+    }
+
     // Include all fields that exist in the backend DTO
-    const filteredData = {
-      ticketId: data.ticketId,
-      patientId: data.patientId,
-      patientInfo: data.patientInfo ? {
-        firstName: data.patientInfo.firstName,
-        lastName: data.patientInfo.lastName,
-        nationalId: data.patientInfo.nationalId,
-        mrn: data.patientInfo.mrn,
-        age: data.patientInfo.age,
-        gender: data.patientInfo.gender,
-        phoneNumber: data.patientInfo.phoneNumber,
-        email: data.patientInfo.email
-      } : undefined,
-      chiefComplaint: data.chiefComplaint,
+    const filteredData: any = {
+      ticketId: cleanValue(data.ticketId),
+      patientId: cleanValue(data.patientId),
+      patientInfo: cleanPatientInfo && Object.keys(cleanPatientInfo).length > 0 ? cleanPatientInfo : undefined,
+      chiefComplaint: cleanValue(data.chiefComplaint),
       originHospitalId: data.originHospitalId,
-      destinationHospitalId: data.destinationHospitalId,
+      destinationHospitalId: cleanValue(data.destinationHospitalId),
       strokeType: data.strokeType,
       currentStatus: data.currentStatus,
-      selectedTreatment: data.selectedTreatment,
+      selectedTreatment: cleanValue(data.selectedTreatment),
       
       // Patient Arrival & Timing (Step 1)
-      modeOfArrival: data.modeOfArrival,
-      srcaCallTime: data.srcaCallTime,
-      timeOfSymptomOnset: data.timeOfSymptomOnset,
-      lastKnownNormal: data.lastKnownNormal,
-      dateOfAdmission: data.dateOfAdmission,
-      timeOfTriage: data.timeOfTriage,
-      timeOfPhysicianAssessment: data.timeOfPhysicianAssessment,
+      modeOfArrival: cleanValue(data.modeOfArrival),
+      transferRequestDateTime: cleanValue(data.transferRequestDateTime),
+      transferArrivalDateTime: cleanValue(data.transferArrivalDateTime),
+      srcaCallTime: cleanValue(data.srcaCallTime),
+      timeOfSymptomOnset: cleanValue(data.timeOfSymptomOnset),
+      lastKnownNormal: cleanValue(data.lastKnownNormal),
+      dateOfAdmission: cleanValue(data.dateOfAdmission),
+      timeOfTriage: cleanValue(data.timeOfTriage),
+      timeOfPhysicianAssessment: cleanValue(data.timeOfPhysicianAssessment),
       
       // Clinical Assessment & Diagnosis (Step 2)
-      strokeTypeDetailed: data.strokeTypeDetailed,
+      strokeTypeDetailed: cleanValue(data.strokeTypeDetailed),
       swallowingScreeningPerformed: data.swallowingScreeningPerformed,
-      timeOfSwallowingScreening: data.timeOfSwallowingScreening,
-      swallowingScreeningResult: data.swallowingScreeningResult,
+      timeOfSwallowingScreening: cleanValue(data.timeOfSwallowingScreening),
+      swallowingScreeningResult: cleanValue(data.swallowingScreeningResult),
       ctScanPerformed: data.ctScanPerformed,
-      timeOfCtScanStart: data.timeOfCtScanStart,
-      timeOfCtReportFinal: data.timeOfCtReportFinal,
-      ctFindings: data.ctFindings,
+      timeOfCtScanStart: cleanValue(data.timeOfCtScanStart),
+      timeOfCtReportFinal: cleanValue(data.timeOfCtReportFinal),
+      ctFindings: cleanValue(data.ctFindings),
       lvoDetected: data.lvoDetected,
-      candidateForIVThrombolysis: data.candidateForIVThrombolysis,
-      thrombolysisOrderTime: data.thrombolysisOrderTime,
-      ivThrombolysisAdministrationTime: data.ivThrombolysisAdministrationTime,
-      ivThrombolysisGiven: data.ivThrombolysisGiven,
-      reasonForNotAdministeringIV: data.reasonForNotAdministeringIV,
-      candidateForMechanicalThrombectomy: data.candidateForMechanicalThrombectomy,
-      timeOfMechanicalThrombectomyPuncture: data.timeOfMechanicalThrombectomyPuncture,
+      candidateForIVThrombolysis: cleanValue(data.candidateForIVThrombolysis),
+      thrombolysisOrderTime: cleanValue(data.thrombolysisOrderTime),
+      ivThrombolysisAdministrationTime: cleanValue(data.ivThrombolysisAdministrationTime),
+      ivThrombolysisGiven: cleanValue(data.ivThrombolysisGiven),
+      reasonForNotAdministeringIV: cleanValue(data.reasonForNotAdministeringIV),
+      candidateForMechanicalThrombectomy: cleanValue(data.candidateForMechanicalThrombectomy),
+      timeOfMechanicalThrombectomyPuncture: cleanValue(data.timeOfMechanicalThrombectomyPuncture),
       mechanicalThrombectomyPerformed: data.mechanicalThrombectomyPerformed,
-      timeOfThrombectomyComplete: data.timeOfThrombectomyComplete,
+      timeOfThrombectomyComplete: cleanValue(data.timeOfThrombectomyComplete),
       
       // Disposition & Transfer Decisions (Step 3)
       facilityHasCt: data.facilityHasCt,
       transferToAnotherHospital: data.transferToAnotherHospital,
-      timeOfTransferActivation: data.timeOfTransferActivation,
-      timeOfTransferDeparture: data.timeOfTransferDeparture,
+      timeOfTransferActivation: cleanValue(data.timeOfTransferActivation),
+      timeOfTransferDeparture: cleanValue(data.timeOfTransferDeparture),
       prehospitalNotificationBySrca: data.prehospitalNotificationBySrca,
       prehospitalNotificationByUccPhc: data.prehospitalNotificationByUccPhc,
-      disposition: data.disposition,
+      disposition: cleanValue(data.disposition),
       referralTo: data.referralTo,
       admittedToStrokeUnit: data.admittedToStrokeUnit,
       
       // Follow-up & Outcome Tracking (Step 4)
       followUpContactAttempted: data.followUpContactAttempted,
-      modifiedRankinScaleAt90Days: data.modifiedRankinScaleAt90Days,
+      modifiedRankinScaleAt90Days: cleanValue(data.modifiedRankinScaleAt90Days),
     };
+
+    // Remove all undefined values from the payload
+    Object.keys(filteredData).forEach(key => {
+      if (filteredData[key] === undefined) {
+        delete filteredData[key];
+      }
+    });
     
     console.log('Sending filtered data:', filteredData);
     const response = await apiClient.post('/stroke-cases', filteredData);
