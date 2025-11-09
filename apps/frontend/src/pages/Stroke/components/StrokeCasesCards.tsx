@@ -25,6 +25,7 @@ import {
   ViewModule as CardsIcon,
   TableChart as TableIcon,
   Comment as CommentIcon,
+  Assignment as OutcomeFormIcon,
 } from '@mui/icons-material';
 import { StrokeCase } from '../../../services/strokeService';
 import StrokeCasesFilters from './StrokeCasesList/StrokeCasesFilters';
@@ -58,6 +59,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
   onDeleteCase,
   onViewDetails,
   onEditCase,
+  onOpenOutcomeForm,
   onViewModeChange,
 }) => {
   const [filteredCases, setFilteredCases] = useState<StrokeCase[]>(cases);
@@ -215,6 +217,13 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
         label: 'View Details',
         icon: <ViewIcon />,
         onClick: () => onViewDetails(strokeCase),
+        color: 'primary',
+        variant: 'outlined',
+      },
+      {
+        label: 'Outcome Form',
+        icon: <OutcomeFormIcon />,
+        onClick: () => onOpenOutcomeForm(strokeCase),
         color: 'primary',
         variant: 'outlined',
       },

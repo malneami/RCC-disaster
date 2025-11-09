@@ -940,6 +940,7 @@ const StemiPortalPage: React.FC = () => {
                 onEditCase={handleEditCase}
                 onViewCase={handleViewCase}
                 onDeleteCase={handleDeleteCase}
+                onOutcomeFormUpdate={handleOutcomeFormUpdate}
               />
               <Box sx={{ mt: 2 }}>
                 <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>

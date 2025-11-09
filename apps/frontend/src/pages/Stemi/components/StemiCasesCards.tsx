@@ -10,6 +10,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Comment as CommentIcon,
+  Assignment as OutcomeFormIcon,
 } from '@mui/icons-material';
 import { StemiCase } from '../services/stemiService';
 import UnifiedCaseCard, { 
@@ -19,6 +20,7 @@ import UnifiedCaseCard, {
   PerformanceIndicator, 
   CaseAction 
 } from '../../../components/Common/UnifiedCaseCard';
+import StemiOutcomeForm from './StemiOutcomeForm';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService } from '../../../services/notificationService';
 
@@ -28,6 +30,7 @@ interface StemiCasesCardsProps {
   onEditCase: (case_: StemiCase) => void;
   onViewCase: (case_: StemiCase) => void;
   onDeleteCase: (id: string) => void;
+  onOutcomeFormUpdate?: (caseId: string, updatedData: any) => void;
 }
 
 const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
@@ -36,9 +39,12 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
   onEditCase,
   onViewCase,
   onDeleteCase,
+  onOutcomeFormUpdate,
 }) => {
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
   const [selectedCaseForNote, setSelectedCaseForNote] = useState<StemiCase | null>(null);
+  const [outcomeFormDialogOpen, setOutcomeFormDialogOpen] = useState(false);
+  const [selectedCaseForOutcome, setSelectedCaseForOutcome] = useState<StemiCase | null>(null);
 
   const handleAddCaseNote = (stemiCase: StemiCase) => {
     setSelectedCaseForNote(stemiCase);
@@ -58,6 +64,23 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
   const handleCaseNoteClose = () => {
     setShowCaseNoteModal(false);
     setSelectedCaseForNote(null);
+  };
+
+  const handleOpenOutcomeForm = (stemiCase: StemiCase) => {
+    setSelectedCaseForOutcome(stemiCase);
+    setOutcomeFormDialogOpen(true);
+  };
+
+  const handleOutcomeFormClose = () => {
+    setOutcomeFormDialogOpen(false);
+    setSelectedCaseForOutcome(null);
+  };
+
+  const handleOutcomeFormSuccess = (updatedData?: any) => {
+    if (selectedCaseForOutcome && onOutcomeFormUpdate) {
+      onOutcomeFormUpdate(selectedCaseForOutcome.id, updatedData);
+    }
+    handleOutcomeFormClose();
   };
   const transformStemiCase = (stemiCase: StemiCase): UnifiedCaseCardProps => {
     const patient: PatientInfo = {
@@ -157,6 +180,13 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
         label: 'View Details',
         icon: <ViewIcon />,
         onClick: () => onViewCase(stemiCase),
+        color: 'primary',
+        variant: 'outlined',
+      },
+      {
+        label: 'Outcome Form',
+        icon: <OutcomeFormIcon />,
+        onClick: () => handleOpenOutcomeForm(stemiCase),
         color: 'primary',
         variant: 'outlined',
       },
@@ -473,6 +503,15 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
           caseId={selectedCaseForNote.id}
           patientId={selectedCaseForNote.patientId}
           ticketId={selectedCaseForNote.ticketId}
+        />
+      )}
+      {selectedCaseForOutcome && (
+        <StemiOutcomeForm
+          open={outcomeFormDialogOpen}
+          onClose={handleOutcomeFormClose}
+          stemiCaseId={selectedCaseForOutcome.id}
+          stemiCaseData={selectedCaseForOutcome}
+          onSuccess={handleOutcomeFormSuccess}
         />
       )}
     </Box>
