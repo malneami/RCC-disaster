@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Alert,
   Box,
   Typography,
   Card,
@@ -24,6 +25,7 @@ interface ReviewStepProps {
     ecgResult?: string;
     troponinValue?: number;
   };
+  timelineWarnings?: Record<string, string[]>;
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({
@@ -33,6 +35,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   interventionsAndTreatments,
   clinicalAssessment,
   additionalData,
+  timelineWarnings = {},
 }) => {
   const formatDateTime = (dateTime: string) => {
     if (!dateTime) return 'Not specified';
@@ -45,14 +48,37 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
     });
   };
 
-  const cardStyles = {
+  const hasWarnings = Object.keys(timelineWarnings).length > 0;
+
+  const emphasizeKeywords = (text: string) => {
+    const keywords = ['Admission', 'Triage', 'ECG', 'PCI', 'Door', 'Balloon', 'Symptom', 'Transfer', 'Thrombolytic'];
+    const regex = new RegExp(`(${keywords.join('|')})`, 'gi');
+    const parts = text.split(regex);
+
+    return parts.map((part, index) => {
+      const isKeyword = keywords.some(
+        (keyword) => keyword.toLowerCase() === part.toLowerCase()
+      );
+
+      return isKeyword ? (
+        <Box key={`${part}-${index}`} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      );
+    });
+  };
+
+  const cardStyles = (highlight = false) => ({
     height: '100%',
     display: 'flex',
     flexDirection: 'column' as const,
     borderRadius: 3,
     boxShadow: '0px 12px 30px rgba(15, 23, 42, 0.08)',
-    border: '1px solid rgba(15, 23, 42, 0.05)',
-  };
+    border: highlight ? '2px solid rgba(245, 158, 11, 0.6)' : '1px solid rgba(15, 23, 42, 0.05)',
+    transition: 'border 0.3s ease',
+  });
 
   const cardContentStyles = {
     display: 'flex',
@@ -61,6 +87,75 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
     px: 3,
     py: 3,
   };
+
+  const getWarnings = (...fields: string[]) => {
+    return fields.flatMap((field) => timelineWarnings[field] || []);
+  };
+
+  const renderWarningsList = (warnings: string[]) => {
+    if (!warnings.length) {
+      return null;
+    }
+
+    return (
+      <Box mt={1.5} display="flex" flexDirection="column" gap={0.5}>
+        {warnings.map((warning, index) => (
+          <Alert
+            key={`${warning}-${index}`}
+            severity="warning"
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              fontSize: '0.95rem',
+              bgcolor: 'transparent',
+              borderColor: 'warning.main',
+              color: 'warning.dark',
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: 600, color: 'inherit' }}>
+              {emphasizeKeywords(warning)}
+            </Typography>
+          </Alert>
+        ))}
+      </Box>
+    );
+  };
+
+  const renderValue = (value: string, hasIssue: boolean) => (
+    <Box
+      component="span"
+      sx={{
+        ml: 0.5,
+        fontWeight: hasIssue ? 700 : 400,
+        color: hasIssue ? 'warning.main' : 'inherit',
+      }}
+    >
+      {value}
+    </Box>
+  );
+
+  const admissionWarnings = getWarnings(
+    'admissionDetails.admissionTime',
+    'admissionDetails.transferRequestDateTime',
+    'admissionDetails.transferArrivalDateTime'
+  );
+  const admissionHasIssue = admissionWarnings.length > 0;
+  const triageWarnings = getWarnings('criticalTimestamps.triageTime');
+  const triageHasIssue = triageWarnings.length > 0;
+  const ecgWarnings = getWarnings('criticalTimestamps.firstEcgTime');
+  const ecgHasIssue = ecgWarnings.length > 0;
+  const doorOutWarnings = getWarnings('interventionsAndTreatments.doorOutTime');
+  const balloonWarnings = getWarnings('interventionsAndTreatments.balloonInflationTime');
+  const thrombolyticWarnings = getWarnings('interventionsAndTreatments.thrombolyticAdminTime');
+  const symptomWarnings = getWarnings('clinicalAssessment.symptomOnset');
+  const criticalWarnings = [...new Set([...triageWarnings, ...ecgWarnings])];
+  const interventionWarnings = [
+    ...new Set([
+      ...doorOutWarnings,
+      ...balloonWarnings,
+      ...thrombolyticWarnings,
+    ]),
+  ];
 
   return (
     <Box>
@@ -71,10 +166,30 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
         Please review all the information before submitting the STEMI case.
       </Typography>
 
+      {hasWarnings && (
+        <Alert
+          severity="warning"
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            fontSize: '1rem',
+            fontWeight: 600,
+            color: 'warning.dark',
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: 'warning.main',
+          }}
+        >
+          <Typography variant="body1" sx={{ fontWeight: 700 }}>
+            We spotted some timeline issues. Please double-check the highlighted timestamps before submitting.
+          </Typography>
+        </Alert>
+      )}
+
       <Grid container spacing={3} alignItems="stretch">
         {/* Patient Information */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles}>
+          <Card sx={cardStyles(false)}>
             <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Patient Information
@@ -107,41 +222,52 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Admission Details */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles}>
+          <Card sx={cardStyles(admissionHasIssue)}>
             <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Admission Details
               </Typography>
               <Typography variant="body2">
-                <strong>Admission Time:</strong> {formatDateTime(admissionDetails.admissionTime)}
+                <strong>Admission Time:</strong>
+                {renderValue(formatDateTime(admissionDetails.admissionTime), admissionHasIssue)}
               </Typography>
               <Typography variant="body2">
                 <strong>Mode of Arrival:</strong> {admissionDetails.modeOfArrival.replace(/_/g, ' ')}
               </Typography>
             </CardContent>
+            {renderWarningsList(admissionWarnings)}
           </Card>
         </Grid>
 
         {/* Critical Timestamps */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles}>
+          <Card sx={cardStyles(triageHasIssue || ecgHasIssue)}>
             <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Critical Timestamps
               </Typography>
               <Typography variant="body2">
-                <strong>Triage Time:</strong> {formatDateTime(criticalTimestamps.triageTime || '')}
+                <strong>Triage Time:</strong>
+                {renderValue(formatDateTime(criticalTimestamps.triageTime || ''), triageHasIssue)}
               </Typography>
               <Typography variant="body2">
-                <strong>First ECG Time:</strong> {formatDateTime(criticalTimestamps.firstEcgTime || '')}
+                <strong>First ECG Time:</strong>
+                {renderValue(formatDateTime(criticalTimestamps.firstEcgTime || ''), ecgHasIssue)}
               </Typography>
             </CardContent>
+            {renderWarningsList(criticalWarnings)}
           </Card>
         </Grid>
 
         {/* Interventions and Treatments */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles}>
+          <Card
+            sx={cardStyles(
+              doorOutWarnings.length > 0 ||
+                balloonWarnings.length > 0 ||
+                thrombolyticWarnings.length > 0
+            )}
+          >
             <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Interventions & Treatments
@@ -162,14 +288,31 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <Typography variant="body2">
                 <strong>Thrombolytic Given:</strong> {interventionsAndTreatments.thrombolyticGiven ? 'Yes' : 'No'}
               </Typography>
+              {interventionsAndTreatments.thrombolyticAdminTime && (
+                <Typography variant="body2">
+                  <strong>Thrombolytic Administration Time:</strong>
+                  {renderValue(
+                    formatDateTime(interventionsAndTreatments.thrombolyticAdminTime),
+                    thrombolyticWarnings.length > 0
+                  )}
+                </Typography>
+              )}
               {interventionsAndTreatments.doorOutTime && (
                 <Typography variant="body2">
-                  <strong>Door Out Time:</strong> {formatDateTime(interventionsAndTreatments.doorOutTime)}
+                  <strong>Door Out Time:</strong>
+                  {renderValue(
+                    formatDateTime(interventionsAndTreatments.doorOutTime),
+                    doorOutWarnings.length > 0
+                  )}
                 </Typography>
               )}
               {interventionsAndTreatments.balloonInflationTime && (
                 <Typography variant="body2">
-                  <strong>Balloon Inflation Time:</strong> {formatDateTime(interventionsAndTreatments.balloonInflationTime)}
+                  <strong>Balloon Inflation Time:</strong>
+                  {renderValue(
+                    formatDateTime(interventionsAndTreatments.balloonInflationTime),
+                    balloonWarnings.length > 0
+                  )}
                 </Typography>
               )}
               {interventionsAndTreatments.fibrinolyticAbsoluteContraindications && (
@@ -183,12 +326,13 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                 </Typography>
               )}
             </CardContent>
+            {renderWarningsList(interventionWarnings)}
           </Card>
         </Grid>
 
         {/* Clinical Assessment */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles}>
+          <Card sx={cardStyles(symptomWarnings.length > 0)}>
             <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Clinical Assessment
@@ -210,7 +354,11 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               )}
               {clinicalAssessment.symptomOnset && (
                 <Typography variant="body2">
-                  <strong>Symptom Onset:</strong> {formatDateTime(clinicalAssessment.symptomOnset)}
+                  <strong>Symptom Onset:</strong>
+                  {renderValue(
+                    formatDateTime(clinicalAssessment.symptomOnset),
+                    symptomWarnings.length > 0
+                  )}
                 </Typography>
               )}
               {clinicalAssessment.symptomDuration !== undefined && (
@@ -219,12 +367,13 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                 </Typography>
               )}
             </CardContent>
+            {renderWarningsList(symptomWarnings)}
           </Card>
         </Grid>
 
         {/* Additional Information */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles}>
+          <Card sx={cardStyles(false)}>
             <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom>
                 Additional Information

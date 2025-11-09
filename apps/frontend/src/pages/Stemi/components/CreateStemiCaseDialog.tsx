@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -7,12 +7,13 @@ import {
   Button,
   Stepper,
   Step,
-  StepLabel,
+  StepButton,
   Box,
   Typography,
   Alert,
   CircularProgress,
 } from '@mui/material';
+import * as yup from 'yup';
 import { CreateStemiCaseData, PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment } from '../services/stemiService';
 import { StemiDatetimeService } from '../services/stemiDatetimeService';
 import { Hospital } from '../../../services/hospitalService';
@@ -41,6 +42,57 @@ const steps = [
 const DESTINATION_REQUIRED_MESSAGE =
   'Please select a destination hospital because the selected origin hospital does not provide STEMI service.';
 
+// Regex patterns supporting Arabic characters
+const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F]+$/;
+const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
+const PHONE_REGEX = /^\+?\d{7,15}$/;
+
+const patientInfoSchema = yup.object({
+  firstName: yup
+    .string()
+    .trim()
+    .matches(NAME_REGEX, 'First name can only include letters (including Arabic) and spaces.')
+    .required('Patient Name is required'),
+  lastName: yup
+    .string()
+    .trim()
+    .matches(NAME_REGEX, 'Last name can only include letters (including Arabic) and spaces.')
+    .required('Patient Last Name is required'),
+  nationalId: yup
+    .string()
+    .trim()
+    .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
+    .required('National ID is required'),
+  age: yup
+    .number()
+    .typeError('Age must be a number')
+    .required('Age is required')
+    .min(0, 'Age must be a positive number')
+    .max(150, 'Please enter a realistic age'),
+  gender: yup
+    .string()
+    .oneOf(['MALE', 'FEMALE', 'OTHER'], 'Please select a gender')
+    .required('Gender is required'),
+  phoneNumber: yup
+    .string()
+    .nullable()
+    .transform((value) => (value ? value.trim() : ''))
+    .test('valid-phone', 'Phone numbers can only include digits and may start with +', (value) => {
+      if (!value) return true;
+      return PHONE_REGEX.test(value);
+    }),
+  emergencyPhone: yup
+    .string()
+    .nullable()
+    .transform((value) => (value ? value.trim() : ''))
+    .test('valid-emergency-phone', 'Emergency phone can only include digits and may start with +', (value) => {
+      if (!value) return true;
+      return PHONE_REGEX.test(value);
+    }),
+  originHospitalId: yup.string().required('Origin Hospital is required'),
+  destinationHospitalId: yup.string().optional(),
+});
+
 const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   open,
   onClose,
@@ -50,6 +102,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [timelineWarnings, setTimelineWarnings] = useState<Record<string, string[]>>({});
   const [originHospital, setOriginHospital] = useState<Hospital | null>(null);
 
   // Form data state
@@ -115,7 +168,27 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   });
 
   const handlePatientInfoChange = useCallback((updated: PatientInfo) => {
-    setPatientInfo(updated);
+    setPatientInfo((prev) => {
+      setValidationErrors((prevErrors) => {
+        let nextErrors = { ...prevErrors };
+
+        Object.keys(prevErrors).forEach((key) => {
+          if (!key.startsWith('patientInfo.')) {
+            return;
+          }
+
+          const field = key.replace('patientInfo.', '') as keyof PatientInfo;
+          if (prev[field] !== updated[field]) {
+            const { [key]: _removed, ...rest } = nextErrors;
+            nextErrors = rest;
+          }
+        });
+
+        return nextErrors;
+      });
+
+      return updated;
+    });
 
     if (updated.destinationHospitalId) {
       setValidationErrors((prev) => {
@@ -148,14 +221,199 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
 
   const originRequiresDestination = !!originHospital && !originHospital.hasStemiService;
 
-  const handleNext = () => {
-    const errors = validateStep(activeStep);
+  useEffect(() => {
+    const warnings: Record<string, string[]> = {};
+
+    const addWarning = (field: string, message: string) => {
+      warnings[field] = [...(warnings[field] || []), message];
+    };
+
+    const parseDate = (value?: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      return date;
+    };
+
+    const admissionTime = parseDate(admissionDetails.admissionTime);
+    const triageTime = parseDate(criticalTimestamps.triageTime);
+    const firstEcgTime = parseDate(criticalTimestamps.firstEcgTime);
+    const transferRequestTime = parseDate(admissionDetails.transferRequestDateTime);
+    const transferArrivalTime = parseDate(admissionDetails.transferArrivalDateTime);
+    const doorOutTime = parseDate(interventionsAndTreatments.doorOutTime);
+    const balloonInflationTime = parseDate(interventionsAndTreatments.balloonInflationTime);
+    const thrombolyticAdminTime =
+      interventionsAndTreatments.thrombolyticGiven === false
+        ? null
+        : parseDate(interventionsAndTreatments.thrombolyticAdminTime);
+    const symptomOnset = parseDate(clinicalAssessment.symptomOnset);
+
+    if (symptomOnset && admissionTime && symptomOnset > admissionTime) {
+      addWarning(
+        'clinicalAssessment.symptomOnset',
+        'Symptom onset happens after admission time. Please confirm the order of events.'
+      );
+    }
+
+    if (triageTime && admissionTime && triageTime < admissionTime) {
+      addWarning(
+        'criticalTimestamps.triageTime',
+        'Triage time occurs before admission. Double-check both times.'
+      );
+    }
+
+    if (firstEcgTime && admissionTime && firstEcgTime < admissionTime) {
+      addWarning(
+        'criticalTimestamps.firstEcgTime',
+        'First ECG time is before the patient arrived. Please revise the timestamps.'
+      );
+    }
+
+    if (firstEcgTime && triageTime && firstEcgTime < triageTime) {
+      addWarning(
+        'criticalTimestamps.firstEcgTime',
+        'First ECG usually follows triage. Please review the entries.'
+      );
+    }
+
+    if (transferRequestTime && admissionTime && transferRequestTime < admissionTime) {
+      addWarning(
+        'admissionDetails.transferRequestDateTime',
+        'Transfer request is logged before admission. Confirm the request time.'
+      );
+    }
+
+    if (transferArrivalTime && transferRequestTime && transferArrivalTime < transferRequestTime) {
+      addWarning(
+        'admissionDetails.transferArrivalDateTime',
+        'Transfer arrival is before the request. Please correct these times.'
+      );
+    }
+
+    if (doorOutTime && admissionTime && doorOutTime < admissionTime) {
+      addWarning(
+        'interventionsAndTreatments.doorOutTime',
+        'Door-out time is before admission. Check both timestamps.'
+      );
+    }
+
+    if (doorOutTime && triageTime && doorOutTime < triageTime) {
+      addWarning(
+        'interventionsAndTreatments.doorOutTime',
+        'Door-out time is earlier than triage. Please confirm the sequence.'
+      );
+    }
+
+    if (doorOutTime && firstEcgTime && doorOutTime < firstEcgTime) {
+      addWarning(
+        'interventionsAndTreatments.doorOutTime',
+        'Door-out time is earlier than the first ECG. Ensure the timeline is correct.'
+      );
+    }
+
+    if (balloonInflationTime && doorOutTime && balloonInflationTime < doorOutTime) {
+      addWarning(
+        'interventionsAndTreatments.balloonInflationTime',
+        'Balloon inflation should occur after leaving the facility. Please confirm these times.'
+      );
+    }
+
+    if (balloonInflationTime && admissionTime && balloonInflationTime < admissionTime) {
+      addWarning(
+        'interventionsAndTreatments.balloonInflationTime',
+        'Balloon inflation time happens before admission. Please review the entries.'
+      );
+    }
+
+    if (balloonInflationTime && firstEcgTime && balloonInflationTime < firstEcgTime) {
+      addWarning(
+        'interventionsAndTreatments.balloonInflationTime',
+        'Balloon inflation is before the first ECG. Please verify the entries.'
+      );
+    }
+
+    if (thrombolyticAdminTime && admissionTime && thrombolyticAdminTime < admissionTime) {
+      addWarning(
+        'interventionsAndTreatments.thrombolyticAdminTime',
+        'Thrombolytic administration is before admission. Confirm the time.'
+      );
+    }
+
+    if (thrombolyticAdminTime && firstEcgTime && thrombolyticAdminTime < firstEcgTime) {
+      addWarning(
+        'interventionsAndTreatments.thrombolyticAdminTime',
+        'Thrombolytics are given before the first ECG. Please verify the sequence.'
+      );
+    }
+
+    if (thrombolyticAdminTime && triageTime && thrombolyticAdminTime < triageTime) {
+      addWarning(
+        'interventionsAndTreatments.thrombolyticAdminTime',
+        'Thrombolytic medication appears before triage time. Please double-check.'
+      );
+    }
+
+    setTimelineWarnings((prev) => {
+      const prevKeys = Object.keys(prev);
+      const newKeys = Object.keys(warnings);
+
+      if (
+        prevKeys.length === newKeys.length &&
+        prevKeys.every(
+          (key) =>
+            newKeys.includes(key) &&
+            (prev[key]?.length || 0) === (warnings[key]?.length || 0) &&
+            (prev[key] || []).every((message, index) => message === warnings[key]?.[index])
+        )
+      ) {
+        return prev;
+      }
+
+      return warnings;
+    });
+  }, [
+    admissionDetails,
+    criticalTimestamps,
+    interventionsAndTreatments,
+    clinicalAssessment,
+  ]);
+
+  const timelineWarningKeys = useMemo(() => Object.keys(timelineWarnings), [timelineWarnings]);
+
+  const hasTimelineWarnings = timelineWarningKeys.length > 0;
+
+  const stepIssues = useMemo(() => {
+    const issues = new Array(steps.length).fill(false);
+
+    const hasPatientErrors = Object.keys(validationErrors).some((key) =>
+      key.startsWith('patientInfo.')
+    );
+    const hasAdmissionErrors = Object.keys(validationErrors).some((key) =>
+      key.startsWith('admissionDetails.')
+    );
+
+    issues[0] = hasPatientErrors;
+    issues[1] =
+      hasAdmissionErrors ||
+      timelineWarningKeys.some((key) => key.startsWith('admissionDetails.'));
+    issues[2] = timelineWarningKeys.some((key) => key.startsWith('criticalTimestamps.'));
+    issues[3] = timelineWarningKeys.some((key) => key.startsWith('interventionsAndTreatments.'));
+    issues[4] = timelineWarningKeys.some((key) => key.startsWith('clinicalAssessment.'));
+    issues[5] = hasTimelineWarnings;
+
+    return issues;
+  }, [validationErrors, timelineWarningKeys, hasTimelineWarnings]);
+
+  const handleNext = async () => {
+    const errors = await validateStep(activeStep);
     setValidationErrors(errors);
-    
-    // Only proceed if there are no validation errors
+
     if (Object.keys(errors).length === 0 && activeStep < steps.length - 1) {
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
     }
+
     setError(null);
   };
 
@@ -165,13 +423,21 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (originRequiresDestination && !patientInfo.destinationHospitalId) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        'patientInfo.destinationHospitalId': DESTINATION_REQUIRED_MESSAGE,
-      }));
-      setActiveStep(0);
-      setError(DESTINATION_REQUIRED_MESSAGE);
+    const patientErrors = await validateStep(0);
+    const admissionErrors = await validateStep(1);
+    const combinedErrors = { ...patientErrors, ...admissionErrors };
+
+    if (Object.keys(combinedErrors).length > 0) {
+      setValidationErrors(combinedErrors);
+      setActiveStep(Object.keys(patientErrors).length > 0 ? 0 : 1);
+      setError('Please correct the highlighted information before submitting.');
+      return;
+    }
+
+    if (hasTimelineWarnings) {
+      setActiveStep(5);
+      const firstWarning = timelineWarnings[Object.keys(timelineWarnings)[0]]?.[0];
+      setError(firstWarning || 'Please review the timeline warnings before submitting.');
       return;
     }
 
@@ -279,34 +545,32 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     }
   };
 
-  const validateStep = (step: number): Record<string, string> => {
+  const validateStep = async (step: number): Promise<Record<string, string>> => {
     const errors: Record<string, string> = {};
-    
+
     switch (step) {
-      case 0: // Patient Information
-        if (!patientInfo.firstName) {
-          errors['patientInfo.firstName'] = 'Patient Name is required';
+      case 0: {
+        try {
+          await patientInfoSchema.validate(patientInfo, { abortEarly: false });
+        } catch (validationError: any) {
+          if (validationError.inner) {
+            validationError.inner.forEach((err: yup.ValidationError) => {
+              if (err.path) {
+                errors[`patientInfo.${err.path}`] = err.message;
+              }
+            });
+          } else if (validationError.path) {
+            errors[`patientInfo.${validationError.path}`] = validationError.message;
+          }
         }
-        if (!patientInfo.lastName) {
-          errors['patientInfo.lastName'] = 'Patient Last Name is required';
-        }
-        if (!patientInfo.nationalId) {
-          errors['patientInfo.nationalId'] = 'National ID is required';
-        }
-        if (!patientInfo.age) {
-          errors['patientInfo.age'] = 'Age is required';
-        }
-        if (!patientInfo.gender) {
-          errors['patientInfo.gender'] = 'Gender is required';
-        }
-        if (!patientInfo.originHospitalId) {
-          errors['patientInfo.originHospitalId'] = 'Origin Hospital is required';
-        }
+
         if (originRequiresDestination && !patientInfo.destinationHospitalId) {
           errors['patientInfo.destinationHospitalId'] = DESTINATION_REQUIRED_MESSAGE;
         }
+
         break;
-      case 1: // Admission Details
+      }
+      case 1: {
         if (!admissionDetails.admissionTime) {
           errors['admissionDetails.admissionTime'] = 'Admission Time is required';
         }
@@ -314,20 +578,11 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           errors['admissionDetails.modeOfArrival'] = 'Mode of Arrival is required';
         }
         break;
-      case 2: // Critical Timestamps
-        // Optional fields
-        break;
-      case 3: // Interventions & Treatments
-        // Optional fields
-        break;
-      case 4: // Clinical Assessment
-        // Optional fields
-        break;
-      case 5: // Review
-        // Review step
+      }
+      default:
         break;
     }
-    
+
     return errors;
   };
 
@@ -349,6 +604,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             data={admissionDetails}
             onChange={setAdmissionDetails}
             validationErrors={validationErrors}
+            timelineWarnings={timelineWarnings}
           />
         );
       case 2:
@@ -356,6 +612,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           <CriticalTimestampsStep
             data={criticalTimestamps}
             onChange={setCriticalTimestamps}
+            timelineWarnings={timelineWarnings}
           />
         );
       case 3:
@@ -363,6 +620,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           <InterventionsAndTreatmentsStep
             data={interventionsAndTreatments}
             onChange={setInterventionsAndTreatments}
+            timelineWarnings={timelineWarnings}
           />
         );
       case 4:
@@ -372,6 +630,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             onChange={setClinicalAssessment}
             additionalData={additionalData}
             onAdditionalDataChange={setAdditionalData}
+            timelineWarnings={timelineWarnings}
           />
         );
       case 5:
@@ -383,6 +642,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             interventionsAndTreatments={interventionsAndTreatments}
             clinicalAssessment={clinicalAssessment}
             additionalData={additionalData}
+            timelineWarnings={timelineWarnings}
           />
         );
       default:
@@ -403,12 +663,34 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
 
       <DialogContent>
         <Box sx={{ mb: 3 }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
+          <Stepper activeStep={activeStep} alternativeLabel nonLinear>
+            {steps.map((label, index) => {
+              const hasIssue = stepIssues[index];
+              return (
+                <Step key={label}>
+                  <StepButton
+                    onClick={() => {
+                      setActiveStep(index);
+                      setError(null);
+                    }}
+                    sx={{
+                      '& .MuiStepLabel-label': {
+                        fontWeight: hasIssue ? 700 : 500,
+                        ...(hasIssue && { color: 'warning.main' }),
+                        fontSize: hasIssue ? '1rem' : '0.95rem',
+                      },
+                      ...(hasIssue && {
+                        '& .MuiStepIcon-root': {
+                          color: 'warning.main !important',
+                        },
+                      }),
+                    }}
+                  >
+                    {label}
+                  </StepButton>
+                </Step>
+              );
+            })}
           </Stepper>
         </Box>
 
@@ -437,7 +719,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={loading}
+            disabled={loading || hasTimelineWarnings}
             startIcon={loading ? <CircularProgress size={20} /> : null}
           >
             {loading ? 'Creating...' : 'Create Case'}

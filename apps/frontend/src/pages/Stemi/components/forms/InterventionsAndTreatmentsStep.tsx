@@ -19,11 +19,13 @@ import { hospitalService, Hospital } from '../../../../services/hospitalService'
 interface InterventionsAndTreatmentsStepProps {
   data: InterventionsAndTreatments;
   onChange: (data: InterventionsAndTreatments) => void;
+  timelineWarnings?: Record<string, string[]>;
 }
 
 const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepProps> = ({
   data,
   onChange,
+  timelineWarnings = {},
 }) => {
   const [hospitalsWithStemi, setHospitalsWithStemi] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
@@ -52,6 +54,71 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
     const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
     onChange({ ...data, [field]: value });
   };
+
+  const emphasizeKeywords = (text: string) => {
+    const keywords = ['Door', 'Balloon', 'PCI', 'ECG', 'Thrombolytic', 'Admission', 'Triage'];
+    const regex = new RegExp(`(${keywords.join('|')})`, 'gi');
+    const parts = text.split(regex);
+
+    return parts.map((part, index) => {
+      const isKeyword = keywords.some(
+        (keyword) => keyword.toLowerCase() === part.toLowerCase()
+      );
+
+      return isKeyword ? (
+        <Box key={`${part}-${index}`} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      );
+    });
+  };
+
+  const buildHelperText = (defaultText: string, warnings?: string[]) => {
+    if (!warnings || warnings.length === 0) {
+      return defaultText;
+    }
+
+    return (
+      <Box>
+        <Typography variant="caption" color="textSecondary" display="block">
+          {defaultText}
+        </Typography>
+        {warnings.map((warning, index) => (
+          <Typography
+            key={`${warning}-${index}`}
+            variant="body2"
+            color="warning.main"
+            display="block"
+            sx={{ mt: 1, fontWeight: 600 }}
+          >
+            {emphasizeKeywords(warning)}
+          </Typography>
+        ))}
+      </Box>
+    );
+  };
+
+  const warningBorderStyles = (warnings?: string[]) =>
+    warnings && warnings.length > 0
+      ? {
+          '& .MuiOutlinedInput-root fieldset': {
+            borderColor: 'warning.main',
+            borderWidth: 2,
+          },
+          '& .MuiOutlinedInput-root:hover fieldset': {
+            borderColor: 'warning.main',
+          },
+          '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+            borderColor: 'warning.dark',
+          },
+        }
+      : undefined;
+
+  const doorOutWarnings = timelineWarnings['interventionsAndTreatments.doorOutTime'];
+  const balloonWarnings = timelineWarnings['interventionsAndTreatments.balloonInflationTime'];
+  const thrombolyticWarnings = timelineWarnings['interventionsAndTreatments.thrombolyticAdminTime'];
 
   return (
     <Box>
@@ -138,11 +205,12 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             fullWidth
             label="Door Out Time"
             type="datetime-local"
-            value={data.doorOutTime || null}
+            value={data.doorOutTime || ''}
             onChange={handleChange('doorOutTime')}
             InputLabelProps={{ shrink: true }}
             disabled={!data.eligibleForPrimaryPci}
-            helperText="When the patient left the referring facility for PCI"
+            helperText={buildHelperText('When the patient left the referring facility for PCI', doorOutWarnings)}
+            sx={warningBorderStyles(doorOutWarnings)}
           />
         </Grid>
 
@@ -152,11 +220,12 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             fullWidth
             label="Balloon Inflation Time"
             type="datetime-local"
-            value={data.balloonInflationTime || null}
+            value={data.balloonInflationTime || ''}
             onChange={handleChange('balloonInflationTime')}
             InputLabelProps={{ shrink: true }}
             disabled={!data.eligibleForPrimaryPci}
-            helperText="When the balloon was inflated during the PCI procedure"
+            helperText={buildHelperText('When the balloon was inflated during the PCI procedure', balloonWarnings)}
+            sx={warningBorderStyles(balloonWarnings)}
           />
         </Grid>
 
@@ -186,7 +255,8 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             onChange={handleChange('thrombolyticAdminTime')}
             InputLabelProps={{ shrink: true }}
             disabled={!data.thrombolyticGiven}
-            helperText="When the thrombolytic medication was administered"
+            helperText={buildHelperText('When the thrombolytic medication was administered', thrombolyticWarnings)}
+            sx={warningBorderStyles(thrombolyticWarnings)}
           />
         </Grid>
 

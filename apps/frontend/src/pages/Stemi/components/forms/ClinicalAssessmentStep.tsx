@@ -33,6 +33,7 @@ interface ClinicalAssessmentStepProps {
     troponinValue: number | undefined;
     additionalNotes: string;
   }) => void;
+  timelineWarnings?: Record<string, string[]>;
 }
 
 const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
@@ -40,6 +41,7 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
   onChange,
   additionalData,
   onAdditionalDataChange,
+  timelineWarnings = {},
 }) => {
   const handleChange = (field: keyof ClinicalAssessment) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -49,6 +51,69 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
       event.target.value;
     onChange({ ...data, [field]: value });
   };
+
+  const emphasizeKeywords = (text: string) => {
+    const keywords = ['Symptom', 'Admission', 'Triage', 'ECG', 'PCI', 'Door'];
+    const regex = new RegExp(`(${keywords.join('|')})`, 'gi');
+    const parts = text.split(regex);
+
+    return parts.map((part, index) => {
+      const isKeyword = keywords.some(
+        (keyword) => keyword.toLowerCase() === part.toLowerCase()
+      );
+
+      return isKeyword ? (
+        <Box key={`${part}-${index}`} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      );
+    });
+  };
+
+  const buildHelperText = (defaultText: string, warnings?: string[]) => {
+    if (!warnings || warnings.length === 0) {
+      return defaultText;
+    }
+
+    return (
+      <Box>
+        <Typography variant="caption" color="textSecondary" display="block">
+          {defaultText}
+        </Typography>
+        {warnings.map((warning, index) => (
+          <Typography
+            key={`${warning}-${index}`}
+            variant="body2"
+            color="warning.main"
+            display="block"
+            sx={{ mt: 1, fontWeight: 600 }}
+          >
+            {emphasizeKeywords(warning)}
+          </Typography>
+        ))}
+      </Box>
+    );
+  };
+
+  const warningBorderStyles = (warnings?: string[]) =>
+    warnings && warnings.length > 0
+      ? {
+          '& .MuiOutlinedInput-root fieldset': {
+            borderColor: 'warning.main',
+            borderWidth: 2,
+          },
+          '& .MuiOutlinedInput-root:hover fieldset': {
+            borderColor: 'warning.main',
+          },
+          '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+            borderColor: 'warning.dark',
+          },
+        }
+      : undefined;
+
+  const symptomOnsetWarnings = timelineWarnings['clinicalAssessment.symptomOnset'];
 
   return (
     <Box>
@@ -88,7 +153,8 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
             value={data.symptomOnset || StemiDatetimeService.getCurrentLocalDateTime()}
             onChange={handleChange('symptomOnset')}
             InputLabelProps={{ shrink: true }}
-            helperText="When symptoms started"
+            helperText={buildHelperText('When symptoms started', symptomOnsetWarnings)}
+            sx={warningBorderStyles(symptomOnsetWarnings)}
           />
         </Grid>
 

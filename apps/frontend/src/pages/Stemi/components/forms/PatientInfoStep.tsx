@@ -172,6 +172,11 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             label="Phone Number"
             value={data.phoneNumber || ''}
             onChange={handleChange('phoneNumber')}
+            error={!!validationErrors['patientInfo.phoneNumber']}
+            helperText={
+              validationErrors['patientInfo.phoneNumber'] ||
+              'Digits only, you can include a leading "+" for international numbers'
+            }
           />
         </Grid>
 
@@ -251,6 +256,11 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             label="Emergency Phone"
             value={data.emergencyPhone || ''}
             onChange={handleChange('emergencyPhone')}
+            error={!!validationErrors['patientInfo.emergencyPhone']}
+            helperText={
+              validationErrors['patientInfo.emergencyPhone'] ||
+              'Digits only, you can include a leading "+" for international numbers'
+            }
           />
         </Grid>
 
