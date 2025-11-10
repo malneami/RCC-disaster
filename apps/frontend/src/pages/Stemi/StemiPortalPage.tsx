@@ -945,7 +945,7 @@ const StemiPortalPage: React.FC = () => {
               <Box sx={{ mt: 2 }}>
                 <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                   <TablePagination
-                    rowsPerPageOptions={[10, 20, 50]}
+                    rowsPerPageOptions={[5, 10, 15, 20]}
                     component="div"
                     count={totalCases}
                     rowsPerPage={rowsPerPage}

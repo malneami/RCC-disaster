@@ -673,7 +673,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
         </TableContainer>
         
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
+          rowsPerPageOptions={[5, 10, 15, 20]}
           component="div"
           count={filteredAndSortedCases.length}
           rowsPerPage={rowsPerPage}
