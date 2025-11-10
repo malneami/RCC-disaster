@@ -11,6 +11,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Alert,
+  Typography,
 } from '@mui/material';
 import { MODE_OF_ARRIVAL_OPTIONS, MECHANISM_OF_INJURY_OPTIONS } from '../../constants/traumaConstants';
 import { IncidentDetailsFormData } from '../../types/traumaTypes';
@@ -19,12 +21,27 @@ interface IncidentDetailsStepProps {
   data: IncidentDetailsFormData;
   onChange: (data: Partial<IncidentDetailsFormData>) => void;
   errors: Record<string, string>;
+  validationErrors?: Record<string, string>;
+  timelineWarnings?: Record<string, string[]>;
 }
+
+const emphasizeKeywords = (text: string): React.ReactNode => {
+  const keywords = ['arrival', 'incident', 'transfer', 'request', 'time', 'before', 'after'];
+  const parts = text.split(new RegExp(`(${keywords.join('|')})`, 'gi'));
+  return parts.map((part, index) => {
+    if (keywords.some(k => part.toLowerCase() === k.toLowerCase())) {
+      return <strong key={index}>{part}</strong>;
+    }
+    return part;
+  });
+};
 
 const IncidentDetailsStep: React.FC<IncidentDetailsStepProps> = ({
   data,
   onChange,
   errors,
+  validationErrors = {},
+  timelineWarnings = {},
 }) => {
   const handleChange = (field: keyof IncidentDetailsFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -47,10 +64,17 @@ const IncidentDetailsStep: React.FC<IncidentDetailsStepProps> = ({
           value={data.arrivalDateTime}
           onChange={handleChange('arrivalDateTime')}
           InputLabelProps={{ shrink: true }}
-          error={!!errors.arrivalDateTime}
-          helperText={errors.arrivalDateTime}
+          error={!!errors.arrivalDateTime || !!validationErrors['incidentDetails.arrivalDateTime'] || !!timelineWarnings['incidentDetails.arrivalDateTime']}
+          helperText={errors.arrivalDateTime || validationErrors['incidentDetails.arrivalDateTime']}
           required
         />
+        {timelineWarnings['incidentDetails.arrivalDateTime']?.map((warning, idx) => (
+          <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {emphasizeKeywords(warning)}
+            </Typography>
+          </Alert>
+        ))}
       </Grid>
       
       <Grid item xs={12} sm={6}>
@@ -61,18 +85,25 @@ const IncidentDetailsStep: React.FC<IncidentDetailsStepProps> = ({
           value={data.incidentDateTime}
           onChange={handleChange('incidentDateTime')}
           InputLabelProps={{ shrink: true }}
-          error={!!errors.incidentDateTime}
-          helperText={errors.incidentDateTime}
+          error={!!errors.incidentDateTime || !!validationErrors['incidentDetails.incidentDateTime'] || !!timelineWarnings['incidentDetails.incidentDateTime']}
+          helperText={errors.incidentDateTime || validationErrors['incidentDetails.incidentDateTime']}
         />
+        {timelineWarnings['incidentDetails.incidentDateTime']?.map((warning, idx) => (
+          <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {emphasizeKeywords(warning)}
+            </Typography>
+          </Alert>
+        ))}
       </Grid>
       
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth required>
+        <FormControl fullWidth required error={!!errors.modeOfArrival || !!validationErrors['incidentDetails.modeOfArrival']}>
           <InputLabel>Mode of Arrival</InputLabel>
           <Select
             value={data.modeOfArrival}
             onChange={handleChange('modeOfArrival')}
-            error={!!errors.modeOfArrival}
+            label="Mode of Arrival"
           >
             {MODE_OF_ARRIVAL_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -80,16 +111,21 @@ const IncidentDetailsStep: React.FC<IncidentDetailsStepProps> = ({
               </MenuItem>
             ))}
           </Select>
+          {(errors.modeOfArrival || validationErrors['incidentDetails.modeOfArrival']) && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {errors.modeOfArrival || validationErrors['incidentDetails.modeOfArrival']}
+            </Typography>
+          )}
         </FormControl>
       </Grid>
       
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth required>
+        <FormControl fullWidth required error={!!errors.mechanismOfInjury || !!validationErrors['incidentDetails.mechanismOfInjury']}>
           <InputLabel>Mechanism of Injury</InputLabel>
           <Select
             value={data.mechanismOfInjury}
             onChange={handleChange('mechanismOfInjury')}
-            error={!!errors.mechanismOfInjury}
+            label="Mechanism of Injury"
           >
             {MECHANISM_OF_INJURY_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -97,6 +133,11 @@ const IncidentDetailsStep: React.FC<IncidentDetailsStepProps> = ({
               </MenuItem>
             ))}
           </Select>
+          {(errors.mechanismOfInjury || validationErrors['incidentDetails.mechanismOfInjury']) && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {errors.mechanismOfInjury || validationErrors['incidentDetails.mechanismOfInjury']}
+            </Typography>
+          )}
         </FormControl>
       </Grid>
       
@@ -111,9 +152,16 @@ const IncidentDetailsStep: React.FC<IncidentDetailsStepProps> = ({
               value={data.transferRequestDateTime}
               onChange={handleChange('transferRequestDateTime')}
               InputLabelProps={{ shrink: true }}
-              error={!!errors.transferRequestDateTime}
-              helperText={errors.transferRequestDateTime}
+              error={!!errors.transferRequestDateTime || !!validationErrors['incidentDetails.transferRequestDateTime'] || !!timelineWarnings['incidentDetails.transferRequestDateTime']}
+              helperText={errors.transferRequestDateTime || validationErrors['incidentDetails.transferRequestDateTime']}
             />
+            {timelineWarnings['incidentDetails.transferRequestDateTime']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {emphasizeKeywords(warning)}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
           
           <Grid item xs={12} sm={6}>
@@ -124,9 +172,16 @@ const IncidentDetailsStep: React.FC<IncidentDetailsStepProps> = ({
               value={data.transferArrivalDateTime}
               onChange={handleChange('transferArrivalDateTime')}
               InputLabelProps={{ shrink: true }}
-              error={!!errors.transferArrivalDateTime}
-              helperText={errors.transferArrivalDateTime}
+              error={!!errors.transferArrivalDateTime || !!validationErrors['incidentDetails.transferArrivalDateTime'] || !!timelineWarnings['incidentDetails.transferArrivalDateTime']}
+              helperText={errors.transferArrivalDateTime || validationErrors['incidentDetails.transferArrivalDateTime']}
             />
+            {timelineWarnings['incidentDetails.transferArrivalDateTime']?.map((warning, idx) => (
+              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {emphasizeKeywords(warning)}
+                </Typography>
+              </Alert>
+            ))}
           </Grid>
         </>
       )}

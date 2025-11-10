@@ -3,7 +3,7 @@
  * First step of the trauma case creation form
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Grid,
   TextField,
@@ -12,12 +12,16 @@ import {
   Select,
   MenuItem,
   Typography,
+  Alert,
+  CircularProgress,
+  Box,
 } from '@mui/material';
 import { GENDER_OPTIONS } from '../../constants/traumaConstants';
 import { PatientInfoFormData } from '../../types/traumaTypes';
 import NationalIdInput from '../../../../components/Common/NationalIdInput';
 import HospitalSelect from '../../../../components/Common/HospitalSelect';
 import { Patient } from '../../../../services/patientService';
+import { hospitalService, Hospital } from '../../../../services/hospitalService';
 
 interface PatientInfoStepProps {
   data: PatientInfoFormData;
@@ -25,6 +29,8 @@ interface PatientInfoStepProps {
   errors: Record<string, string>;
   validationErrors?: Record<string, string>;
   isAdmin?: boolean;
+  onOriginHospitalSelect?: (hospital: Hospital | null) => void;
+  destinationRequired?: boolean;
 }
 
 const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
@@ -33,7 +39,28 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
   errors,
   validationErrors = {},
   isAdmin = true,
+  onOriginHospitalSelect,
+  destinationRequired = false,
 }) => {
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [loadingHospitals, setLoadingHospitals] = useState(true);
+
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        setLoadingHospitals(true);
+        const hospitalsData = await hospitalService.getAllHospitals();
+        setHospitals(hospitalsData);
+      } catch (error) {
+        console.error('Error fetching hospitals:', error);
+      } finally {
+        setLoadingHospitals(false);
+      }
+    };
+
+    fetchHospitals();
+  }, []);
+
   const handleChange = (field: keyof PatientInfoFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
   ) => {
@@ -125,6 +152,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             value={data.gender}
             onChange={handleChange('gender')}
             disabled={!isAdmin}
+            label="Gender"
           >
             {GENDER_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -146,8 +174,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           label="Phone Number"
           value={data.phoneNumber}
           onChange={handleChange('phoneNumber')}
-          error={!!errors.phoneNumber}
-          helperText={errors.phoneNumber}
+          error={!!errors.phoneNumber || !!validationErrors['patientInfo.phoneNumber']}
+          helperText={errors.phoneNumber || validationErrors['patientInfo.phoneNumber']}
           disabled={!isAdmin}
         />
       </Grid>
@@ -184,8 +212,8 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           label="Emergency Contact Phone"
           value={data.emergencyPhone}
           onChange={handleChange('emergencyPhone')}
-          error={!!errors.emergencyPhone}
-          helperText={errors.emergencyPhone}
+          error={!!errors.emergencyPhone || !!validationErrors['patientInfo.emergencyPhone']}
+          helperText={errors.emergencyPhone || validationErrors['patientInfo.emergencyPhone']}
           disabled={!isAdmin}
         />
       </Grid>
@@ -237,24 +265,74 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
       <Grid item xs={12} sm={6}>
         <HospitalSelect
           value={data.originHospitalId}
-          onChange={(value) => onChange({ originHospitalId: value })}
+          onChange={(value) => {
+            onChange({ originHospitalId: value });
+            const hospital = hospitals.find(h => h.id === value);
+            onOriginHospitalSelect?.(hospital || null);
+          }}
           label="Origin Hospital"
           required
           error={!!errors.originHospitalId || !!validationErrors['patientInfo.originHospitalId']}
           helperText={errors.originHospitalId || validationErrors['patientInfo.originHospitalId']}
+          showServiceBadges
         />
       </Grid>
 
       <Grid item xs={12} sm={6}>
-        <HospitalSelect
-          value={data.destinationHospitalId || ''}
-          onChange={(value) => onChange({ destinationHospitalId: value || undefined })}
-          label="Destination Hospital (Optional)"
-          error={!!errors.destinationHospitalId}
-          helperText={errors.destinationHospitalId}
-          placeholder="None"
-        />
+        <FormControl fullWidth required={destinationRequired} error={!!errors.destinationHospitalId || !!validationErrors['patientInfo.destinationHospitalId']}>
+          <InputLabel>{destinationRequired ? 'Destination Hospital (Required)' : 'Destination Hospital (Optional)'}</InputLabel>
+          <Select
+            value={data.destinationHospitalId || ''}
+            onChange={(e) => onChange({ destinationHospitalId: e.target.value || undefined })}
+            disabled={loadingHospitals}
+            label={destinationRequired ? 'Destination Hospital (Required)' : 'Destination Hospital (Optional)'}
+          >
+            {!destinationRequired && (
+              <MenuItem value="">
+                <em>No destination hospital</em>
+              </MenuItem>
+            )}
+            {loadingHospitals ? (
+              <MenuItem disabled>
+                <CircularProgress size={20} sx={{ mr: 1 }} />
+                Loading hospitals...
+              </MenuItem>
+            ) : (
+              hospitals
+                .filter((hospital) => hospital.hasTraumaService)
+                .map((hospital) => (
+                  <MenuItem key={hospital.id} value={hospital.id}>
+                    <Box>
+                      <Typography variant="body1">{hospital.name}</Typography>
+                      {hospital.address && (
+                        <Typography variant="caption" color="text.secondary">
+                          {hospital.address}
+                        </Typography>
+                      )}
+                    </Box>
+                  </MenuItem>
+                ))
+            )}
+          </Select>
+          {(errors.destinationHospitalId || validationErrors['patientInfo.destinationHospitalId']) && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {errors.destinationHospitalId || validationErrors['patientInfo.destinationHospitalId']}
+            </Typography>
+          )}
+          {!errors.destinationHospitalId && !validationErrors['patientInfo.destinationHospitalId'] && destinationRequired && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 1.75 }}>
+              Only hospitals with Trauma service are shown
+            </Typography>
+          )}
+        </FormControl>
       </Grid>
+      {destinationRequired && (
+        <Grid item xs={12}>
+          <Alert severity="warning">
+            Please select a destination hospital because the selected origin hospital does not provide Trauma service.
+          </Alert>
+        </Grid>
+      )}
     </Grid>
   );
 };

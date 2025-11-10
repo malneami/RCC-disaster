@@ -23,12 +23,14 @@ interface DispositionStepProps {
   data: DispositionFormData;
   onChange: (data: Partial<DispositionFormData>) => void;
   errors: Record<string, string>;
+  validationErrors?: Record<string, string>;
 }
 
 const DispositionStep: React.FC<DispositionStepProps> = ({
   data,
   onChange,
   errors,
+  validationErrors = {},
 }) => {
   const handleChange = (field: keyof DispositionFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -57,12 +59,12 @@ const DispositionStep: React.FC<DispositionStepProps> = ({
       </Grid>
       
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth required>
+        <FormControl fullWidth required error={!!errors.edDisposition || !!validationErrors?.['disposition.edDisposition']}>
           <InputLabel>ED Disposition</InputLabel>
           <Select
             value={data.edDisposition}
             onChange={handleChange('edDisposition')}
-            error={!!errors.edDisposition}
+            label="ED Disposition"
           >
             {DISPOSITION_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -70,6 +72,11 @@ const DispositionStep: React.FC<DispositionStepProps> = ({
               </MenuItem>
             ))}
           </Select>
+          {(errors.edDisposition || validationErrors?.['disposition.edDisposition']) && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+              {errors.edDisposition || validationErrors?.['disposition.edDisposition']}
+            </Typography>
+          )}
         </FormControl>
       </Grid>
       

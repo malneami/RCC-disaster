@@ -15,9 +15,16 @@ export interface PatientInfo {
   lastName: string;
   middleName?: string;
   dateOfBirth?: string;
+  age?: number;
   gender?: 'MALE' | 'FEMALE';
   phoneNumber?: string;
   email?: string;
+  address?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  medicalHistory?: string;
+  allergies?: string;
+  medications?: string;
 }
 
 // Trauma Case Interfaces
@@ -187,8 +194,87 @@ export interface TraumaCaseFilters {
 export class TraumaService {
   // Create a new trauma case
   static async createTraumaCase(data: CreateTraumaCaseData): Promise<TraumaCase> {
+    // Helper function to clean values (remove empty strings, keep only valid values)
+    const cleanValue = (value: any): any => {
+      if (value === '' || value === null) return undefined;
+      if (typeof value === 'string' && value.trim() === '') return undefined;
+      return value;
+    };
+
+    // Clean patientInfo - only clean optional fields, keep required fields as-is
+    const cleanPatientInfo = data.patientInfo ? {
+      firstName: data.patientInfo.firstName, // Required, don't clean
+      lastName: data.patientInfo.lastName, // Required, don't clean
+      nationalId: data.patientInfo.nationalId, // Required, don't clean
+      gender: data.patientInfo.gender, // Required, don't clean
+      age: data.patientInfo.age !== undefined && data.patientInfo.age !== null ? data.patientInfo.age : undefined, // Optional but keep if provided
+      phoneNumber: cleanValue(data.patientInfo.phoneNumber), // Optional
+      email: cleanValue(data.patientInfo.email), // Optional
+      mrn: cleanValue(data.patientInfo.mrn), // Optional
+      dateOfBirth: cleanValue(data.patientInfo.dateOfBirth), // Optional
+      middleName: cleanValue(data.patientInfo.middleName), // Optional
+      address: cleanValue(data.patientInfo.address), // Optional
+      emergencyContact: cleanValue(data.patientInfo.emergencyContact), // Optional
+      emergencyPhone: cleanValue(data.patientInfo.emergencyPhone), // Optional
+      medicalHistory: cleanValue(data.patientInfo.medicalHistory), // Optional
+      allergies: cleanValue(data.patientInfo.allergies), // Optional
+      medications: cleanValue(data.patientInfo.medications), // Optional
+    } : undefined;
+
+    // Remove undefined values from patientInfo (only optional fields)
+    if (cleanPatientInfo) {
+      const optionalFields = ['phoneNumber', 'email', 'mrn', 'dateOfBirth', 'middleName', 'age', 'address', 'emergencyContact', 'emergencyPhone', 'medicalHistory', 'allergies', 'medications'];
+      optionalFields.forEach(key => {
+        if (cleanPatientInfo[key as keyof typeof cleanPatientInfo] === undefined) {
+          delete cleanPatientInfo[key as keyof typeof cleanPatientInfo];
+        }
+      });
+    }
+
+    // Include all fields that exist in the backend DTO
+    const filteredData: any = {
+      ticketId: cleanValue(data.ticketId),
+      patientId: cleanValue(data.patientId),
+      patientInfo: cleanPatientInfo && Object.keys(cleanPatientInfo).length > 0 ? cleanPatientInfo : undefined,
+      originHospitalId: data.originHospitalId, // Required
+      destinationHospitalId: cleanValue(data.destinationHospitalId),
+      arrivalDateTime: data.arrivalDateTime, // Required
+      incidentDateTime: cleanValue(data.incidentDateTime),
+      modeOfArrival: data.modeOfArrival, // Required
+      transferRequestDateTime: cleanValue(data.transferRequestDateTime),
+      transferArrivalDateTime: cleanValue(data.transferArrivalDateTime),
+      transferDurationMinutes: cleanValue(data.transferDurationMinutes),
+      chiefComplaint: cleanValue(data.chiefComplaint),
+      mechanismOfInjury: data.mechanismOfInjury, // Required
+      vitalSigns: data.vitalSigns,
+      glasgowComaScale: cleanValue(data.glasgowComaScale),
+      systolicBloodPressure: cleanValue(data.systolicBloodPressure),
+      respiratoryRate: cleanValue(data.respiratoryRate),
+      additionalVitalSigns: cleanValue(data.additionalVitalSigns),
+      headAndNeckInjury: cleanValue(data.headAndNeckInjury),
+      faceInjury: cleanValue(data.faceInjury),
+      chestInjury: cleanValue(data.chestInjury),
+      abdomenInjury: cleanValue(data.abdomenInjury),
+      extremitiesInjury: cleanValue(data.extremitiesInjury),
+      externalInjury: cleanValue(data.externalInjury),
+      primarySurveyFindings: cleanValue(data.primarySurveyFindings),
+      edDisposition: cleanValue(data.edDisposition),
+      additionalNotes: cleanValue(data.additionalNotes),
+      disposition: data.disposition,
+    };
+
+    // Remove all undefined values from the payload
+    Object.keys(filteredData).forEach(key => {
+      if (filteredData[key] === undefined) {
+        delete filteredData[key];
+      }
+    });
+    
     try {
-      const response = await apiClient.post('/trauma-cases', data);
+      console.log('=== SENDING TO BACKEND ===');
+      console.log('Filtered data:', JSON.stringify(filteredData, null, 2));
+      console.log('Patient Info in filtered data:', JSON.stringify(filteredData.patientInfo, null, 2));
+      const response = await apiClient.post('/trauma-cases', filteredData);
       return response.data;
     } catch (error) {
       console.error('Error creating trauma case:', error);

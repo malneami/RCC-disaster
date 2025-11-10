@@ -30,7 +30,14 @@ export class TraumaPatientService {
 
   async processPatient(patientInfo: PatientInfo, userId: string): Promise<string> {
     console.log('=== PATIENT PROCESSING ===');
-    console.log('Patient Info:', patientInfo);
+    console.log('Patient Info received:', JSON.stringify(patientInfo, null, 2));
+    console.log('Age:', patientInfo.age);
+    console.log('Address:', patientInfo.address);
+    console.log('Emergency Contact:', patientInfo.emergencyContact);
+    console.log('Emergency Phone:', patientInfo.emergencyPhone);
+    console.log('Medical History:', patientInfo.medicalHistory);
+    console.log('Allergies:', patientInfo.allergies);
+    console.log('Medications:', patientInfo.medications);
     
     let patientId: string | null = null;
 
@@ -47,6 +54,10 @@ export class TraumaPatientService {
         if (existingPatientId) {
           console.log('Found existing patient (or merged duplicates):', existingPatientId);
           patientId = existingPatientId;
+          
+          // Update existing patient with new information provided
+          console.log('Updating existing patient with new information...');
+          await this.updatePatient(existingPatientId, patientInfo);
         } else {
           console.log('No existing patient found with National ID, will create new patient');
         }
@@ -108,7 +119,7 @@ export class TraumaPatientService {
         patientData.gender = PatientGender.MALE; // Default gender
       }
       
-      console.log('Creating new patient with data:', patientData);
+      console.log('Creating new patient with data:', JSON.stringify(patientData, null, 2));
       
       try {
         const patient = await this.prisma.patient.create({
@@ -132,6 +143,10 @@ export class TraumaPatientService {
               if (existingPatient) {
                 console.log('Found existing patient by National ID:', existingPatient.id);
                 patientId = existingPatient.id;
+                
+                // Update existing patient with new information provided
+                console.log('Updating existing patient with new information...');
+                await this.updatePatient(existingPatient.id, patientInfo);
               }
             } catch (findError) {
               console.error('Error finding existing patient:', findError);
@@ -152,7 +167,15 @@ export class TraumaPatientService {
 
   async updatePatient(patientId: string, patientInfo: Partial<PatientInfo>): Promise<void> {
     console.log('=== UPDATING PATIENT INFO ===');
-    console.log('Patient Info:', patientInfo);
+    console.log('Patient ID:', patientId);
+    console.log('Patient Info received:', JSON.stringify(patientInfo, null, 2));
+    console.log('Age:', patientInfo.age);
+    console.log('Address:', patientInfo.address);
+    console.log('Emergency Contact:', patientInfo.emergencyContact);
+    console.log('Emergency Phone:', patientInfo.emergencyPhone);
+    console.log('Medical History:', patientInfo.medicalHistory);
+    console.log('Allergies:', patientInfo.allergies);
+    console.log('Medications:', patientInfo.medications);
     
     const patientUpdateData: any = {};
     
@@ -176,6 +199,9 @@ export class TraumaPatientService {
     }
     if (patientInfo.dateOfBirth !== undefined) {
       patientUpdateData.dateOfBirth = patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth) : null;
+    }
+    if (patientInfo.age !== undefined && patientInfo.age !== null) {
+      patientUpdateData.age = patientInfo.age;
     }
     if (patientInfo.gender !== undefined) {
       patientUpdateData.gender = patientInfo.gender ? patientInfo.gender as PatientGender : null;
@@ -201,11 +227,13 @@ export class TraumaPatientService {
     
     if (Object.keys(patientUpdateData).length > 0) {
       try {
-        await this.prisma.patient.update({
+        console.log('Updating patient with data:', JSON.stringify(patientUpdateData, null, 2));
+        const updated = await this.prisma.patient.update({
           where: { id: patientId },
           data: patientUpdateData,
         });
         console.log('Patient info updated successfully');
+        console.log('Updated patient data:', JSON.stringify(updated, null, 2));
       } catch (error) {
         console.error('Error updating patient info:', error);
         throw new BadRequestException('Failed to update patient information');
