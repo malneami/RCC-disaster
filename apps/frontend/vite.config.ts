@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite';
+// @ts-nocheck - Version mismatch between vite and vitest types
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
@@ -27,5 +28,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
+    setupFiles: './src/setupTests.ts',
+    css: true,
   },
 });
