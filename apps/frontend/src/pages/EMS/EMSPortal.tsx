@@ -15,8 +15,8 @@ import AmbulanceManagement from './components/AmbulanceManagement';
 import AssignmentManagement from './components/AssignmentManagement';
 import PerformanceAnalytics from './components/PerformanceAnalytics';
 import SchedulingManagement from './components/SchedulingManagement';
-import RealTimeMap from './components/RealTimeMap';
 import DriverManagement from './components/DriverManagement';
+import { LiveAmbulanceMap } from '../../components/LiveTracking';
 
 const EMSPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -35,8 +35,16 @@ const EMSPortal: React.FC = () => {
       label: 'Live Tracking',
       icon: <FontAwesomeIcon icon={faMapMarkedAlt} />,
       content: (
-        <Box sx={{ height: '600px' }}>
-          <RealTimeMap />
+        <Box>
+          <LiveAmbulanceMap
+            height="calc(100vh - 250px)"
+            autoRefresh={true}
+            refreshInterval={120000}
+            useGPSAPI={true}
+            showLegend={true}
+            showControls={true}
+            showFilters={true}
+          />
         </Box>
       )
     },
