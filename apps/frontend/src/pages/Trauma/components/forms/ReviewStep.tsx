@@ -22,7 +22,7 @@ interface ReviewStepProps {
   validationErrors?: Record<string, string>;
 }
 
-const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}, validationErrors = {} }) => {
+const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings: _timelineWarnings = {}, validationErrors = {} }) => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
 
   useEffect(() => {
@@ -53,8 +53,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
       minute: '2-digit',
     });
   };
-
-  const hasErrors = Object.keys(validationErrors).length > 0;
 
   const cardStyles = (highlight = false) => ({
     height: '100%',

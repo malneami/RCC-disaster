@@ -14,6 +14,9 @@
     "dev:frontend": "npm run dev -w apps/frontend",
     "lint": "npm run lint --workspaces",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "test": "npm run test -w apps/frontend",
+    "test:watch": "npm run test:watch -w apps/frontend",
+    "test:ui": "npm run test:ui -w apps/frontend",
     "db:up": "docker-compose up -d",
     "db:down": "docker-compose down",
     "db:reset": "docker-compose down -v && docker-compose up -d"
