@@ -264,6 +264,7 @@ export class StrokeCasesService {
     const strokeCaseData = {
         ticketId: ticketId || null,
         patientId,
+        chiefComplaint: createStrokeCaseDto.chiefComplaint,
         originHospitalId: createStrokeCaseDto.originHospitalId,
         destinationHospitalId: createStrokeCaseDto.destinationHospitalId,
         strokeType: createStrokeCaseDto.strokeType,
@@ -273,6 +274,8 @@ export class StrokeCasesService {
         
         // Include all timing fields from the DTO
         modeOfArrival: createStrokeCaseDto.modeOfArrival,
+        transferRequestDateTime: createStrokeCaseDto.transferRequestDateTime ? new Date(createStrokeCaseDto.transferRequestDateTime) : undefined,
+        transferArrivalDateTime: createStrokeCaseDto.transferArrivalDateTime ? new Date(createStrokeCaseDto.transferArrivalDateTime) : undefined,
         srcaCallTime: createStrokeCaseDto.srcaCallTime ? new Date(createStrokeCaseDto.srcaCallTime) : undefined,
         timeOfSymptomOnset: createStrokeCaseDto.timeOfSymptomOnset ? new Date(createStrokeCaseDto.timeOfSymptomOnset) : undefined,
         lastKnownNormal: createStrokeCaseDto.lastKnownNormal ? new Date(createStrokeCaseDto.lastKnownNormal) : undefined,
@@ -454,6 +457,8 @@ export class StrokeCasesService {
             mrn: true,
             age: true,
             gender: true,
+            phoneNumber: true,
+            email: true,
           },
         },
         originHospital: {
@@ -508,6 +513,7 @@ export class StrokeCasesService {
             age: true,
             gender: true,
             phoneNumber: true,
+            email: true,
             medicalHistory: true,
             riskFactors: true,
           },
@@ -605,6 +611,8 @@ export class StrokeCasesService {
       // Convert Date objects to strings for the DTO
       const existingCaseForKPI = {
         ...existingCase,
+        transferRequestDateTime: existingCase.transferRequestDateTime ? existingCase.transferRequestDateTime.toISOString() : null,
+        transferArrivalDateTime: existingCase.transferArrivalDateTime ? existingCase.transferArrivalDateTime.toISOString() : null,
         srcaCallTime: existingCase.srcaCallTime ? existingCase.srcaCallTime.toISOString() : null,
         timeOfSymptomOnset: existingCase.timeOfSymptomOnset ? existingCase.timeOfSymptomOnset.toISOString() : null,
         lastKnownNormal: existingCase.lastKnownNormal ? existingCase.lastKnownNormal.toISOString() : null,
@@ -653,6 +661,8 @@ export class StrokeCasesService {
           } 
         }),
         // Convert date strings to Date objects for new fields
+        transferRequestDateTime: updateStrokeCaseDto.transferRequestDateTime ? new Date(updateStrokeCaseDto.transferRequestDateTime) : undefined,
+        transferArrivalDateTime: updateStrokeCaseDto.transferArrivalDateTime ? new Date(updateStrokeCaseDto.transferArrivalDateTime) : undefined,
         srcaCallTime: updateStrokeCaseDto.srcaCallTime ? new Date(updateStrokeCaseDto.srcaCallTime) : undefined,
         timeOfSymptomOnset: updateStrokeCaseDto.timeOfSymptomOnset ? new Date(updateStrokeCaseDto.timeOfSymptomOnset) : undefined,
         lastKnownNormal: updateStrokeCaseDto.lastKnownNormal ? new Date(updateStrokeCaseDto.lastKnownNormal) : undefined,

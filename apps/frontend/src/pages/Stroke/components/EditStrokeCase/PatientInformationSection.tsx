@@ -127,6 +127,19 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
       </Grid>
 
       <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Email"
+          type="email"
+          value={formData.patientInfo?.email || ''}
+          onChange={(e) => handleInputChange('patientInfo', {
+            ...formData.patientInfo,
+            email: e.target.value
+          })}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
         <FormControl fullWidth required error={!!validationErrors['modeOfArrival']}>
           <InputLabel>Mode of Arrival</InputLabel>
           <Select

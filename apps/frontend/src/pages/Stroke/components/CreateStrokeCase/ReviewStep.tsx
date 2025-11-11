@@ -140,13 +140,15 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
     </Box>
   );
 
+  const patientWarnings = getWarnings(
+    'transferRequestDateTime',
+    'transferArrivalDateTime'
+  );
   const assessmentWarnings = getWarnings(
     'timeOfSymptomOnset',
     'dateOfAdmission',
     'timeOfTriage',
     'timeOfPhysicianAssessment',
-    'transferRequestDateTime',
-    'transferArrivalDateTime',
     'srcaCallTime'
   );
   const diagnosisWarnings = getWarnings(
@@ -180,7 +182,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
       <Grid container spacing={3}>
         {/* Patient Information Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles()}>
+          <Card sx={cardStyles(patientWarnings.length > 0)}>
             <CardContent sx={cardContentStyles}>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                 Patient Information
@@ -213,6 +215,23 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
                   {formData.modeOfArrival ? StrokeService.getModeOfArrivalLabel(formData.modeOfArrival) : 'Not specified'}
                 </Typography>
               </Box>
+              {formData.transferRequestDateTime && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Transfer Request Date & Time:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.transferRequestDateTime), !!timelineWarnings['transferRequestDateTime'])}
+                  </Typography>
+                </Box>
+              )}
+              {formData.transferArrivalDateTime && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Transfer Arrival Date & Time:</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(formData.transferArrivalDateTime), !!timelineWarnings['transferArrivalDateTime'])}
+                  </Typography>
+                </Box>
+              )}
+              {renderWarningsList(patientWarnings)}
             </CardContent>
           </Card>
         </Grid>

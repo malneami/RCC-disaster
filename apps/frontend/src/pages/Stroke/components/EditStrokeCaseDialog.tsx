@@ -86,6 +86,8 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         
         // Patient Arrival & Timing
         modeOfArrival: strokeCase.modeOfArrival,
+        transferRequestDateTime: strokeCase.transferRequestDateTime ? new Date(strokeCase.transferRequestDateTime).toISOString().slice(0, 16) : '',
+        transferArrivalDateTime: strokeCase.transferArrivalDateTime ? new Date(strokeCase.transferArrivalDateTime).toISOString().slice(0, 16) : '',
         srcaCallTime: strokeCase.srcaCallTime,
         timeOfSymptomOnset: strokeCase.timeOfSymptomOnset,
         lastKnownNormal: strokeCase.lastKnownNormal,

@@ -422,8 +422,12 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   const stepIssues = useMemo(() => {
     const issues = [false, false, false, false, false];
     
-    // Step 0 (Patient) - check validation errors
-    if (Object.keys(validationErrors).some(key => key.startsWith('patientInfo.') || key === 'originHospitalId' || key === 'destinationHospitalId' || key === 'modeOfArrival')) {
+    // Step 0 (Patient) - check validation errors and transfer warnings
+    if (Object.keys(validationErrors).some(key => key.startsWith('patientInfo.') || key === 'originHospitalId' || key === 'destinationHospitalId' || key === 'modeOfArrival') ||
+        Object.keys(timelineWarnings).some(key => 
+          key.includes('transferRequestDateTime') ||
+          key.includes('transferArrivalDateTime')
+        )) {
       issues[0] = true;
     }
     
@@ -434,8 +438,6 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           key.includes('dateOfAdmission') || 
           key.includes('timeOfTriage') || 
           key.includes('timeOfPhysicianAssessment') ||
-          key.includes('transferRequestDateTime') ||
-          key.includes('transferArrivalDateTime') ||
           key.includes('srcaCallTime')
         )) {
       issues[1] = true;

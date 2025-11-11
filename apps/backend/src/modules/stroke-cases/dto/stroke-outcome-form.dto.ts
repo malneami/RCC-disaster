@@ -19,12 +19,14 @@ export class StrokeOutcomeFormDto {
   followUpType?: string; // PHONE, IN_PERSON, TELEHEALTH, etc.
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(6)
   dischargeModifiedRankinScale?: number; // 0-6 scale
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(6)
@@ -51,6 +53,7 @@ export class StrokeOutcomeFormDto {
   outcomeFormCompletionDate?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100)
@@ -75,12 +78,14 @@ export class UpdateStrokeOutcomeFormDto {
   followUpType?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(6)
   dischargeModifiedRankinScale?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(6)
@@ -107,6 +112,7 @@ export class UpdateStrokeOutcomeFormDto {
   outcomeFormCompletionDate?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100)

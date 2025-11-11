@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsNumber, ValidateNested, IsBoolean, IsDateString, IsArray } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsNumber, ValidateNested, IsBoolean, IsDateString, IsArray, IsEmail } from 'class-validator';
 import { Type } from 'class-transformer';
 import { 
   StrokeType, 
@@ -47,7 +47,7 @@ export class PatientInfoV2Dto {
   phoneNumber?: string;
 
   @IsOptional()
-  @IsString()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
   email?: string;
 }
 
@@ -92,6 +92,14 @@ export class CreateStrokeCaseV2Dto {
   @IsOptional()
   @IsEnum(StrokeModeOfArrival)
   modeOfArrival?: StrokeModeOfArrival | null;
+
+  @IsOptional()
+  @IsDateString()
+  transferRequestDateTime?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  transferArrivalDateTime?: string | null;
 
   @IsOptional()
   @IsDateString()

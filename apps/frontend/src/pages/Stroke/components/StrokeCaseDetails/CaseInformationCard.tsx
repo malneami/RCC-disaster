@@ -54,6 +54,24 @@ const CaseInformationCard: React.FC<CaseInformationCardProps> = ({
             size="small"
           />
         </Box>
+        {strokeCase.chiefComplaint && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">Chief Complaint:</Typography>
+            <Typography variant="body2">{strokeCase.chiefComplaint}</Typography>
+          </Box>
+        )}
+        {strokeCase.transferRequestDateTime && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">Transfer Request Date & Time:</Typography>
+            <Typography variant="body2">{new Date(strokeCase.transferRequestDateTime).toLocaleString()}</Typography>
+          </Box>
+        )}
+        {strokeCase.transferArrivalDateTime && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">Transfer Arrival Date & Time:</Typography>
+            <Typography variant="body2">{new Date(strokeCase.transferArrivalDateTime).toLocaleString()}</Typography>
+          </Box>
+        )}
         {strokeCase.presentingSymptoms && (
           <Box>
             <Typography variant="body2" color="text.secondary">Presenting Symptoms:</Typography>

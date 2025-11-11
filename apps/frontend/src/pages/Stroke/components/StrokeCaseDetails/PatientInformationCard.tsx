@@ -48,6 +48,16 @@ const PatientInformationCard: React.FC<PatientInformationCardProps> = ({
             MRN: {strokeCase.patient.mrn}
           </Typography>
         )}
+        {strokeCase.patient?.phoneNumber && (
+          <Typography variant="body2" color="text.secondary">
+            Phone: {strokeCase.patient.phoneNumber}
+          </Typography>
+        )}
+        {strokeCase.patient?.email && (
+          <Typography variant="body2" color="text.secondary">
+            Email: {strokeCase.patient.email}
+          </Typography>
+        )}
         <Typography variant="body2" color="text.secondary">
           Patient ID: {strokeCase.patientId}
         </Typography>
