@@ -64,6 +64,10 @@ model Ticket {
   acknowledgedAt      DateTime?       @map("acknowledged_at")
   acknowledgedById    String?         @map("acknowledged_by_id")
   
+  // Access Audit Fields
+  lastAccessedAt      DateTime?       @map("last_accessed_at")
+  lastAccessedBy      String?         @map("last_accessed_by")
+  
   // Relations
   patient             Patient         @relation(fields: [patientId], references: [id])
   originHospital      Hospital        @relation("OriginHospital", fields: [originHospitalId], references: [id], onDelete: Cascade)
@@ -73,7 +77,9 @@ model Ticket {
   completedBy         User?           @relation("TicketCompleter", fields: [completedById], references: [id])
   emsStatusUpdatedByUser User?        @relation("TicketEMSStatusUpdater", fields: [emsStatusUpdatedBy], references: [id])
   acknowledgedBy      User?           @relation("TicketAcknowledger", fields: [acknowledgedById], references: [id])
+  lastAccessedByUser  User?           @relation("TicketAccessor", fields: [lastAccessedBy], references: [id])
   activities          Activity[]
+  accessLogs          TicketAccessLog[]
   
   // Stroke Relations
   strokeCases         StrokeCase[]
@@ -100,4 +106,28 @@ model Ticket {
   @@index([createdAt])
   @@index([assignedToId])
   @@index([isEmergency])
+  @@index([lastAccessedAt])
+}
+
+// Ticket Access Log for compliance and audit
+model TicketAccessLog {
+  id              String      @id @default(uuid())
+  ticketId        String      @map("ticket_id")
+  userId          String      @map("user_id")
+  accessType      AccessType
+  accessMethod    String      @map("access_method") // API, WEB, MOBILE
+  ipAddress       String?     @map("ip_address")
+  userAgent       String?     @map("user_agent")
+  reason          String?     // Reason for access
+  timestamp       DateTime    @default(now())
+  
+  // Relations
+  ticket          Ticket      @relation(fields: [ticketId], references: [id])
+  user            User        @relation(fields: [userId], references: [id])
+  
+  @@map("ticket_access_logs")
+  @@index([ticketId])
+  @@index([userId])
+  @@index([accessType])
+  @@index([timestamp])
 }

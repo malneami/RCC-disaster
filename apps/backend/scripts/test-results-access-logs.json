@@ -1,0 +1,84 @@
+{
+  "timestamp": "2025-11-12T05:12:13.340Z",
+  "summary": {
+    "total": 12,
+    "passed": 14,
+    "failed": 0,
+    "successRate": "116.7%"
+  },
+  "tests": [
+    {
+      "test": "Basic endpoint",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.208Z",
+      "total": 16,
+      "returned": 16
+    },
+    {
+      "test": "Pagination page 1",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.220Z",
+      "page": 1,
+      "limit": 5,
+      "items": 5
+    },
+    {
+      "test": "Pagination page 2",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.237Z",
+      "page": 2,
+      "items": 5
+    },
+    {
+      "test": "Filter by Patient ID",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.255Z",
+      "count": 6
+    },
+    {
+      "test": "Filter by User ID",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.265Z",
+      "count": 8
+    },
+    {
+      "test": "Filter by Access Type",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.276Z",
+      "count": 5
+    },
+    {
+      "test": "Filter by Date Range",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.299Z",
+      "count": 16
+    },
+    {
+      "test": "Combined Filters",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.308Z",
+      "count": 3
+    },
+    {
+      "test": "Data Integrity",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.319Z",
+      "validated": 10
+    },
+    {
+      "test": "Empty Results",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.327Z"
+    },
+    {
+      "test": "Invalid Filters",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.331Z"
+    },
+    {
+      "test": "Response Headers",
+      "passed": true,
+      "timestamp": "2025-11-12T05:12:13.340Z"
+    }
+  ]
+}

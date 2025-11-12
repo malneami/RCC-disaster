@@ -233,9 +233,12 @@ export class TraumaCasesService {
   async update(id: string, updateTraumaCaseDto: UpdateTraumaCaseDto, userId: string): Promise<TraumaCase> {
     const existingCase = await this.findOne(id);
 
+    // Ensure we have a valid user ID
+    const validUserId = await this.getValidUserId(userId);
+
     // Handle patient info updates if provided
     if (updateTraumaCaseDto.patientInfo && existingCase.patientId) {
-      await this.traumaPatientService.updatePatient(existingCase.patientId, updateTraumaCaseDto.patientInfo);
+      await this.traumaPatientService.updatePatient(existingCase.patientId, updateTraumaCaseDto.patientInfo, validUserId);
     }
 
     // Calculate derived fields if relevant data is being updated

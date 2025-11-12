@@ -170,10 +170,18 @@ export interface PatientAccessLog {
   reason?: string;
   timestamp: string;
   user?: {
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
     role: string;
+  };
+  patient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    mrn?: string;
+    nationalId?: string;
   };
 }
 
@@ -215,7 +223,22 @@ export interface DuplicateMatch {
 
 export interface DuplicateGroup {
   groupId: string;
-  patients: DuplicateMatch[];
+  patients: Array<DuplicateMatch & {
+    patient?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      mrn?: string;
+      nationalId?: string;
+      phoneNumber?: string;
+      createdAt: string;
+      createdBy?: {
+        firstName: string;
+        lastName: string;
+        email: string;
+      };
+    };
+  }>;
   primaryPatientId: string;
   totalConfidence: number;
 }
@@ -306,15 +329,68 @@ class PatientService {
     return response.data;
   }
 
-  async getPatientStatistics(): Promise<{
+  async getPatientStatistics(filters?: {
+    startDate?: string;
+    endDate?: string;
+    hospitalId?: string;
+  }): Promise<{
     total: number;
     byGender: Record<string, number>;
     byPrivacyLevel: Record<string, number>;
     byBloodType: Record<string, number>;
+    byMaritalStatus: Record<string, number>;
+    insurance: {
+      with: number;
+      without: number;
+      percentage: string;
+    };
     recentActivity: number;
+    byCaseType: {
+      stroke: number;
+      trauma: number;
+      stemi: number;
+    };
+    byAgeGroup: Record<string, number>;
   }> {
-    const response = await apiClient.get('/patients/statistics');
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.hospitalId) params.append('hospitalId', filters.hospitalId);
+    
+    const response = await apiClient.get(`/patients/statistics?${params}`);
     return response.data;
+  }
+
+  async getAllAccessLogs(filters?: {
+    page?: number;
+    limit?: number;
+    patientId?: string;
+    userId?: string;
+    accessType?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    data: PatientAccessLog[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
+    const params = new URLSearchParams();
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.patientId) params.append('patientId', filters.patientId);
+    if (filters?.userId) params.append('userId', filters.userId);
+    if (filters?.accessType) params.append('accessType', filters.accessType);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const response = await apiClient.get(`/patients/access-logs?${params}`);
+    return response.data;
+  }
+
+  async ignoreDuplicates(patientIds: string[]): Promise<void> {
+    await apiClient.post('/patients/duplicates/ignore', { patientIds });
   }
 
   async getPatientAccessLogs(patientId: string, page = 1, limit = 20): Promise<{

@@ -562,15 +562,17 @@ const StrokePortalPage: React.FC = () => {
       >
         {/* Export Button */}
         <Tooltip title="Export to Excel" placement="left">
-          <Fab
-            color="secondary"
-            aria-label="export to excel"
-            onClick={handleExportToExcel}
-            disabled={exportLoading}
-            sx={{ width: 56, height: 56 }}
-          >
-            {exportLoading ? <CircularProgress size={24} color="inherit" /> : <FileDownload />}
-          </Fab>
+          <span>
+            <Fab
+              color="secondary"
+              aria-label="export to excel"
+              onClick={handleExportToExcel}
+              disabled={exportLoading}
+              sx={{ width: 56, height: 56 }}
+            >
+              {exportLoading ? <CircularProgress size={24} color="inherit" /> : <FileDownload />}
+            </Fab>
+          </span>
         </Tooltip>
 
         {/* Create Button */}

@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { PatientInfoDto } from '../dto/create-stemi-case.dto';
+import { AccessLogService, EntityType } from '../../../common/services/access-log.service';
 
 @Injectable()
 export class StemiPatientService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly accessLogService: AccessLogService,
+  ) {}
 
   async createOrUpdatePatient(patientInfo: PatientInfoDto, userId: string) {
     const {
@@ -47,6 +51,20 @@ export class StemiPatientService {
             updatedAt: new Date(),
           },
         });
+        
+        // Log access for patient update
+        try {
+          await this.accessLogService.logAccess({
+            entityType: EntityType.PATIENT,
+            entityId: patient.id,
+            userId,
+            accessType: 'UPDATE',
+            accessMethod: 'API',
+            reason: 'Patient updated via STEMI createOrUpdatePatient endpoint',
+          });
+        } catch (error) {
+          console.error('Failed to log patient update access:', error);
+        }
       } else {
         // Create new patient
         patient = await this.prisma.patient.create({
@@ -66,6 +84,20 @@ export class StemiPatientService {
             createdById: userId,
           },
         });
+        
+        // Log access for patient creation
+        try {
+          await this.accessLogService.logAccess({
+            entityType: EntityType.PATIENT,
+            entityId: patient.id,
+            userId,
+            accessType: 'CREATE',
+            accessMethod: 'API',
+            reason: 'Patient created via STEMI createOrUpdatePatient endpoint',
+          });
+        } catch (error) {
+          console.error('Failed to log patient creation access:', error);
+        }
       }
 
       return patient;
@@ -75,7 +107,7 @@ export class StemiPatientService {
     }
   }
 
-  async updatePatient(patientId: string, patientInfo: PatientInfoDto) {
+  async updatePatient(patientId: string, patientInfo: PatientInfoDto, userId?: string) {
     const {
       firstName,
       lastName,
@@ -137,6 +169,31 @@ export class StemiPatientService {
         where: { id: patientId },
         data: updateData,
       });
+
+      // Log access for patient update - ALWAYS log, even if userId is missing
+      try {
+        if (!userId) {
+          console.warn('[StemiPatientService] updatePatient called without userId - cannot log access');
+        } else {
+          console.log('[StemiPatientService] Logging patient update access:', {
+            patientId,
+            userId,
+            accessType: 'UPDATE',
+          });
+          await this.accessLogService.logAccess({
+            entityType: EntityType.PATIENT,
+            entityId: patientId,
+            userId,
+            accessType: 'UPDATE',
+            accessMethod: 'API',
+            reason: 'Patient updated via STEMI updatePatient endpoint',
+          });
+          console.log('[StemiPatientService] Successfully logged patient update access');
+        }
+      } catch (error) {
+        console.error('[StemiPatientService] Failed to log patient update access:', error);
+        console.error('[StemiPatientService] Error stack:', error instanceof Error ? error.stack : 'No stack');
+      }
 
       return patient;
     } catch (error) {

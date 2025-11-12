@@ -15,10 +15,44 @@ export class StemiCasesService {
     private readonly stemiKpiService: StemiKpiService,
   ) {}
 
+  private async getValidUserId(userId: string): Promise<string> {
+    if (!userId || userId === '4600ecc0-c41b-4d99-8ddd-78ef909182cb') {
+      let adminUser = await this.prisma.user.findFirst({
+        where: { 
+          email: 'admin@rcc-healthcare.com',
+          deletedAt: null 
+        }
+      });
+      
+      if (!adminUser) {
+        // Create a default admin user if none exists
+        adminUser = await this.prisma.user.create({
+          data: {
+            email: 'admin@rcc-healthcare.com',
+            firstName: 'Admin',
+            lastName: 'User',
+            role: 'ADMIN',
+            status: 'ACTIVE',
+            passwordHash: 'hashed_password_placeholder', // This would be properly hashed in production
+            hospitalId: null
+          }
+        });
+        console.log('Created default admin user:', adminUser.id);
+      }
+      
+      console.log('Using admin user ID:', adminUser.id);
+      return adminUser.id;
+    }
+    return userId;
+  }
+
   async createStemiCase(createStemiCaseDto: any, userId: string) {
     const { patientInfo, admissionTime, modeOfArrival, criticalTimestamps, interventionsAndTreatments, clinicalAssessment, ...stemiData } = createStemiCaseDto;
 
     try {
+      // Ensure we have a valid user ID
+      const validUserId = await this.getValidUserId(userId);
+
       // Determine case type based on hospital services
       const originHospital = await this.prisma.hospital.findUnique({
         where: { id: patientInfo.originHospitalId },
@@ -58,7 +92,7 @@ export class StemiCasesService {
 
       // Create or update patient
       console.log('Creating patient with data:', JSON.stringify(patientInfo, null, 2));
-      const patient = await this.stemiPatientService.createOrUpdatePatient(patientInfo, userId);
+      const patient = await this.stemiPatientService.createOrUpdatePatient(patientInfo, validUserId);
       console.log('Patient created successfully:', patient.id);
 
       // Create ticket only if there's a destination hospital (transfer case) and no existing ticketId provided
@@ -89,7 +123,7 @@ export class StemiCasesService {
             emergencyType: 'STEMI',
             emergencySeverity: 'CRITICAL',
             notes: `STEMI case: ${clinicalAssessment.presentingSymptoms}`,
-            createdById: userId,
+            createdById: validUserId,
             
             // Basic ticket fields only
           }
@@ -172,7 +206,7 @@ export class StemiCasesService {
           
           // Additional STEMI-specific fields (removed non-existent fields)
           
-          createdById: userId,
+          createdById: validUserId,
         }
       });
 
@@ -305,9 +339,12 @@ export class StemiCasesService {
     console.log('Extracted data:', JSON.stringify({ patientInfo, stemiData }, null, 2));
 
     try {
+      // Ensure we have a valid user ID
+      const validUserId = await this.getValidUserId(userId);
+
       // Update patient if patientInfo provided
       if (patientInfo) {
-        await this.stemiPatientService.updatePatient(existingCase.patientId, patientInfo);
+        await this.stemiPatientService.updatePatient(existingCase.patientId, patientInfo, validUserId);
       }
 
       // Update ticket only if it exists

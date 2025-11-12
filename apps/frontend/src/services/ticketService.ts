@@ -237,6 +237,33 @@ export interface TicketsResponse {
   pages: number;
 }
 
+export interface TicketAccessLog {
+  id: string;
+  ticketId: string;
+  userId: string;
+  accessType: string;
+  accessMethod: string;
+  ipAddress?: string;
+  userAgent?: string;
+  reason?: string;
+  timestamp: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
+  ticket?: {
+    id: string;
+    ticketNumber: string;
+    patientId: string;
+    priority: string;
+    status: string;
+    pathway: string;
+  };
+}
+
 class TicketService {
   async createTicket(data: CreateTicketData): Promise<Ticket> {
     const response = await apiClient.post('/tickets', data);
@@ -353,6 +380,34 @@ class TicketService {
   // Acknowledge a critical case ticket
   async acknowledgeTicket(ticketId: string): Promise<Ticket> {
     const response = await apiClient.put(`/tickets/${ticketId}/acknowledge`);
+    return response.data;
+  }
+
+  async getAccessLogs(filters?: {
+    page?: number;
+    limit?: number;
+    ticketId?: string;
+    userId?: string;
+    accessType?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    data: TicketAccessLog[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
+    const params = new URLSearchParams();
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.ticketId) params.append('ticketId', filters.ticketId);
+    if (filters?.userId) params.append('userId', filters.userId);
+    if (filters?.accessType) params.append('accessType', filters.accessType);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const response = await apiClient.get(`/tickets/access-logs?${params}`);
     return response.data;
   }
 }

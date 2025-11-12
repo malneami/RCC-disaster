@@ -8,6 +8,7 @@ import { TicketsGateway } from './tickets.gateway';
 import { EmsAssignmentsService } from '../ems-assignments/ems-assignments.service';
 import { StatusMappingService } from '../../common/services/status-mapping.service';
 import { AmbulanceRecommendation, ScoreFactor, ZoneVisitSummary } from './types/recommendation.types';
+import { AccessLogService, EntityType } from '../../common/services/access-log.service';
 
 @Injectable()
 export class TicketsService {
@@ -17,6 +18,7 @@ export class TicketsService {
     private prisma: PrismaService,
     private ticketsGateway: TicketsGateway,
     private emsAssignmentsService: EmsAssignmentsService,
+    private accessLogService: AccessLogService,
   ) {}
 
   // Priority calculation algorithm
@@ -134,6 +136,21 @@ export class TicketsService {
       },
     });
 
+    // Explicitly log the access for ticket creation
+    try {
+      await this.accessLogService.logAccess({
+        entityType: EntityType.TICKET,
+        entityId: ticket.id,
+        userId,
+        accessType: 'CREATE',
+        accessMethod: 'API',
+        reason: `Ticket ${ticketNumber} created via create endpoint`,
+      });
+    } catch (error) {
+      // Don't fail the creation if logging fails
+      console.error('Failed to log ticket creation access:', error);
+    }
+
     // Emit WebSocket notification
     this.ticketsGateway.emitTicketCreated(ticket);
 
@@ -211,11 +228,15 @@ export class TicketsService {
     limit = 10,
     userRole?: UserRole,
     hospitalId?: string,
-    filters?: TicketFilterDto
+    filters?: TicketFilterDto,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
   ) {
     const skip = (page - 1) * limit;
 
     let where: any = { deletedAt: null };
+    const isSearch = filters?.search;
 
     // Role-based filtering
     if (userRole === UserRole.CATH_LAB_USER) {
@@ -377,6 +398,30 @@ export class TicketsService {
       this.prisma.ticket.count({ where }),
     ]);
 
+    // Log search operations for HIPAA compliance
+    if (isSearch && userId && tickets.length > 0) {
+      // Log access for each ticket returned in search results
+      const logPromises = tickets.map((ticket) =>
+        this.accessLogService.logAccess({
+          entityType: EntityType.TICKET,
+          entityId: ticket.id,
+          userId,
+          accessType: 'SEARCH',
+          accessMethod: 'API',
+          ipAddress,
+          userAgent,
+          reason: `Searched tickets with query: "${filters.search}"`,
+        }).catch((err) => {
+          // Don't fail the request if logging fails
+          console.error('Failed to log search access:', err);
+        })
+      );
+      // Log asynchronously without blocking the response
+      Promise.all(logPromises).catch(() => {
+        // Ignore errors
+      });
+    }
+
     return {
       data: tickets,
       total,
@@ -536,6 +581,21 @@ export class TicketsService {
       },
     });
 
+    // Explicitly log the access for ticket update
+    try {
+      await this.accessLogService.logAccess({
+        entityType: EntityType.TICKET,
+        entityId: id,
+        userId,
+        accessType: 'UPDATE',
+        accessMethod: 'API',
+        reason: `Ticket ${ticket.ticketNumber} updated via update endpoint`,
+      });
+    } catch (error) {
+      // Don't fail the update if logging fails
+      console.error('Failed to log ticket update access:', error);
+    }
+
     // Emit WebSocket notification
     this.ticketsGateway.emitTicketUpdate(updatedTicket, 'updated');
 
@@ -594,6 +654,21 @@ export class TicketsService {
         }),
       },
     });
+
+    // Explicitly log the access for ticket status update
+    try {
+      await this.accessLogService.logAccess({
+        entityType: EntityType.TICKET,
+        entityId: id,
+        userId,
+        accessType: 'UPDATE',
+        accessMethod: 'API',
+        reason: `Ticket ${ticket.ticketNumber} status changed from ${ticket.status} to ${updateStatusDto.status}`,
+      });
+    } catch (error) {
+      // Don't fail the update if logging fails
+      console.error('Failed to log ticket status update access:', error);
+    }
 
     // Emit WebSocket notification
     this.ticketsGateway.emitTicketStatusChanged(updatedTicket, ticket.status);
@@ -1828,4 +1903,81 @@ export class TicketsService {
     return degrees * (Math.PI / 180);
   }
   // End of recommendation methods
+
+  async getAccessLogs(filters: {
+    page?: number;
+    limit?: number;
+    ticketId?: string;
+    userId?: string;
+    accessType?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const page = filters.page || 1;
+    const limit = filters.limit || 50;
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = {};
+
+    if (filters.ticketId) {
+      whereClause.ticketId = filters.ticketId;
+    }
+
+    if (filters.userId) {
+      whereClause.userId = filters.userId;
+    }
+
+    if (filters.accessType) {
+      whereClause.accessType = filters.accessType;
+    }
+
+    if (filters.startDate || filters.endDate) {
+      whereClause.timestamp = {};
+      if (filters.startDate) {
+        whereClause.timestamp.gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        whereClause.timestamp.lte = new Date(filters.endDate + 'T23:59:59.999Z');
+      }
+    }
+
+    const [logs, total] = await Promise.all([
+      this.prisma.ticketAccessLog.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+            },
+          },
+          ticket: {
+            select: {
+              id: true,
+              ticketNumber: true,
+              patientId: true,
+              priority: true,
+              status: true,
+              pathway: true,
+            },
+          },
+        },
+        orderBy: { timestamp: 'desc' },
+      }),
+      this.prisma.ticketAccessLog.count({ where: whereClause }),
+    ]);
+
+    return {
+      data: logs,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
+  }
 }

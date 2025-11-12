@@ -456,27 +456,31 @@ const UserManagement: React.FC = () => {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Reset Password">
-                        <IconButton 
-                          size="small" 
-                          color="warning"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setResetDialog(true);
-                          }}
-                          disabled={user.status !== 'ACTIVE'}
-                        >
-                          <LockReset />
-                        </IconButton>
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            color="warning"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setResetDialog(true);
+                            }}
+                            disabled={user.status !== 'ACTIVE'}
+                          >
+                            <LockReset />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title="Delete User">
-                        <IconButton 
-                          size="small" 
-                          color="error"
-                          onClick={() => handleDeleteUser(user)}
-                          disabled={user.role === 'ADMIN'}
-                        >
-                          <Delete />
-                        </IconButton>
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            color="error"
+                            onClick={() => handleDeleteUser(user)}
+                            disabled={user.role === 'ADMIN'}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     </Box>
                   </TableCell>

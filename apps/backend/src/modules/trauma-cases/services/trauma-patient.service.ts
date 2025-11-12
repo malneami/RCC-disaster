@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../../database/prisma.service';
 import { PatientMergeService } from '../../patients/patient-merge.service';
 import { PatientGender } from '@prisma/client';
+import { AccessLogService, EntityType } from '../../../common/services/access-log.service';
 
 export interface PatientInfo {
   firstName: string;
@@ -25,7 +26,8 @@ export interface PatientInfo {
 export class TraumaPatientService {
   constructor(
     private prisma: PrismaService,
-    private patientMergeService: PatientMergeService
+    private patientMergeService: PatientMergeService,
+    private accessLogService: AccessLogService,
   ) {}
 
   async processPatient(patientInfo: PatientInfo, userId: string): Promise<string> {
@@ -57,7 +59,7 @@ export class TraumaPatientService {
           
           // Update existing patient with new information provided
           console.log('Updating existing patient with new information...');
-          await this.updatePatient(existingPatientId, patientInfo);
+          await this.updatePatient(existingPatientId, patientInfo, userId);
         } else {
           console.log('No existing patient found with National ID, will create new patient');
         }
@@ -146,7 +148,7 @@ export class TraumaPatientService {
                 
                 // Update existing patient with new information provided
                 console.log('Updating existing patient with new information...');
-                await this.updatePatient(existingPatient.id, patientInfo);
+                await this.updatePatient(existingPatient.id, patientInfo, userId);
               }
             } catch (findError) {
               console.error('Error finding existing patient:', findError);
@@ -165,7 +167,7 @@ export class TraumaPatientService {
     return patientId;
   }
 
-  async updatePatient(patientId: string, patientInfo: Partial<PatientInfo>): Promise<void> {
+  async updatePatient(patientId: string, patientInfo: Partial<PatientInfo>, userId?: string): Promise<void> {
     console.log('=== UPDATING PATIENT INFO ===');
     console.log('Patient ID:', patientId);
     console.log('Patient Info received:', JSON.stringify(patientInfo, null, 2));
@@ -234,6 +236,31 @@ export class TraumaPatientService {
         });
         console.log('Patient info updated successfully');
         console.log('Updated patient data:', JSON.stringify(updated, null, 2));
+        
+        // Log access for patient update - ALWAYS log, even if userId is missing
+        try {
+          if (!userId) {
+            console.warn('[TraumaPatientService] updatePatient called without userId - cannot log access');
+          } else {
+            console.log('[TraumaPatientService] Logging patient update access:', {
+              patientId,
+              userId,
+              accessType: 'UPDATE',
+            });
+            await this.accessLogService.logAccess({
+              entityType: EntityType.PATIENT,
+              entityId: patientId,
+              userId,
+              accessType: 'UPDATE',
+              accessMethod: 'API',
+              reason: 'Patient updated via Trauma updatePatient endpoint',
+            });
+            console.log('[TraumaPatientService] Successfully logged patient update access');
+          }
+        } catch (error) {
+          console.error('[TraumaPatientService] Failed to log patient update access:', error);
+          console.error('[TraumaPatientService] Error stack:', error instanceof Error ? error.stack : 'No stack');
+        }
       } catch (error) {
         console.error('Error updating patient info:', error);
         throw new BadRequestException('Failed to update patient information');

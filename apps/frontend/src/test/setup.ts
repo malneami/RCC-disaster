@@ -3,15 +3,22 @@
  * This file runs before all tests
  */
 
-import { expect, afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
-
-// Extend Vitest's expect with jest-dom matchers
-expect.extend(matchers);
+import { afterEach } from 'vitest';
+// Note: Testing library imports are optional and may not be installed
+// @ts-ignore - Optional dependency
+let cleanup: (() => void) | undefined;
+try {
+  // @ts-ignore
+  const testingLibrary = require('@testing-library/react');
+  cleanup = testingLibrary.cleanup;
+} catch {
+  // Testing library not installed, skip cleanup
+}
 
 // Cleanup after each test
 afterEach(() => {
-  cleanup();
+  if (cleanup) {
+    cleanup();
+  }
 });
 

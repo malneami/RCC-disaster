@@ -53,6 +53,31 @@ export interface UpdateMedicalRecordData extends Partial<CreateMedicalRecordData
   id: string;
 }
 
+export interface MedicalRecordAccessLog {
+  id: string;
+  medicalRecordId: string;
+  userId: string;
+  accessType: string;
+  accessMethod: string;
+  ipAddress?: string;
+  userAgent?: string;
+  reason?: string;
+  timestamp: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
+  medicalRecord?: {
+    id: string;
+    title: string;
+    recordType: string;
+    patientId: string;
+  };
+}
+
 class MedicalRecordService {
   async getMedicalRecords(patientId: string): Promise<MedicalRecord[]> {
     const response = await apiClient.get(`/patients/${patientId}/medical-records`);
@@ -76,6 +101,34 @@ class MedicalRecordService {
 
   async deleteMedicalRecord(id: string): Promise<void> {
     await apiClient.delete(`/medical-records/${id}`);
+  }
+
+  async getAccessLogs(filters?: {
+    page?: number;
+    limit?: number;
+    medicalRecordId?: string;
+    userId?: string;
+    accessType?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    data: MedicalRecordAccessLog[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
+    const params = new URLSearchParams();
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.medicalRecordId) params.append('medicalRecordId', filters.medicalRecordId);
+    if (filters?.userId) params.append('userId', filters.userId);
+    if (filters?.accessType) params.append('accessType', filters.accessType);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const response = await apiClient.get(`/medical-records/access-logs?${params}`);
+    return response.data;
   }
 }
 

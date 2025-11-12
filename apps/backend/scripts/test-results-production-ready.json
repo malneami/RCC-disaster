@@ -1,0 +1,80 @@
+{
+  "timestamp": "2025-11-12T05:14:55.247Z",
+  "summary": {
+    "total": 13,
+    "passed": 13,
+    "failed": 0,
+    "successRate": "100.0%"
+  },
+  "tests": [
+    {
+      "test": "Large limit cap",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:54.891Z"
+    },
+    {
+      "test": "Zero limit",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:54.908Z"
+    },
+    {
+      "test": "Negative page",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:54.921Z"
+    },
+    {
+      "test": "Invalid date format",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:54.956Z"
+    },
+    {
+      "test": "Reversed date range",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:54.964Z"
+    },
+    {
+      "test": "Special characters",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:54.979Z"
+    },
+    {
+      "test": "Performance large dataset",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:54.990Z",
+      "duration": 11
+    },
+    {
+      "test": "Performance multiple filters",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:55.006Z",
+      "duration": 16
+    },
+    {
+      "test": "Pagination consistency",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:55.036Z"
+    },
+    {
+      "test": "Ordering consistency",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:55.048Z"
+    },
+    {
+      "test": "Unauthorized access",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:55.052Z"
+    },
+    {
+      "test": "Invalid token",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:55.054Z"
+    },
+    {
+      "test": "Concurrent requests",
+      "passed": true,
+      "timestamp": "2025-11-12T05:14:55.247Z",
+      "duration": 187,
+      "count": 10
+    }
+  ]
+}

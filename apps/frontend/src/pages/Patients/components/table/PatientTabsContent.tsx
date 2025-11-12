@@ -3,6 +3,7 @@ import DataTable from '../../../../components/Common/DataTable';
 import Pagination from '../../../../components/Common/Pagination';
 import PatientStatistics from '../PatientStatistics';
 import DuplicateDetection from '../DuplicateDetection';
+import PatientAccessLogsTab from '../PatientAccessLogsTab';
 import { usePatientTableColumns } from './PatientTableColumns';
 
 interface PatientTabsContentProps {
@@ -61,7 +62,7 @@ export const usePatientTabsContent = ({
     },
     {
       label: 'Access Logs',
-      content: <div>Access Logs - Coming Soon</div>,
+      content: <PatientAccessLogsTab />,
     },
   ];
 };

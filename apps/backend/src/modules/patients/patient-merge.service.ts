@@ -67,7 +67,7 @@ export class PatientMergeService {
   /**
    * Merge multiple duplicate patients into one primary patient
    */
-  private async mergeDuplicatePatients(duplicatePatients: Patient[]): Promise<string> {
+  async mergeDuplicatePatients(duplicatePatients: Patient[]): Promise<string> {
     if (duplicatePatients.length < 2) {
       return duplicatePatients[0].id;
     }

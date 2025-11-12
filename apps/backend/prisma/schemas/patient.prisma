@@ -122,15 +122,45 @@ model MedicalRecord {
   deletedAt        DateTime?         @map("deleted_at")
   createdById     String            @map("created_by_id")
   
+  // Access Audit Fields
+  lastAccessedAt  DateTime?         @map("last_accessed_at")
+  lastAccessedBy  String?           @map("last_accessed_by")
+  
   // Relations
   patient         Patient           @relation(fields: [patientId], references: [id])
   createdBy       User              @relation("MedicalRecordCreator", fields: [createdById], references: [id])
+  lastAccessedByUser User?          @relation("MedicalRecordAccessor", fields: [lastAccessedBy], references: [id])
+  accessLogs      MedicalRecordAccessLog[]
   
   @@map("medical_records")
   @@index([patientId])
   @@index([recordType])
   @@index([recordDate])
   @@index([createdAt])
+  @@index([lastAccessedAt])
+}
+
+// Medical Record Access Log for compliance and audit
+model MedicalRecordAccessLog {
+  id              String          @id @default(uuid())
+  medicalRecordId String          @map("medical_record_id")
+  userId          String          @map("user_id")
+  accessType      AccessType
+  accessMethod    String          @map("access_method") // API, WEB, MOBILE
+  ipAddress       String?         @map("ip_address")
+  userAgent       String?         @map("user_agent")
+  reason          String?         // Reason for access
+  timestamp       DateTime        @default(now())
+  
+  // Relations
+  medicalRecord   MedicalRecord   @relation(fields: [medicalRecordId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+  
+  @@map("medical_record_access_logs")
+  @@index([medicalRecordId])
+  @@index([userId])
+  @@index([accessType])
+  @@index([timestamp])
 }
 
 // Patient Access Log for HIPAA compliance

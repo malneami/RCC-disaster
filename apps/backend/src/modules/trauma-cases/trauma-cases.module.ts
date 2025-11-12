@@ -9,9 +9,10 @@ import { TraumaKpiService } from './services/trauma-kpi.service';
 import { TraumaDatetimeService } from './services/trauma-datetime.service';
 import { TraumaQueryService } from './services/trauma-query.service';
 import { TraumaExportService } from './services/trauma-export.service';
+import { CommonModule } from '../../common/common.module';
 
 @Module({
-  imports: [],
+  imports: [CommonModule],
   controllers: [TraumaCasesController],
   providers: [
     TraumaCasesService, 

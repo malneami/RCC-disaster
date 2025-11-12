@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, Res, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { Response } from 'express';
 import { TicketsService } from './tickets.service';
 import { TicketExportService } from './services/ticket-export.service';
@@ -72,7 +72,8 @@ export class TicketsController {
       limitNum,
       req?.user?.role,
       req?.user?.hospitalId,
-      filters
+      filters,
+      req?.user?.id,
     );
   }
 
@@ -192,5 +193,53 @@ export class TicketsController {
     @Request() req: any
   ) {
     return this.ticketsService.acknowledge(id, req.user.id, req.user.role);
+  }
+
+  @Get('access-logs')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get ticket access logs with filtering (Admin only)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'ticketId', required: false, type: String })
+  @ApiQuery({ name: 'userId', required: false, type: String })
+  @ApiQuery({ name: 'accessType', required: false, type: String })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  async getAccessLogs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('ticketId') ticketId?: string,
+    @Query('userId') userId?: string,
+    @Query('accessType') accessType?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.ticketsService.getAccessLogs({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 50,
+      ticketId,
+      userId,
+      accessType,
+      startDate,
+      endDate,
+    });
+  }
+
+  @Get(':id/access-logs')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get access logs for a specific ticket (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getTicketAccessLogs(
+    @Param('id') ticketId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.ticketsService.getAccessLogs({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 50,
+      ticketId,
+    });
   }
 }

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
@@ -26,6 +26,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
+import { AccessLogInterceptor } from './common/interceptors/access-log.interceptor';
+import { CommonModule } from './common/common.module';
 import { AmbulancesModule } from './modules/ambulances/ambulances.module';
 import { EmsAssignmentsModule } from './modules/ems-assignments/ems-assignments.module';
 import { AmbulanceTrackingModule } from './modules/ambulance-tracking/ambulance-tracking.module';
@@ -64,6 +66,7 @@ import { VideoCallsModule } from './modules/video-calls/video-calls.module';
       },
     ]),
     DatabaseModule,
+    CommonModule,
     
     // EMS Modules
     AmbulancesModule,
@@ -101,6 +104,10 @@ import { VideoCallsModule } from './modules/video-calls/video-calls.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerBehindProxyGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AccessLogInterceptor,
     },
     // {
     //   provide: APP_GUARD,

@@ -94,4 +94,52 @@ export class MedicalRecordsController {
   remove(@Param('id') id: string, @Request() req: any) {
     return this.medicalRecordsService.remove(id, req.user.id);
   }
+
+  @Get('access-logs')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get medical record access logs with filtering (Admin only)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'medicalRecordId', required: false, type: String })
+  @ApiQuery({ name: 'userId', required: false, type: String })
+  @ApiQuery({ name: 'accessType', required: false, type: String })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  async getAccessLogs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('medicalRecordId') medicalRecordId?: string,
+    @Query('userId') userId?: string,
+    @Query('accessType') accessType?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.medicalRecordsService.getAccessLogs({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 50,
+      medicalRecordId,
+      userId,
+      accessType,
+      startDate,
+      endDate,
+    });
+  }
+
+  @Get(':id/access-logs')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get access logs for a specific medical record (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Medical record ID' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getMedicalRecordAccessLogs(
+    @Param('id') medicalRecordId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.medicalRecordsService.getAccessLogs({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 50,
+      medicalRecordId,
+    });
+  }
 }

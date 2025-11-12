@@ -1,18 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { PatientMergeService } from './patient-merge.service';
+import { AccessLogService, EntityType } from '../../common/services/access-log.service';
 import * as PDFDocument from 'pdfkit';
 import { CreatePatientDto } from './dto/patient.dto';
 import { Patient } from '@prisma/client';
 
 @Injectable()
 export class PatientsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => PatientMergeService))
+    private patientMergeService: PatientMergeService,
+    private accessLogService: AccessLogService,
+  ) {}
 
-  async findAll(page = 1, limit = 10, filters?: any) {
+  async findAll(page = 1, limit = 10, filters?: any, userId?: string, ipAddress?: string, userAgent?: string) {
     const skip = (page - 1) * limit;
 
     // Build where clause based on filters
     const whereClause: any = { deletedAt: null };
+    const isSearch = filters?.search;
 
     if (filters) {
       // Build AND conditions array for proper filter combination
@@ -132,6 +140,30 @@ export class PatientsService {
       }
       return patient;
     });
+
+    // Log search operations for HIPAA compliance
+    if (isSearch && userId && normalizedPatients.length > 0) {
+      // Log access for each patient returned in search results
+      const logPromises = normalizedPatients.map((patient) =>
+        this.accessLogService.logAccess({
+          entityType: EntityType.PATIENT,
+          entityId: patient.id,
+          userId,
+          accessType: 'SEARCH',
+          accessMethod: 'API',
+          ipAddress,
+          userAgent,
+          reason: `Searched patients with query: "${filters.search}"`,
+        }).catch((err) => {
+          // Don't fail the request if logging fails
+          console.error('Failed to log search access:', err);
+        })
+      );
+      // Log asynchronously without blocking the response
+      Promise.all(logPromises).catch(() => {
+        // Ignore errors
+      });
+    }
 
     return {
       data: normalizedPatients,
@@ -333,6 +365,21 @@ export class PatientsService {
       if (createPatientDto.nationalId && createPatientDto.nationalId.trim() === '00000000000000') {
         result.nationalId = '00000000000000';
       }
+
+      // Explicitly log the access for patient creation
+      try {
+        await this.accessLogService.logAccess({
+          entityType: EntityType.PATIENT,
+          entityId: result.id,
+          userId,
+          accessType: 'CREATE',
+          accessMethod: 'API',
+          reason: 'Patient created via create endpoint',
+        });
+      } catch (error) {
+        // Don't fail the creation if logging fails
+        console.error('Failed to log patient creation access:', error);
+      }
       
       console.log('Service: Patient created successfully:', result);
       return result;
@@ -439,6 +486,28 @@ export class PatientsService {
       updatedPatient.nationalId = '00000000000000';
     } else if (updatedPatient.nationalId && updatedPatient.nationalId.startsWith('00000000000000-')) {
       updatedPatient.nationalId = '00000000000000';
+    }
+
+    // Explicitly log the access for patient updates
+    try {
+      console.log('[PatientsService] Logging patient update access:', {
+        patientId: id,
+        userId,
+        accessType: 'UPDATE',
+      });
+      await this.accessLogService.logAccess({
+        entityType: EntityType.PATIENT,
+        entityId: id,
+        userId,
+        accessType: 'UPDATE',
+        accessMethod: 'API',
+        reason: 'Patient updated via update endpoint',
+      });
+      console.log('[PatientsService] Successfully logged patient update access');
+    } catch (error) {
+      // Don't fail the update if logging fails
+      console.error('[PatientsService] Failed to log patient update access:', error);
+      console.error('[PatientsService] Error stack:', error instanceof Error ? error.stack : 'No stack');
     }
 
     return updatedPatient;
@@ -1052,6 +1121,621 @@ export class PatientsService {
       caseId: latestCase.id,
       createdAt: latestCase.createdAt.toISOString(),
       status: latestCase.currentStatus,
+    };
+  }
+
+  async getStatistics(filters?: { startDate?: string; endDate?: string; hospitalId?: string }) {
+    // Base where clause - only exclude deleted patients
+    const whereClause: any = { deletedAt: null };
+    
+    // Note: Date filters are only used for "recent activity" metric, not for total counts
+    // This ensures all existing patients are included in statistics
+
+    const [
+      total,
+      byGender,
+      byPrivacyLevel,
+      byBloodType,
+      byMaritalStatus,
+      withInsurance,
+      withoutInsurance,
+      recentActivity,
+      byCaseType,
+      byAgeGroup,
+    ] = await Promise.all([
+      // Total patients
+      this.prisma.patient.count({ where: whereClause }),
+
+      // By gender
+      this.prisma.patient.groupBy({
+        by: ['gender'],
+        where: whereClause,
+        _count: true,
+      }),
+
+      // By privacy level
+      this.prisma.patient.groupBy({
+        by: ['privacyLevel'],
+        where: whereClause,
+        _count: true,
+      }),
+
+      // By blood type
+      this.prisma.patient.groupBy({
+        by: ['bloodType'],
+        where: whereClause,
+        _count: true,
+      }),
+
+      // By marital status
+      this.prisma.patient.groupBy({
+        by: ['maritalStatus'],
+        where: whereClause,
+        _count: true,
+      }),
+
+      // With insurance
+      this.prisma.patient.count({
+        where: {
+          ...whereClause,
+          OR: [
+            { insuranceProvider: { not: null } },
+            { insuranceNumber: { not: null } },
+          ],
+        },
+      }),
+
+      // Without insurance
+      this.prisma.patient.count({
+        where: {
+          ...whereClause,
+          AND: [
+            { insuranceProvider: null },
+            { insuranceNumber: null },
+          ],
+        },
+      }),
+
+      // Recent activity - use date filters if provided, otherwise default to last 30 days
+      this.prisma.patient.count({
+        where: {
+          ...whereClause,
+          updatedAt: {
+            gte: filters?.startDate 
+              ? new Date(filters.startDate)
+              : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+            ...(filters?.endDate && {
+              lte: new Date(filters.endDate + 'T23:59:59.999Z'),
+            }),
+          },
+        },
+      }),
+
+      // By case type (stroke, trauma, stemi)
+      Promise.all([
+        this.prisma.patient.count({
+          where: {
+            ...whereClause,
+            strokeCases: { some: { deletedAt: null } },
+          },
+        }),
+        this.prisma.patient.count({
+          where: {
+            ...whereClause,
+            traumaCases: { some: { deletedAt: null } },
+          },
+        }),
+        this.prisma.patient.count({
+          where: {
+            ...whereClause,
+            stemiCases: { some: { deletedAt: null } },
+          },
+        }),
+      ]),
+
+      // By age group
+      this.prisma.patient.findMany({
+        where: whereClause,
+        select: { age: true },
+      }),
+    ]);
+
+    // Process age groups
+    const ageGroups = {
+      '0-17': 0,
+      '18-30': 0,
+      '31-50': 0,
+      '51-70': 0,
+      '71+': 0,
+      unknown: 0,
+    };
+
+    byAgeGroup.forEach((patient) => {
+      if (!patient.age) {
+        ageGroups.unknown++;
+      } else if (patient.age <= 17) {
+        ageGroups['0-17']++;
+      } else if (patient.age <= 30) {
+        ageGroups['18-30']++;
+      } else if (patient.age <= 50) {
+        ageGroups['31-50']++;
+      } else if (patient.age <= 70) {
+        ageGroups['51-70']++;
+      } else {
+        ageGroups['71+']++;
+      }
+    });
+
+    return {
+      total,
+      byGender: byGender.reduce((acc, item) => {
+        acc[item.gender] = item._count;
+        return acc;
+      }, {} as Record<string, number>),
+      byPrivacyLevel: byPrivacyLevel.reduce((acc, item) => {
+        acc[item.privacyLevel] = item._count;
+        return acc;
+      }, {} as Record<string, number>),
+      byBloodType: byBloodType.reduce((acc, item) => {
+        if (item.bloodType) {
+          acc[item.bloodType] = item._count;
+        }
+        return acc;
+      }, {} as Record<string, number>),
+      byMaritalStatus: byMaritalStatus.reduce((acc, item) => {
+        if (item.maritalStatus) {
+          acc[item.maritalStatus] = item._count;
+        }
+        return acc;
+      }, {} as Record<string, number>),
+      insurance: {
+        with: withInsurance,
+        without: withoutInsurance,
+        percentage: total > 0 ? ((withInsurance / total) * 100).toFixed(2) : '0.00',
+      },
+      recentActivity,
+      byCaseType: {
+        stroke: byCaseType[0],
+        trauma: byCaseType[1],
+        stemi: byCaseType[2],
+      },
+      byAgeGroup: ageGroups,
+    };
+  }
+
+  async getDuplicateGroups(confidenceThreshold: number = 0.8) {
+    const allPatients = await this.prisma.patient.findMany({
+      where: { deletedAt: null, isPrimaryRecord: true },
+      include: {
+        createdBy: {
+          select: { firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+
+    const duplicateGroups: any[] = [];
+    const processed = new Set<string>();
+
+    for (const patient of allPatients) {
+      if (processed.has(patient.id)) continue;
+
+      const duplicates = await this.prisma.patient.findMany({
+        where: {
+          deletedAt: null,
+          id: { not: patient.id },
+          OR: [
+            ...(patient.mrn ? [{ mrn: patient.mrn }] : []),
+            ...(patient.nationalId ? [{ nationalId: patient.nationalId }] : []),
+            ...(patient.phoneNumber ? [{ phoneNumber: patient.phoneNumber }] : []),
+          ],
+        },
+        include: {
+          createdBy: {
+            select: { firstName: true, lastName: true, email: true },
+          },
+        },
+      });
+
+      if (duplicates.length > 0) {
+        const group = {
+          groupId: `group-${patient.id}`,
+          primaryPatientId: patient.id,
+          patients: [
+            {
+              patientId: patient.id,
+              confidence: 1.0,
+              matchReason: 'Primary record',
+              matchedFields: [],
+              patient: {
+                id: patient.id,
+                firstName: patient.firstName,
+                lastName: patient.lastName,
+                mrn: patient.mrn,
+                nationalId: patient.nationalId,
+                phoneNumber: patient.phoneNumber,
+                createdAt: patient.createdAt,
+                createdBy: patient.createdBy,
+              },
+            },
+            ...duplicates.map((dup) => ({
+              patientId: dup.id,
+              confidence: 0.9,
+              matchReason: 'Potential duplicate',
+              matchedFields: [
+                ...(patient.mrn && dup.mrn === patient.mrn ? ['mrn'] : []),
+                ...(patient.nationalId && dup.nationalId === patient.nationalId ? ['nationalId'] : []),
+                ...(patient.phoneNumber && dup.phoneNumber === patient.phoneNumber ? ['phoneNumber'] : []),
+              ],
+              patient: {
+                id: dup.id,
+                firstName: dup.firstName,
+                lastName: dup.lastName,
+                mrn: dup.mrn,
+                nationalId: dup.nationalId,
+                phoneNumber: dup.phoneNumber,
+                createdAt: dup.createdAt,
+                createdBy: dup.createdBy,
+              },
+            })),
+          ],
+          totalConfidence: 0.95,
+        };
+
+        duplicateGroups.push(group);
+        processed.add(patient.id);
+        duplicates.forEach((d) => processed.add(d.id));
+      }
+    }
+
+    return duplicateGroups;
+  }
+
+  async mergeDuplicates(primaryPatientId: string, duplicatePatientIds: string[], userId: string) {
+    const primaryPatient = await this.prisma.patient.findUnique({
+      where: { id: primaryPatientId },
+    });
+
+    if (!primaryPatient) {
+      throw new Error('Primary patient not found');
+    }
+
+    // Create a temporary array with primary and duplicates
+    const allPatients = [
+      primaryPatient,
+      ...(await this.prisma.patient.findMany({
+        where: { id: { in: duplicatePatientIds } },
+      })),
+    ];
+
+    // Log the merge action
+    for (const duplicateId of duplicatePatientIds) {
+      await this.prisma.patientAccessLog.create({
+        data: {
+          patientId: duplicateId,
+          userId,
+          accessType: 'DELETE',
+          accessMethod: 'WEB',
+          reason: `Merged with patient ${primaryPatientId}`,
+        },
+      });
+    }
+
+    // Perform the merge using the merge service
+    await this.patientMergeService.mergeDuplicatePatients(allPatients);
+
+    return { success: true, primaryPatientId };
+  }
+
+  async ignoreDuplicates(patientIds: string[]) {
+    // Mark patients as not duplicates by setting isPrimaryRecord to true
+    await this.prisma.patient.updateMany({
+      where: { id: { in: patientIds } },
+      data: { isPrimaryRecord: true },
+    });
+
+    return { success: true, ignored: patientIds.length };
+  }
+
+  async getAccessLogs(filters: {
+    page?: number;
+    limit?: number;
+    patientId?: string;
+    userId?: string;
+    accessType?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    // Use provided values or defaults, but ensure they're numbers
+    const page = filters.page !== undefined && filters.page > 0 ? filters.page : 1;
+    const limit = filters.limit !== undefined && filters.limit > 0 ? filters.limit : 50;
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = {};
+
+    if (filters.patientId) {
+      whereClause.patientId = filters.patientId;
+    }
+
+    if (filters.userId) {
+      whereClause.userId = filters.userId;
+    }
+
+    if (filters.accessType) {
+      whereClause.accessType = filters.accessType;
+    }
+
+    if (filters.startDate || filters.endDate) {
+      whereClause.timestamp = {};
+      if (filters.startDate) {
+        // Handle both date-only strings (YYYY-MM-DD) and full ISO strings
+        const startDateStr = filters.startDate.includes('T') 
+          ? filters.startDate 
+          : filters.startDate + 'T00:00:00.000Z';
+        const startDate = new Date(startDateStr);
+        // Set to start of day in UTC
+        startDate.setUTCHours(0, 0, 0, 0);
+        whereClause.timestamp.gte = startDate;
+      }
+      if (filters.endDate) {
+        // Handle both date-only strings (YYYY-MM-DD) and full ISO strings
+        const endDateStr = filters.endDate.includes('T')
+          ? filters.endDate
+          : filters.endDate + 'T23:59:59.999Z';
+        const endDate = new Date(endDateStr);
+        // Set to end of day in UTC
+        if (!filters.endDate.includes('T')) {
+          endDate.setUTCHours(23, 59, 59, 999);
+        }
+        whereClause.timestamp.lte = endDate;
+      }
+    }
+
+    const [logs, total] = await Promise.all([
+      this.prisma.patientAccessLog.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+            },
+          },
+          patient: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              mrn: true,
+              nationalId: true,
+            },
+          },
+        },
+        orderBy: { timestamp: 'desc' },
+      }),
+      this.prisma.patientAccessLog.count({ where: whereClause }),
+    ]);
+
+    // Serialize the response to ensure proper JSON formatting
+    const serializedLogs = logs.map((log) => ({
+      id: log.id,
+      patientId: log.patientId,
+      userId: log.userId,
+      accessType: log.accessType,
+      accessMethod: log.accessMethod,
+      ipAddress: log.ipAddress,
+      userAgent: log.userAgent,
+      reason: log.reason,
+      timestamp: log.timestamp.toISOString(),
+      user: log.user ? {
+        id: log.user.id,
+        firstName: log.user.firstName,
+        lastName: log.user.lastName,
+        email: log.user.email,
+        role: log.user.role,
+      } : null,
+      patient: log.patient ? {
+        id: log.patient.id,
+        firstName: log.patient.firstName,
+        lastName: log.patient.lastName,
+        mrn: log.patient.mrn,
+        nationalId: log.patient.nationalId,
+      } : null,
+    }));
+
+    return {
+      data: serializedLogs,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  async createAccessLog(
+    createAccessLogDto: {
+      patientId: string;
+      userId: string;
+      accessType: string;
+      accessMethod?: string;
+      ipAddress?: string;
+      userAgent?: string;
+      reason?: string;
+    },
+    currentUserId: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Validate patient exists
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: createAccessLogDto.patientId },
+    });
+    if (!patient) {
+      throw new Error('Patient not found');
+    }
+
+    // Validate user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: createAccessLogDto.userId },
+    });
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Use provided IP/UserAgent or fallback to request values
+    const log = await this.prisma.patientAccessLog.create({
+      data: {
+        patientId: createAccessLogDto.patientId,
+        userId: createAccessLogDto.userId,
+        accessType: createAccessLogDto.accessType as any,
+        accessMethod: createAccessLogDto.accessMethod || 'API',
+        ipAddress: createAccessLogDto.ipAddress || ipAddress || null,
+        userAgent: createAccessLogDto.userAgent || userAgent || null,
+        reason: createAccessLogDto.reason || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            mrn: true,
+            nationalId: true,
+          },
+        },
+      },
+    });
+
+    // Serialize response
+    return {
+      id: log.id,
+      patientId: log.patientId,
+      userId: log.userId,
+      accessType: log.accessType,
+      accessMethod: log.accessMethod,
+      ipAddress: log.ipAddress,
+      userAgent: log.userAgent,
+      reason: log.reason,
+      timestamp: log.timestamp.toISOString(),
+      user: log.user ? {
+        id: log.user.id,
+        firstName: log.user.firstName,
+        lastName: log.user.lastName,
+        email: log.user.email,
+        role: log.user.role,
+      } : null,
+      patient: log.patient ? {
+        id: log.patient.id,
+        firstName: log.patient.firstName,
+        lastName: log.patient.lastName,
+        mrn: log.patient.mrn,
+        nationalId: log.patient.nationalId,
+      } : null,
+    };
+  }
+
+  async updateAccessLog(
+    logId: string,
+    updateAccessLogDto: {
+      accessType?: string;
+      accessMethod?: string;
+      ipAddress?: string;
+      userAgent?: string;
+      reason?: string;
+    },
+  ) {
+    // Check if log exists
+    const existingLog = await this.prisma.patientAccessLog.findUnique({
+      where: { id: logId },
+    });
+    if (!existingLog) {
+      const error: any = new Error('Access log not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Build update data
+    const updateData: any = {};
+    if (updateAccessLogDto.accessType) {
+      updateData.accessType = updateAccessLogDto.accessType;
+    }
+    if (updateAccessLogDto.accessMethod) {
+      updateData.accessMethod = updateAccessLogDto.accessMethod;
+    }
+    if (updateAccessLogDto.ipAddress !== undefined) {
+      updateData.ipAddress = updateAccessLogDto.ipAddress || null;
+    }
+    if (updateAccessLogDto.userAgent !== undefined) {
+      updateData.userAgent = updateAccessLogDto.userAgent || null;
+    }
+    if (updateAccessLogDto.reason !== undefined) {
+      updateData.reason = updateAccessLogDto.reason || null;
+    }
+
+    // Update the log
+    const updatedLog = await this.prisma.patientAccessLog.update({
+      where: { id: logId },
+      data: updateData,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            mrn: true,
+            nationalId: true,
+          },
+        },
+      },
+    });
+
+    // Serialize response
+    return {
+      id: updatedLog.id,
+      patientId: updatedLog.patientId,
+      userId: updatedLog.userId,
+      accessType: updatedLog.accessType,
+      accessMethod: updatedLog.accessMethod,
+      ipAddress: updatedLog.ipAddress,
+      userAgent: updatedLog.userAgent,
+      reason: updatedLog.reason,
+      timestamp: updatedLog.timestamp.toISOString(),
+      user: updatedLog.user ? {
+        id: updatedLog.user.id,
+        firstName: updatedLog.user.firstName,
+        lastName: updatedLog.user.lastName,
+        email: updatedLog.user.email,
+        role: updatedLog.user.role,
+      } : null,
+      patient: updatedLog.patient ? {
+        id: updatedLog.patient.id,
+        firstName: updatedLog.patient.firstName,
+        lastName: updatedLog.patient.lastName,
+        mrn: updatedLog.patient.mrn,
+        nationalId: updatedLog.patient.nationalId,
+      } : null,
     };
   }
 }

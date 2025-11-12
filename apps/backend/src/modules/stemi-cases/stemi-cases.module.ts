@@ -8,9 +8,10 @@ import { StemiKpiService } from './services/stemi-kpi.service';
 import { StemiExportService } from './services/stemi-export.service';
 import { StemiOutcomeFormService } from './services/stemi-outcome-form.service';
 import { PrismaService } from '../../database/prisma.service';
+import { CommonModule } from '../../common/common.module';
 
 @Module({
-  imports: [],
+  imports: [CommonModule],
   controllers: [StemiCasesController, StemiOutcomeFormController],
   providers: [
     PrismaService,

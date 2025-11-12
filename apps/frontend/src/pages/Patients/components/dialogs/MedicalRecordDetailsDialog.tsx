@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,10 +11,13 @@ import {
   Box,
   Divider,
 } from '@mui/material';
-import { Close, Edit, Delete } from '@mui/icons-material';
+import { Close, Edit, Delete, Security } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { MedicalRecord } from '../../../../services/medicalRecordService';
+import { MedicalRecord, medicalRecordService } from '../../../../services/medicalRecordService';
 import { MEDICAL_RECORD_TYPES } from '../../config/medicalRecordFormSteps';
+import { useAuth } from '../../../../contexts/AuthContext';
+import GenericTabs from '../../../../components/Common/GenericTabs';
+import AccessLogsTab from '../../../../components/Common/AccessLogsTab';
 
 interface MedicalRecordDetailsDialogProps {
   open: boolean;
@@ -31,6 +34,10 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const { user } = useAuth();
+  const [tabValue, setTabValue] = useState(0);
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'RCC';
+
   if (!medicalRecord) return null;
 
   const recordTypeLabel = MEDICAL_RECORD_TYPES.find(
@@ -42,19 +49,16 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
     return value;
   };
 
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Medical Record Details</Typography>
-          <Button onClick={onClose} disabled={false}>
-            <Close />
-          </Button>
-        </Box>
-      </DialogTitle>
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
 
-      <DialogContent>
-        <Grid container spacing={3}>
+  // Define tabs configuration
+  const tabsConfig = [
+    {
+      label: 'Details',
+      content: (
+        <Grid container spacing={3} sx={{ pt: 2 }}>
           {/* Header Information */}
           <Grid item xs={12}>
             <Box sx={{ mb: 2 }}>
@@ -178,6 +182,44 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
             </Typography>
           </Grid>
         </Grid>
+      ),
+      icon: <Edit />,
+    },
+    ...(isAdmin
+      ? [
+          {
+            label: 'Access Logs',
+            content: (
+              <AccessLogsTab
+                entityId={medicalRecord.id}
+                entityType="medical-record"
+                fetchLogs={medicalRecordService.getAccessLogs.bind(medicalRecordService)}
+                entityLabel={`Medical Record "${medicalRecord.title}" Access Logs`}
+              />
+            ),
+            icon: <Security />,
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">Medical Record Details</Typography>
+          <Button onClick={onClose} disabled={false}>
+            <Close />
+          </Button>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ minHeight: '400px' }}>
+        <GenericTabs
+          tabs={tabsConfig}
+          value={tabValue}
+          onChange={handleTabChange}
+        />
       </DialogContent>
 
       <DialogActions sx={{ p: 3, pt: 1 }}>

@@ -9,12 +9,14 @@ import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../../auth/auth.module';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
 import { EmsAssignmentsModule } from '../ems-assignments/ems-assignments.module';
+import { CommonModule } from '../../common/common.module';
 
 @Module({
   imports: [
     DatabaseModule, 
     AuthModule,
     EmsAssignmentsModule,
+    CommonModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

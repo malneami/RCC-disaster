@@ -32,12 +32,16 @@ model User {
   completedTickets  Ticket[]    @relation("TicketCompleter")
   emsStatusUpdatedTickets Ticket[] @relation("TicketEMSStatusUpdater")
   acknowledgedTickets Ticket[]  @relation("TicketAcknowledger")
+  accessedTickets   Ticket[]    @relation("TicketAccessor")
   
   // Patient Relations
   createdPatients   Patient[]   @relation("PatientCreator")
   accessedPatients  Patient[]   @relation("PatientAccessor")
   createdMedicalRecords MedicalRecord[] @relation("MedicalRecordCreator")
+  accessedMedicalRecords MedicalRecord[] @relation("MedicalRecordAccessor")
   patientAccessLogs PatientAccessLog[]
+  ticketAccessLogs  TicketAccessLog[]
+  medicalRecordAccessLogs MedicalRecordAccessLog[]
   
   // Hospital Relations
   createdCriticalCases CriticalCase[] @relation("CriticalCaseCreator")
