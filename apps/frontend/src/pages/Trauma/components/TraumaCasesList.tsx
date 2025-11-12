@@ -573,7 +573,6 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
                 <TableCell>Door to Transfer</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Hospital</TableCell>
-                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -681,11 +680,6 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
                       <Typography variant="body2">
                         {case_.originHospital?.name || 'N/A'}
                       </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {/* Actions moved to 3-dots menu */}
                     </Box>
                   </TableCell>
                 </TableRow>
