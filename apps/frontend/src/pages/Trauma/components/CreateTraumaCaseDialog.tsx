@@ -737,41 +737,43 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         </DialogTitle>
         
         <DialogContent>
+          <Box sx={{ mb: 3 }}>
+            <Stepper activeStep={activeStep} alternativeLabel nonLinear>
+              {steps.map((label, index) => {
+                const hasIssue = stepIssues[index];
+                return (
+                  <Step key={label}>
+                    <StepButton
+                      onClick={() => {
+                        setActiveStep(index);
+                        setError(null);
+                      }}
+                      sx={{
+                        '& .MuiStepLabel-label': {
+                          fontWeight: hasIssue ? 700 : 500,
+                          ...(hasIssue && { color: 'warning.main' }),
+                          fontSize: hasIssue ? '1rem' : '0.95rem',
+                        },
+                        ...(hasIssue && {
+                          '& .MuiStepIcon-root': {
+                            color: 'warning.main !important',
+                          },
+                        }),
+                      }}
+                    >
+                      {label}
+                    </StepButton>
+                  </Step>
+                );
+              })}
+            </Stepper>
+          </Box>
+
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
-
-          <Stepper activeStep={activeStep} alternativeLabel nonLinear sx={{ mb: 4 }}>
-            {steps.map((label, index) => {
-              const hasIssue = stepIssues[index];
-              return (
-                <Step key={label}>
-                  <StepButton
-                    onClick={() => {
-                      setActiveStep(index);
-                      setError(null);
-                    }}
-                    sx={{
-                      '& .MuiStepLabel-label': {
-                        fontWeight: hasIssue ? 700 : 500,
-                        ...(hasIssue && { color: 'warning.main' }),
-                        fontSize: hasIssue ? '1rem' : '0.95rem',
-                      },
-                      ...(hasIssue && {
-                        '& .MuiStepIcon-root': {
-                          color: 'warning.main !important',
-                        },
-                      }),
-                    }}
-                  >
-                    {label}
-                  </StepButton>
-                </Step>
-              );
-            })}
-          </Stepper>
 
           <Box minHeight="400px">
             {renderStepContent()}
