@@ -14,23 +14,30 @@ export class StemiOutcomeFormService {
     outcomeFormDto: StemiOutcomeFormDto,
     userId: string,
   ) {
-    // Check if STEMI case exists
-    const existingCase = await this.prisma.stemiCase.findUnique({
+    // Check if STEMI case exists and get completion date
+    const existingCaseCheck = await this.prisma.stemiCase.findUnique({
       where: { id: stemiCaseId },
-      include: {
-        patient: true,
-        originHospital: true,
-        destinationHospital: true,
+      select: {
+        outcomeFormCompletionDate: true,
       },
     });
 
-    if (!existingCase) {
+    if (!existingCaseCheck) {
       throw new NotFoundException('STEMI case not found');
     }
 
     // Calculate completeness percentage (use provided value or calculate)
     const completenessPercentage = outcomeFormDto.outcomePercentageCompleteness ?? 
       this.calculateCompleteness(outcomeFormDto);
+
+    // Auto-set completion date when completeness is 100% and not already set
+    const shouldSetCompletionDate = completenessPercentage === 100 && 
+      !existingCaseCheck?.outcomeFormCompletionDate && 
+      !outcomeFormDto.outcomeFormCompletionDate;
+    
+    const completionDate = outcomeFormDto.outcomeFormCompletionDate
+      ? new Date(outcomeFormDto.outcomeFormCompletionDate)
+      : (shouldSetCompletionDate ? new Date() : existingCaseCheck?.outcomeFormCompletionDate);
 
     // Prepare update data with proper date conversion
     const updateData: any = {
@@ -42,10 +49,8 @@ export class StemiOutcomeFormService {
       pciProcedureCompleteTime: undefined,
       followUpAppointmentDate: undefined,
       followUpCallDate: undefined,
-      outcomeFormCompleted: outcomeFormDto.outcomeFormCompleted ?? true,
-      outcomeFormCompletionDate: outcomeFormDto.outcomeFormCompletionDate 
-        ? new Date(outcomeFormDto.outcomeFormCompletionDate)
-        : new Date(),
+      outcomeFormCompleted: completionDate ? true : false,
+      outcomeFormCompletionDate: completionDate,
       outcomePercentageCompleteness: completenessPercentage,
       updatedAt: new Date(),
     };
@@ -267,7 +272,7 @@ export class StemiOutcomeFormService {
     const completedForms = await this.prisma.stemiCase.count({
       where: {
         deletedAt: null,
-        outcomeFormCompleted: true,
+        outcomeFormCompletionDate: { not: null },
       },
     });
 

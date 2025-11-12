@@ -4,7 +4,6 @@ import { strokeOutcomeFormService } from '../services/strokeOutcomeFormService';
 
 interface OutcomeFormCompletenessProps {
   strokeCase: {
-    outcomeFormCompleted?: boolean;
     outcomeFormCompleteness?: number;
     outcomePercentageCompleteness?: number;
     dischargeType?: string;
@@ -30,7 +29,10 @@ const OutcomeFormCompleteness: React.FC<OutcomeFormCompletenessProps> = ({
   const status = strokeOutcomeFormService.getCompletenessStatus(completeness);
 
   const getTooltipText = () => {
-    if (strokeCase.outcomeFormCompleted) {
+    // Check if form is completed based on completion date (if available) or 100% completeness
+    const isCompleted = completeness === 100;
+    
+    if (isCompleted) {
       return `Outcome form completed (${completeness}% complete)`;
     }
     
@@ -68,9 +70,9 @@ const OutcomeFormCompleteness: React.FC<OutcomeFormCompletenessProps> = ({
           label={chipLabel}
           color={color}
           size="small"
-          variant={strokeCase.outcomeFormCompleted ? "filled" : "outlined"}
+          variant={completeness === 100 ? "filled" : "outlined"}
         />
-        {strokeCase.outcomeFormCompleted && (
+        {completeness === 100 && (
           <Chip
             label="Completed"
             color="success"

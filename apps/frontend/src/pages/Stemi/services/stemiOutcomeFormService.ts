@@ -19,7 +19,6 @@ export interface StemiOutcomeFormData {
   followUpCallDate?: string;
 
   // Outcome Form Management
-  outcomeFormCompleted?: boolean;
   outcomeFormCompletionDate?: string;
   outcomePercentageCompleteness?: number;
 }
@@ -52,7 +51,6 @@ export interface StemiOutcomeFormResponse {
   followUpAppointmentDate?: string;
   followUpAppointmentProvider?: string;
   // Outcome form management
-  outcomeFormCompleted: boolean;
   outcomeFormCompletionDate?: string;
   outcomePercentageCompleteness?: number;
   // Existing fields
@@ -95,7 +93,6 @@ export interface StemiCaseWithCompleteness {
   followUpAppointmentDate?: string;
   followUpAppointmentProvider?: string;
   // Outcome form management
-  outcomeFormCompleted: boolean;
   outcomeFormCompletionDate?: string;
   outcomePercentageCompleteness?: number;
   outcomeFormCompleteness: number;

@@ -4,7 +4,6 @@ import { stemiOutcomeFormService } from '../services/stemiOutcomeFormService';
 
 interface StemiOutcomeFormCompletenessProps {
   stemiCase: {
-    outcomeFormCompleted?: boolean;
     outcomeFormCompleteness?: number;
     outcomePercentageCompleteness?: number;
     cathLabActivationTime?: string;
@@ -30,7 +29,10 @@ const StemiOutcomeFormCompleteness: React.FC<StemiOutcomeFormCompletenessProps> 
   const status = stemiOutcomeFormService.getCompletenessStatus(completeness);
 
   const getTooltipText = () => {
-    if (stemiCase.outcomeFormCompleted) {
+    // Check if form is completed based on completion date (if available) or 100% completeness
+    const isCompleted = completeness === 100;
+    
+    if (isCompleted) {
       return `Outcome form completed (${completeness}% complete)`;
     }
     
@@ -68,7 +70,7 @@ const StemiOutcomeFormCompleteness: React.FC<StemiOutcomeFormCompletenessProps> 
           label={chipLabel}
           color={color}
           size="small"
-          variant={stemiCase.outcomeFormCompleted ? "filled" : "outlined"}
+          variant={completeness === 100 ? "filled" : "outlined"}
         />
       </Box>
     </Tooltip>

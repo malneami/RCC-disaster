@@ -11,8 +11,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Checkbox,
   Typography,
   Box,
   Chip,
@@ -23,6 +21,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useForm, Controller } from 'react-hook-form';
 import { strokeOutcomeFormService } from '../services/strokeOutcomeFormService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 // Form data interface
 interface StrokeOutcomeFormData {
@@ -35,7 +34,6 @@ interface StrokeOutcomeFormData {
   closureReport?: string;
   functionalStatus?: string;
   mortality?: string;
-  outcomeFormCompleted?: boolean;
   outcomeFormCompletionDate?: string;
 }
 
@@ -54,9 +52,11 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
   strokeCaseData,
   onSuccess,
 }) => {
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [completeness, setCompleteness] = useState(0);
+  const [completionDate, setCompletionDate] = useState<string | null>(null);
 
   const {
     control,
@@ -75,7 +75,6 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
       closureReport: '',
       functionalStatus: '',
       mortality: '',
-      outcomeFormCompleted: false,
       outcomeFormCompletionDate: '',
     },
   });
@@ -103,7 +102,13 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
 
     const percentage = Math.round((completedFields.length / outcomeFields.length) * 100);
     setCompleteness(percentage);
-  }, [watchedValues]);
+    
+    // Auto-set completion date when all fields are completed (100%)
+    if (percentage === 100 && !completionDate && user) {
+      const now = new Date().toISOString();
+      setCompletionDate(now);
+    }
+  }, [watchedValues, completionDate, user]);
 
   // Fetch outcome form data when dialog opens
   const fetchOutcomeFormData = async () => {
@@ -124,9 +129,9 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
         closureReport: data.closureReport || '',
         functionalStatus: data.functionalStatus || '',
         mortality: data.mortality || '',
-        outcomeFormCompleted: data.outcomeFormCompleted || false,
         outcomeFormCompletionDate: data.outcomeFormCompletionDate || '',
       });
+      setCompletionDate(data.outcomeFormCompletionDate || null);
     } catch (error) {
       console.error('Error fetching outcome form data:', error);
       // Fallback to prop data if API fails
@@ -141,9 +146,9 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
           closureReport: strokeCaseData.closureReport || '',
           functionalStatus: strokeCaseData.functionalStatus || '',
           mortality: strokeCaseData.mortality || '',
-          outcomeFormCompleted: strokeCaseData.outcomeFormCompleted || false,
           outcomeFormCompletionDate: strokeCaseData.outcomeFormCompletionDate || '',
         });
+        setCompletionDate(strokeCaseData.outcomeFormCompletionDate || null);
       }
     } finally {
       setLoading(false);
@@ -191,15 +196,23 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
       // Calculate completeness percentage
       const completenessPercentage = calculateCompleteness(data);
       
+      // Auto-set completion date if all fields are completed (100%) and not already set
+      const shouldSetCompletionDate = completenessPercentage === 100 && !completionDate;
+      const finalCompletionDate = shouldSetCompletionDate 
+        ? new Date().toISOString() 
+        : (completionDate || data.outcomeFormCompletionDate || undefined);
+      
       const result = await strokeOutcomeFormService.updateOutcomeForm(strokeCaseId, {
         ...data,
-        outcomeFormCompleted: true,
-        outcomeFormCompletionDate: new Date().toISOString(),
+        outcomeFormCompletionDate: finalCompletionDate,
         outcomePercentageCompleteness: completenessPercentage,
       });
 
       // Update completeness with the returned data
       updateCompleteness(result);
+      if (result.outcomeFormCompletionDate) {
+        setCompletionDate(result.outcomeFormCompletionDate);
+      }
 
       console.log('Stroke outcome form updated successfully');
       onSuccess?.();
@@ -456,18 +469,26 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
               </Grid>
 
               {/* Completion Status */}
-              <Grid item xs={12}>
-                <Controller
-                  name="outcomeFormCompleted"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControlLabel
-                      control={<Checkbox {...field} checked={field.value} />}
-                      label="Mark outcome form as completed"
-                    />
-                  )}
-                />
-              </Grid>
+              {completionDate && (
+                <Grid item xs={12}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      border: '2px solid',
+                      borderColor: 'success.main',
+                    }}
+                  >
+                    <Typography variant="body2" color="success.dark" fontWeight="high">
+                      ✓ Outcome form completed
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" fontWeight="medium" display="block" sx={{ mt: 0.5 }}>
+                      Completed on: {new Date(completionDate).toLocaleString()}
+                      {user && ` by ${user.firstName} ${user.lastName}`}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
             </Grid>
           </form>
           )}

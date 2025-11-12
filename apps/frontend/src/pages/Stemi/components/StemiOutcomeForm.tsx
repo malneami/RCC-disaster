@@ -11,8 +11,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Checkbox,
   Typography,
   Box,
   Chip,
@@ -23,6 +21,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useForm, Controller } from 'react-hook-form';
 import { stemiOutcomeFormService } from '../services/stemiOutcomeFormService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 // Form data interface
 interface StemiOutcomeFormData {
@@ -37,7 +36,6 @@ interface StemiOutcomeFormData {
   followUpAppointmentProvider?: string;
   followUpCallCompleted?: boolean;
   followUpCallDate?: string;
-  outcomeFormCompleted?: boolean;
   outcomeFormCompletionDate?: string;
 }
 
@@ -56,9 +54,11 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
   stemiCaseData,
   onSuccess,
 }) => {
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [completeness, setCompleteness] = useState(0);
+  const [completionDate, setCompletionDate] = useState<string | null>(null);
 
   const {
     control,
@@ -80,7 +80,6 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
       followUpAppointmentProvider: '',
       followUpCallCompleted: false,
       followUpCallDate: '',
-      outcomeFormCompleted: false,
       outcomeFormCompletionDate: '',
     },
   });
@@ -113,7 +112,13 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
 
     const percentage = Math.round((completedFields.length / outcomeFields.length) * 100);
     setCompleteness(percentage);
-  }, [watchedValues, followUpProvider]);
+    
+    // Auto-set completion date when all fields are completed (100%)
+    if (percentage === 100 && !completionDate && user) {
+      const now = new Date().toISOString();
+      setCompletionDate(now);
+    }
+  }, [watchedValues, followUpProvider, completionDate, user]);
 
   // Clear follow-up date when provider is set to NO
   useEffect(() => {
@@ -163,9 +168,9 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
         followUpAppointmentProvider: data.followUpAppointmentProvider || '',
         followUpCallCompleted: data.followUpCallCompleted || false,
         followUpCallDate: formatDateForInput(data.followUpCallDate),
-        outcomeFormCompleted: data.outcomeFormCompleted || false,
         outcomeFormCompletionDate: data.outcomeFormCompletionDate || '',
       });
+      setCompletionDate(data.outcomeFormCompletionDate || null);
     } catch (error) {
       console.error('Error fetching outcome form data:', error);
       // Fallback to prop data if API fails
@@ -182,9 +187,9 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
           followUpAppointmentProvider: stemiCaseData.followUpAppointmentProvider || '',
           followUpCallCompleted: stemiCaseData.followUpCallCompleted || false,
           followUpCallDate: formatDateForInput(stemiCaseData.followUpCallDate),
-          outcomeFormCompleted: stemiCaseData.outcomeFormCompleted || false,
           outcomeFormCompletionDate: stemiCaseData.outcomeFormCompletionDate || '',
         });
+        setCompletionDate(stemiCaseData.outcomeFormCompletionDate || null);
       }
     } finally {
       setLoading(false);
@@ -251,6 +256,12 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
       // Calculate completeness percentage
       const completenessPercentage = calculateCompleteness(data);
       
+      // Auto-set completion date if all fields are completed (100%) and not already set
+      const shouldSetCompletionDate = completenessPercentage === 100 && !completionDate;
+      const finalCompletionDate = shouldSetCompletionDate 
+        ? new Date().toISOString() 
+        : (completionDate || data.outcomeFormCompletionDate || undefined);
+      
       // Filter out empty string values for date fields and other optional fields
       const cleanedData = {
         ...data,
@@ -267,8 +278,7 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
         dischargeStatus: data.dischargeStatus || undefined,
         dischargeMedications: data.dischargeMedications || undefined,
         followUpAppointmentProvider: data.followUpAppointmentProvider || undefined,
-        outcomeFormCompleted: data.outcomeFormCompleted,
-        outcomeFormCompletionDate: new Date().toISOString(),
+        outcomeFormCompletionDate: finalCompletionDate,
         outcomePercentageCompleteness: completenessPercentage,
       };
       
@@ -276,6 +286,9 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
 
       // Update completeness with the returned data
       updateCompleteness(result);
+      if (result.outcomeFormCompletionDate) {
+        setCompletionDate(result.outcomeFormCompletionDate);
+      }
 
       console.log('STEMI outcome form updated successfully');
       onSuccess?.(result);
@@ -550,18 +563,26 @@ const StemiOutcomeForm: React.FC<StemiOutcomeFormProps> = ({
               )}
 
               {/* Completion Status */}
-              <Grid item xs={12}>
-                <Controller
-                  name="outcomeFormCompleted"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControlLabel
-                      control={<Checkbox {...field} checked={field.value} />}
-                      label="Mark outcome form as completed"
-                    />
-                  )}
-                />
-              </Grid>
+              {completionDate && (
+                <Grid item xs={12}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      border: '2px solid',
+                      borderColor: 'success.main',
+                    }}
+                  >
+                    <Typography variant="body2" color="success.dark" fontWeight="high">
+                      ✓ Outcome form completed
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" fontWeight="medium" display="block" sx={{ mt: 0.5 }}>
+                      Completed on: {new Date(completionDate).toLocaleString()}
+                      {user && ` by ${user.firstName} ${user.lastName}`}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
             </Grid>
           </form>
           )}

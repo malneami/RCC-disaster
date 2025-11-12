@@ -10,7 +10,6 @@ export interface StrokeOutcomeFormData {
   closureReport?: string;
   functionalStatus?: string;
   mortality?: string;
-  outcomeFormCompleted?: boolean;
   outcomeFormCompletionDate?: string;
   outcomePercentageCompleteness?: number;
 }
@@ -40,7 +39,6 @@ export interface StrokeOutcomeFormResponse {
   closureReport?: string;
   functionalStatus?: string;
   mortality?: string;
-  outcomeFormCompleted: boolean;
   outcomeFormCompletionDate?: string;
   outcomePercentageCompleteness?: number;
   dischargeDestination?: string;
@@ -79,7 +77,6 @@ export interface StrokeCaseWithCompleteness {
   closureReport?: string;
   functionalStatus?: string;
   mortality?: string;
-  outcomeFormCompleted: boolean;
   outcomeFormCompletionDate?: string;
   outcomePercentageCompleteness?: number;
   outcomeFormCompleteness: number;

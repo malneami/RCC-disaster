@@ -14,17 +14,15 @@ export class StrokeOutcomeFormService {
     outcomeFormDto: StrokeOutcomeFormDto,
     userId: string,
   ) {
-    // Check if stroke case exists
-    const existingCase = await this.prisma.strokeCase.findUnique({
+    // Check if stroke case exists and get completion date
+    const existingCaseCheck = await this.prisma.strokeCase.findUnique({
       where: { id: strokeCaseId },
-      include: {
-        patient: true,
-        originHospital: true,
-        destinationHospital: true,
+      select: {
+        outcomeFormCompletionDate: true,
       },
     });
 
-    if (!existingCase) {
+    if (!existingCaseCheck) {
       throw new NotFoundException('Stroke case not found');
     }
 
@@ -32,13 +30,20 @@ export class StrokeOutcomeFormService {
     const completenessPercentage = outcomeFormDto.outcomePercentageCompleteness ?? 
       this.calculateCompleteness(outcomeFormDto);
 
+    // Auto-set completion date when completeness is 100% and not already set
+    const shouldSetCompletionDate = completenessPercentage === 100 && 
+      !existingCaseCheck?.outcomeFormCompletionDate && 
+      !outcomeFormDto.outcomeFormCompletionDate;
+    
+    const completionDate = outcomeFormDto.outcomeFormCompletionDate
+      ? new Date(outcomeFormDto.outcomeFormCompletionDate)
+      : (shouldSetCompletionDate ? new Date() : existingCaseCheck?.outcomeFormCompletionDate);
+
     // Prepare update data
     const updateData = {
       ...outcomeFormDto,
-      outcomeFormCompleted: outcomeFormDto.outcomeFormCompleted ?? true,
-      outcomeFormCompletionDate: outcomeFormDto.outcomeFormCompletionDate 
-        ? new Date(outcomeFormDto.outcomeFormCompletionDate)
-        : new Date(),
+      outcomeFormCompleted: completionDate ? true : false,
+      outcomeFormCompletionDate: completionDate,
       outcomePercentageCompleteness: completenessPercentage,
       updatedAt: new Date(),
     };
@@ -228,7 +233,7 @@ export class StrokeOutcomeFormService {
     const completedForms = await this.prisma.strokeCase.count({
       where: {
         deletedAt: null,
-        outcomeFormCompleted: true,
+        outcomeFormCompletionDate: { not: null },
       },
     });
 
