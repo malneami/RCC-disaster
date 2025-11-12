@@ -75,6 +75,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
       age: patient.age || undefined,
       gender: patient.gender as 'MALE' | 'FEMALE',
       phoneNumber: patient.phoneNumber || '',
+      email: patient.email || '',
       address: patient.address || '',
       emergencyContact: patient.emergencyContact || '',
       emergencyPhone: patient.emergencyPhone || '',
@@ -176,6 +177,19 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('phoneNumber')}
           error={!!errors.phoneNumber || !!validationErrors['patientInfo.phoneNumber']}
           helperText={errors.phoneNumber || validationErrors['patientInfo.phoneNumber']}
+          disabled={!isAdmin}
+        />
+      </Grid>
+      
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Email"
+          type="email"
+          value={data.email || ''}
+          onChange={handleChange('email')}
+          error={!!errors.email || !!validationErrors['patientInfo.email']}
+          helperText={errors.email || validationErrors['patientInfo.email']}
           disabled={!isAdmin}
         />
       </Grid>

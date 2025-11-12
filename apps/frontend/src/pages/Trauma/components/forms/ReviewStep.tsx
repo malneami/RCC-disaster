@@ -145,6 +145,12 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings: _ti
               </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary">
+                  Email
+                </Typography>
+                {renderValue(formData.patientInfo?.email)}
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
                   Origin Hospital
                 </Typography>
                 {renderValue(getHospitalName(formData.patientInfo?.originHospitalId || ''))}
@@ -340,6 +346,86 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings: _ti
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Injury Assessment - Full width at bottom */}
+        {(formData.injuryAssessment?.headAndNeckInjury ||
+          formData.injuryAssessment?.faceInjury ||
+          formData.injuryAssessment?.chestInjury ||
+          formData.injuryAssessment?.abdomenInjury ||
+          formData.injuryAssessment?.extremitiesInjury ||
+          formData.injuryAssessment?.externalInjury) && (
+          <Grid item xs={12}>
+            <Card sx={cardStyles()}>
+              <CardContent sx={cardContentStyles}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                  Injury Assessment by Body Region
+                </Typography>
+                <Grid container spacing={2}>
+                  {formData.injuryAssessment?.headAndNeckInjury && (
+                    <Grid item xs={12} md={6}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Head & Neck Injury
+                        </Typography>
+                        {renderValue(formData.injuryAssessment.headAndNeckInjury)}
+                      </Box>
+                    </Grid>
+                  )}
+                  {formData.injuryAssessment?.faceInjury && (
+                    <Grid item xs={12} md={6}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Face Injury
+                        </Typography>
+                        {renderValue(formData.injuryAssessment.faceInjury)}
+                      </Box>
+                    </Grid>
+                  )}
+                  {formData.injuryAssessment?.chestInjury && (
+                    <Grid item xs={12} md={6}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Chest Injury
+                        </Typography>
+                        {renderValue(formData.injuryAssessment.chestInjury)}
+                      </Box>
+                    </Grid>
+                  )}
+                  {formData.injuryAssessment?.abdomenInjury && (
+                    <Grid item xs={12} md={6}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Abdomen Injury
+                        </Typography>
+                        {renderValue(formData.injuryAssessment.abdomenInjury)}
+                      </Box>
+                    </Grid>
+                  )}
+                  {formData.injuryAssessment?.extremitiesInjury && (
+                    <Grid item xs={12} md={6}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Extremities Injury
+                        </Typography>
+                        {renderValue(formData.injuryAssessment.extremitiesInjury)}
+                      </Box>
+                    </Grid>
+                  )}
+                  {formData.injuryAssessment?.externalInjury && (
+                    <Grid item xs={12} md={6}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          External Injury
+                        </Typography>
+                        {renderValue(formData.injuryAssessment.externalInjury)}
+                      </Box>
+                    </Grid>
+                  )}
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

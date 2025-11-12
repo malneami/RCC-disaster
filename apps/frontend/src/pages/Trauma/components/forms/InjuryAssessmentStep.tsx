@@ -92,6 +92,7 @@ const InjuryAssessmentStep: React.FC<InjuryAssessmentStepProps> = ({
               value={data[key]}
               onChange={handleChange(key)}
               error={!!errors[key]}
+              label={`${label} Injury`}
             >
               {options.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -109,6 +110,11 @@ const InjuryAssessmentStep: React.FC<InjuryAssessmentStepProps> = ({
                 </MenuItem>
               ))}
             </Select>
+            {errors[key] && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                {errors[key]}
+              </Typography>
+            )}
           </FormControl>
         </Grid>
       ))}

@@ -81,6 +81,11 @@ const patientInfoSchema = yup.object({
       if (!value) return true;
       return PHONE_REGEX.test(value);
     }),
+  email: yup
+    .string()
+    .nullable()
+    .transform((value) => (value ? value.trim() : ''))
+    .email('Please provide a valid email address'),
   originHospitalId: yup.string().required('Origin Hospital is required'),
   destinationHospitalId: yup.string().optional(),
 });
@@ -112,6 +117,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       age: undefined,
       gender: 'MALE' as const,
       phoneNumber: '',
+      email: '',
       address: '',
       emergencyContact: '',
       emergencyPhone: '',
@@ -181,6 +187,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         age: undefined,
         gender: 'MALE' as const,
         phoneNumber: '',
+        email: '',
         address: '',
         emergencyContact: '',
         emergencyPhone: '',

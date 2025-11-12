@@ -13,6 +13,7 @@ export interface PatientInfoFormData {
   age?: number; // Age in years
   gender: 'MALE' | 'FEMALE';
   phoneNumber: string;
+  email?: string;
   address: string;
   emergencyContact: string;
   emergencyPhone: string;
