@@ -37,6 +37,7 @@ interface AmbulanceFormProps {
   onFormDataChange: (field: string, value: string | number) => void;
   drivers: Array<{ id: string; firstName: string; lastName: string; status?: string }>;
   loading?: boolean;
+  errors?: Record<string, string>;
 }
 
 const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
@@ -48,6 +49,7 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
   onFormDataChange,
   drivers,
   loading = false,
+  errors = {},
 }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -67,7 +69,8 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
                 maxLength: 15,
                 pattern: '[0-9]{15}'
               }}
-              helperText="Enter 15-digit IMEI number for GPS tracking"
+              helperText={errors.vehicleImei || "Enter 15-digit IMEI number for GPS tracking"}
+              error={!!errors.vehicleImei}
               required
             />
           </Grid>
@@ -77,6 +80,8 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
               label="Call Sign"
               value={formData.callSign}
               onChange={(e) => onFormDataChange('callSign', e.target.value)}
+              error={!!errors.callSign}
+              helperText={errors.callSign}
               required
             />
           </Grid>
@@ -86,6 +91,8 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
               label="Plate Number"
               value={formData.plateNumber}
               onChange={(e) => onFormDataChange('plateNumber', e.target.value)}
+              error={!!errors.plateNumber}
+              helperText={errors.plateNumber}
               required
             />
           </Grid>
@@ -132,6 +139,9 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
               label="Model"
               value={formData.model}
               onChange={(e) => onFormDataChange('model', e.target.value)}
+              error={!!errors.model}
+              helperText={errors.model}
+              required
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -140,7 +150,10 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
               label="Year"
               type="number"
               value={formData.year}
-              onChange={(e) => onFormDataChange('year', parseInt(e.target.value))}
+              onChange={(e) => onFormDataChange('year', parseInt(e.target.value) || new Date().getFullYear())}
+              error={!!errors.year}
+              helperText={errors.year}
+              required
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -149,15 +162,18 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({
               label="Base Station"
               value={formData.baseStation}
               onChange={(e) => onFormDataChange('baseStation', e.target.value)}
+              error={!!errors.baseStation}
+              helperText={errors.baseStation}
+              required
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
-              <InputLabel>Driver</InputLabel>
+              <InputLabel>Driver (Optional)</InputLabel>
               <Select
                 value={formData.driverId}
                 onChange={(e) => onFormDataChange('driverId', e.target.value)}
-                label="Driver"
+                label="Driver (Optional)"
               >
                 <MenuItem value="">No Driver Assigned</MenuItem>
                 {drivers.map((driver) => (

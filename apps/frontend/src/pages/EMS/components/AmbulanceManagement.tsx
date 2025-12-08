@@ -11,6 +11,7 @@ import {
   faAmbulance, 
   faPlus
 } from '@fortawesome/free-solid-svg-icons';
+import { useSnackbar } from 'notistack';
 
 import { useAmbulances } from '../hooks/useAmbulances';
 import { useEMSDrivers } from '../hooks/useEMSDrivers';
@@ -23,9 +24,11 @@ import EmptyState from '../../../components/Common/EmptyState';
 const AmbulanceManagement: React.FC = () => {
   const { ambulances, isLoading, createAmbulance, updateAmbulance, deleteAmbulance } = useAmbulances();
   const { drivers } = useEMSDrivers();
+  const { enqueueSnackbar } = useSnackbar();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAmbulance, setEditingAmbulance] = useState<Ambulance | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     vehicleImei: '',
     callSign: '',
@@ -84,19 +87,96 @@ const AmbulanceManagement: React.FC = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setEditingAmbulance(null);
+    setFormErrors({});
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // Required fields validation
+    if (!formData.vehicleImei.trim()) {
+      errors.vehicleImei = 'Vehicle IMEI is required';
+    } else if (!/^\d{15}$/.test(formData.vehicleImei.trim())) {
+      errors.vehicleImei = 'IMEI must be exactly 15 digits';
+    }
+
+    if (!formData.callSign.trim()) {
+      errors.callSign = 'Call Sign is required';
+    }
+
+    if (!formData.plateNumber.trim()) {
+      errors.plateNumber = 'Plate Number is required';
+    }
+
+    if (!formData.model.trim()) {
+      errors.model = 'Model is required';
+    }
+
+    if (!formData.baseStation.trim()) {
+      errors.baseStation = 'Base Station is required';
+    }
+
+    if (!formData.year || formData.year < 1900 || formData.year > new Date().getFullYear() + 1) {
+      errors.year = 'Year must be a valid year';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async () => {
+    // Validate form before submission
+    if (!validateForm()) {
+      enqueueSnackbar('Please fill in all required fields correctly', { variant: 'error' });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
+      setFormErrors({});
+
+      // Prepare data - convert empty driverId to undefined
+      const submitData = {
+        ...formData,
+        driverId: formData.driverId && formData.driverId.trim() ? formData.driverId.trim() : undefined,
+        vehicleImei: formData.vehicleImei.trim(),
+        callSign: formData.callSign.trim(),
+        plateNumber: formData.plateNumber.trim(),
+        model: formData.model.trim(),
+        baseStation: formData.baseStation.trim(),
+        manufacturer: formData.manufacturer.trim() || undefined,
+      };
+
       if (editingAmbulance) {
-        await updateAmbulance({ id: editingAmbulance.id, data: formData });
+        await updateAmbulance({ id: editingAmbulance.id, data: submitData });
+        enqueueSnackbar('Ambulance updated successfully', { variant: 'success' });
       } else {
-        await createAmbulance(formData);
+        await createAmbulance(submitData);
+        enqueueSnackbar('Ambulance added successfully', { variant: 'success' });
       }
       handleCloseDialog();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving ambulance:', error);
+      
+      // Extract error message from API response
+      let errorMessage = 'Failed to save ambulance. Please try again.';
+      
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.message) {
+          errorMessage = Array.isArray(errorData.message) 
+            ? errorData.message.join(', ') 
+            : errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      enqueueSnackbar(errorMessage, { variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -133,6 +213,14 @@ const AmbulanceManagement: React.FC = () => {
 
   const handleFormDataChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   // Calculate statistics with null safety
@@ -179,6 +267,7 @@ const AmbulanceManagement: React.FC = () => {
           onFormDataChange={handleFormDataChange}
           drivers={activeDrivers}
           loading={isSubmitting}
+          errors={formErrors}
         />
       </Box>
     );
@@ -261,8 +350,9 @@ const AmbulanceManagement: React.FC = () => {
         onClose={handleCloseDialog}
         onSubmit={handleSubmit}
         onFormDataChange={handleFormDataChange}
-        drivers={drivers}
+        drivers={activeDrivers}
         loading={isSubmitting}
+        errors={formErrors}
       />
     </Box>
   );
