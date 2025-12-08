@@ -268,6 +268,14 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
               value={data.fibrinolyticAbsoluteContraindications || ''}
               onChange={handleChange('fibrinolyticAbsoluteContraindications')}
               label="Reason fibrinolytic therapy not given if no primary PCI offered - Absolute Contraindications"
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 300,
+                    overflow: 'auto',
+                  },
+                },
+              }}
             >
               <MenuItem value="">Select contraindication</MenuItem>
               <MenuItem value="ANY_PRIOR_INTRACRANIAL_HEMORRHAGE">Any Prior Intracranial hemorrhage</MenuItem>
