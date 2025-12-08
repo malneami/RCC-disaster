@@ -44,6 +44,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
   const { } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<CreateStrokeCaseData>({
@@ -62,8 +63,40 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
     },
   });
 
+  // Helper function to reset form to initial state
+  const resetForm = () => {
+    setFormData({
+      originHospitalId: '',
+      strokeType: 'ISCHEMIC',
+      currentStatus: 'SUSPECTED',
+      patientInfo: {
+        firstName: '',
+        lastName: '',
+        nationalId: '',
+        mrn: '',
+        age: undefined,
+        gender: 'MALE',
+        phoneNumber: '',
+        email: '',
+      },
+    });
+    setActiveStep(0);
+    setError(null);
+    setSuccess(null);
+    setValidationErrors({});
+    setLoading(false);
+  };
+
+  // Reset form when dialog closes
   useEffect(() => {
-    if (strokeCase) {
+    if (!open) {
+      resetForm();
+    }
+  }, [open]);
+
+  // Load case data when dialog opens or case changes
+  useEffect(() => {
+    if (strokeCase && open) {
       setFormData({
         // Basic Information
         originHospitalId: strokeCase.originHospitalId,
@@ -130,8 +163,13 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         followUpContactAttempted: strokeCase.followUpContactAttempted,
         modifiedRankinScaleAt90Days: strokeCase.modifiedRankinScaleAt90Days,
       });
+      setActiveStep(0);
+      setError(null);
+      setSuccess(null);
+      setValidationErrors({});
+      setLoading(false);
     }
-  }, [strokeCase]);
+  }, [strokeCase?.id, open]);
 
   const updateFormData = (field: keyof CreateStrokeCaseData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -244,23 +282,37 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
     try {
       setLoading(true);
       setError(null);
+      setSuccess(null);
       
-      // Filter out patientInfo and other fields that shouldn't be in the update request
-      const { patientInfo, ...updateData } = formData;
+      // Prepare update data with patientInfo included
+      const { patientInfo, ...otherData } = formData;
       
-      // Also filter out any empty string values and convert them to undefined
-      const cleanedData = Object.entries(updateData).reduce((acc, [key, value]) => {
+      // Clean empty string values and convert them to undefined
+      const cleanedData = Object.entries(otherData).reduce((acc, [key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
           acc[key] = value;
         }
         return acc;
       }, {} as any);
       
+      // Always include patientInfo in the update payload
+      if (patientInfo) {
+        cleanedData.patientInfo = patientInfo;
+      }
+      
       console.log('Sending update data:', cleanedData);
       await onUpdate(strokeCase.id, cleanedData);
-      onClose();
+      setSuccess('Case updated successfully!');
+      setError(null);
+      
+      // Clear form and close dialog after a short delay to show success message
+      setTimeout(() => {
+        resetForm();
+        onClose();
+      }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Failed to update stroke case');
+      setError(err.response?.data?.message || err.message || 'Failed to update stroke case');
+      setSuccess(null);
       console.error('Error updating stroke case:', err);
     } finally {
       setLoading(false);
@@ -268,10 +320,10 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
   };
 
   const handleClose = () => {
-    setError(null);
-    setActiveStep(0);
-    setValidationErrors({});
-    onClose();
+    if (!loading) {
+      resetForm();
+      onClose();
+    }
   };
 
   if (!strokeCase) return null;
@@ -285,6 +337,11 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {success}
           </Alert>
         )}
 

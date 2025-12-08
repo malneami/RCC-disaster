@@ -611,8 +611,9 @@ const StemiPortalPage: React.FC = () => {
     try {
       const updatedCase = await StemiService.updateStemiCase(id, caseData);
       setStemiCases(prev => prev.map(c => c.id === id ? updatedCase : c));
-      setEditDialogOpen(false);
-      setSelectedCase(null);
+      // Update selectedCase if it's the one being edited
+      setSelectedCase(prev => prev?.id === id ? updatedCase : prev);
+      // Don't close dialog here - let the dialog handle closing after showing success message
       await loadData(); // Refresh KPIs
     } catch (err: any) {
       console.error('Error updating STEMI case:', err);

@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, IsNumber, Min, Max, IsNotEmpty, ValidateNested, IsArray, ValidateIf } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, IsNumber, Min, Max, IsNotEmpty, ValidateNested, IsArray, ValidateIf, IsEmail } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
   StrokeType,
@@ -14,6 +14,7 @@ import {
   ReferralTo,
   ModifiedRankinScale
 } from '@prisma/client';
+import { PatientInfoDto } from './create-stroke-case.dto';
 
 export class UpdateStrokeCaseDto {
   @IsOptional()
@@ -23,6 +24,11 @@ export class UpdateStrokeCaseDto {
   @IsOptional()
   @IsString()
   patientId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PatientInfoDto)
+  patientInfo?: PatientInfoDto;
 
   @IsOptional()
   @IsString()

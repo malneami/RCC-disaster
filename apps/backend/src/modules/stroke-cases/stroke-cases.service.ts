@@ -606,6 +606,62 @@ export class StrokeCasesService {
       console.log('Existing case found:', existingCase.id);
 
       // Handle patient info updates if provided
+      const { patientInfo, ...strokeCaseData } = updateStrokeCaseDto;
+      
+      if (patientInfo && existingCase.patientId) {
+        console.log('Updating patient info for patient ID:', existingCase.patientId);
+        const patientUpdateData: any = {
+          updatedAt: new Date(),
+        };
+
+        // Update fields only if provided
+        if (patientInfo.firstName !== undefined) {
+          patientUpdateData.firstName = patientInfo.firstName.trim();
+        }
+        if (patientInfo.lastName !== undefined) {
+          patientUpdateData.lastName = patientInfo.lastName.trim();
+        }
+        if (patientInfo.age !== undefined) {
+          patientUpdateData.age = patientInfo.age || null;
+        }
+        if (patientInfo.gender !== undefined) {
+          patientUpdateData.gender = patientInfo.gender;
+        }
+        if (patientInfo.phoneNumber !== undefined) {
+          patientUpdateData.phoneNumber = patientInfo.phoneNumber ? patientInfo.phoneNumber.trim() : null;
+        }
+        if (patientInfo.email !== undefined) {
+          patientUpdateData.email = patientInfo.email ? patientInfo.email.trim() : null;
+        }
+
+        // Only update nationalId if it's different from the current value
+        if (patientInfo.nationalId !== undefined) {
+          const currentPatient = await this.prisma.patient.findUnique({
+            where: { id: existingCase.patientId },
+            select: { nationalId: true }
+          });
+          
+          if (currentPatient && currentPatient.nationalId !== patientInfo.nationalId.trim()) {
+            patientUpdateData.nationalId = patientInfo.nationalId.trim();
+          } else if (!currentPatient?.nationalId && patientInfo.nationalId) {
+            patientUpdateData.nationalId = patientInfo.nationalId.trim();
+          }
+        }
+
+        // Update MRN if provided
+        if (patientInfo.mrn !== undefined) {
+          patientUpdateData.mrn = patientInfo.mrn ? patientInfo.mrn.trim() : null;
+        }
+
+        // Only update if there are fields to update (besides updatedAt)
+        if (Object.keys(patientUpdateData).length > 1) {
+          await this.prisma.patient.update({
+            where: { id: existingCase.patientId },
+            data: patientUpdateData,
+          });
+          console.log('Patient info updated successfully');
+        }
+      }
 
       // Calculate updated KPIs
       // Convert Date objects to strings for the DTO
@@ -640,8 +696,8 @@ export class StrokeCasesService {
         kpiData = {};
       }
 
-      // Prepare stroke case update data
-      const strokeCaseUpdateData = { ...updateStrokeCaseDto };
+      // Prepare stroke case update data (excluding patientInfo which was already handled)
+      const strokeCaseUpdateData = { ...strokeCaseData };
       console.log('Preparing update data...');
 
       // Extract hospital IDs for relation handling

@@ -54,6 +54,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Form data state (same structure as creation form)
@@ -120,10 +121,84 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
+  // Helper function to reset form to initial state
+  const resetForm = () => {
+    setPatientInfo({
+      firstName: '',
+      lastName: '',
+      nationalId: '',
+      age: undefined,
+      gender: 'MALE',
+      phoneNumber: '',
+      address: '',
+      emergencyContact: '',
+      emergencyPhone: '',
+      medicalHistory: '',
+      allergies: '',
+      medications: '',
+      originHospitalId: '',
+      destinationHospitalId: '',
+    });
+
+    setAdmissionDetails({
+      admissionTime: '',
+      modeOfArrival: 'AMBULANCE_RED_CRESCENT',
+    });
+
+    setCriticalTimestamps({
+      triageTime: '',
+      firstEcgTime: '',
+    });
+
+    setInterventionsAndTreatments({
+      eligibleForPrimaryPci: false,
+      pciLocation: '',
+      doorOutTime: '',
+      balloonInflationTime: '',
+      thrombolyticGiven: false,
+      thrombolyticAdminTime: '',
+    });
+
+    setClinicalAssessment({
+      heartScore: undefined,
+      clinicalRiskLevel: '',
+      presentingSymptoms: '',
+      symptomOnset: '',
+      symptomDuration: undefined,
+      miType: undefined,
+      outcome: undefined,
+    });
+
+    setAdditionalData({
+      currentStatus: 'SUSPECTED' as string,
+      selectedTreatment: undefined as any,
+      ecgResult: undefined as any,
+      ecgFindings: '',
+      isTroponinPositive: false,
+      troponinValue: undefined,
+      additionalNotes: '',
+    });
+
+    setActiveStep(0);
+    setError(null);
+    setSuccess(null);
+    setValidationErrors({});
+    setLoading(false);
+  };
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      resetForm();
+    }
+  }, [open]);
+
+  // Load case data when dialog opens or case changes
   useEffect(() => {
     if (stemiCase && open) {
       setActiveStep(0);
       setError(null);
+      setSuccess(null);
       setLoading(false);
       
       // Convert STEMI case data to form structure (exactly like creation form)
@@ -185,7 +260,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         additionalNotes: '', // This field doesn't exist in the schema
       });
     }
-  }, [stemiCase, open]);
+  }, [stemiCase?.id, open]);
 
   const handleNext = () => {
     const errors = validateStep(activeStep);
@@ -209,6 +284,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
     try {
       setLoading(true);
       setError(null);
+      setSuccess(null);
 
       // Prepare data for submission (matching UpdateStemiCaseData interface)
       const submitData: UpdateStemiCaseData = {
@@ -245,15 +321,21 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         ecgFindings: additionalData.ecgFindings || undefined,
       };
 
-      // Add patient info for admins only
-      if (isAdmin) {
-        submitData.patientInfo = patientInfo;
-      }
+      // Always include patient info in the update payload
+      submitData.patientInfo = patientInfo;
 
       await onSubmit(stemiCase.id, submitData);
-      onClose();
+      setSuccess('Case updated successfully!');
+      setError(null);
+      
+      // Clear form and close dialog after a short delay to show success message
+      setTimeout(() => {
+        resetForm();
+        onClose();
+      }, 1500);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to update STEMI case');
+      setSuccess(null);
       console.error('Error updating STEMI case:', err);
     } finally {
       setLoading(false);
@@ -262,9 +344,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
 
   const handleClose = () => {
     if (!loading) {
-      setActiveStep(0);
-      setError(null);
-      setValidationErrors({});
+      resetForm();
       onClose();
     }
   };
@@ -415,6 +495,11 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {success}
             </Alert>
           )}
 
