@@ -27,6 +27,7 @@ import {
 import { format } from 'date-fns';
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
 import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
+import { MODE_OF_ARRIVAL_OPTIONS, MECHANISM_OF_INJURY_OPTIONS, DISPOSITION_OPTIONS } from '../constants/traumaConstants';
 import UnifiedCaseCard, { 
   UnifiedCaseCardProps, 
   PatientInfo, 
@@ -58,13 +59,23 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
 }) => {
   const [filteredCases, setFilteredCases] = useState<TraumaCase[]>(cases);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    search: string;
+    modeOfArrival: string;
+    mechanismOfInjury: string;
+    edDisposition: string;
+    criticalCase: boolean | string | null;
+    transferCase: boolean | string | null;
+    dateFrom: string;
+    dateTo: string;
+    hospitalId: string;
+  }>({
     search: '',
     modeOfArrival: '',
     mechanismOfInjury: '',
     edDisposition: '',
-    criticalCase: null as boolean | null,
-    transferCase: null as boolean | null,
+    criticalCase: null,
+    transferCase: null,
     dateFrom: '',
     dateTo: '',
     hospitalId: '',
@@ -96,8 +107,27 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       if (filters.modeOfArrival && case_.modeOfArrival !== filters.modeOfArrival) return false;
       if (filters.mechanismOfInjury && case_.mechanismOfInjury !== filters.mechanismOfInjury) return false;
       if (filters.edDisposition && case_.edDisposition !== filters.edDisposition) return false;
-      if (filters.criticalCase !== null && case_.criticalCase !== filters.criticalCase) return false;
-      if (filters.transferCase !== null && case_.transferCase !== filters.transferCase) return false;
+      
+      // Boolean filters - convert string to boolean if needed
+      if (filters.criticalCase !== null && filters.criticalCase !== '') {
+        let criticalCaseValue: boolean;
+        if (typeof filters.criticalCase === 'string') {
+          criticalCaseValue = filters.criticalCase === 'true';
+        } else {
+          criticalCaseValue = filters.criticalCase as boolean;
+        }
+        if (case_.criticalCase !== criticalCaseValue) return false;
+      }
+      if (filters.transferCase !== null && filters.transferCase !== '') {
+        let transferCaseValue: boolean;
+        if (typeof filters.transferCase === 'string') {
+          transferCaseValue = filters.transferCase === 'true';
+        } else {
+          transferCaseValue = filters.transferCase as boolean;
+        }
+        if (case_.transferCase !== transferCaseValue) return false;
+      }
+      
       if (filters.hospitalId && case_.originHospitalId !== filters.hospitalId) return false;
 
       // Date filters
@@ -140,7 +170,31 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   };
 
   const handleFiltersChange = (newFilters: any) => {
-    setFilters(newFilters);
+    // Convert string boolean values to actual booleans for criticalCase and transferCase
+    const processedFilters: any = { ...newFilters };
+    if (processedFilters.criticalCase !== undefined) {
+      if (typeof processedFilters.criticalCase === 'string') {
+        if (processedFilters.criticalCase === 'true') {
+          processedFilters.criticalCase = true;
+        } else if (processedFilters.criticalCase === 'false') {
+          processedFilters.criticalCase = false;
+        } else {
+          processedFilters.criticalCase = null; // Empty string or invalid value
+        }
+      }
+    }
+    if (processedFilters.transferCase !== undefined) {
+      if (typeof processedFilters.transferCase === 'string') {
+        if (processedFilters.transferCase === 'true') {
+          processedFilters.transferCase = true;
+        } else if (processedFilters.transferCase === 'false') {
+          processedFilters.transferCase = false;
+        } else {
+          processedFilters.transferCase = null; // Empty string or invalid value
+        }
+      }
+    }
+    setFilters(processedFilters);
   };
 
   const handleAddCaseNote = (traumaCase: TraumaCase) => {
@@ -475,39 +529,19 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       key: 'modeOfArrival',
       label: 'Mode of Arrival',
       type: 'select' as const,
-      options: [
-        { value: 'AMBULANCE', label: 'Ambulance' },
-        { value: 'WALK_IN', label: 'Walk-in' },
-        { value: 'PRIVATE_VEHICLE', label: 'Private Vehicle' },
-        { value: 'HELICOPTER', label: 'Helicopter' },
-        { value: 'POLICE', label: 'Police' },
-      ],
+      options: [...MODE_OF_ARRIVAL_OPTIONS],
     },
     {
       key: 'mechanismOfInjury',
       label: 'Mechanism of Injury',
       type: 'select' as const,
-      options: [
-        { value: 'MOTOR_VEHICLE_ACCIDENT', label: 'Motor Vehicle Accident' },
-        { value: 'FALL', label: 'Fall' },
-        { value: 'PENETRATING_INJURY', label: 'Penetrating Injury' },
-        { value: 'BURN', label: 'Burn' },
-        { value: 'ASSAULT', label: 'Assault' },
-        { value: 'SPORTS_INJURY', label: 'Sports Injury' },
-        { value: 'OTHER', label: 'Other' },
-      ],
+      options: [...MECHANISM_OF_INJURY_OPTIONS],
     },
     {
       key: 'edDisposition',
       label: 'ED Disposition',
       type: 'select' as const,
-      options: [
-        { value: 'DISCHARGED', label: 'Discharged' },
-        { value: 'ADMITTED', label: 'Admitted' },
-        { value: 'TRANSFERRED', label: 'Transferred' },
-        { value: 'LEFT_AMA', label: 'Left AMA' },
-        { value: 'DECEASED', label: 'Deceased' },
-      ],
+      options: [...DISPOSITION_OPTIONS],
     },
     {
       key: 'criticalCase',
