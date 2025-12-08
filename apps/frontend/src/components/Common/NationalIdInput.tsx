@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   TextField,
   Autocomplete,
@@ -42,6 +42,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     createdAt: string | null;
     status: string | null;
   } | null>(null);
+  const inputRef = useRef<HTMLDivElement>(null);
 
   const getPortalColor = () => {
     switch (portalType) {
@@ -114,6 +115,43 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     return () => clearTimeout(timeoutId);
   }, [value, searchPatients]);
 
+  useEffect(() => {
+    if (!showSuggestions) return;
+
+    const handleScroll = () => {
+      if (!inputRef.current) {
+        setShowSuggestions(false);
+        return;
+      }
+
+      const inputElement = inputRef.current;
+      const rect = inputElement.getBoundingClientRect();
+      
+      const isVisible = 
+        rect.bottom > 0 &&
+        rect.right > 0 &&
+        rect.top < (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.left < (window.innerWidth || document.documentElement.clientWidth);
+
+      if (!isVisible) {
+        setShowSuggestions(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    
+    document.addEventListener('scroll', handleScroll, true);
+    document.body.addEventListener('scroll', handleScroll, true);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+      document.removeEventListener('scroll', handleScroll, true);
+      document.body.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [showSuggestions]);
+
 
   const handlePatientSelect = (patient: Patient) => {
     onChange(patient.nationalId || '');
@@ -167,7 +205,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   };
 
   return (
-    <Box>
+    <Box ref={inputRef}>
       <Autocomplete
         freeSolo
         options={suggestions}
@@ -192,6 +230,30 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
             ? "No patients found with this National ID"
             : "Enter at least 4 digits to search"
         }
+        disablePortal={true}
+        componentsProps={{
+          popper: {
+            placement: 'bottom-start' as const,
+            modifiers: [
+              {
+                name: 'preventOverflow',
+                enabled: true,
+                options: {
+                  rootBoundary: 'viewport',
+                  tether: false,
+                  altAxis: true,
+                },
+              },
+              {
+                name: 'flip',
+                enabled: true,
+                options: {
+                  fallbackPlacements: ['bottom', 'top'],
+                },
+              },
+            ],
+          },
+        }}
         renderInput={(params) => (
           <TextField
             {...params}
