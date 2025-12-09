@@ -233,17 +233,17 @@ export class EmsLocationWorkflowService {
             }
           });
 
-        if (missedArrivalLog) {
-          this.logger.log(`Found missed arrival log: ${missedArrivalLog.id} at ${missedArrivalLog.entryTime.toISOString()}`);
-          newStatus = 'ARRIVED';
-          reason = 'Detected past arrival from zone logs';
-          hospitalName = assignment.ticket.destinationHospital.name;
-          
-          // Use the log time for the journey end
-          // We'll handle this in the update block logic by checking if we have a missedArrivalLog
-        } else {
-          this.logger.log(`No missed arrival log found after ${new Date(referenceTime).toISOString()}`);
-        }
+          if (missedArrivalLog) {
+            this.logger.log(`Found missed arrival log: ${missedArrivalLog.id} at ${missedArrivalLog.entryTime.toISOString()}`);
+            newStatus = 'ARRIVED';
+            reason = 'Detected past arrival from zone logs';
+            hospitalName = assignment.ticket.destinationHospital.name;
+            
+            // Use the log time for the journey end
+            // We'll handle this in the update block logic by checking if we have a missedArrivalLog
+          } else {
+            this.logger.log(`No missed arrival log found after ${new Date(referenceTime).toISOString()}`);
+          }
         }
       }
 

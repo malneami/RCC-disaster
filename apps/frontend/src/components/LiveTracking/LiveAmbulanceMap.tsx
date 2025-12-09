@@ -259,7 +259,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
               />
             )}
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {(ambulances as any)?.length || 0} Ambulances
+              {ambulances?.length || 0} Ambulances
             </Typography>
           </Box>
           <Box sx={{ borderLeft: 1, borderColor: 'divider', pl: 2 }}>
