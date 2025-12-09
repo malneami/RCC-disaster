@@ -139,8 +139,8 @@ export const getDefaultViewport = (): MapViewport => {
 /**
  * Create custom marker HTML
  */
-export const createMarkerHTML = (ambulance: AmbulanceGPSData, isSelected: boolean = false): string => {
-  const color = getStatusColor(ambulance.status);
+export const createMarkerHTML = (_ambulance: AmbulanceGPSData, isSelected: boolean = false): string => {
+  // Removed status color mapping as requested
   const size = isSelected ? '40px' : '32px';
   const zIndex = isSelected ? 1000 : 'auto';
 
@@ -149,35 +149,16 @@ export const createMarkerHTML = (ambulance: AmbulanceGPSData, isSelected: boolea
       position: relative;
       width: ${size};
       height: ${size};
-      background-color: ${color};
-      border: 3px solid white;
-      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: ${isSelected ? '20px' : '16px'};
+      font-size: ${isSelected ? '30px' : '24px'};
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
       z-index: ${zIndex};
       transition: all 0.2s ease;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
     ">
       🚑
-      ${ambulance.speed && ambulance.speed > 5 ? `
-        <div style="
-          position: absolute;
-          top: -8px;
-          right: -8px;
-          background: white;
-          border-radius: 50%;
-          width: 16px;
-          height: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        ">⚡</div>
-      ` : ''}
     </div>
   `;
 };

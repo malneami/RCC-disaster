@@ -91,9 +91,8 @@ export class EmsLocationWorkflowService {
         throw new Error(`Origin hospital coordinates not available for assignment ${assignmentId}`);
       }
 
-      if (!assignment.ticket.destinationHospital?.latitude || !assignment.ticket.destinationHospital?.longitude) {
-        throw new Error(`Destination hospital coordinates not available for assignment ${assignmentId}`);
-      }
+      // Destination might be null for some workflows, but usually required for DEPARTED->ARRIVED
+      // We'll check it when needed.
 
       const currentStatus = assignment.status;
 
@@ -120,15 +119,20 @@ export class EmsLocationWorkflowService {
         assignment.ticket.originHospital.longitude!
       );
 
-      const destinationDistance = this.hospitalBoundsService.calculateDistance(
-        ambulancePosition.latitude,
-        ambulancePosition.longitude,
-        assignment.ticket.destinationHospital.latitude!,
-        assignment.ticket.destinationHospital.longitude!
-      );
+      let destinationDistance = 0;
+      let isInDestinationZone = false;
+
+      if (assignment.ticket.destinationHospital?.latitude && assignment.ticket.destinationHospital?.longitude) {
+        destinationDistance = this.hospitalBoundsService.calculateDistance(
+          ambulancePosition.latitude,
+          ambulancePosition.longitude,
+          assignment.ticket.destinationHospital.latitude,
+          assignment.ticket.destinationHospital.longitude
+        );
+        isInDestinationZone = destinationDistance <= 2; // 2km radius
+      }
 
       const isInOriginZone = originDistance <= 2; // 2km radius
-      const isInDestinationZone = destinationDistance <= 2; // 2km radius
 
       this.logger.log(`Ambulance distances - Origin: ${originDistance.toFixed(3)}km, Destination: ${destinationDistance.toFixed(3)}km`);
       this.logger.log(`In origin zone: ${isInOriginZone}, In destination zone: ${isInDestinationZone}`);
@@ -158,34 +162,85 @@ export class EmsLocationWorkflowService {
       let reason = '';
       let hospitalName = '';
 
-      switch (currentStatus) {
-        case 'EMS_CONTACT':
-          if (isInOriginZone) {
-            newStatus = 'EMS_ARRIVAL';
-            reason = 'Ambulance entered origin hospital zone';
-            hospitalName = assignment.ticket.originHospital.name;
-          }
-          break;
+      // Priority check: If at destination, mark as ARRIVED regardless of previous flow
+      if (isInDestinationZone && currentStatus !== 'ARRIVED' && assignment.ticket.destinationHospital) {
+        newStatus = 'ARRIVED';
+        reason = 'Ambulance is at destination hospital zone';
+        hospitalName = assignment.ticket.destinationHospital.name;
+      } else {
+        // Standard flow logic
+        switch (currentStatus) {
+          case 'EMS_CONTACT':
+            if (isInOriginZone) {
+              newStatus = 'EMS_ARRIVAL';
+              reason = 'Ambulance entered origin hospital zone';
+              hospitalName = assignment.ticket.originHospital.name;
+            }
+            break;
 
-        case 'EMS_ARRIVAL':
-          if (!isInOriginZone) {
-            newStatus = 'DEPARTED';
-            reason = 'Ambulance left origin hospital zone';
-            hospitalName = assignment.ticket.originHospital.name;
-          }
-          break;
+          case 'EMS_ARRIVAL':
+            if (!isInOriginZone) {
+              newStatus = 'DEPARTED';
+              reason = 'Ambulance left origin hospital zone';
+              hospitalName = assignment.ticket.originHospital.name;
+            }
+            break;
 
-        case 'DEPARTED':
-          if (isInDestinationZone) {
-            newStatus = 'ARRIVED';
-            reason = 'Ambulance arrived at destination hospital zone';
-            hospitalName = assignment.ticket.destinationHospital.name;
-          }
-          break;
+          case 'DEPARTED':
+            if (isInDestinationZone && assignment.ticket.destinationHospital) {
+              newStatus = 'ARRIVED';
+              reason = 'Ambulance arrived at destination hospital zone';
+              hospitalName = assignment.ticket.destinationHospital.name;
+            } else if (isInOriginZone) {
+              // Allow reverting to EMS_ARRIVAL if ambulance returns to origin
+              newStatus = 'EMS_ARRIVAL';
+              reason = 'Ambulance returned to origin hospital zone';
+              hospitalName = assignment.ticket.originHospital.name;
+            }
+            break;
 
-        default:
-          this.logger.log(`No status transition needed for status: ${currentStatus}`);
-          break;
+          default:
+            this.logger.log(`No status transition needed for status: ${currentStatus}`);
+            break;
+        }
+      }
+
+      // 4b. Historical Check: If still DEPARTED (or no change detected), check if we missed the arrival
+      // Use emsContactTime as the primary baseline because ticket.createdAt might be retroactive (e.g. created at 9:34 PM for a 2:08 PM case).
+      // If emsContactTime is missing, fall back to ticket.createdAt.
+      const referenceTime = assignment.emsContactTime || assignment.ticket.createdAt;
+      
+      if (!newStatus && 
+          currentStatus === 'DEPARTED' && 
+          referenceTime && 
+          assignment.ticket.destinationHospital) {
+        
+        this.logger.log(`Checking historical logs for assignment ${assignmentId} at hospital ${assignment.ticket.destinationHospital.id} after ${new Date(referenceTime).toISOString()}`);
+
+        const missedArrivalLog = await this.prisma.ambulanceZoneLog.findFirst({
+          where: {
+            ambulanceId: assignment.ambulanceId,
+            hospitalId: assignment.ticket.destinationHospital!.id,
+            entryTime: {
+              gt: referenceTime
+            }
+          },
+          orderBy: {
+            entryTime: 'asc' // Get the first entry after assignment
+          }
+        });
+
+        if (missedArrivalLog) {
+          this.logger.log(`Found missed arrival log: ${missedArrivalLog.id} at ${missedArrivalLog.entryTime.toISOString()}`);
+          newStatus = 'ARRIVED';
+          reason = 'Detected past arrival from zone logs';
+          hospitalName = assignment.ticket.destinationHospital.name;
+          
+          // Use the log time for the journey end
+          // We'll handle this in the update block logic by checking if we have a missedArrivalLog
+        } else {
+          this.logger.log(`No missed arrival log found after ${new Date(referenceTime).toISOString()}`);
+        }
       }
 
       // 5. Update assignment status if needed
@@ -210,13 +265,23 @@ export class EmsLocationWorkflowService {
             updateData.journeyStartTime = now;
             break;
           case 'ARRIVED':
-            updateData.journeyEndTime = now;
+            updateData.journeyEndTime = now; 
             break;
         }
 
         await this.prisma.eMSAssignment.update({
           where: { id: assignmentId },
           data: updateData
+        });
+
+        // Update Ticket's EMS status
+        await this.prisma.ticket.update({
+          where: { id: assignment.ticketId },
+          data: { 
+            emsAssignmentStatus: newStatus as any,
+            emsStatusUpdatedAt: now,
+            emsStatusUpdatedBy: 'system'
+          }
         });
 
         this.logger.log(`✅ Updated assignment ${assignmentId}: ${currentStatus} → ${newStatus} at ${now.toISOString()}`);

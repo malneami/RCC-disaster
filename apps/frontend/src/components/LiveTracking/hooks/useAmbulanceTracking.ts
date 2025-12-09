@@ -4,7 +4,7 @@ import { emsService } from '../../../pages/EMS/services/emsService';
 import { AmbulanceGPSData, MapFilters } from '../types';
 import { Ambulance } from '../../../pages/EMS/types/ems';
 
-const REFRESH_INTERVAL = 2 * 60 * 1000; // 2 minutes in milliseconds
+const REFRESH_INTERVAL = 30 * 1000; // 30 seconds - aligned with backend GPS polling
 
 interface UseAmbulanceTrackingOptions {
   autoRefresh?: boolean;
@@ -85,11 +85,18 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
       }
     });
     
+    // Deduplicate by IMEI - keep first occurrence
+    const seenImeis = new Set<string>();
+    
     return gpsData
       .filter(item => item.lat && item.lng)
       .map(item => {
         const imei = item.imei || item.vehicleImei || '';
         const dbAmbulance = ambulanceMap.get(imei);
+        
+        // Parse coordinates
+        const latitude = parseFloat(item.lat) || parseFloat(item.latitude);
+        const longitude = parseFloat(item.lng) || parseFloat(item.longitude);
         
         // Use database data for status, driver, and other info, GPS data for location and movement
         return {
@@ -99,8 +106,8 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
           plateNumber: dbAmbulance?.plateNumber || item.plateNumber || item.plate || 'N/A',
           type: dbAmbulance?.type || item.type || 'BASIC',
           status: dbAmbulance?.status || item.status || 'AVAILABLE', // Use DB status, never infer from speed
-          latitude: parseFloat(item.lat) || parseFloat(item.latitude),
-          longitude: parseFloat(item.lng) || parseFloat(item.longitude),
+          latitude,
+          longitude,
           speed: item.speed ? parseFloat(item.speed) : undefined,
           direction: item.direction || item.course || item.angle,
           address: item.address || item.location_address || dbAmbulance?.currentLocationAddress,
@@ -110,8 +117,24 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
           accuracy: item.accuracy,
           driver: dbAmbulance?.driver, // Get driver from database
         };
+      })
+      .filter(item => {
+        // Filter out invalid coordinates
+        if (isNaN(item.latitude) || isNaN(item.longitude)) {
+          console.warn(`Skipping ambulance ${item.callSign} with invalid coordinates: (${item.latitude}, ${item.longitude})`);
+          return false;
+        }
+        
+        // Deduplicate by IMEI
+        if (seenImeis.has(item.vehicleImei)) {
+          return false;
+        }
+        seenImeis.add(item.vehicleImei);
+        return true;
       });
   };
+
+
 
   // Map regular Ambulance data to AmbulanceGPSData
   const mapAmbulancesToGPS = (ambulances: Ambulance[]): AmbulanceGPSData[] => {
@@ -164,6 +187,13 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
 
   // Manual refresh function
   const refresh = useCallback(async () => {
+    // Trigger backend sync to ensure DB is up to date with latest GPS data
+    try {
+      await emsService.syncGPSTracking();
+    } catch (err) {
+      console.error('Failed to sync GPS tracking:', err);
+    }
+
     // Always refresh both queries to ensure data is synced
     await Promise.all([
       ambulancesQuery.refetch(),

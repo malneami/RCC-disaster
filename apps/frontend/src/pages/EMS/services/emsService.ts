@@ -96,6 +96,16 @@ class EMSService {
     }
   }
 
+  async getRecommendedAmbulances(ticketId: string): Promise<any[]> {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/recommended-ambulances`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch recommended ambulances:', error);
+      throw error;
+    }
+  }
+
 
   // EMS Assignments
   async getEMSAssignments(filter?: AssignmentFilter): Promise<EMSAssignment[]> {
@@ -231,7 +241,23 @@ class EMSService {
   }
 
   async syncGPSTracking(): Promise<void> {
-    await apiClient.post(`${this.baseUrl}/tracking/sync`);
+    await apiClient.post(`${this.baseUrl}/ambulance-tracking/sync`);
+  }
+
+  async getZoneLogs(filters: {
+    hospitalIds?: string[];
+    ambulanceId?: string;
+    startTime?: Date;
+    endTime?: Date;
+  }): Promise<any[]> {
+    const params: any = {};
+    if (filters.hospitalIds) params.hospitalIds = filters.hospitalIds;
+    if (filters.ambulanceId) params.ambulanceId = filters.ambulanceId;
+    if (filters.startTime) params.startTime = filters.startTime.toISOString();
+    if (filters.endTime) params.endTime = filters.endTime.toISOString();
+
+    const response = await apiClient.get(`${this.baseUrl}/ambulance-tracking/zone-logs`, { params });
+    return response.data;
   }
 
   // Performance Analytics

@@ -1,0 +1,9 @@
+feat: Ambulance Tracking, Zone Automation & UI Refactor
+
+This PR introduces a comprehensive overhaul of the EMS Ambulance Tracking and Assignment system.
+
+Key Features:
+- Live Tracking & Map Enhancements: Real-time movement tracking, status inference, and zone visualization.
+- Zone-Based Automation: Automatic zone logging, retroactive assignment, and trip sequence detection.
+- UI/UX Improvements: Refactored Assignment Card with modular components (Timeline, Timer, Grid) and a smart assignment modal with split view and Saudi timezone support.
+- Technical & Cleanup: Extracted reusable components and removed unused backend scripts.

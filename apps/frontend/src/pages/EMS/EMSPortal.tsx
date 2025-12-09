@@ -39,7 +39,7 @@ const EMSPortal: React.FC = () => {
           <LiveAmbulanceMap
             height="calc(100vh - 250px)"
             autoRefresh={true}
-            refreshInterval={120000}
+            refreshInterval={5000}
             useGPSAPI={true}
             showLegend={true}
             showControls={true}

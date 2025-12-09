@@ -84,6 +84,16 @@ export class EmsAssignmentsService {
       }
     );
 
+    // Update Ticket's EMS status
+    await this.prisma.ticket.update({
+      where: { id: createAssignmentDto.ticketId },
+      data: { 
+        emsAssignmentStatus: assignment.status,
+        emsStatusUpdatedAt: new Date(),
+        emsStatusUpdatedBy: createdBy
+      }
+    });
+
     this.logger.log(`EMS assignment created: ${assignment.id}`);
     return assignment;
   }
@@ -130,6 +140,18 @@ export class EmsAssignmentsService {
       include: this.getAssignmentInclude(),
     });
 
+    // Update Ticket's EMS status if status changed
+    if (updateAssignmentDto.status) {
+      await this.prisma.ticket.update({
+        where: { id: assignment.ticketId },
+        data: { 
+          emsAssignmentStatus: assignment.status,
+          emsStatusUpdatedAt: new Date(),
+          emsStatusUpdatedBy: updatedBy
+        }
+      });
+    }
+
     // Update ambulance status if ambulance is being assigned or status is changing
     if (updateAssignmentDto.ambulanceId && updateAssignmentDto.status) {
       await this.updateAmbulanceStatus(updateAssignmentDto.ambulanceId, updateAssignmentDto.status);
@@ -175,6 +197,12 @@ export class EmsAssignmentsService {
     if (updateAssignmentDto.ambulanceId && assignment.status !== 'ARRIVED' && assignment.status !== 'CANCELLED') {
       try {
         await this.startLocationMonitoring(assignment.id);
+        
+        // Trigger immediate location check to update status if already in zone
+        // Run in background to not block response
+        this.emsLocationWorkflowService.processLocationUpdate(assignment.id)
+          .catch(err => this.logger.error(`Failed to process immediate location update: ${err.message}`));
+          
       } catch (error) {
         this.logger.error(`Failed to start location monitoring for assignment ${assignment.id}: ${(error as Error).message}`);
         // Don't throw error to prevent failing the update
@@ -545,48 +573,48 @@ export class EmsAssignmentsService {
    */
   async startLocationMonitoring(assignmentId: string): Promise<void> {
     try {
-      const assignment = await this.prisma.eMSAssignment.findFirst({
-        where: {
-          id: assignmentId,
-          deletedAt: null
-        },
-        include: {
-          ambulance: true
-        }
+      const assignment = await this.prisma.eMSAssignment.findUnique({
+        where: { id: assignmentId },
+        include: { ambulance: true }
       });
 
-      if (!assignment) {
-        throw new Error(`EMS assignment ${assignmentId} not found`);
-      }
-
-      if (!assignment.ambulanceId || !assignment.ambulance?.vehicleImei) {
-        this.logger.warn(`No ambulance or IMEI found for assignment ${assignmentId}, skipping location monitoring`);
+      if (!assignment || !assignment.ambulance?.vehicleImei) {
+        this.logger.warn(`Cannot start monitoring for assignment ${assignmentId}: No ambulance or IMEI`);
         return;
       }
 
-      if (assignment.status === 'ARRIVED' || assignment.status === 'CANCELLED') {
-        this.logger.log(`Assignment ${assignmentId} is already finished (${assignment.status}), skipping location monitoring`);
-        return;
-      }
-
-      this.logger.log(`Starting location monitoring for assignment ${assignmentId} with ambulance IMEI: ${assignment.ambulance.vehicleImei}`);
-
-      // Start the monitoring interval
-      const monitoringInterval = setInterval(async () => {
-        try {
-          await this.checkAndUpdateLocation(assignmentId);
-        } catch (error) {
-          this.logger.error(`Error in location monitoring for assignment ${assignmentId}: ${(error as Error).message}`);
-        }
-      }, 1 * 60 * 1000); // 5 minutes
-
-      // Store the interval ID for potential cleanup (you might want to implement cleanup logic)
-      // For now, we'll let it run indefinitely until the assignment is completed
+      this.logger.log(`Triggering immediate location check for assignment ${assignmentId}`);
       
-      this.logger.log(`Location monitoring started for assignment ${assignmentId} (checking every 5 minutes)`);
+      // Perform an immediate check
+      // We no longer use per-assignment intervals. A global Cron job handles periodic checks.
+      await this.checkAndUpdateLocation(assignmentId);
+
     } catch (error) {
-      this.logger.error(`Failed to start location monitoring for assignment ${assignmentId}: ${(error as Error).message}`);
-      throw error;
+      this.logger.error(`Failed to trigger location check for assignment ${assignmentId}: ${(error as Error).message}`);
+      // Don't throw, just log
+    }
+  }
+
+  /**
+   * Check locations for all active assignments
+   * Called by the global Cron job
+   */
+  async checkAllLocations(): Promise<void> {
+    try {
+      const activeAssignments = await this.getActiveAssignmentsForMonitoring();
+      if (activeAssignments.length === 0) return;
+
+      this.logger.debug(`Running periodic location check for ${activeAssignments.length} active assignments`);
+
+      for (const assignment of activeAssignments) {
+        const assignmentWithAmbulance = assignment as any;
+        if (assignmentWithAmbulance.ambulance?.vehicleImei) {
+          // Run checks in parallel or sequence? Sequence is safer for DB load.
+          await this.checkAndUpdateLocation(assignment.id);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error in global location check: ${(error as Error).message}`);
     }
   }
 
@@ -684,6 +712,104 @@ export class EmsAssignmentsService {
     } catch (error) {
       this.logger.error(`Failed to start location monitoring for active assignments: ${(error as Error).message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Cleanup stuck ambulances and sync ticket EMS status
+   * This method checks for ambulances marked as IN_USE but have no active assignments
+   * and syncs ticket EMS status with assignment status
+   */
+  async cleanupStuckAmbulances(): Promise<void> {
+    try {
+      // Find all ambulances with IN_USE status
+      const inUseAmbulances = await this.prisma.ambulance.findMany({
+        where: {
+          status: 'IN_USE',
+          isActive: true,
+          deletedAt: null
+        },
+        include: {
+          assignments: {
+            where: {
+              deletedAt: null
+            },
+            orderBy: {
+              createdAt: 'desc'
+            },
+            take: 1,
+            include: {
+              ticket: {
+                select: {
+                  id: true,
+                  emsAssignmentStatus: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (inUseAmbulances.length === 0) {
+        return;
+      }
+
+      this.logger.log(`Found ${inUseAmbulances.length} ambulance(s) with IN_USE status to check`);
+
+      let fixedCount = 0;
+      let syncedCount = 0;
+
+      for (const ambulance of inUseAmbulances) {
+        const latestAssignment = ambulance.assignments[0];
+
+        if (!latestAssignment) {
+          // No assignment at all - should be AVAILABLE
+          this.logger.warn(`Ambulance ${ambulance.callSign} has no assignments, setting to AVAILABLE`);
+          await this.prisma.ambulance.update({
+            where: { id: ambulance.id },
+            data: { status: 'AVAILABLE' }
+          });
+          fixedCount++;
+          continue;
+        }
+
+        const assignmentStatus = latestAssignment.status;
+        const ticketEmsStatus = latestAssignment.ticket.emsAssignmentStatus;
+
+        // Check if assignment is in terminal state
+        if (assignmentStatus === 'ARRIVED' || assignmentStatus === 'CANCELLED') {
+          this.logger.log(`Ambulance ${ambulance.callSign} has terminal assignment (${assignmentStatus}), setting to AVAILABLE`);
+          
+          await this.prisma.ambulance.update({
+            where: { id: ambulance.id },
+            data: { status: 'AVAILABLE' }
+          });
+          
+          fixedCount++;
+        }
+
+        // Check if ticket EMS status needs sync
+        if (ticketEmsStatus !== assignmentStatus) {
+          this.logger.log(`Syncing ticket EMS status for ambulance ${ambulance.callSign}: ${ticketEmsStatus} → ${assignmentStatus}`);
+          
+          await this.prisma.ticket.update({
+            where: { id: latestAssignment.ticket.id },
+            data: { 
+              emsAssignmentStatus: assignmentStatus,
+              emsStatusUpdatedAt: new Date()
+            }
+          });
+          
+          syncedCount++;
+        }
+      }
+
+      if (fixedCount > 0 || syncedCount > 0) {
+        this.logger.log(`Cleanup completed: Fixed ${fixedCount} ambulance(s), Synced ${syncedCount} ticket(s)`);
+      }
+    } catch (error) {
+      this.logger.error(`Error in cleanupStuckAmbulances: ${(error as Error).message}`);
+      // Don't throw error to prevent stopping periodic cleanup
     }
   }
 }

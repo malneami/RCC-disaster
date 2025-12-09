@@ -10,12 +10,13 @@ export class EmsLocationMonitoringStartupService implements OnApplicationBootstr
 
   async onApplicationBootstrap() {
     try {
-      this.logger.log('🚀 Starting EMS location monitoring for all active assignments...');
+      this.logger.log('🚀 Starting EMS location monitoring service...');
       
       // Wait a bit for the database to be fully ready
       await new Promise(resolve => setTimeout(resolve, 5000));
       
-      await this.emsAssignmentsService.startLocationMonitoringForAllActiveAssignments();
+      // Perform an initial check for all active assignments
+      await this.emsAssignmentsService.checkAllLocations();
       
       this.logger.log('✅ EMS location monitoring startup completed successfully');
     } catch (error) {
@@ -25,40 +26,31 @@ export class EmsLocationMonitoringStartupService implements OnApplicationBootstr
   }
 
   /**
-   * Periodically check for new assignments that need monitoring
-   * This runs every 10 minutes to catch any assignments created after server startup
+   * Periodically check locations for all active assignments
+   * This runs every minute to ensure we catch arrivals even if real-time updates are missed
    */
-  @Cron(CronExpression.EVERY_10_MINUTES)
-  async checkForNewAssignmentsNeedingMonitoring() {
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkLocationsPeriodic() {
     try {
-      this.logger.log('🔍 Checking for new assignments that need location monitoring...');
-      
-      const activeAssignments = await this.emsAssignmentsService.getActiveAssignmentsForMonitoring();
-      
-      if (activeAssignments.length === 0) {
-        this.logger.log('ℹ️ No active assignments found for monitoring');
-        return;
-      }
-
-      this.logger.log(`Found ${activeAssignments.length} active assignments. Starting monitoring for any new ones...`);
-      
-      // Start monitoring for assignments that might not have it yet
-      // Note: The existing startLocationMonitoring method will skip if already monitoring
-      for (const assignment of activeAssignments) {
-        const assignmentWithAmbulance = assignment as any;
-        if (assignmentWithAmbulance.ambulance?.vehicleImei) {
-          try {
-            await this.emsAssignmentsService.startLocationMonitoring(assignment.id);
-          } catch (error) {
-            // This is expected if monitoring is already running for this assignment
-            this.logger.debug(`Monitoring already active for assignment ${assignment.id}`);
-          }
-        }
-      }
-      
-      this.logger.log('✅ Periodic assignment monitoring check completed');
+      this.logger.debug('⏱️ Running periodic location check for all active assignments...');
+      await this.emsAssignmentsService.checkAllLocations();
     } catch (error) {
-      this.logger.error(`❌ Error in periodic assignment monitoring check: ${(error as Error).message}`);
+      this.logger.error(`❌ Error in periodic location check: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Periodically check for stuck ambulances and sync ticket EMS status
+   * This runs every 5 minutes to ensure ambulances don't get stuck in IN_USE
+   * and ticket EMS status stays synced with assignment status
+   */
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async cleanupStuckAmbulances() {
+    try {
+      this.logger.debug('🧹 Running periodic ambulance status cleanup...');
+      await this.emsAssignmentsService.cleanupStuckAmbulances();
+    } catch (error) {
+      this.logger.error(`❌ Error in ambulance cleanup: ${(error as Error).message}`);
     }
   }
 }

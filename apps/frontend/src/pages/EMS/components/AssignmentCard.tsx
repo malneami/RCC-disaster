@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -6,7 +6,6 @@ import {
   Box,
   Chip,
   Button,
-  Avatar,
   IconButton,
   Menu,
   MenuItem,
@@ -26,13 +25,18 @@ import {
   faEdit,
   faTrash,
   faUserPlus,
+  faExclamationTriangle,
+  faHistory,
   faHeart,
   faBrain,
-  faExclamationTriangle,
 } from '@fortawesome/free-solid-svg-icons';
 import { alpha } from '@mui/material/styles';
 import { EMSAssignment } from '../types/ems';
-import AmbulanceDriverAssignmentModal from './AmbulanceDriverAssignmentModal';
+import CrewAssignmentModal from './CrewAssignmentModal';
+import AmbulanceZoneEntriesModal from './AmbulanceZoneEntriesModal';
+import PatientJourneyTimeline from './PatientJourneyTimeline';
+import CriticalCaseTimer from './CriticalCaseTimer';
+import AssignmentInfoGrid from './AssignmentInfoGrid';
 
 interface AssignmentCardProps {
   assignment: EMSAssignment;
@@ -42,15 +46,6 @@ interface AssignmentCardProps {
   onMarkArrived: (id: string) => Promise<void>;
   onCompleteAssignment: (id: string) => Promise<void>;
   onAssignAmbulance?: (assignment: EMSAssignment) => void;
-}
-
-interface TimelineStep {
-  id: string;
-  label: string;
-  icon: React.ReactElement;
-  completed: boolean;
-  active: boolean;
-  timestamp?: string;
 }
 
 const AssignmentCard: React.FC<AssignmentCardProps> = ({
@@ -63,6 +58,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [ambulanceDriverModalOpen, setAmbulanceDriverModalOpen] = useState(false);
+  const [zoneEntriesModalOpen, setZoneEntriesModalOpen] = useState(false);
   const [loadingStates, setLoadingStates] = useState<{
     startAssignment: boolean;
     markArrived: boolean;
@@ -74,12 +70,10 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     completeAssignment: false,
     delete: false,
   });
-  
-  // Countdown timer state for STEMI/Stroke cases
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
-  const [progressPercentage, setProgressPercentage] = useState<number>(0);
-  const [isCritical, setIsCritical] = useState<boolean>(false);
-  
+
+  // Critical case check for header display
+  const isCriticalCase = (assignment.ticket?.pathway === 'STEMI' || assignment.ticket?.pathway === 'STROKE');
+
   const open = Boolean(anchorEl);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -140,88 +134,6 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
   const handleAmbulanceDriverSuccess = () => {
     // Optionally refresh the assignment data or show a success message
-    console.log('Ambulance and driver assigned successfully');
-  };
-
-  // Calculate countdown timer for STEMI/Stroke cases
-  useEffect(() => {
-    const pathway = assignment.ticket?.pathway;
-    const createdAt = assignment.ticket?.createdAt;
-    
-    // Only show countdown for STEMI or STROKE cases
-    if (pathway !== 'STEMI' && pathway !== 'STROKE') {
-      setTimeRemaining(0);
-      setProgressPercentage(0);
-      setIsCritical(false);
-      return;
-    }
-
-    if (!createdAt) {
-      setTimeRemaining(0);
-      setProgressPercentage(0);
-      setIsCritical(false);
-      return;
-    }
-
-    const calculateTime = () => {
-      const creationTime = new Date(createdAt).getTime();
-      const elapsed = Date.now() - creationTime;
-      const timeLimit = pathway === 'STEMI' 
-        ? 120 * 60 * 1000  // 120 minutes
-        : 4.5 * 60 * 60 * 1000; // 4.5 hours
-      
-      const remaining = Math.max(0, timeLimit - elapsed);
-      const percentage = Math.min(100, (elapsed / timeLimit) * 100);
-      
-      setTimeRemaining(remaining);
-      setProgressPercentage(percentage);
-      setIsCritical(percentage >= 100);
-    };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-
-    return () => clearInterval(interval);
-  }, [assignment.ticket?.pathway, assignment.ticket?.createdAt]);
-
-  const getTimelineSteps = (): TimelineStep[] => {
-    console.log(assignment.createdAt,"createdAt: timezoned", new Date(assignment.createdAt).toLocaleString());
-    const steps: TimelineStep[] = [
-      {
-        id: 'ems_contact',
-        label: 'EMS Contact',
-        icon: <FontAwesomeIcon icon={faUserMd} />,
-        completed: assignment.status !== 'EMS_CONTACT',
-        active: assignment.status === 'EMS_CONTACT',
-        timestamp: assignment.emsContactTime ? new Date(assignment.emsContactTime).toLocaleTimeString() : undefined,
-      },
-      {
-        id: 'ems_arrival',
-        label: 'EMS Arrival',
-        icon: <FontAwesomeIcon icon={faAmbulance} />,
-        completed: ['EMS_ARRIVAL', 'DEPARTED', 'ARRIVED'].includes(assignment.status),
-        active: assignment.status === 'EMS_ARRIVAL',
-        timestamp: assignment.actualArrivalTime ? new Date(assignment.actualArrivalTime).toLocaleTimeString() : undefined,
-      },
-      {
-        id: 'departed',
-        label: 'Departed',
-        icon: <FontAwesomeIcon icon={faMapMarkerAlt} />,
-        completed: ['DEPARTED', 'ARRIVED'].includes(assignment.status),
-        active: assignment.status === 'DEPARTED',
-        timestamp: assignment.journeyStartTime ? new Date(assignment.journeyStartTime).toLocaleTimeString() : undefined,
-      },
-      {
-        id: 'arrived_destination',
-        label: 'Arrived',
-        icon: <FontAwesomeIcon icon={faCheck} />,
-        completed: assignment.status === 'ARRIVED',
-        active: assignment.status === 'ARRIVED',
-        timestamp: assignment.journeyEndTime ? new Date(assignment.journeyEndTime).toLocaleTimeString() : undefined,
-      },
-    ];
-
-    return steps;
   };
 
   const getStatusInfo = () => {
@@ -258,29 +170,6 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
   const statusInfo = getStatusInfo();
   const priorityInfo = getPriorityInfo();
-  const timelineSteps = getTimelineSteps();
-
-  // Format time for countdown display
-  const formatTime = (milliseconds: number) => {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
-  };
-
-  const getProgressColor = () => {
-    if (progressPercentage >= 100) return '#d32f2f'; // Red for missed deadline
-    if (progressPercentage >= 75) return '#ff9800'; // Orange for warning
-    return '#4caf50'; // Green for normal
-  };
 
   const getPathwayIcon = () => {
     const pathway = assignment.ticket?.pathway;
@@ -316,19 +205,19 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     switch (assignment.status) {
       case 'EMS_CONTACT':
         // Add ambulance & driver assignment button if not already assigned
-          buttons.push(
-            <Button
-              key="assign"
-              variant="outlined"
-              color="secondary"
-              startIcon={<FontAwesomeIcon icon={faUserPlus} />}
-              onClick={handleAmbulanceDriverAssignment}
-              sx={{ minWidth: 140 }}
-            >
-              Assign Crew
-            </Button>
-          );
-        
+        buttons.push(
+          <Button
+            key="assign"
+            variant="outlined"
+            color="secondary"
+            startIcon={<FontAwesomeIcon icon={faUserPlus} />}
+            onClick={handleAmbulanceDriverAssignment}
+            sx={{ minWidth: 140 }}
+          >
+            Assign Crew
+          </Button>
+        );
+
         buttons.push(
           <Button
             key="start"
@@ -343,7 +232,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           </Button>
         );
         break;
-      
+
       case 'EMS_ARRIVAL':
         buttons.push(
           <Button
@@ -359,7 +248,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           </Button>
         );
         break;
-      
+
       case 'DEPARTED':
         buttons.push(
           <Button
@@ -375,7 +264,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           </Button>
         );
         break;
-      
+
       case 'ARRIVED':
         buttons.push(
           <Button
@@ -389,7 +278,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           </Button>
         );
         break;
-      
+
       case 'CANCELLED':
         buttons.push(
           <Button
@@ -409,8 +298,8 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   };
 
   return (
-    <Card 
-      sx={{ 
+    <Card
+      sx={{
         mb: 3,
         borderRadius: 2,
         boxShadow: 2,
@@ -441,7 +330,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
                 size="small"
                 variant="outlined"
               />
-              {(assignment.ticket?.pathway === 'STEMI' || assignment.ticket?.pathway === 'STROKE') && (
+              {isCriticalCase && (
                 <Chip
                   icon={<FontAwesomeIcon icon={getPathwayIcon()} />}
                   label={assignment.ticket.pathway}
@@ -462,30 +351,19 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
                   icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
                 />
               )}
-              {isCritical && (
-                <IconButton
-                  size="small"
-                  sx={{ 
-                    color: '#d32f2f',
-                    '&:hover': { bgcolor: alpha('#d32f2f', 0.1) }
-                  }}
-                >
-                  <FontAwesomeIcon icon={faExclamationTriangle} />
-                </IconButton>
-              )}
             </Box>
           </Box>
-          
+
           <IconButton
             onClick={handleMenuClick}
-            sx={{ 
+            sx={{
               color: 'text.secondary',
               '&:hover': { bgcolor: alpha('#000', 0.04) }
             }}
           >
             <FontAwesomeIcon icon={faEllipsisV} />
           </IconButton>
-          
+
           <Menu
             anchorEl={anchorEl}
             open={open}
@@ -493,12 +371,16 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           >
+            <MenuItem onClick={() => { setZoneEntriesModalOpen(true); handleMenuClose(); }}>
+              <FontAwesomeIcon icon={faHistory} style={{ marginRight: 8 }} />
+              View Zone Entries
+            </MenuItem>
             <MenuItem onClick={() => { onEdit(assignment); handleMenuClose(); }}>
               <FontAwesomeIcon icon={faEdit} style={{ marginRight: 8 }} />
               Edit Assignment
             </MenuItem>
             <Divider />
-            <MenuItem 
+            <MenuItem
               onClick={() => { handleDelete(); handleMenuClose(); }}
               disabled={loadingStates.delete}
               sx={{ color: 'error.main' }}
@@ -514,222 +396,13 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
         </Box>
 
         {/* Countdown Timer for STEMI/Stroke */}
-        {(assignment.ticket?.pathway === 'STEMI' || assignment.ticket?.pathway === 'STROKE') && timeRemaining > 0 && (
-          <Box 
-            sx={{ 
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              border: isCritical ? '2px solid #d32f2f' : '1px solid rgba(0,0,0,0.1)',
-              backgroundColor: isCritical ? alpha('#d32f2f', 0.1) : alpha('#1976d2', 0.05),
-              transition: 'all 0.3s ease',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                  {/* Background ring */}
-                  <CircularProgress
-                    variant="determinate"
-                    value={100}
-                    size={60}
-                    thickness={5}
-                    sx={{
-                      color: 'rgba(0, 0, 0, 0.1)',
-                      position: 'absolute',
-                    }}
-                  />
-                  {/* Progress ring */}
-                  <CircularProgress
-                    variant="determinate"
-                    value={progressPercentage}
-                    size={60}
-                    thickness={5}
-                    sx={{
-                      color: getProgressColor(),
-                      '& .MuiCircularProgress-circle': {
-                        strokeLinecap: 'round',
-                      },
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      right: 0,
-                      position: 'absolute',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      component="div"
-                      sx={{ fontSize: '0.7rem', fontWeight: 600 }}
-                    >
-                      {`${Math.round(progressPercentage)}%`}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                    <FontAwesomeIcon 
-                      icon={getPathwayIcon()} 
-                      style={{ 
-                        color: getPathwayColor(), 
-                        marginRight: 8,
-                        fontSize: '16px'
-                      }} 
-                    />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      {assignment.ticket.pathway} Time Remaining
-                    </Typography>
-                  </Box>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 600,
-                      color: isCritical ? '#d32f2f' : 'text.primary'
-                    }}
-                  >
-                    {formatTime(timeRemaining)}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {Math.round(progressPercentage)}% of time limit elapsed
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        )}
+        <CriticalCaseTimer assignment={assignment} />
 
         {/* Assignment Details */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mb: 3 }}>
-          {/* Left Column - Assignment Info */}
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-              Assignment Details
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.light' }}>
-                  <FontAwesomeIcon icon={faAmbulance} size="sm" />
-                </Avatar>
-                <Typography variant="body2">
-                  <strong>Ambulance:</strong> {assignment.ambulance?.callSign || 'N/A'}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Avatar sx={{ width: 24, height: 24, bgcolor: 'secondary.light' }}>
-                  <FontAwesomeIcon icon={faUserMd} size="sm" />
-                </Avatar>
-                <Typography variant="body2">
-                  <strong>Driver:</strong> {assignment.driver?.firstName} {assignment.driver?.lastName}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Avatar sx={{ width: 24, height: 24, bgcolor: 'info.light' }}>
-                  <FontAwesomeIcon icon={faClock} size="sm" />
-                </Avatar>
-                <Typography variant="body2">
-                  <strong>Assigned:</strong> {new Date(assignment.assignedAt).toLocaleString()}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Right Column - Ticket Info */}
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-              Ticket Information
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography variant="body2">
-                <strong>Ticket:</strong> {assignment.ticket?.ticketNumber || 'N/A'}
-              </Typography>
-              {assignment.ticket?.pathway && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar sx={{ width: 24, height: 24, bgcolor: getPathwayColor() }}>
-                    <FontAwesomeIcon icon={getPathwayIcon()} size="sm" />
-                  </Avatar>
-                  <Typography variant="body2">
-                    <strong>Case Type:</strong> {assignment.ticket.pathway}
-                  </Typography>
-                </Box>
-              )}
-              <Typography variant="body2">
-                <strong>Patient:</strong> {assignment.ticket?.patient?.firstName} {assignment.ticket?.patient?.lastName}
-              </Typography>
-              <Typography variant="body2">
-                <strong>From:</strong> {assignment.ticket?.originHospital?.name || 'N/A'}
-              </Typography>
-              <Typography variant="body2">
-                <strong>To:</strong> {assignment.ticket?.destinationHospital?.name || 'N/A'}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+        <AssignmentInfoGrid assignment={assignment} />
 
         {/* Timeline */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-            Patient Journey
-          </Typography>
-          
-
-          {/* Timeline Steps */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2 }}>
-            {timelineSteps.map((step, index) => (
-              <React.Fragment key={step.id}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                  <Avatar
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      bgcolor: step.completed 
-                        ? 'primary.main' 
-                        : step.active 
-                          ? 'primary.light' 
-                          : alpha('#1976d2', 0.1),
-                      color: step.completed || step.active ? 'white' : 'text.secondary',
-                      border: step.active ? '3px solid' : 'none',
-                      borderColor: 'primary.main',
-                      mb: 1,
-                      boxShadow: step.completed || step.active ? '0 2px 8px rgba(25, 118, 210, 0.3)' : 'none',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    {step.icon}
-                  </Avatar>
-                  <Typography variant="caption" sx={{ textAlign: 'center', fontWeight: step.active ? 600 : 400 }}>
-                    {step.label}
-                  </Typography>
-                  {step.timestamp && (
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                      {step.timestamp}
-                    </Typography>
-                  )}
-                </Box>
-                
-                {/* Connection Line */}
-                {index < timelineSteps.length - 1 && (
-                  <Box
-                    sx={{
-                      flex: 1,
-                      height: 3,
-                      bgcolor: step.completed ? 'primary.main' : alpha('#e0e0e0', 0.8),
-                      borderRadius: 2,
-                      mx: 1,
-                      transition: 'background-color 0.3s ease',
-                    }}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-          </Box>
-        </Box>
+        <PatientJourneyTimeline assignment={assignment} />
 
         {/* Action Buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
@@ -748,13 +421,21 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           </Box>
         )}
       </CardContent>
-      
-      {/* Ambulance & Driver Assignment Modal */}
-      <AmbulanceDriverAssignmentModal
+
+      {/* Crew Assignment Modal with AI Recommendations */}
+      <CrewAssignmentModal
         open={ambulanceDriverModalOpen}
         onClose={handleAmbulanceDriverModalClose}
         assignment={assignment}
+        ticketId={assignment.ticketId}
         onSuccess={handleAmbulanceDriverSuccess}
+      />
+
+      {/* Ambulance Zone Entries Modal */}
+      <AmbulanceZoneEntriesModal
+        open={zoneEntriesModalOpen}
+        onClose={() => setZoneEntriesModalOpen(false)}
+        assignment={assignment}
       />
     </Card>
   );

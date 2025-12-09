@@ -22,7 +22,7 @@ interface MapFiltersProps {
 const MapFiltersComponent: React.FC<MapFiltersProps> = ({ filters, onFiltersChange, onClose }) => {
   const statusOptions = [
     { value: 'AVAILABLE', label: 'Available', color: '#4caf50' },
-    { value: 'IN_USE', label: 'In Use', color: '#2196f3' },
+    { value: 'IN_USE', label: 'Assigned / In Use', color: '#2196f3' },
     { value: 'MAINTENANCE', label: 'Maintenance', color: '#ff9800' },
     { value: 'OUT_OF_SERVICE', label: 'Out of Service', color: '#f44336' },
   ];
@@ -32,7 +32,7 @@ const MapFiltersComponent: React.FC<MapFiltersProps> = ({ filters, onFiltersChan
     const newStatuses = currentStatuses.includes(status)
       ? currentStatuses.filter((s) => s !== status)
       : [...currentStatuses, status];
-    
+
     onFiltersChange({ ...filters, status: newStatuses.length > 0 ? newStatuses : undefined });
   };
 

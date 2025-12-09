@@ -106,6 +106,13 @@ export class TicketsController {
     );
   }
 
+  @Get(':id/recommended-ambulances')
+  @Roles(UserRole.ADMIN, UserRole.RCC)
+  @ApiOperation({ summary: 'Get recommended ambulances for a ticket with scoring' })
+  async getRecommendedAmbulances(@Param('id') id: string) {
+    return this.ticketsService.getRecommendedAmbulances(id);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.ticketsService.findById(id);

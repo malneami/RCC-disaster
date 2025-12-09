@@ -84,28 +84,152 @@ export class AmbulancesService {
   }
 
   async findAllGPS(filters: AmbulanceFilters = {}): Promise<any> {
-    const response = await axios.post<GPSApiResponse>('http://gps3.tawasolmap.com/new_api/', {
-      api_key: "7798AA377F99763506758557AC7741A1",
-      service: "objects",
-      imeis: "*"
-    }, {
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json'
+    try {
+      // Fetch from external GPS API
+      const response = await axios.post<GPSApiResponse>('http://gps3.tawasolmap.com/new_api/', {
+        api_key: "7798AA377F99763506758557AC7741A1",
+        service: "objects",
+        imeis: "*"
+      }, {
+        timeout: 10000,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      let externalGPSData: any[] = [];
+      if (response.data.status && response.data.data) {
+        externalGPSData = this.gpsMappingService.mapGPSObjects(response.data.data);
       }
-    });
-    
-    // Map GPS objects to consistent format
-    if (response.data.status && response.data.data) {
-      const mappedData = this.gpsMappingService.mapGPSObjects(response.data.data);
+
+      // Also fetch GPS data from database for ALL ambulances
+      const testAmbulances = await this.prisma.ambulance.findMany({
+        where: {
+          deletedAt: null,
+          isActive: true
+        },
+        include: {
+          driver: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phoneNumber: true,
+            }
+          }
+        }
+      });
+
+      // Get latest GPS tracking log for each ambulance
+      const testGPSData: any[] = [];
+      const FRESHNESS_THRESHOLD = 20 * 60 * 1000; // 20 minutes
+      
+      for (const ambulance of testAmbulances) {
+        const latestLog = await this.prisma.gPSTrackingLog.findFirst({
+          where: {
+            ambulanceId: ambulance.id
+          },
+          orderBy: {
+            timestamp: 'desc'
+          }
+        });
+
+        if (latestLog) {
+          // Filter out stale data (older than 20 minutes)
+          const age = Date.now() - latestLog.timestamp.getTime();
+          if (age > FRESHNESS_THRESHOLD) {
+            continue; // Skip stale data
+          }
+          
+          testGPSData.push({
+            imei: ambulance.vehicleImei,
+            lat: latestLog.latitude.toString(),
+            lng: latestLog.longitude.toString(),
+            speed: latestLog.speed?.toString() || '0',
+            direction: latestLog.direction?.toString() || '0',
+            timestamp: latestLog.timestamp.toISOString(),
+            callSign: ambulance.callSign,
+            plateNumber: ambulance.plateNumber,
+            status: ambulance.status,
+            type: ambulance.type,
+            driver: ambulance.driver
+          });
+        }
+      }
+
+      // Combine external GPS data with test ambulance data
+      const combinedData = [...externalGPSData, ...testGPSData];
+
       return {
-        status: response.data.status,
-        data: mappedData,
+        status: true,
+        data: combinedData
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch GPS data: ${(error as Error).message}`);
+      
+      // Fallback: return only database data if external API fails
+      const testAmbulances = await this.prisma.ambulance.findMany({
+        where: {
+          deletedAt: null,
+          isActive: true
+        },
+        include: {
+          driver: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phoneNumber: true,
+            }
+          }
+        }
+      });
+
+      const testGPSData: any[] = [];
+      const FRESHNESS_THRESHOLD = 20 * 60 * 1000; // 20 minutes
+      
+      for (const ambulance of testAmbulances) {
+        const latestLog = await this.prisma.gPSTrackingLog.findFirst({
+          where: {
+            ambulanceId: ambulance.id
+          },
+          orderBy: {
+            timestamp: 'desc'
+          }
+        });
+
+        if (latestLog) {
+          // Filter out stale data (older than 20 minutes)
+          const age = Date.now() - latestLog.timestamp.getTime();
+          if (age > FRESHNESS_THRESHOLD) {
+            continue; // Skip stale data
+          }
+          
+          testGPSData.push({
+            imei: ambulance.vehicleImei,
+            lat: latestLog.latitude.toString(),
+            lng: latestLog.longitude.toString(),
+            speed: latestLog.speed?.toString() || '0',
+            direction: latestLog.direction?.toString() || '0',
+            timestamp: latestLog.timestamp.toISOString(),
+            callSign: ambulance.callSign,
+            plateNumber: ambulance.plateNumber,
+            status: ambulance.status,
+            type: ambulance.type,
+            driver: ambulance.driver
+          });
+        }
+      }
+
+      return {
+        status: true,
+        data: testGPSData
       };
     }
-    
-    return response.data;
   }
+
 
   async findById(id: string): Promise<Ambulance> {
     const ambulance = await this.prisma.ambulance.findFirst({
