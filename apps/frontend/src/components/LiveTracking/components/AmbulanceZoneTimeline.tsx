@@ -13,7 +13,6 @@ import {
     RadioButtonChecked as ActiveIcon,
     AccessTime as TimeIcon,
     Speed as SpeedIcon,
-    TrendingFlat as DistanceIcon,
 } from '@mui/icons-material';
 import { format, formatDistanceToNow, differenceInMinutes } from 'date-fns';
 
@@ -36,7 +35,6 @@ interface AmbulanceZoneTimelineProps {
 }
 
 const AmbulanceZoneTimeline: React.FC<AmbulanceZoneTimelineProps> = ({
-    ambulanceId,
     zoneVisits,
     maxItems = 10,
 }) => {

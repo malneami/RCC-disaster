@@ -217,18 +217,21 @@ export class EmsLocationWorkflowService {
         
         this.logger.log(`Checking historical logs for assignment ${assignmentId} at hospital ${assignment.ticket.destinationHospital.id} after ${new Date(referenceTime).toISOString()}`);
 
-        const missedArrivalLog = await this.prisma.ambulanceZoneLog.findFirst({
-          where: {
-            ambulanceId: assignment.ambulanceId,
-            hospitalId: assignment.ticket.destinationHospital!.id,
-            entryTime: {
-              gt: referenceTime
+        if (!assignment.ambulanceId) {
+          this.logger.log(`No ambulance assigned to assignment ${assignmentId}, skipping historical check`);
+        } else {
+          const missedArrivalLog = await this.prisma.ambulanceZoneLog.findFirst({
+            where: {
+              ambulanceId: assignment.ambulanceId,
+              hospitalId: assignment.ticket.destinationHospital!.id,
+              entryTime: {
+                gt: referenceTime
+              }
+            },
+            orderBy: {
+              entryTime: 'asc' // Get the first entry after assignment
             }
-          },
-          orderBy: {
-            entryTime: 'asc' // Get the first entry after assignment
-          }
-        });
+          });
 
         if (missedArrivalLog) {
           this.logger.log(`Found missed arrival log: ${missedArrivalLog.id} at ${missedArrivalLog.entryTime.toISOString()}`);
@@ -240,6 +243,7 @@ export class EmsLocationWorkflowService {
           // We'll handle this in the update block logic by checking if we have a missedArrivalLog
         } else {
           this.logger.log(`No missed arrival log found after ${new Date(referenceTime).toISOString()}`);
+        }
         }
       }
 

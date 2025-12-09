@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faAmbulance, 
-  faMapMarkedAlt, 
+import {
+  faAmbulance,
+  faMapMarkedAlt,
   faCalendarAlt,
   faChartLine,
   faCog,
@@ -41,7 +41,6 @@ const EMSPortal: React.FC = () => {
             autoRefresh={true}
             refreshInterval={5000}
             useGPSAPI={true}
-            showLegend={true}
             showControls={true}
             showFilters={true}
           />

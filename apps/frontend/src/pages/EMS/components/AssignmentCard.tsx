@@ -333,7 +333,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
               {isCriticalCase && (
                 <Chip
                   icon={<FontAwesomeIcon icon={getPathwayIcon()} />}
-                  label={assignment.ticket.pathway}
+                  label={assignment.ticket?.pathway}
                   size="small"
                   sx={{
                     backgroundColor: getPathwayColor(),

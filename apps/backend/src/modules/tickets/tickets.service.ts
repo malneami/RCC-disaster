@@ -1240,7 +1240,7 @@ export class TicketsService {
           where: {
             // Get logs for BOTH origin and destination hospitals
             hospitalId: {
-              in: [ticket.originHospitalId, ticket.destinationHospitalId].filter(Boolean),
+              in: [ticket.originHospitalId, ticket.destinationHospitalId].filter((id): id is string => Boolean(id)),
             },
             entryTime: {
               gte: sevenDaysAgo, // Last 7 days
