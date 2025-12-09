@@ -245,6 +245,7 @@ export class EmsLocationWorkflowService {
             this.logger.log(`No missed arrival log found after ${new Date(referenceTime).toISOString()}`);
           }
         }
+        }
       }
 
       // 5. Update assignment status if needed

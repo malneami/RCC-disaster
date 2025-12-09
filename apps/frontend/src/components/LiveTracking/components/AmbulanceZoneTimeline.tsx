@@ -35,7 +35,6 @@ interface AmbulanceZoneTimelineProps {
 }
 
 const AmbulanceZoneTimeline: React.FC<AmbulanceZoneTimelineProps> = ({
-    ambulanceId,
     zoneVisits,
     maxItems = 10,
 }) => {
