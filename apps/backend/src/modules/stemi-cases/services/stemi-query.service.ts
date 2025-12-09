@@ -41,8 +41,16 @@ export class StemiQueryService {
       where.destinationHospitalId = destinationHospitalId;
     }
 
+    if (modeOfArrival) {
+      where.modeOfArrival = modeOfArrival;
+    }
+
     if (currentStatus) {
       where.currentStatus = currentStatus;
+    }
+
+    if (ecgResult) {
+      where.ecgResult = ecgResult;
     }
 
     if (selectedTreatment) {

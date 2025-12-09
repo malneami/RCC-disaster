@@ -492,10 +492,20 @@ const StemiPortalPage: React.FC = () => {
 
     setError(null);
 
+    // Prepare pagination params, excluding rccActivated for client-side filtering
+    const { rccActivated, ...backendFilters } = unifiedFilters;
+    
+    // Convert rccActivated to string for comparison (filter dialog sends strings)
+    const rccActivatedStr = (rccActivated === true || rccActivated === 'true') ? 'true' : 
+                           (rccActivated === false || rccActivated === 'false') ? 'false' : undefined;
+    
+    // When RCC filter is active, fetch all data for proper client-side filtering
+    // Otherwise use normal pagination
+    const needsClientSideRccFilter = rccActivatedStr === 'true' || rccActivatedStr === 'false';
     const paginationParams = {
-      ...unifiedFilters,
-      limit: rowsPerPage,
-      offset: page * rowsPerPage,
+      ...backendFilters,
+      limit: needsClientSideRccFilter ? 10000 : rowsPerPage, // Fetch large number when RCC filter active
+      offset: needsClientSideRccFilter ? 0 : page * rowsPerPage,
     };
 
     let casesFailed = false;
@@ -507,8 +517,37 @@ const StemiPortalPage: React.FC = () => {
         return;
       }
 
-      setStemiCases(casesResponse.cases);
-      setTotalCases(casesResponse.total);
+      // Apply client-side filtering for RCC Activated
+      let filteredCases = casesResponse.cases;
+      if (rccActivatedStr === 'true') {
+        // Filter for RCC Activated = Yes: cases with rccActivationToDoorOutMinutes not null/undefined/empty
+        filteredCases = filteredCases.filter(
+          (item) =>
+            item.rccActivationToDoorOutMinutes !== null &&
+            item.rccActivationToDoorOutMinutes !== undefined &&
+            String(item.rccActivationToDoorOutMinutes) !== ''
+        );
+      } else if (rccActivatedStr === 'false') {
+        // Filter for RCC Activated = No: cases with rccActivationToDoorOutMinutes null/undefined/empty
+        filteredCases = filteredCases.filter(
+          (item) =>
+            item.rccActivationToDoorOutMinutes === null ||
+            item.rccActivationToDoorOutMinutes === undefined ||
+            String(item.rccActivationToDoorOutMinutes) === ''
+        );
+      }
+
+      // Apply pagination to filtered results if RCC filter was active
+      const totalFilteredCount = filteredCases.length;
+      if (needsClientSideRccFilter) {
+        const startIndex = page * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        filteredCases = filteredCases.slice(startIndex, endIndex);
+      }
+
+      setStemiCases(filteredCases);
+      // Update total count: if RCC filter active, use filtered count; otherwise use backend total
+      setTotalCases(needsClientSideRccFilter ? totalFilteredCount : casesResponse.total);
     } catch (err: any) {
       if (requestRef.current !== requestId) {
         return;

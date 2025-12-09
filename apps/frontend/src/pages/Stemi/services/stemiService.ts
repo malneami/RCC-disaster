@@ -260,7 +260,7 @@ export interface StemiFilterParams {
   eligibleForPrimaryPci?: boolean;
   thrombolyticGiven?: boolean;
   isTroponinPositive?: boolean;
-  rccActivated?: boolean;
+  rccActivated?: boolean | string; // Can be boolean (for backend) or string 'true'/'false' (for client-side filtering)
   startDate?: string;
   endDate?: string;
   limit?: number;
