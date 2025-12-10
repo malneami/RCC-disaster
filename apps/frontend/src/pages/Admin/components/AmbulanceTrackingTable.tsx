@@ -88,7 +88,8 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
                 </Typography>
               </TableCell>
               <TableCell>
-                {ambulance.lat && ambulance.lng ? (
+                {ambulance.lat != null && ambulance.lng != null && 
+                 typeof ambulance.lat === 'number' && typeof ambulance.lng === 'number' ? (
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <FontAwesomeIcon 
                       icon={faMapMarkerAlt} 
@@ -99,7 +100,7 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
                       variant="body2" 
                       sx={{ fontFamily: 'monospace' }}
                     >
-                      {ambulance.lat.toFixed(6)}, {ambulance.lng.toFixed(6)}
+                      {Number(ambulance.lat).toFixed(6)}, {Number(ambulance.lng).toFixed(6)}
                     </Typography>
                   </Box>
                 ) : (
