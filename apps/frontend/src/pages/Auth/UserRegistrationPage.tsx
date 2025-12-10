@@ -86,7 +86,7 @@ const UserRegistrationPage: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.email || !formData.firstName || !formData.lastName || !formData.password || !formData.requestedRole) {
+    if (!formData.email || !formData.firstName || !formData.lastName || !formData.password || !formData.requestedRole || !formData.hospitalId) {
       setError('Please fill in all required fields');
       return false;
     }
@@ -109,6 +109,11 @@ const UserRegistrationPage: React.FC = () => {
 
     if (formData.phoneNumber && formData.phoneNumber.length < 10) {
       setError('Please enter a valid phone number');
+      return false;
+    }
+
+    if (!formData.hospitalId || formData.hospitalId.trim() === '') {
+      setError('Hospital is required');
       return false;
     }
 
@@ -322,16 +327,16 @@ const UserRegistrationPage: React.FC = () => {
 
               {/* Hospital Assignment */}
               <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel>Hospital (Optional)</InputLabel>
+                <FormControl required fullWidth>
+                  <InputLabel>Hospital</InputLabel>
                   <Select
                     value={formData.hospitalId}
                     onChange={handleInputChange('hospitalId')}
                     disabled={loading || hospitalsLoading}
-                    label="Hospital (Optional)"
+                    label="Hospital"
                   >
                     <MenuItem value="">
-                      <em>Select a hospital (optional)</em>
+                      <em>Select a hospital</em>
                     </MenuItem>
                     {hospitals.map((hospital) => (
                       <MenuItem key={hospital.id} value={hospital.id}>
@@ -340,7 +345,7 @@ const UserRegistrationPage: React.FC = () => {
                     ))}
                   </Select>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Select your hospital if applicable
+                    Select your hospital
                   </Typography>
                 </FormControl>
               </Grid>

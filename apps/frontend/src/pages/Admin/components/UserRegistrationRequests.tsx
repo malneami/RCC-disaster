@@ -35,6 +35,7 @@ import {
   Business,
   Schedule,
 } from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
 import { userRegistrationService, UserRegistrationRequest, RegistrationRequestStats } from '../../../services/userRegistrationService';
 
 interface TabPanelProps {
@@ -64,6 +65,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const UserRegistrationRequests: React.FC = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [tabValue, setTabValue] = useState(0);
   const [requests, setRequests] = useState<UserRegistrationRequest[]>([]);
   const [stats, setStats] = useState<RegistrationRequestStats>({ pending: 0, approved: 0, rejected: 0, total: 0 });
@@ -85,7 +87,6 @@ const UserRegistrationRequests: React.FC = () => {
       setStats(statsData);
     } catch (err: any) {
       setError('Failed to load registration requests');
-      console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
@@ -143,13 +144,16 @@ const UserRegistrationRequests: React.FC = () => {
         );
         
         // Show success message
-        alert(`User account created successfully!\n\nThe user can now login with the password they provided during registration.`);
+        enqueueSnackbar('User account created successfully! The user can now login with the password they provided during registration.', { 
+          variant: 'success',
+          autoHideDuration: 6000 
+        });
       } else {
         await userRegistrationService.rejectRegistrationRequest(
           selectedRequest.id,
           adminComments
         );
-        alert('Registration request rejected successfully.');
+        enqueueSnackbar('Registration request rejected successfully.', { variant: 'success' });
       }
 
       setActionDialog(null);
@@ -407,6 +411,7 @@ const UserRegistrationRequests: React.FC = () => {
                   <TableCell>Approved By</TableCell>
                   <TableCell>Approved At</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -457,6 +462,16 @@ const UserRegistrationRequests: React.FC = () => {
                         size="small"
                       />
                     </TableCell>
+                    <TableCell>
+                      <Tooltip title="View Details">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <Visibility />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -477,6 +492,7 @@ const UserRegistrationRequests: React.FC = () => {
                   <TableCell>Rejected At</TableCell>
                   <TableCell>Reason</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -532,6 +548,16 @@ const UserRegistrationRequests: React.FC = () => {
                         size="small"
                       />
                     </TableCell>
+                    <TableCell>
+                      <Tooltip title="View Details">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <Visibility />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -539,6 +565,208 @@ const UserRegistrationRequests: React.FC = () => {
           </TableContainer>
         </TabPanel>
       </Card>
+
+      {/* View Details Dialog */}
+      <Dialog 
+        open={selectedRequest !== null && actionDialog === null} 
+        onClose={() => setSelectedRequest(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Registration Request Details
+        </DialogTitle>
+        <DialogContent>
+          {selectedRequest && (
+            <Box sx={{ mt: 1 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Full Name
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedRequest.firstName} {selectedRequest.lastName}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Email
+                  </Typography>
+                  <Box display="flex" alignItems="center">
+                    <Email sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                    <Typography variant="body1">
+                      {selectedRequest.email}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                {selectedRequest.phoneNumber && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Phone Number
+                    </Typography>
+                    <Box display="flex" alignItems="center">
+                      <Phone sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                      <Typography variant="body1">
+                        {selectedRequest.phoneNumber}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
+
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Requested Role
+                  </Typography>
+                  <Chip 
+                    label={getRoleDisplayName(selectedRequest.requestedRole)} 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Status
+                  </Typography>
+                  <Chip 
+                    label={selectedRequest.status} 
+                    color={getStatusColor(selectedRequest.status) as any}
+                    size="small"
+                  />
+                </Grid>
+
+                {selectedRequest.hospital && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Hospital
+                    </Typography>
+                    <Box display="flex" alignItems="center">
+                      <Business sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                      <Box>
+                        <Typography variant="body1">{selectedRequest.hospital.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ID: {selectedRequest.hospital.id}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                )}
+
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Requested Date
+                  </Typography>
+                  <Box display="flex" alignItems="center">
+                    <Schedule sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                    <Box>
+                      <Typography variant="body1">
+                        {new Date(selectedRequest.createdAt).toLocaleDateString()}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(selectedRequest.createdAt).toLocaleTimeString()}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                {selectedRequest.reviewedAt && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      {selectedRequest.status === 'APPROVED' ? 'Approved' : 'Rejected'} Date
+                    </Typography>
+                    <Box>
+                      <Typography variant="body1">
+                        {new Date(selectedRequest.reviewedAt).toLocaleDateString()}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(selectedRequest.reviewedAt).toLocaleTimeString()}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
+
+                {selectedRequest.reviewer && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      {selectedRequest.status === 'APPROVED' ? 'Approved' : 'Rejected'} By
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedRequest.reviewer.firstName} {selectedRequest.reviewer.lastName}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {selectedRequest.reviewer.email}
+                    </Typography>
+                  </Grid>
+                )}
+
+                {selectedRequest.justification && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Justification
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: 'background.default', 
+                      borderRadius: 1,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}>
+                      {selectedRequest.justification}
+                    </Typography>
+                  </Grid>
+                )}
+
+                {selectedRequest.adminComments && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Admin Comments
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      p: 2, 
+                      bgcolor: selectedRequest.status === 'REJECTED' ? 'error.light' : 'success.light',
+                      borderRadius: 1,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}>
+                      {selectedRequest.adminComments}
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedRequest(null)}>
+            Close
+          </Button>
+          {selectedRequest?.status === 'PENDING' && (
+            <>
+              <Button 
+                onClick={() => {
+                  setActionDialog('approve');
+                }}
+                color="success"
+                variant="contained"
+              >
+                Approve
+              </Button>
+              <Button 
+                onClick={() => {
+                  setActionDialog('reject');
+                }}
+                color="error"
+                variant="contained"
+              >
+                Reject
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
 
       {/* Action Dialog */}
       <Dialog 

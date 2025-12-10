@@ -36,10 +36,12 @@ import {
   Business,
   Delete,
 } from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
 import { userManagementService, User, UpdateUserDto } from '../../../services/userManagementService';
 import { userRegistrationService, Hospital } from '../../../services/userRegistrationService';
 
 const UserManagement: React.FC = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +62,7 @@ const UserManagement: React.FC = () => {
   const [editData, setEditData] = useState<UpdateUserDto>({});
   const [editLoading, setEditLoading] = useState(false);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [editErrors, setEditErrors] = useState<{ [key: string]: string }>({});
   
   // Delete user state
   const [deleteDialog, setDeleteDialog] = useState(false);
@@ -86,7 +89,6 @@ const UserManagement: React.FC = () => {
       setTotalPages(response.pages);
     } catch (err: any) {
       setError('Failed to load users');
-      console.error('Error loading users:', err);
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,7 @@ const UserManagement: React.FC = () => {
         const hospitalsData = await userRegistrationService.getHospitals();
         setHospitals(hospitalsData);
       } catch (err) {
-        console.error('Failed to fetch hospitals:', err);
+        // Failed to fetch hospitals
       }
     };
 
@@ -205,20 +207,54 @@ const UserManagement: React.FC = () => {
     setEditDialog(true);
   };
 
+  const validateEditForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
+    if (!editData.firstName || editData.firstName.trim() === '') {
+      errors.firstName = 'First name is required';
+    } else if (editData.firstName.length < 2) {
+      errors.firstName = 'First name must be at least 2 characters long';
+    } else if (editData.firstName.length > 50) {
+      errors.firstName = 'First name must not exceed 50 characters';
+    }
+
+    if (!editData.lastName || editData.lastName.trim() === '') {
+      errors.lastName = 'Last name is required';
+    } else if (editData.lastName.length < 2) {
+      errors.lastName = 'Last name must be at least 2 characters long';
+    } else if (editData.lastName.length > 50) {
+      errors.lastName = 'Last name must not exceed 50 characters';
+    }
+
+    if (!editData.role || editData.role === '') {
+      errors.role = 'Role is required';
+    }
+
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleUpdateUser = async () => {
     if (!editUser) return;
+
+    if (!validateEditForm()) {
+      setError('Please fix the validation errors before submitting');
+      return;
+    }
 
     try {
       setEditLoading(true);
       setError(null);
+      setEditErrors({});
 
       await userManagementService.updateUser(editUser.id, editData);
       
       setEditDialog(false);
       setEditUser(null);
       setEditData({});
+      setEditErrors({});
       loadUsers(); // Refresh users list
-      alert('User updated successfully!');
+      enqueueSnackbar('User updated successfully!', { variant: 'success' });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update user');
     } finally {
@@ -230,6 +266,7 @@ const UserManagement: React.FC = () => {
     setEditDialog(false);
     setEditUser(null);
     setEditData({});
+    setEditErrors({});
     setError(null);
   };
 
@@ -597,20 +634,36 @@ const UserManagement: React.FC = () => {
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
+                required
                 fullWidth
                 label="First Name"
                 value={editData.firstName || ''}
-                onChange={(e) => setEditData({...editData, firstName: e.target.value})}
+                onChange={(e) => {
+                  setEditData({...editData, firstName: e.target.value});
+                  if (editErrors.firstName) {
+                    setEditErrors({...editErrors, firstName: ''});
+                  }
+                }}
                 disabled={editLoading}
+                error={!!editErrors.firstName}
+                helperText={editErrors.firstName}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
+                required
                 fullWidth
                 label="Last Name"
                 value={editData.lastName || ''}
-                onChange={(e) => setEditData({...editData, lastName: e.target.value})}
+                onChange={(e) => {
+                  setEditData({...editData, lastName: e.target.value});
+                  if (editErrors.lastName) {
+                    setEditErrors({...editErrors, lastName: ''});
+                  }
+                }}
                 disabled={editLoading}
+                error={!!editErrors.lastName}
+                helperText={editErrors.lastName}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -623,11 +676,16 @@ const UserManagement: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
+              <FormControl fullWidth required error={!!editErrors.role}>
                 <InputLabel>Role</InputLabel>
                 <Select
                   value={editData.role || ''}
-                  onChange={(e) => setEditData({...editData, role: e.target.value})}
+                  onChange={(e) => {
+                    setEditData({...editData, role: e.target.value});
+                    if (editErrors.role) {
+                      setEditErrors({...editErrors, role: ''});
+                    }
+                  }}
                   disabled={editLoading}
                   label="Role"
                 >
@@ -638,6 +696,11 @@ const UserManagement: React.FC = () => {
                   <MenuItem value="CATH_LAB_USER">Cath Lab User</MenuItem>
                   <MenuItem value="HOSPITAL_USER">Hospital User</MenuItem>
                 </Select>
+                {editErrors.role && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                    {editErrors.role}
+                  </Typography>
+                )}
               </FormControl>
             </Grid>
             <Grid item xs={12}>
