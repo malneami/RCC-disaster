@@ -1,7 +1,6 @@
 import { FilterField } from '../../../components/Common/FilterComponents';
-import { Hospital } from '../../../services/hospitalService';
 
-export const createPatientFilterFields = (hospitals: Hospital[]): FilterField[] => [
+export const createPatientFilterFields = (): FilterField[] => [
   {
     key: 'gender',
     label: 'Gender',
@@ -23,7 +22,6 @@ export const createPatientFilterFields = (hospitals: Hospital[]): FilterField[] 
       { value: 'MARRIED', label: 'Married' },
       { value: 'DIVORCED', label: 'Divorced' },
       { value: 'WIDOWED', label: 'Widowed' },
-      { value: 'SEPARATED', label: 'Separated' },
       { value: 'UNKNOWN', label: 'Unknown' },
     ],
     gridSize: 6,
@@ -69,16 +67,6 @@ export const createPatientFilterFields = (hospitals: Hospital[]): FilterField[] 
     label: 'Created To',
     type: 'date',
     gridSize: 6,
-  },
-  {
-    key: 'hospitalId',
-    label: 'Hospital',
-    type: 'select',
-    options: hospitals.map(hospital => ({
-      value: hospital.id,
-      label: hospital.name,
-    })),
-    gridSize: 12,
   },
   {
     key: 'hasInsurance',

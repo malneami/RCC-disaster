@@ -15,12 +15,22 @@ import NationalIdInput from '../../../../components/Common/NationalIdInput';
 interface PersonalInfoStepProps {
   formData: CreatePatientData;
   onDataChange: (data: Partial<CreatePatientData>) => void;
+  onFieldBlur?: (field: string) => void;
+  validationErrors?: Record<string, string>;
+  touched?: Record<string, boolean>;
   onViewDuplicate?: (patient: Patient) => void;
   onPatientSelected?: (patient: Patient) => void; // New callback for when patient is selected from suggestions
   isEditing?: boolean; // Add this prop to indicate if we're editing
 }
 
-const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataChange, onPatientSelected }) => {
+const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ 
+  formData, 
+  onDataChange, 
+  onFieldBlur,
+  validationErrors = {},
+  touched = {},
+  onPatientSelected 
+}) => {
   const handleChange = (field: keyof CreatePatientData, value: any) => {
     onDataChange({ [field]: value });
   };
@@ -83,7 +93,13 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
             label="First Name"
             value={formData.firstName || ''}
             onChange={(e) => handleChange('firstName', e.target.value)}
+            onBlur={() => onFieldBlur?.('firstName')}
             required
+            error={touched.firstName && !!validationErrors.firstName}
+            helperText={touched.firstName && validationErrors.firstName ? validationErrors.firstName : ''}
+            FormHelperTextProps={{
+              sx: { color: 'error.main' }
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -92,7 +108,13 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
             label="Last Name"
             value={formData.lastName || ''}
             onChange={(e) => handleChange('lastName', e.target.value)}
+            onBlur={() => onFieldBlur?.('lastName')}
             required
+            error={touched.lastName && !!validationErrors.lastName}
+            helperText={touched.lastName && validationErrors.lastName ? validationErrors.lastName : ''}
+            FormHelperTextProps={{
+              sx: { color: 'error.main' }
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -110,8 +132,14 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
             type="number"
             value={formData.age || ''}
             onChange={(e) => handleChange('age', parseInt(e.target.value) || undefined)}
+            onBlur={() => onFieldBlur?.('age')}
             inputProps={{ min: 0, max: 150 }}
             required
+            error={touched.age && !!validationErrors.age}
+            helperText={touched.age && validationErrors.age ? validationErrors.age : ''}
+            FormHelperTextProps={{
+              sx: { color: 'error.main' }
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -149,8 +177,11 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ formData, onDataCha
             value={formData.nationalId || ''}
             onChange={(value) => handleChange('nationalId', value)}
             onPatientSelect={handlePatientSelect}
+            onBlur={() => onFieldBlur?.('nationalId')}
             label="National ID"
             required
+            error={touched.nationalId && !!validationErrors.nationalId}
+            helperText={touched.nationalId && validationErrors.nationalId ? validationErrors.nationalId : ''}
             portalType="patient"
           />
         </Grid>

@@ -71,13 +71,88 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Initialize form with patient data if editing
   useEffect(() => {
     if (open) {
       setFormData(initializeFormData(patient));
+      setValidationErrors({});
+      setTouched({});
     }
   }, [patient, open]);
+
+  const validateField = (field: string, value: any): string => {
+    switch (field) {
+      case 'firstName':
+        return !value || value.trim() === '' ? 'First name is required' : '';
+      case 'lastName':
+        return !value || value.trim() === '' ? 'Last name is required' : '';
+      case 'age':
+        return !value || value === undefined || value === null ? 'Age is required' : '';
+      case 'nationalId':
+        if (!value || value.trim() === '') {
+          return 'National ID is required';
+        }
+        // Check if National ID contains only numbers
+        const nationalIdStr = String(value).trim();
+        if (!/^\d+$/.test(nationalIdStr)) {
+          return 'National ID must contain only numbers';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  // Validate Personal Info step (first step)
+  const validatePersonalInfoStep = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    const firstNameError = validateField('firstName', formData.firstName);
+    if (firstNameError) errors.firstName = firstNameError;
+    
+    const lastNameError = validateField('lastName', formData.lastName);
+    if (lastNameError) errors.lastName = lastNameError;
+    
+    const ageError = validateField('age', formData.age);
+    if (ageError) errors.age = ageError;
+
+    const nationalIdError = validateField('nationalId', formData.nationalId);
+    if (nationalIdError) errors.nationalId = nationalIdError;
+
+    // Mark all Personal Info fields as touched
+    setTouched(prev => ({
+      ...prev,
+      firstName: true,
+      lastName: true,
+      age: true,
+      nationalId: true,
+    }));
+
+    setValidationErrors(prev => ({ ...prev, ...errors }));
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    const firstNameError = validateField('firstName', formData.firstName);
+    if (firstNameError) errors.firstName = firstNameError;
+    
+    const lastNameError = validateField('lastName', formData.lastName);
+    if (lastNameError) errors.lastName = lastNameError;
+    
+    const ageError = validateField('age', formData.age);
+    if (ageError) errors.age = ageError;
+
+    const nationalIdError = validateField('nationalId', formData.nationalId);
+    if (nationalIdError) errors.nationalId = nationalIdError;
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleDataChange = (newData: Partial<CreatePatientData>) => {
     setFormData(prev => ({
@@ -85,20 +160,46 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
       ...newData,
     }));
     
+    // Clear validation errors for changed fields
+    const updatedErrors = { ...validationErrors };
+    Object.keys(newData).forEach(key => {
+      if (updatedErrors[key]) {
+        delete updatedErrors[key];
+      }
+    });
+    setValidationErrors(updatedErrors);
+    
     if (error) {
       setError(null);
     }
   };
 
+  const handleFieldBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, formData[field as keyof CreatePatientData]);
+    if (error) {
+      setValidationErrors(prev => ({ ...prev, [field]: error }));
+    } else {
+      setValidationErrors(prev => {
+        const updated = { ...prev };
+        delete updated[field];
+        return updated;
+      });
+    }
+  };
+
   const handleComplete = async () => {
+    // Mark all required fields as touched
+    setTouched({ firstName: true, lastName: true, age: true, nationalId: true });
+    
+    if (!validateForm()) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-
-      if (!formData.firstName || !formData.lastName || !formData.age) {
-        setError('First name, last name, and age are required.');
-        return;
-      }
 
       const submitData = {
         ...formData,
@@ -124,7 +225,11 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
     formData,
     loading,
     error,
+    validationErrors,
+    touched,
     handleDataChange,
+    handleFieldBlur,
     handleComplete,
+    validatePersonalInfoStep,
   };
 };

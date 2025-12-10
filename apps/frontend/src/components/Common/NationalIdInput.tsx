@@ -14,6 +14,7 @@ interface NationalIdInputProps {
   value: string;
   onChange: (value: string) => void;
   onPatientSelect?: (patient: Patient) => void;
+  onBlur?: () => void;
   label?: string;
   required?: boolean;
   error?: boolean;
@@ -25,6 +26,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   value,
   onChange,
   onPatientSelect,
+  onBlur,
   label = "National ID",
   required = false,
   error = false,
@@ -174,7 +176,9 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
         }
         value={value}
         onInputChange={(_, newInputValue) => {
-          onChange(newInputValue);
+          // Only allow numeric input
+          const numericValue = newInputValue.replace(/\D/g, '');
+          onChange(numericValue);
         }}
         onChange={(_, newValue) => {
           if (typeof newValue === 'object' && newValue) {
@@ -195,6 +199,15 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
             required={required}
             error={error}
             helperText={helperText}
+            onBlur={onBlur}
+            inputProps={{
+              ...params.inputProps,
+              inputMode: 'numeric',
+              pattern: '[0-9]*',
+            }}
+            FormHelperTextProps={{
+              sx: { color: error ? 'error.main' : undefined }
+            }}
             InputProps={{
               ...params.InputProps,
               endAdornment: (

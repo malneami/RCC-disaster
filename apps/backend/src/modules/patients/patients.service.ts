@@ -13,15 +13,20 @@ export class PatientsService {
     const whereClause: any = { deletedAt: null };
 
     if (filters) {
-      // Search filter
+      // Build AND conditions array for proper filter combination
+      const andConditions: any[] = [];
+
+      // Search filter - creates OR condition that should be ANDed with other filters
       if (filters.search) {
-        whereClause.OR = [
-          { firstName: { contains: filters.search, mode: 'insensitive' } },
-          { lastName: { contains: filters.search, mode: 'insensitive' } },
-          { mrn: { contains: filters.search, mode: 'insensitive' } },
-          { nationalId: { contains: filters.search, mode: 'insensitive' } },
-          { phoneNumber: { contains: filters.search, mode: 'insensitive' } },
-        ];
+        andConditions.push({
+          OR: [
+            { firstName: { contains: filters.search, mode: 'insensitive' } },
+            { lastName: { contains: filters.search, mode: 'insensitive' } },
+            { mrn: { contains: filters.search, mode: 'insensitive' } },
+            { nationalId: { contains: filters.search, mode: 'insensitive' } },
+            { phoneNumber: { contains: filters.search, mode: 'insensitive' } },
+          ],
+        });
       }
 
       // Gender filter
@@ -48,10 +53,16 @@ export class PatientsService {
       if (filters.startDate || filters.endDate) {
         whereClause.createdAt = {};
         if (filters.startDate) {
-          whereClause.createdAt.gte = new Date(filters.startDate);
+          // Set to start of day in UTC to ensure accurate filtering
+          const startDate = new Date(filters.startDate);
+          startDate.setUTCHours(0, 0, 0, 0);
+          whereClause.createdAt.gte = startDate;
         }
         if (filters.endDate) {
-          whereClause.createdAt.lte = new Date(filters.endDate + 'T23:59:59.999Z');
+          // Set to end of day in UTC to include the entire day
+          const endDate = new Date(filters.endDate);
+          endDate.setUTCHours(23, 59, 59, 999);
+          whereClause.createdAt.lte = endDate;
         }
       }
 
@@ -59,24 +70,30 @@ export class PatientsService {
       if (filters.hasInsurance !== undefined) {
         if (filters.hasInsurance) {
           // Patients with insurance (either provider or number is not null)
-          if (whereClause.OR) {
-            whereClause.OR.push(
+          andConditions.push({
+            OR: [
               { insuranceProvider: { not: null } },
-              { insuranceNumber: { not: null } }
-            );
-          } else {
-            whereClause.OR = [
-              { insuranceProvider: { not: null } },
-              { insuranceNumber: { not: null } }
-            ];
-          }
+              { insuranceNumber: { not: null } },
+            ],
+          });
         } else {
           // Patients without insurance (both provider and number are null)
-          whereClause.AND = [
-            ...(whereClause.AND || []),
-            { insuranceProvider: null },
-            { insuranceNumber: null },
-          ];
+          andConditions.push({
+            AND: [
+              { insuranceProvider: null },
+              { insuranceNumber: null },
+            ],
+          });
+        }
+      }
+
+      // Combine all AND conditions if we have any
+      if (andConditions.length > 0) {
+        // If we already have AND conditions, merge them
+        if (whereClause.AND) {
+          whereClause.AND = [...whereClause.AND, ...andConditions];
+        } else {
+          whereClause.AND = andConditions;
         }
       }
 

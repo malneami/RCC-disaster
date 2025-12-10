@@ -7,14 +7,17 @@ import {
   CardContent,
   Chip,
   Divider,
+  Alert,
 } from '@mui/material';
 import { CreatePatientData } from '../../../../services/patientService';
+import { Info as InfoIcon } from '@mui/icons-material';
 
 interface ReviewStepProps {
   formData: CreatePatientData;
+  isEditing?: boolean;
 }
 
-const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
+const ReviewStep: React.FC<ReviewStepProps> = ({ formData, isEditing = false }) => {
 
   return (
     <Box>
@@ -27,9 +30,9 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
 
       <Grid container spacing={3}>
         {/* Personal Information */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+        <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
+          <Card sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" gutterBottom>
                 Personal Information
               </Typography>
@@ -55,7 +58,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                 <Typography variant="body2" color="text.secondary">National ID</Typography>
                 <Typography variant="body1">{formData.nationalId || 'Not provided'}</Typography>
               </Box>
-              <Box>
+              <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="body2" color="text.secondary">MRN</Typography>
                 <Typography variant="body1">{formData.mrn || 'Not provided'}</Typography>
               </Box>
@@ -63,66 +66,10 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           </Card>
         </Grid>
 
-        {/* Contact Information */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Contact Information
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Phone</Typography>
-                <Typography variant="body1">{formData.phoneNumber || 'Not provided'}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Email</Typography>
-                <Typography variant="body1">{formData.email || 'Not provided'}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Address</Typography>
-                <Typography variant="body1">
-                  {formData.address ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}` : 'Not provided'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">Country</Typography>
-                <Typography variant="body1">{formData.country}</Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Emergency Contact */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Emergency Contact
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Name</Typography>
-                <Typography variant="body1">{formData.emergencyContact || 'Not provided'}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Phone</Typography>
-                <Typography variant="body1">{formData.emergencyPhone || 'Not provided'}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Email</Typography>
-                <Typography variant="body1">{formData.emergencyEmail || 'Not provided'}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">Relationship</Typography>
-                <Typography variant="body1">{formData.emergencyRelationship || 'Not provided'}</Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Medical Information */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+        {/* Medical Information - Moved next to Personal Information */}
+        <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
+          <Card sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" gutterBottom>
                 Medical Information
               </Typography>
@@ -138,13 +85,73 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                 <Typography variant="body2" color="text.secondary">Weight</Typography>
                 <Typography variant="body1">{formData.weight ? `${formData.weight} kg` : 'Not provided'}</Typography>
               </Box>
-              <Box>
+              <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="body2" color="text.secondary">Height</Typography>
                 <Typography variant="body1">{formData.height ? `${formData.height} cm` : 'Not provided'}</Typography>
               </Box>
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Contact Information - Only show in edit mode */}
+        {isEditing && (
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Contact Information
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Phone</Typography>
+                  <Typography variant="body1">{formData.phoneNumber || 'Not provided'}</Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Email</Typography>
+                  <Typography variant="body1">{formData.email || 'Not provided'}</Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Address</Typography>
+                  <Typography variant="body1">
+                    {formData.address ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}` : 'Not provided'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Country</Typography>
+                  <Typography variant="body1">{formData.country}</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
+        {/* Emergency Contact - Only show in edit mode */}
+        {isEditing && (
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Emergency Contact
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Name</Typography>
+                  <Typography variant="body1">{formData.emergencyContact || 'Not provided'}</Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Phone</Typography>
+                  <Typography variant="body1">{formData.emergencyPhone || 'Not provided'}</Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Email</Typography>
+                  <Typography variant="body1">{formData.emergencyEmail || 'Not provided'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Relationship</Typography>
+                  <Typography variant="body1">{formData.emergencyRelationship || 'Not provided'}</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
 
         {/* Insurance & Privacy */}
         <Grid item xs={12}>
@@ -184,6 +191,26 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Note for create mode - Moved below Insurance & Privacy */}
+        {!isEditing && (
+          <Grid item xs={12}>
+            <Alert 
+              icon={<InfoIcon />} 
+              severity="info"
+              sx={{ 
+                bgcolor: 'info.light',
+                '& .MuiAlert-icon': {
+                  color: 'info.main'
+                }
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                Note: If you want to add contact information, go to edit after creating the patient.
+              </Typography>
+            </Alert>
+          </Grid>
+        )}
       </Grid>
 
       <Divider sx={{ my: 3 }} />

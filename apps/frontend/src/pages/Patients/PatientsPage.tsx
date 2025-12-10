@@ -117,7 +117,7 @@ const PatientsPage: React.FC = () => {
     }
   };
 
-  const filterFields = createPatientFilterFields([]);
+  const filterFields = createPatientFilterFields();
 
   const tabsConfig = usePatientTabsContent({
     patients,

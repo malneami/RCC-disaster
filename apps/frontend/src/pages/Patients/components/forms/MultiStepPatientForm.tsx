@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert } from '@mui/material';
 import { Patient, CreatePatientData } from '../../../../services/patientService';
-import MultiStepDialog from '../../../../components/Common/MultiStepDialog';
+import MultiStepDialog, { StepConfig } from '../../../../components/Common/MultiStepDialog';
 import PersonalInfoStep from '../PatientFormSteps/PersonalInfoStep';
 import ContactInfoStep from '../PatientFormSteps/ContactInfoStep';
 import MedicalInfoStep from '../PatientFormSteps/MedicalInfoStep';
@@ -35,7 +35,7 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
     }
   }, [open, patient]);
   
-  const { formData, error, handleDataChange, handleComplete, loading } = usePatientForm({
+  const { formData, error, handleDataChange, handleFieldBlur, handleComplete, loading, validationErrors, touched, validatePersonalInfoStep } = usePatientForm({
     patient: selectedPatient,
     open,
     onPatientCreated,
@@ -51,19 +51,23 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
     formData: CreatePatientData,
     onDataChange: (data: Partial<CreatePatientData>) => void,
     isEditing: boolean
-  ) => {
-    const steps = [
+  ): StepConfig[] => {
+    const steps: StepConfig[] = [
       {
         label: 'Personal Info',
         content: (
           <PersonalInfoStep
             formData={formData}
             onDataChange={onDataChange}
+            onFieldBlur={handleFieldBlur}
+            validationErrors={validationErrors}
+            touched={touched}
             onViewDuplicate={onViewDuplicate}
             onPatientSelected={handlePatientSelected}
             isEditing={isEditing}
           />
         ),
+        validateStep: validatePersonalInfoStep, // Add validation function for this step
       },
     ];
 
@@ -105,6 +109,7 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
         content: (
           <ReviewStep
             formData={formData}
+            isEditing={isEditing}
           />
         ),
       }
