@@ -232,9 +232,9 @@ export class StemiKpiService {
     }).length;
 
     // Primary PCI Success - cases where PCI was successful
-    const kpi6Cases = allCases.filter(c => 
-      c.selectedTreatment === 'PRIMARY_PCI' && c.successful === true
-    ).length;
+    const primaryPciCases = allCases.filter(c => c.selectedTreatment === 'PRIMARY_PCI');
+    const kpi6Cases = primaryPciCases.filter(c => c.successful === true).length;
+    const primaryPciCasesCount = primaryPciCases.length;
 
     // Calculate mortality rate (cases that are not successful)
     const deceasedCases = allCases.filter(c => c.dischargeStatus=== 'DECEASED').length;
@@ -318,7 +318,7 @@ export class StemiKpiService {
         status: allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length > 0 && 
                 (kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length) >= 0.9 ? 'GREEN' : 
                 allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId).length) >= 0.75 ? 'YELLOW' : 'RED',
+                (kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi5: {
         name: 'Door In Door Out ≤30min (Transfer Cases Only)',
@@ -335,11 +335,11 @@ export class StemiKpiService {
       kpi6: {
         name: 'Primary PCI Success',
         target: '≥95%',
-        totalCases,
+        totalCases: primaryPciCasesCount,
         withinTarget: kpi6Cases,
-        percentage: totalCases > 0 ? Math.round((kpi6Cases / totalCases) * 100 * 10) / 10 : 0,
-        status: totalCases > 0 && (kpi6Cases / totalCases) >= 0.95 ? 'GREEN' : 
-                totalCases > 0 && (kpi6Cases / totalCases) >= 0.85 ? 'YELLOW' : 'RED',
+        percentage: primaryPciCasesCount > 0 ? Math.round((kpi6Cases / primaryPciCasesCount) * 100 * 10) / 10 : 0,
+        status: primaryPciCasesCount > 0 && (kpi6Cases / primaryPciCasesCount) >= 0.90 ? 'GREEN' : 
+                primaryPciCasesCount > 0 && (kpi6Cases / primaryPciCasesCount) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi7: {
         name: 'Post-Fibrinolysis Transfer',

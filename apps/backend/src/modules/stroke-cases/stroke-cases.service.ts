@@ -733,9 +733,9 @@ export class StrokeCasesService {
     const kpi1Met = doorToPhysicianCases.filter(c => c.doorToPhysicianMinutes <= 15).length;
     const kpi1Total = doorToPhysicianCases.length;
 
-    // KPI 2: Door to CT Scan ≤ 20 minutes (should be based on doorToCtScanMinutes)
-    const doorToCtCases = cases.filter(c => c.doorToCtScanMinutes !== null && c.doorToCtScanMinutes !== undefined);
-    const kpi2Met = doorToCtCases.filter(c => c.doorToCtScanMinutes <= 20).length;
+    // KPI 2: Door to CT Scan ≤ 20 minutes (based on registrationToCtMinutes)
+    const doorToCtCases = cases.filter(c => c.registrationToCtMinutes !== null && c.registrationToCtMinutes !== undefined);
+    const kpi2Met = doorToCtCases.filter(c => c.registrationToCtMinutes <= 20).length;
     const kpi2Total = doorToCtCases.length;
 
     // KPI 3: Door to Needle ≤ 60 minutes (should be based on doorToNeedleMinutes for ischemic thrombolysis candidates)
@@ -748,15 +748,55 @@ export class StrokeCasesService {
     const kpi3Met = doorToNeedleCases.filter(c => c.doorToNeedleMinutes <= 60).length;
     const kpi3Total = doorToNeedleCases.length;
 
-    // Keep other KPIs as they were
-    const kpi4Met = cases.filter(c => c.metKpi4).length;
-    const kpi5Met = cases.filter(c => c.metKpi5).length;
-    const kpi6Met = cases.filter(c => c.metKpi6).length;
-    const kpi7Met = cases.filter(c => c.metKpi7).length;
-    const kpi8Met = cases.filter(c => c.metKpi8).length;
-    const kpi9Met = cases.filter(c => c.metKpi9).length;
-    const kpi10Met = cases.filter(c => c.metKpi10).length;
-    const kpi11Met = cases.filter(c => c.metKpi11).length;
+    // KPI 4: Registration to IV thrombolysis ≤60min
+    const thrombolysisCases = cases.filter(c => c.registrationToThrombolysisMinutes !== null && c.registrationToThrombolysisMinutes !== undefined);
+    const kpi4Met = thrombolysisCases.filter(c => c.registrationToThrombolysisMinutes <= 60).length;
+    const kpi4Total = thrombolysisCases.length;
+
+    // KPI 5: IV Thrombolysis rate ≥5% (of ischemic cases)
+    const kpi5Met = thrombolysisCases.length;
+    const kpi5Total = ischemicCases;
+
+    // KPI 6: Admitted to stroke unit ≥80%
+    const kpi6Met = cases.filter(c => c.admittedToStrokeUnit === true).length;
+    const kpi6Total = totalCases;
+
+    // KPI 7: Transfer time ≤20min (no CT) / ≤40min (with CT)
+    const transferCasesWithTiming = cases.filter(c => 
+      c.transferToAnotherHospital === true && 
+      c.transferActivationToDepartureMinutes !== null && 
+      c.transferActivationToDepartureMinutes !== undefined
+    );
+    const kpi7Met = transferCasesWithTiming.filter(c => {
+      const minutes = c.transferActivationToDepartureMinutes;
+      const hasCt = c.timeOfCtScanStart !== null && c.timeOfCtScanStart !== undefined;
+      return (!hasCt && minutes <= 20) || (hasCt && minutes <= 40);
+    }).length;
+    const kpi7Total = transferCasesWithTiming.length;
+
+    // KPI 8: Registration to mechanical thrombectomy ≤120min
+    const thrombectomyCases = cases.filter(c => 
+      c.registrationToMechanicalThrombectomyMinutes !== null && 
+      c.registrationToMechanicalThrombectomyMinutes !== undefined
+    );
+    const kpi8Met = thrombectomyCases.filter(c => c.registrationToMechanicalThrombectomyMinutes <= 120).length;
+    const kpi8Total = thrombectomyCases.length;
+
+    // KPI 9: SRCA call to arrival ≤60min
+    const srcaCases = cases.filter(c => 
+      c.srcaCallToArrivalMinutes !== null && 
+      c.srcaCallToArrivalMinutes !== undefined
+    );
+    const kpi9Met = srcaCases.filter(c => c.srcaCallToArrivalMinutes <= 60).length;
+    const kpi9Total = srcaCases.length;
+
+    // KPI 10: Swallowing screening within 4 hours ≥85%
+    const kpi10Met = cases.filter(c => c.swallowingScreeningWithin4Hours === true).length;
+    const kpi10Total = totalCases;
+
+    // KPI 11: 3-month follow-up ≥80%
+    const kpi11Met = cases.filter(c => c.followUpCallCompleted === true).length;
+    const kpi11Total = totalCases;
 
     const avgDoorToPhysician = this.calculateAverage(cases.map(c => c.doorToPhysicianMinutes).filter(v => v !== null && v !== undefined));
     const avgDoorToCtScan = this.calculateAverage(cases.map(c => c.doorToCtScanMinutes).filter(v => v !== null && v !== undefined));
@@ -790,14 +830,14 @@ export class StrokeCasesService {
         kpi1: { met: kpi1Met, total: kpi1Total, percentage: kpi1Total > 0 ? (kpi1Met / kpi1Total) * 100 : 0 },
         kpi2: { met: kpi2Met, total: kpi2Total, percentage: kpi2Total > 0 ? (kpi2Met / kpi2Total) * 100 : 0 },
         kpi3: { met: kpi3Met, total: kpi3Total, percentage: kpi3Total > 0 ? (kpi3Met / kpi3Total) * 100 : 0 },
-        kpi4: { met: kpi4Met, total: totalCases, percentage: totalCases > 0 ? (kpi4Met / totalCases) * 100 : 0 },
-        kpi5: { met: kpi5Met, total: totalCases, percentage: totalCases > 0 ? (kpi5Met / totalCases) * 100 : 0 },
-        kpi6: { met: kpi6Met, total: totalCases, percentage: totalCases > 0 ? (kpi6Met / totalCases) * 100 : 0 },
-        kpi7: { met: kpi7Met, total: totalCases, percentage: totalCases > 0 ? (kpi7Met / totalCases) * 100 : 0 },
-        kpi8: { met: kpi8Met, total: totalCases, percentage: totalCases > 0 ? (kpi8Met / totalCases) * 100 : 0 },
-        kpi9: { met: kpi9Met, total: totalCases, percentage: totalCases > 0 ? (kpi9Met / totalCases) * 100 : 0 },
-        kpi10: { met: kpi10Met, total: totalCases, percentage: totalCases > 0 ? (kpi10Met / totalCases) * 100 : 0 },
-        kpi11: { met: kpi11Met, total: totalCases, percentage: totalCases > 0 ? (kpi11Met / totalCases) * 100 : 0 },
+        kpi4: { met: kpi4Met, total: kpi4Total, percentage: kpi4Total > 0 ? (kpi4Met / kpi4Total) * 100 : 0 },
+        kpi5: { met: kpi5Met, total: kpi5Total, percentage: kpi5Total > 0 ? (kpi5Met / kpi5Total) * 100 : 0 },
+        kpi6: { met: kpi6Met, total: kpi6Total, percentage: kpi6Total > 0 ? (kpi6Met / kpi6Total) * 100 : 0 },
+        kpi7: { met: kpi7Met, total: kpi7Total, percentage: kpi7Total > 0 ? (kpi7Met / kpi7Total) * 100 : 0 },
+        kpi8: { met: kpi8Met, total: kpi8Total, percentage: kpi8Total > 0 ? (kpi8Met / kpi8Total) * 100 : 0 },
+        kpi9: { met: kpi9Met, total: kpi9Total, percentage: kpi9Total > 0 ? (kpi9Met / kpi9Total) * 100 : 0 },
+        kpi10: { met: kpi10Met, total: kpi10Total, percentage: kpi10Total > 0 ? (kpi10Met / kpi10Total) * 100 : 0 },
+        kpi11: { met: kpi11Met, total: kpi11Total, percentage: kpi11Total > 0 ? (kpi11Met / kpi11Total) * 100 : 0 },
       },
       averageTimings: {
         doorToPhysician: avgDoorToPhysician,
@@ -1061,9 +1101,14 @@ export class StrokeCasesService {
         doorToNeedleMinutes: true,
         registrationToCtMinutes: true,
         registrationToThrombolysisMinutes: true,
+        registrationToMechanicalThrombectomyMinutes: true,
         srcaCallToArrivalMinutes: true,
         transferActivationToDepartureMinutes: true,
+        transferToAnotherHospital: true,
+        admittedToStrokeUnit: true,
         swallowingScreeningWithin4Hours: true,
+        followUpCallCompleted: true,
+        timeOfCtScanStart: true,
         ivThrombolysisGiven: true,
         modifiedRankinScaleAt90Days: true,
       },

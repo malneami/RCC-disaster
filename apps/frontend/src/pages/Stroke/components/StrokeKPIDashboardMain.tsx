@@ -294,10 +294,14 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
               kpi1: { name: 'Door to Physician', description: 'Time from arrival to physician assessment ≤15 min', target: 15, category: 'Timing' },
               kpi2: { name: 'Door to CT Scan', description: 'Time from arrival to CT scan ≤20 min', target: 20, category: 'Timing' },
               kpi3: { name: 'Door to Needle', description: 'Time from arrival to thrombolysis ≤60 min', target: 60, category: 'Treatment' },
-              kpi4: { name: 'Door to Mechanical Thrombectomy', description: 'Time from arrival to thrombectomy ≤120 min', target: 120, category: 'Treatment' },
-              kpi5: { name: 'Stroke Unit Admission', description: 'Admission to stroke unit ≤24 hours', target: 24, category: 'Care' },
-              kpi6: { name: 'Door to CT Report', description: 'Time from arrival to CT report availability ≤30 min', target: 30, category: 'Timing' },
+              kpi4: { name: 'Registration to IV Thrombolysis', description: 'Time from registration to IV thrombolysis ≤60 min', target: 60, category: 'Treatment' },
+              kpi5: { name: 'IV Thrombolysis Rate', description: 'Proportion of ischemic stroke patients who received IV thrombolysis ≥5%', target: 5, category: 'Treatment' },
+              kpi6: { name: 'Stroke Unit Admission', description: 'Admission to stroke unit ≥80%', target: 80, category: 'Care' },
+              kpi7: { name: 'Transfer Time', description: 'Transfer time ≤20min (no CT) / ≤40min (with CT)', target: 40, category: 'Transfer' },
+              kpi8: { name: 'Door to Mechanical Thrombectomy', description: 'Time from arrival to thrombectomy ≤120 min', target: 120, category: 'Treatment' },
+              kpi9: { name: 'SRCA Call to Arrival', description: 'Time from SRCA call to hospital arrival ≤60 min', target: 60, category: 'Transfer' },
               kpi10: { name: 'Swallowing Pass Rate', description: 'Percentage of patients who passed swallowing screening ≥85%', target: 85, category: 'Assessment' },
+              kpi11: { name: '3-Month Follow-up', description: 'Percentage of patients with 3-month follow-up ≥80%', target: 80, category: 'Follow-up' },
             };
             
             const kpiInfo = kpiNames[kpiId];

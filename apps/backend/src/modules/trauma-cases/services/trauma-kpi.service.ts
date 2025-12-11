@@ -55,6 +55,7 @@ export class TraumaKpiService {
         glasgowComaScale: true,
         criticalCase: true,
         transferCase: true,
+        transferDurationMinutes: true,
         edDisposition: true,
         createdAt: true,
       },
@@ -82,6 +83,23 @@ export class TraumaKpiService {
 
     const averageGlasgowScore = glasgowScores.length > 0 
       ? glasgowScores.reduce((sum, score) => (sum || 0) + (score || 0), 0) / glasgowScores.length 
+      : 0;
+
+    // Calculate Response Time KPI (≤15min)
+    const responseTimePass = responseTimes.filter(time => time <= 15).length;
+    const responseTimeKpiPercentage = responseTimes.length > 0 
+      ? (responseTimePass / responseTimes.length) * 100 
+      : 0;
+
+    // Calculate Transfer Time KPI (≤60min) - need transfer duration data
+    const transferTimeCases = allCases
+      .filter(c => c.transferCase && c.transferDurationMinutes !== null && c.transferDurationMinutes !== undefined)
+      .map(c => c.transferDurationMinutes)
+      .filter((time): time is number => time !== null && time !== undefined && time > 0);
+    
+    const transferTimePass = transferTimeCases.filter(time => time <= 60).length;
+    const transferTimeKpiPercentage = transferTimeCases.length > 0 
+      ? (transferTimePass / transferTimeCases.length) * 100 
       : 0;
 
     // Calculate rates
@@ -115,6 +133,16 @@ export class TraumaKpiService {
       transferRate: Math.round(transferRate * 10) / 10, // Round to 1 decimal
       casesThisMonth,
       casesThisWeek,
+      responseTimeKPI: {
+        percentage: Math.round(responseTimeKpiPercentage * 10) / 10,
+        withinTarget: responseTimePass,
+        totalCases: responseTimes.length,
+      },
+      transferTimeKPI: {
+        percentage: Math.round(transferTimeKpiPercentage * 10) / 10,
+        withinTarget: transferTimePass,
+        totalCases: transferTimeCases.length,
+      },
     };
   }
 }
