@@ -3,7 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateStrokeCaseDto } from './dto/create-stroke-case.dto';
 import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
 import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
-import { StrokeCase, StrokeStatus, StrokeType, TicketPriority, TicketPathway, PatientGender } from '@prisma/client';
+import { StrokeCase, StrokeStatus, StrokeType, StrokeModeOfArrival, TicketPriority, TicketPathway, PatientGender } from '@prisma/client';
 import { PatientMergeService } from '../patients/patient-merge.service';
 import { StrokeKPICalculatorService } from './services/stroke-kpi-calculator.service';
 
@@ -407,35 +407,14 @@ export class StrokeCasesService {
 
   async findAll(filters?: {
     hospitalId?: string;
+    originHospitalId?: string;
+    destinationHospitalId?: string;
     strokeType?: StrokeType;
     status?: StrokeStatus;
     dateFrom?: Date;
     dateTo?: Date;
   }): Promise<StrokeCase[]> {
-    const where: any = {
-      deletedAt: null,
-    };
-
-    if (filters?.hospitalId) {
-      where.OR = [
-        { originHospitalId: filters.hospitalId },
-        { destinationHospitalId: filters.hospitalId },
-      ];
-    }
-
-    if (filters?.strokeType) {
-      where.strokeType = filters.strokeType;
-    }
-
-    if (filters?.status) {
-      where.currentStatus = filters.status;
-    }
-
-    if (filters?.dateFrom || filters?.dateTo) {
-      where.createdAt = {};
-      if (filters.dateFrom) where.createdAt.gte = filters.dateFrom;
-      if (filters.dateTo) where.createdAt.lte = filters.dateTo;
-    }
+    const where = this.buildFindAllWhereClause(filters);
 
     return this.prisma.strokeCase.findMany({
       where,
@@ -485,6 +464,185 @@ export class StrokeCasesService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /**
+   * Paginated variant of findAll used by portals
+   */
+  async findAllPaginated(
+    filters: {
+      hospitalId?: string;
+      originHospitalId?: string;
+      destinationHospitalId?: string;
+      strokeType?: StrokeType;
+      status?: StrokeStatus;
+      modeOfArrival?: StrokeModeOfArrival;
+      dateFrom?: Date;
+      dateTo?: Date;
+      search?: string;
+    } = {},
+    limit = 10,
+    offset = 0,
+  ): Promise<{
+    cases: StrokeCase[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const where = this.buildFindAllWhereClause(filters);
+
+    // Total count for pagination
+    const total = await this.prisma.strokeCase.count({ where });
+
+    const cases = await this.prisma.strokeCase.findMany({
+      where,
+      include: {
+        ticket: {
+          select: {
+            id: true,
+            ticketNumber: true,
+            pathway: true,
+            status: true,
+          },
+        },
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            mrn: true,
+            age: true,
+            gender: true,
+            phoneNumber: true,
+            email: true,
+          },
+        },
+        originHospital: {
+          select: {
+            id: true,
+            name: true,
+            hasStrokeUnit: true,
+          },
+        },
+        destinationHospital: {
+          select: {
+            id: true,
+            name: true,
+            hasStrokeUnit: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limit,
+    });
+
+    return {
+      cases,
+      total,
+      page: Math.floor(offset / limit) + 1,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Shared where-clause builder for findAll and findAllPaginated.
+   */
+  private buildFindAllWhereClause(filters?: {
+    hospitalId?: string;
+    originHospitalId?: string;
+    destinationHospitalId?: string;
+    strokeType?: StrokeType;
+    status?: StrokeStatus;
+    modeOfArrival?: StrokeModeOfArrival;
+    dateFrom?: Date;
+    dateTo?: Date;
+    search?: string;
+  }) {
+    const where: any = {
+      deletedAt: null,
+    };
+
+    if (filters?.hospitalId) {
+      where.OR = [
+        { originHospitalId: filters.hospitalId },
+        { destinationHospitalId: filters.hospitalId },
+      ];
+    }
+
+    if (filters?.originHospitalId) {
+      where.originHospitalId = filters.originHospitalId;
+    }
+
+    if (filters?.destinationHospitalId) {
+      where.destinationHospitalId = filters.destinationHospitalId;
+    }
+
+    if (filters?.strokeType) {
+      where.strokeType = filters.strokeType;
+    }
+
+    if (filters?.status) {
+      where.currentStatus = filters.status;
+    }
+
+    if (filters?.modeOfArrival) {
+      where.modeOfArrival = filters.modeOfArrival;
+    }
+
+    if (filters?.dateFrom || filters?.dateTo) {
+      // Use timeOfTriage for date range filtering to better reflect clinical workflow
+      where.timeOfTriage = {};
+
+      if (filters.dateFrom) {
+        // Ensure "from" date is treated as start of day (>= YYYY-MM-DD 00:00:00)
+        const from = new Date(filters.dateFrom);
+        from.setHours(0, 0, 0, 0);
+        where.timeOfTriage.gte = from;
+      }
+
+      if (filters.dateTo) {
+        // Ensure "to" date is treated as end of day (<= YYYY-MM-DD 23:59:59.999)
+        const to = new Date(filters.dateTo);
+        to.setHours(23, 59, 59, 999);
+        where.timeOfTriage.lte = to;
+      }
+    }
+
+    // Text search on patient name / national ID / MRN
+    if (filters?.search && filters.search.trim()) {
+      const search = filters.search.trim();
+      // Use AND to combine with any existing filters
+      if (!where.AND) {
+        where.AND = [];
+      }
+      where.AND.push({
+        OR: [
+          {
+            patient: {
+              OR: [
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { nationalId: { contains: search, mode: 'insensitive' } },
+                { mrn: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          },
+        ],
+      });
+    }
+
+    return where;
   }
 
   async findOne(id: string): Promise<StrokeCase> {

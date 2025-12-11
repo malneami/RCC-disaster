@@ -241,6 +241,13 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
                 value={formData.modifiedRankinScaleAt90Days || ''}
                 onChange={(e) => updateFormData('modifiedRankinScaleAt90Days', e.target.value as ModifiedRankinScale)}
                 label="Current Modified Rankin Scale"
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 120,
+                    },
+                  },
+                }}
               >
                 <MenuItem value="SCORE_0">Score 0 - No symptoms</MenuItem>
                 <MenuItem value="SCORE_1">Score 1 - No significant disability</MenuItem>

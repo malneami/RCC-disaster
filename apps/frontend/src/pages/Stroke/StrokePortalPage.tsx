@@ -13,7 +13,7 @@ import StrokeOutcomeForm from './components/StrokeOutcomeForm';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import FloatingScrollbar from '../../components/Common/FloatingScrollbar';
-import { StrokeService, StrokeCase, StrokeKPISummary } from '../../services/strokeService';
+import { StrokeService, StrokeCase, StrokeKPISummary, StrokeCaseFilters } from '../../services/strokeService';
 import { StrokeExportService } from './services/strokeExportService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -44,6 +44,7 @@ const StrokePortalPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [strokeCases, setStrokeCases] = useState<StrokeCase[]>([]);
+  const [totalCases, setTotalCases] = useState(0);
   const [kpiSummary, setKpiSummary] = useState<StrokeKPISummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +55,11 @@ const StrokePortalPage: React.FC = () => {
   const [outcomeFormDialogOpen, setOutcomeFormDialogOpen] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [appliedFilters, setAppliedFilters] = useState<StrokeCaseFilters>({});
+  const [hospitals, setHospitals] = useState<Array<{ id: string; name: string }>>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Define portal steps
   const portalSteps: PortalStep[] = [
@@ -64,6 +70,20 @@ const StrokePortalPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
+  }, [page, rowsPerPage, appliedFilters, searchTerm]);
+
+  useEffect(() => {
+    const loadHospitals = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/v1/hospitals');
+        const hospitalsData = await response.json();
+        setHospitals(hospitalsData);
+      } catch (error) {
+        console.error('Error loading hospitals:', error);
+      }
+    };
+
+    loadHospitals();
   }, []);
 
   const convertStrokeCasesToTimelineEvents = (cases: StrokeCase[]): TimelineEvent[] => {
@@ -160,16 +180,29 @@ const StrokePortalPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const [casesData, kpiData] = await Promise.all([
-        StrokeService.getStrokeCases(),
+      const [casesResponse, kpiData] = await Promise.all([
+        StrokeService.getStrokeCasesPaginated({
+          hospitalId: appliedFilters.hospitalId,
+          originHospitalId: appliedFilters.originHospitalId,
+          destinationHospitalId: appliedFilters.destinationHospitalId,
+          strokeType: appliedFilters.strokeType,
+          status: appliedFilters.status,
+          modeOfArrival: appliedFilters.modeOfArrival,
+          dateFrom: appliedFilters.dateFrom,
+          dateTo: appliedFilters.dateTo,
+          search: searchTerm || undefined,
+          limit: rowsPerPage,
+          offset: page * rowsPerPage,
+        }),
         StrokeService.getKPISummary()
       ]);
 
-      setStrokeCases(casesData);
+      setStrokeCases(casesResponse.cases);
+      setTotalCases(casesResponse.total);
       setKpiSummary(kpiData);
       
       // Convert stroke cases to timeline events
-      const events = convertStrokeCasesToTimelineEvents(casesData);
+      const events = convertStrokeCasesToTimelineEvents(casesResponse.cases);
       setTimelineEvents(events);
     } catch (err) {
       setError('Failed to load stroke portal data');
@@ -181,6 +214,39 @@ const StrokePortalPage: React.FC = () => {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+  };
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
+    setRowsPerPage(newRowsPerPage);
+    setPage(0);
+  };
+
+  const handleFiltersApplied = (filters: {
+    strokeType: string;
+    status: string;
+    originHospitalId: string;
+    destinationHospitalId: string;
+    modeOfArrival: string;
+    dateFrom: string;
+    dateTo: string;
+  }) => {
+    const nextFilters: StrokeCaseFilters = {
+      originHospitalId: filters.originHospitalId || undefined,
+      destinationHospitalId: filters.destinationHospitalId || undefined,
+      strokeType: (filters.strokeType as any) || undefined,
+      status: (filters.status as any) || undefined,
+      modeOfArrival: (filters.modeOfArrival as any) || undefined,
+      dateFrom: filters.dateFrom || undefined,
+      dateTo: filters.dateTo || undefined,
+    };
+
+    setAppliedFilters(nextFilters);
+    setPage(0);
   };
 
   const handleCreateCase = async (data: any) => {
@@ -364,6 +430,27 @@ const StrokePortalPage: React.FC = () => {
               onAddCaseNote={handleAddCaseNote}
               isAdmin={isAdmin}
               onViewModeChange={setViewMode}
+              totalCount={totalCases}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              onFiltersApplied={handleFiltersApplied}
+              hospitals={hospitals}
+              appliedFilters={{
+                strokeType: appliedFilters.strokeType || '',
+                status: appliedFilters.status || '',
+                originHospitalId: appliedFilters.originHospitalId || '',
+                destinationHospitalId: appliedFilters.destinationHospitalId || '',
+                modeOfArrival: (appliedFilters as any).modeOfArrival || '',
+                dateFrom: appliedFilters.dateFrom || '',
+                dateTo: appliedFilters.dateTo || '',
+              }}
+              searchValue={searchTerm}
+              onSearchChange={(value) => {
+                setSearchTerm(value);
+                setPage(0);
+              }}
             />
           ) : (
             <StrokeCasesCards

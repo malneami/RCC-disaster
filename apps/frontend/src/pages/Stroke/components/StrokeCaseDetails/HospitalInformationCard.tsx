@@ -8,7 +8,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHospital } from '@fortawesome/free-solid-svg-icons';
 
-import { StrokeCase } from '../../../../services/strokeService';
+import { StrokeCase, StrokeService } from '../../../../services/strokeService';
 
 interface HospitalInformationCardProps {
   strokeCase: StrokeCase;
@@ -63,6 +63,14 @@ const HospitalInformationCard: React.FC<HospitalInformationCardProps> = ({
             {strokeCase.originHospital?.hasThrombectomy ? 'Yes' : 'No'}
           </Typography>
         </Box>
+        {strokeCase.modeOfArrival && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">Mode of Arrival:</Typography>
+            <Typography variant="body1">
+              {StrokeService.getModeOfArrivalLabel(strokeCase.modeOfArrival)}
+            </Typography>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );

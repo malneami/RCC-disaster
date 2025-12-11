@@ -176,6 +176,13 @@ const HospitalSelect: React.FC<HospitalSelectProps> = ({
         value={value}
         onChange={handleSelectChange}
         label={label}
+        MenuProps={{
+          PaperProps: {
+            style: {
+              maxHeight: 200,
+            },
+          },
+        }}
       >
         {!required && (
           <MenuItem value="">

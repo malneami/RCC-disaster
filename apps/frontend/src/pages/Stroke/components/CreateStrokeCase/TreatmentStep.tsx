@@ -320,6 +320,13 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
             value={formData.disposition || ''}
             onChange={(e) => updateFormData('disposition', e.target.value as StrokeDisposition)}
             label="Disposition"
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 150,
+                },
+              },
+            }}
           >
             <MenuItem value="STROKE_UNIT">Stroke Unit</MenuItem>
             <MenuItem value="ICU">ICU</MenuItem>

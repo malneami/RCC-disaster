@@ -145,6 +145,13 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
           <Select
             value={formData.modeOfArrival || ''}
             onChange={(e) => handleInputChange('modeOfArrival', e.target.value)}
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 200,
+                },
+              },
+            }}
           >
             <MenuItem value="AMBULANCE_RED_CRESCENT">Ambulance (Red Crescent)</MenuItem>
             <MenuItem value="PRIVATE_CAR">Private Car</MenuItem>

@@ -285,6 +285,13 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
             onChange={(e) => updateFormData('destinationHospitalId', e.target.value)}
             disabled={loadingHospitals}
             label={destinationRequired ? 'Destination Hospital (Required)' : 'Destination Hospital (Optional)'}
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 200,
+                },
+              },
+            }}
           >
             {!destinationRequired && (
               <MenuItem value="">

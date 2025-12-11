@@ -90,7 +90,7 @@ export interface StemiCase {
   selectedTreatment?: 'PRIMARY_PCI' | 'RESCUE_PCI' | 'FIBRINOLYSIS' | 'TRANSFER_FOR_PRIMARY_PCI' | 'MEDICAL_MANAGEMENT';
   pathwayStarted?: string;
   pathwayCompleted?: string;
-  rccActivated: boolean;
+  rccActivated?: boolean | string; 
   rccUnit?: string;
   
   // Critical Timestamps

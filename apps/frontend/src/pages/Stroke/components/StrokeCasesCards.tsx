@@ -67,7 +67,10 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
   const [filters, setFilters] = useState({
     strokeType: '',
     status: '',
-    severity: '',
+    originHospitalId: '',
+    destinationHospitalId: '',
+    dateFrom: '',
+    dateTo: '',
   });
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
@@ -104,8 +107,32 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     if (filters.status) {
       filtered = filtered.filter(case_ => case_.currentStatus === filters.status);
     }
-    if (filters.severity) {
-      filtered = filtered.filter(case_ => case_.strokeSeverity === filters.severity);
+    if (filters.originHospitalId) {
+      filtered = filtered.filter(case_ => case_.originHospitalId === filters.originHospitalId);
+    }
+    if (filters.destinationHospitalId) {
+      filtered = filtered.filter(case_ => case_.destinationHospitalId === filters.destinationHospitalId);
+    }
+    if (filters.dateFrom) {
+      const fromDate = new Date(filters.dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(case_ => {
+        // Use timeOfTriage for "From Date" filter
+        const triageTime = case_.timeOfTriage ? new Date(case_.timeOfTriage) : null;
+        if (!triageTime) return false;
+        triageTime.setHours(0, 0, 0, 0);
+        return triageTime >= fromDate;
+      });
+    }
+    if (filters.dateTo) {
+      const toDate = new Date(filters.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(case_ => {
+        // Use timeOfTriage for "To Date" filter
+        const triageTime = case_.timeOfTriage ? new Date(case_.timeOfTriage) : null;
+        if (!triageTime) return false;
+        return triageTime <= toDate;
+      });
     }
 
     setFilteredCases(filtered);
@@ -120,7 +147,14 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
   };
 
   const handleClearFilters = () => {
-    setFilters({ strokeType: '', status: '', severity: '' });
+    setFilters({ 
+      strokeType: '', 
+      status: '',
+      originHospitalId: '',
+      destinationHospitalId: '',
+      dateFrom: '',
+      dateTo: '',
+    });
     setSearchQuery('');
     applyFiltersAndSearch();
   };

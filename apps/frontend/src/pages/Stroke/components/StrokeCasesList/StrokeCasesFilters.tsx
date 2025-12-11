@@ -10,6 +10,7 @@ import {
   Select,
   MenuItem,
   Grid,
+  TextField,
 } from '@mui/material';
 
 
@@ -19,8 +20,13 @@ interface StrokeCasesFiltersProps {
   filters: {
     strokeType: string;
     status: string;
-    severity: string;
+    originHospitalId: string;
+    destinationHospitalId: string;
+    modeOfArrival: string;
+    dateFrom: string;
+    dateTo: string;
   };
+  hospitals: Array<{ id: string; name: string }>;
   onFiltersChange: (filters: any) => void;
   onApplyFilters: () => void;
   onClearFilters: () => void;
@@ -30,6 +36,7 @@ const StrokeCasesFilters: React.FC<StrokeCasesFiltersProps> = ({
   open,
   onClose,
   filters,
+  hospitals,
   onFiltersChange,
   onApplyFilters,
   onClearFilters,
@@ -76,6 +83,13 @@ const StrokeCasesFilters: React.FC<StrokeCasesFiltersProps> = ({
                 value={filters.status}
                 label="Status"
                 onChange={(e) => handleFilterChange('status', e.target.value)}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 240,
+                    },
+                  },
+                }}
               >
                 <MenuItem value="">All Statuses</MenuItem>
                 <MenuItem value="SUSPECTED">Suspected</MenuItem>
@@ -95,19 +109,92 @@ const StrokeCasesFilters: React.FC<StrokeCasesFiltersProps> = ({
           </Grid>
           <Grid item xs={12}>
             <FormControl fullWidth>
-              <InputLabel>Severity</InputLabel>
+              <InputLabel>Mode of Arrival</InputLabel>
               <Select
-                value={filters.severity}
-                label="Severity"
-                onChange={(e) => handleFilterChange('severity', e.target.value)}
+                value={filters.modeOfArrival}
+                label="Mode of Arrival"
+                onChange={(e) => handleFilterChange('modeOfArrival', e.target.value)}
               >
-                <MenuItem value="">All Severities</MenuItem>
-                <MenuItem value="MILD">Mild</MenuItem>
-                <MenuItem value="MODERATE">Moderate</MenuItem>
-                <MenuItem value="SEVERE">Severe</MenuItem>
-                <MenuItem value="CRITICAL">Critical</MenuItem>
+                <MenuItem value="">All Modes</MenuItem>
+                <MenuItem value="AMBULANCE_RED_CRESCENT">Ambulance (Red Crescent)</MenuItem>
+                <MenuItem value="PRIVATE_CAR">Private Car</MenuItem>
+                <MenuItem value="TRANSFERRED_FROM_ANOTHER_HOSPITAL">Transferred from another hospital</MenuItem>
               </Select>
             </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel>Origin Hospital</InputLabel>
+              <Select
+                value={filters.originHospitalId}
+                label="Origin Hospital"
+                onChange={(e) => handleFilterChange('originHospitalId', e.target.value as string)}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 280,
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="">All Hospitals</MenuItem>
+                {hospitals.map((hospital) => (
+                  <MenuItem key={hospital.id} value={hospital.id}>
+                    {hospital.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel>Destination Hospital</InputLabel>
+              <Select
+                value={filters.destinationHospitalId}
+                label="Destination Hospital"
+                onChange={(e) => handleFilterChange('destinationHospitalId', e.target.value as string)}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 200,
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="">All Hospitals</MenuItem>
+                {hospitals.map((hospital) => (
+                  <MenuItem key={hospital.id} value={hospital.id}>
+                    {hospital.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              type="date"
+              label="From Date (Admission Time)"
+              value={filters.dateFrom || ''}
+              onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{
+                max: filters.dateTo || undefined,
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              type="date"
+              label="To Date (Time of Triage)"
+              value={filters.dateTo || ''}
+              onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{
+                min: filters.dateFrom || undefined,
+              }}
+            />
           </Grid>
         </Grid>
       </DialogContent>

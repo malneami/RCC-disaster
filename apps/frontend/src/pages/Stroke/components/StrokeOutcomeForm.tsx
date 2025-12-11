@@ -325,6 +325,13 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
                         value={field.value ?? ''} 
                         onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
                         label="Discharge Modified Rankin Scale"
+                        MenuProps={{
+                          PaperProps: {
+                            style: {
+                              maxHeight: 150,
+                            },
+                          },
+                        }}
                       >
                         <MenuItem value="">None</MenuItem>
                         <MenuItem value={0}>0 - No symptoms</MenuItem>
@@ -395,6 +402,13 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
                         value={field.value ?? ''} 
                         onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
                         label="Follow-up Modified Rankin Scale"
+                        MenuProps={{
+                          PaperProps: {
+                            style: {
+                              maxHeight: 150,
+                            },
+                          },
+                        }}
                       >
                         <MenuItem value="">None</MenuItem>
                         <MenuItem value={0}>0 - No symptoms</MenuItem>

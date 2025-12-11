@@ -470,10 +470,14 @@ export interface CreateStrokeTimelineData {
 // Filter interfaces
 export interface StrokeCaseFilters {
   hospitalId?: string;
+  originHospitalId?: string;
+  destinationHospitalId?: string;
   strokeType?: StrokeType;
   status?: StrokeStatus;
+   modeOfArrival?: StrokeModeOfArrival;
   dateFrom?: string;
   dateTo?: string;
+  search?: string;
 }
 
 export interface StrokeTimelineFilters {
@@ -514,6 +518,14 @@ export interface StrokeKPISummary {
     successRate: number;
     independentDischargeRate: number;
   };
+}
+
+export interface StrokeCasesPaginatedResponse {
+  cases: StrokeCase[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 // Stroke Service Class
@@ -623,12 +635,36 @@ export class StrokeService {
   static async getStrokeCases(filters?: StrokeCaseFilters): Promise<StrokeCase[]> {
     const params = new URLSearchParams();
     if (filters?.hospitalId) params.append('hospitalId', filters.hospitalId);
+    if (filters?.originHospitalId) params.append('originHospitalId', filters.originHospitalId);
+    if (filters?.destinationHospitalId) params.append('destinationHospitalId', filters.destinationHospitalId);
     if (filters?.strokeType) params.append('strokeType', filters.strokeType);
     if (filters?.status) params.append('status', filters.status);
+    if (filters?.modeOfArrival) params.append('modeOfArrival', filters.modeOfArrival);
     if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
     if (filters?.dateTo) params.append('dateTo', filters.dateTo);
 
     const response = await apiClient.get(`/stroke-cases?${params.toString()}`);
+    return response.data;
+  }
+
+  static async getStrokeCasesPaginated(
+    filters: StrokeCaseFilters & { limit?: number; offset?: number } = {},
+  ): Promise<StrokeCasesPaginatedResponse> {
+    const params = new URLSearchParams();
+
+    if (filters.hospitalId) params.append('hospitalId', filters.hospitalId);
+    if (filters.originHospitalId) params.append('originHospitalId', filters.originHospitalId);
+    if (filters.destinationHospitalId) params.append('destinationHospitalId', filters.destinationHospitalId);
+    if (filters.strokeType) params.append('strokeType', filters.strokeType);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.modeOfArrival) params.append('modeOfArrival', filters.modeOfArrival);
+    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.append('dateTo', filters.dateTo);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.limit !== undefined) params.append('limit', String(filters.limit));
+    if (filters.offset !== undefined) params.append('offset', String(filters.offset));
+
+    const response = await apiClient.get(`/stroke-cases/paginated?${params.toString()}`);
     return response.data;
   }
 

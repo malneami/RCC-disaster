@@ -81,20 +81,56 @@ export class StrokeCasesController {
   @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.EMS, UserRole.DATA_COLLECTOR)
   findAll(
     @Query('hospitalId') hospitalId?: string,
+    @Query('originHospitalId') originHospitalId?: string,
+    @Query('destinationHospitalId') destinationHospitalId?: string,
     @Query('strokeType') strokeType?: string,
     @Query('status') status?: string,
+    @Query('modeOfArrival') modeOfArrival?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
   ) {
     const filters: any = {};
     
     if (hospitalId) filters.hospitalId = hospitalId;
+    if (originHospitalId) filters.originHospitalId = originHospitalId;
+    if (destinationHospitalId) filters.destinationHospitalId = destinationHospitalId;
     if (strokeType) filters.strokeType = strokeType as any;
     if (status) filters.status = status as any;
+    if (modeOfArrival) filters.modeOfArrival = modeOfArrival as any;
     if (dateFrom) filters.dateFrom = new Date(dateFrom);
     if (dateTo) filters.dateTo = new Date(dateTo);
 
     return this.strokeCasesService.findAll(filters);
+  }
+
+  @Get('paginated')
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.EMS, UserRole.DATA_COLLECTOR)
+  async findAllPaginated(
+    @Query('hospitalId') hospitalId?: string,
+    @Query('originHospitalId') originHospitalId?: string,
+    @Query('destinationHospitalId') destinationHospitalId?: string,
+    @Query('strokeType') strokeType?: string,
+    @Query('status') status?: string,
+    @Query('modeOfArrival') modeOfArrival?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('search') search?: string,
+    @Query('limit', ParseIntPipe) limit = 10,
+    @Query('offset', ParseIntPipe) offset = 0,
+  ) {
+    const filters: any = {};
+
+    if (hospitalId) filters.hospitalId = hospitalId;
+    if (originHospitalId) filters.originHospitalId = originHospitalId;
+    if (destinationHospitalId) filters.destinationHospitalId = destinationHospitalId;
+    if (strokeType) filters.strokeType = strokeType as any;
+    if (status) filters.status = status as any;
+    if (modeOfArrival) filters.modeOfArrival = modeOfArrival as any;
+    if (dateFrom) filters.dateFrom = new Date(dateFrom);
+    if (dateTo) filters.dateTo = new Date(dateTo);
+    if (search) filters.search = search;
+
+    return this.strokeCasesService.findAllPaginated(filters, limit, offset);
   }
 
 
