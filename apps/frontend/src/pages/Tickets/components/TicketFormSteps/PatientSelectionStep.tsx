@@ -22,11 +22,15 @@ import MultiStepPatientForm from '../../../Patients/components/forms/MultiStepPa
 interface PatientSelectionStepProps {
   formData: Partial<CreateTicketData>;
   onDataChange: (data: Partial<CreateTicketData>) => void;
+  validationError?: string | null;
+  onModeChange?: (mode: 'select' | 'existing' | 'new') => void;
 }
 
 const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
   formData,
   onDataChange,
+  validationError,
+  onModeChange,
 }) => {
   const [patientMode, setPatientMode] = useState<'select' | 'existing' | 'new'>('select');
   const [showPatientForm, setShowPatientForm] = useState(false);
@@ -34,6 +38,9 @@ const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
 
   const handlePatientModeSelect = (mode: 'existing' | 'new') => {
     setPatientMode(mode);
+    if (onModeChange) {
+      onModeChange(mode);
+    }
     if (mode === 'new') {
       setShowPatientForm(true);
     }
@@ -44,6 +51,9 @@ const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
     onDataChange({ patientId: patient.id });
     setShowPatientForm(false);
     setPatientMode('existing');
+    if (onModeChange) {
+      onModeChange('existing');
+    }
   };
 
   const handlePatientChange = (patientId: string | null) => {
@@ -52,6 +62,9 @@ const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
 
   const handleBackToSelect = () => {
     setPatientMode('select');
+    if (onModeChange) {
+      onModeChange('select');
+    }
     setCreatedPatientId(null);
     onDataChange({ patientId: undefined });
   };
@@ -65,6 +78,15 @@ const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
           Choose whether to select an existing patient or create a new one
         </Typography>
+        
+        {validationError && (
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3, maxWidth: 600, mx: 'auto' }}
+          >
+            {validationError}
+          </Alert>
+        )}
         
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12} md={5}>
@@ -160,12 +182,23 @@ const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
         </Alert>
       )}
       
+      {validationError && (
+        <Alert 
+          severity="error" 
+          sx={{ mb: 3 }}
+        >
+          {validationError}
+        </Alert>
+      )}
+      
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <PatientSelect
             value={formData.patientId || null}
             onChange={handlePatientChange}
             required
+            error={!!validationError}
+            helperText={validationError || undefined}
           />
         </Grid>
       </Grid>

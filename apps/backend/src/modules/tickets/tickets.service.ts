@@ -251,6 +251,7 @@ export class TicketsService {
               { firstName: { contains: filters.search, mode: 'insensitive' } },
               { lastName: { contains: filters.search, mode: 'insensitive' } },
               { mrn: { contains: filters.search, mode: 'insensitive' } },
+              { nationalId: { contains: filters.search, mode: 'insensitive' } },
             ]
           }},
         ];

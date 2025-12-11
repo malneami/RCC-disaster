@@ -24,7 +24,7 @@ export interface StepConfig {
   content: React.ReactNode;
   optional?: boolean;
   completed?: boolean;
-  validateStep?: () => boolean; // Optional validation function for each step
+  validate?: () => boolean | string | null; // Returns true if valid, error message string if invalid, or null for no validation
 }
 
 export interface MultiStepDialogProps {
@@ -61,11 +61,12 @@ const MultiStepDialog: React.FC<MultiStepDialogProps> = ({
   }, [open]);
 
   const handleNext = () => {
-    // Validate current step before moving to next
     const currentStep = steps[activeStep];
-    if (currentStep?.validateStep && !currentStep.validateStep()) {
-      // Validation failed, don't proceed to next step
-      return;
+    if (currentStep?.validate) {
+      const validationResult = currentStep.validate();
+      if (validationResult !== true) {
+        return;
+      }
     }
     
     if (activeStep < steps.length - 1) {

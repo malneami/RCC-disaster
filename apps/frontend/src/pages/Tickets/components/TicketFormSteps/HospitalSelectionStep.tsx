@@ -17,11 +17,13 @@ import { hospitalService } from '../../../../services/hospitalService';
 interface HospitalSelectionStepProps {
   formData: Partial<CreateTicketData>;
   onDataChange: (data: Partial<CreateTicketData>) => void;
+  validationError?: string | null;
 }
 
 const HospitalSelectionStep: React.FC<HospitalSelectionStepProps> = ({
   formData,
   onDataChange,
+  validationError,
 }) => {
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,9 +76,18 @@ const HospitalSelectionStep: React.FC<HospitalSelectionStepProps> = ({
         Select the origin and destination hospitals for this transfer
       </Typography>
 
+      {validationError && (
+        <Alert 
+          severity="error" 
+          sx={{ mb: 3 }}
+        >
+          {validationError}
+        </Alert>
+      )}
+
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <FormControl fullWidth required error={!formData.originHospitalId}>
+          <FormControl fullWidth required error={!!validationError}>
             <InputLabel>Origin Hospital *</InputLabel>
             <Select
               value={formData.originHospitalId || ''}
@@ -89,8 +100,10 @@ const HospitalSelectionStep: React.FC<HospitalSelectionStepProps> = ({
                 </MenuItem>
               ))}
             </Select>
-            {!formData.originHospitalId && (
-              <FormHelperText>Origin hospital is required</FormHelperText>
+            {validationError && (
+              <FormHelperText error>
+                {validationError}
+              </FormHelperText>
             )}
           </FormControl>
         </Grid>

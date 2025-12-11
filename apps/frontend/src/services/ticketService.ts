@@ -73,12 +73,10 @@ export interface UpdateTicketData {
 
 export interface TicketFilter {
   status?: 'PENDING' | 'ASSIGNED' | 'IN_TRANSPORT' | 'COMPLETED' | 'CANCELLED';
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+  priority?: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
   pathway?: string;
   originHospitalId?: string;
   destinationHospitalId?: string;
-  patientId?: string;
-  assignedToId?: string;
   startDate?: string;
   endDate?: string;
   search?: string;

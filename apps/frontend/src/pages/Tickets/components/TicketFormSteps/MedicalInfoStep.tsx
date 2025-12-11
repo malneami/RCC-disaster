@@ -70,10 +70,6 @@ const MedicalInfoStep: React.FC<MedicalInfoStepProps> = ({
               <MenuItem value="STEMI">STEMI</MenuItem>
               <MenuItem value="STROKE">Stroke</MenuItem>
               <MenuItem value="TRAUMA">Trauma</MenuItem>
-              <MenuItem value="PEDIATRIC">Pediatric</MenuItem>
-              <MenuItem value="OBSTETRICS">Obstetrics</MenuItem>
-              <MenuItem value="NEUROLOGY">Neurology</MenuItem>
-              <MenuItem value="CARDIOLOGY">Cardiology</MenuItem>
             </Select>
           </FormControl>
         </Grid>

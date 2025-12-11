@@ -17,6 +17,7 @@ import {
   FilterList as FilterIcon,
 } from '@mui/icons-material';
 import { TicketFilter } from '../../../services/ticketService';
+import { useHospitals } from '../../../hooks/useHospitals';
 
 interface TicketFiltersProps {
   filters: TicketFilter;
@@ -30,6 +31,7 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
   onClose,
 }) => {
   const [localFilters, setLocalFilters] = useState<TicketFilter>(filters);
+  const { data: hospitals, isLoading: hospitalsLoading } = useHospitals();
 
   const handleFilterChange = (field: keyof TicketFilter, value: any) => {
     setLocalFilters(prev => ({
@@ -61,9 +63,7 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
   ];
 
   const priorityOptions = [
-    { value: 'LOW', label: 'Low' },
     { value: 'MEDIUM', label: 'Medium' },
-    { value: 'HIGH', label: 'High' },
     { value: 'CRITICAL', label: 'Critical' },
     { value: 'EMERGENCY', label: 'Emergency' },
   ];
@@ -104,7 +104,7 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
             label="Search"
             value={localFilters.search || ''}
             onChange={(e) => handleFilterChange('search', e.target.value)}
-            placeholder="Search by ticket number, patient name, or complaint..."
+            placeholder="Search by patient name, national ID, MRN, or ticket number..."
           />
         </Grid>
 
@@ -165,6 +165,46 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
           </FormControl>
         </Grid>
 
+        {/* Origin Hospital */}
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>Origin Hospital</InputLabel>
+            <Select
+              value={localFilters.originHospitalId || ''}
+              onChange={(e) => handleFilterChange('originHospitalId', e.target.value)}
+              label="Origin Hospital"
+              disabled={hospitalsLoading}
+            >
+              <MenuItem value="">All Hospitals</MenuItem>
+              {hospitals?.map((hospital) => (
+                <MenuItem key={hospital.id} value={hospital.id}>
+                  {hospital.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {/* Destination Hospital */}
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>Destination Hospital</InputLabel>
+            <Select
+              value={localFilters.destinationHospitalId || ''}
+              onChange={(e) => handleFilterChange('destinationHospitalId', e.target.value)}
+              label="Destination Hospital"
+              disabled={hospitalsLoading}
+            >
+              <MenuItem value="">All Hospitals</MenuItem>
+              {hospitals?.map((hospital) => (
+                <MenuItem key={hospital.id} value={hospital.id}>
+                  {hospital.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+
         {/* Date Range */}
         <Grid item xs={12} md={6}>
           <TextField
@@ -185,28 +225,6 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
             value={localFilters.endDate || ''}
             onChange={(e) => handleFilterChange('endDate', e.target.value)}
             InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-
-        {/* Patient ID */}
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            label="Patient ID"
-            value={localFilters.patientId || ''}
-            onChange={(e) => handleFilterChange('patientId', e.target.value)}
-            placeholder="Enter patient ID"
-          />
-        </Grid>
-
-        {/* Assigned To */}
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            label="Assigned To ID"
-            value={localFilters.assignedToId || ''}
-            onChange={(e) => handleFilterChange('assignedToId', e.target.value)}
-            placeholder="Enter assigned user ID"
           />
         </Grid>
       </Grid>
