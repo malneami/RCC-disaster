@@ -687,9 +687,9 @@ model Hospital {
   // User Registration Relations
   userRegistrationRequests UserRegistrationRequest[]
   
-  // Zone Logs
-  zoneLogs          AmbulanceZoneLog[]
-
+  // Ambulance Relations
+  zoneLogs                 AmbulanceZoneLog[]
+  
   @@map("hospitals")
   @@index([status])
   @@index([cluster])
@@ -1585,6 +1585,27 @@ model Ambulance {
   @@index([nextMaintenanceDue])
 }
 
+// Ambulance Zone Log model for tracking hospital zone entries/exits
+model AmbulanceZoneLog {
+  id              String    @id @default(uuid())
+  ambulanceId     String    @map("ambulance_id")
+  hospitalId      String    @map("hospital_id")
+  zoneType        String    @map("zone_type") // e.g., "ORIGIN_ZONE", "DESTINATION_ZONE", "HOSPITAL_ZONE"
+  zoneName        String?   @map("zone_name") // e.g., "Emergency Zone", "Parking Area", "Main Entrance"
+  entryTime       DateTime  @map("entry_time")
+  exitTime        DateTime? @map("exit_time")
+  durationMinutes Int?      @map("duration_minutes")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  
+  ambulance       Ambulance @relation(fields: [ambulanceId], references: [id])
+  hospital        Hospital  @relation(fields: [hospitalId], references: [id])
+
+  @@map("ambulance_zone_logs")
+  @@index([ambulanceId])
+  @@index([hospitalId])
+  @@index([entryTime])
+}
 
 
 

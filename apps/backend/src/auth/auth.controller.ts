@@ -65,9 +65,11 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'User logout' })
   @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async logout(@Request() req: AuthenticatedRequest) {
     const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
     const userAgent = req.get('User-Agent') || 'unknown';
