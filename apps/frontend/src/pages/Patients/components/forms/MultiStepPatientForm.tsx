@@ -67,7 +67,7 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
             isEditing={isEditing}
           />
         ),
-        validateStep: validatePersonalInfoStep, // Add validation function for this step
+        validate: validatePersonalInfoStep, // Add validation function for this step
       },
     ];
 
