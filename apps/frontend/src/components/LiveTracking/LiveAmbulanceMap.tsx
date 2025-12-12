@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Paper, Alert, CircularProgress, Typography } from '@mui/material';
-import { MapContainer, TileLayer, useMap, Circle, Marker } from 'react-leaflet';
+import { Box, Alert, CircularProgress, Typography, IconButton } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRoute, faChevronUp, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { MapContainer, TileLayer, useMap, Circle, Marker, Polyline, Tooltip } from 'react-leaflet';
 import L, { LatLngBounds, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { format } from 'date-fns';
 
 // Fix for default marker icons in Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -22,6 +25,7 @@ import { MapFilters as MapFiltersType, AmbulanceGPSData } from './types';
 import AmbulanceMarker from './components/AmbulanceMarker';
 import MapControls from './components/MapControls';
 import MapFiltersComponent from './components/MapFilters';
+import LocationHistoryModal, { RoutePoint } from './components/LocationHistoryModal';
 import { getDefaultViewport } from './utils/mapHelpers';
 import { hospitalService, Hospital } from '../../services/hospitalService';
 
@@ -36,6 +40,131 @@ interface LiveAmbulanceMapProps {
   useGPSAPI?: boolean;
   onAmbulanceClick?: (ambulance: AmbulanceGPSData) => void;
 }
+
+// Route History Legend - Google Maps style
+const RouteHistoryLegend: React.FC<{
+  routeAmbulanceCallSign: string;
+  routePointsCount: number;
+  onClear?: () => void;
+}> = ({ routeAmbulanceCallSign, routePointsCount, onClear }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const legendItems = [
+    { label: 'Start', color: '#34a853', size: 10 },
+    { label: 'Route', color: '#ea4335', size: 8 },
+    { label: 'Gap', color: '#fbbc04', size: 8 },
+    { label: 'End', color: '#4285f4', size: 10 },
+  ];
+
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        bottom: 50, // Above the status pill
+        left: 10,
+        zIndex: 1000,
+      }}
+    >
+      <Box
+        sx={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+          overflow: 'hidden',
+          minWidth: isExpanded ? 160 : 'auto',
+          transition: 'min-width 0.2s ease',
+        }}
+      >
+        {/* Header */}
+        <Box
+          onClick={() => setIsExpanded(!isExpanded)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.5,
+            py: 1,
+            cursor: 'pointer',
+            '&:hover': { backgroundColor: '#f8f9fa' },
+          }}
+        >
+          <FontAwesomeIcon icon={faRoute} size="sm" color="#ea4335" />
+          
+          {!isExpanded ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#202124' }}>
+                {routeAmbulanceCallSign}
+              </Typography>
+              <Typography sx={{ fontSize: '11px', color: '#5f6368' }}>
+                ({routePointsCount})
+              </Typography>
+            </Box>
+          ) : (
+            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#202124' }}>
+              Route History
+            </Typography>
+          )}
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
+            <IconButton size="small" sx={{ p: 0.25 }}>
+              <FontAwesomeIcon 
+                icon={isExpanded ? faChevronDown : faChevronUp} 
+                size="xs" 
+                color="#5f6368" 
+              />
+            </IconButton>
+            {onClear && (
+              <IconButton 
+                size="small" 
+                onClick={(e) => { e.stopPropagation(); onClear(); }}
+                sx={{ p: 0.25 }}
+              >
+                <FontAwesomeIcon icon={faTimes} size="xs" color="#5f6368" />
+              </IconButton>
+            )}
+          </Box>
+        </Box>
+
+        {/* Expanded content */}
+        {isExpanded && (
+          <Box sx={{ px: 1.5, pb: 1.5 }}>
+            <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#202124', mb: 1 }}>
+              {routeAmbulanceCallSign}
+            </Typography>
+            
+            {legendItems.map((item) => (
+              <Box
+                key={item.label}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  py: 0.25,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: item.size,
+                    height: item.size,
+                    borderRadius: '50%',
+                    backgroundColor: item.color,
+                  }}
+                />
+                <Typography sx={{ fontSize: '11px', color: '#5f6368' }}>
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
+            
+            <Typography sx={{ fontSize: '11px', color: '#5f6368', mt: 1, pt: 1, borderTop: '1px solid #e8eaed' }}>
+              {routePointsCount} points total
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+};
 
 // Component to handle map bounds fitting
 const MapBoundsFitter: React.FC<{ bounds: [[number, number], [number, number]] | null }> = ({ bounds }) => {
@@ -59,7 +188,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
   showFilters = true,
   autoRefresh = true,
   refreshInterval,
-  useGPSAPI = true,
+  useGPSAPI = false, // Use database data instead of external GPS API (GPS polling service handles updates)
   onAmbulanceClick,
 }) => {
   const [filters, setFilters] = useState<MapFiltersType>({});
@@ -68,6 +197,9 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [shouldFitBounds, setShouldFitBounds] = useState(true); // Fit bounds on initial load
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [locationHistoryAmbulance, setLocationHistoryAmbulance] = useState<AmbulanceGPSData | null>(null);
+  const [routeHistory, setRouteHistory] = useState<RoutePoint[]>([]);
+  const [routeAmbulanceCallSign, setRouteAmbulanceCallSign] = useState<string>('');
   const mapRef = useRef<any>(null);
 
   const viewport = getDefaultViewport();
@@ -161,6 +293,89 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
     }
   };
 
+  const handleShowLocationHistory = (ambulance: AmbulanceGPSData) => {
+    setLocationHistoryAmbulance(ambulance);
+  };
+
+  const handleCloseLocationHistory = () => {
+    setLocationHistoryAmbulance(null);
+    setRouteHistory([]);
+    setRouteAmbulanceCallSign('');
+  };
+
+  const handleRouteLoaded = (route: RoutePoint[], callSign: string) => {
+    console.log('=== ROUTE LOADED ===');
+    console.log('Route loaded for', callSign, 'with', route.length, 'points');
+    console.log('Full route data:', route);
+    
+    if (route.length > 0) {
+      console.log('Route bounds check:');
+      const lats = route.map(p => p.latitude);
+      const lngs = route.map(p => p.longitude);
+      console.log('  Lat range:', Math.min(...lats), 'to', Math.max(...lats));
+      console.log('  Lng range:', Math.min(...lngs), 'to', Math.max(...lngs));
+      console.log('First 3 points:', route.slice(0, 3));
+      console.log('Last 3 points:', route.slice(-3));
+      console.log('First position for Leaflet:', [route[0].latitude, route[0].longitude]);
+      
+      // Check for invalid coordinates
+      const invalidPoints = route.filter(p => 
+        p.latitude === 0 || p.longitude === 0 || 
+        isNaN(p.latitude) || isNaN(p.longitude) ||
+        p.latitude < 16 || p.latitude > 32 ||
+        p.longitude < 34 || p.longitude > 55
+      );
+      if (invalidPoints.length > 0) {
+        console.error('WARNING: Found', invalidPoints.length, 'invalid points:', invalidPoints);
+      }
+    } else {
+      console.error('WARNING: Route has 0 points!');
+    }
+    
+    setRouteHistory(route);
+    setRouteAmbulanceCallSign(callSign);
+    console.log('Route state updated');
+  };
+
+  const handleClearRoute = () => {
+    setRouteHistory([]);
+    setRouteAmbulanceCallSign('');
+  };
+
+  // Create route point marker icon
+  const createRoutePointIcon = (index: number, total: number, isGapPoint: boolean = false) => {
+    const isStart = index === 0;
+    const isEnd = index === total - 1;
+    
+    let color = '#e53935'; // Red for route points
+    let size = 8;
+    
+    if (isStart) {
+      color = '#4caf50'; // Green for start
+      size = 14;
+    } else if (isEnd) {
+      color = '#2196f3'; // Blue for end
+      size = 14;
+    } else if (isGapPoint) {
+      color = '#ff9800'; // Orange for gap points
+      size = 12;
+    }
+
+    return new DivIcon({
+      className: 'route-point-icon',
+      html: `<div style="
+        width: ${size}px;
+        height: ${size}px;
+        background-color: ${color};
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      "></div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+  };
+
   const handleFitBounds = () => {
     setShouldFitBounds(true);
   };
@@ -177,25 +392,51 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
     setShowFiltersPanel(!showFiltersPanel);
   };
 
-  // Helper to create custom label icon for zones
+  // Helper to create custom label icon for zones - Google Maps style
   const createZoneLabelIcon = (name: string) => {
-    const shortName = name.replace(' Hospital', '').replace(' General', '').replace(' Central', '').replace(' Medical City', '');
+    // Smart truncation for hospital names
+    let shortName = name
+      .replace(' Hospital', '')
+      .replace(' General', '')
+      .replace(' Central', '')
+      .replace(' Medical City', '')
+      .replace(' Medical Center', '');
+    
+    // Truncate if still too long
+    if (shortName.length > 16) {
+      shortName = shortName.substring(0, 14) + '...';
+    }
+
     return new DivIcon({
       className: 'zone-label-icon',
       html: `<div style="
-        background-color: rgba(255, 255, 255, 0.9);
-        padding: 4px 8px;
-        border-radius: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        font-weight: 500;
         font-size: 12px;
-        color: #333;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #202124;
         white-space: nowrap;
         text-align: center;
-        border: 1px solid #e0e0e0;
-      ">${shortName}</div>`,
-      iconSize: [100, 30], // Approximate size, CSS will handle actual size
-      iconAnchor: [50, 15] // Center the label
+        border: 1px solid #e8eaed;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      ">
+        <span style="
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #4285f4;
+          flex-shrink: 0;
+        "></span>
+        ${shortName}
+      </div>`,
+      iconSize: [140, 32],
+      iconAnchor: [70, 16]
     });
   };
 
@@ -365,15 +606,117 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
           </React.Fragment>
         ))}
 
-        {/* Render ambulance markers */}
-        {ambulances && ambulances.map((ambulance) => (
-          <AmbulanceMarker
-            key={ambulance.id}
-            ambulance={ambulance}
-            isSelected={selectedAmbulance?.id === ambulance.id}
-            onClick={handleAmbulanceClick}
-          />
-        ))}
+        {/* Render ambulance markers - hide others when showing route history */}
+        {ambulances && ambulances
+          .filter(ambulance => 
+            routeHistory.length === 0 || 
+            ambulance.callSign === routeAmbulanceCallSign
+          )
+          .map((ambulance) => (
+            <AmbulanceMarker
+              key={ambulance.id}
+              ambulance={ambulance}
+              isSelected={selectedAmbulance?.id === ambulance.id}
+              onClick={handleAmbulanceClick}
+              onShowLocationHistory={handleShowLocationHistory}
+            />
+          ))}
+
+        {/* Render route history polylines - split at gaps to avoid false connections */}
+        {routeHistory.length > 1 && (() => {
+          console.log('=== RENDERING ROUTE POLYLINES ===');
+          console.log('Route history length:', routeHistory.length);
+          
+          // Split route into segments at gaps
+          const segments: Array<[number, number][]> = [];
+          let currentSegment: [number, number][] = [];
+          
+          routeHistory.forEach((point) => {
+            if (point.hasGapBefore && currentSegment.length > 0) {
+              // Gap detected - save current segment and start new one
+              segments.push(currentSegment);
+              currentSegment = [];
+            }
+            currentSegment.push([point.latitude, point.longitude]);
+          });
+          
+          // Don't forget the last segment
+          if (currentSegment.length > 0) {
+            segments.push(currentSegment);
+          }
+          
+          console.log('Created', segments.length, 'route segments');
+          segments.forEach((seg, i) => {
+            console.log(`  Segment ${i}: ${seg.length} points`, seg.slice(0, 2));
+          });
+          
+          // Render each segment as a separate polyline
+          return segments.map((segment, segIndex) => {
+            if (segment.length > 1) {
+              console.log(`Rendering polyline segment ${segIndex} with ${segment.length} points`);
+              return (
+                <Polyline
+                  key={`route-segment-${segIndex}`}
+                  positions={segment}
+                  pathOptions={{
+                    color: '#e53935',
+                    weight: 3,
+                    opacity: 0.8,
+                    dashArray: '5, 10',
+                  }}
+                />
+              );
+            }
+            return null;
+          });
+        })()}
+
+        {/* Render route history points as red dots */}
+        {routeHistory.length > 0 && console.log('=== RENDERING ROUTE MARKERS ===', routeHistory.length, 'total points')}
+        {routeHistory.map((point, index) => {
+          // Show every 5th point for performance, plus start, end, and gap points
+          const isStart = index === 0;
+          const isEnd = index === routeHistory.length - 1;
+          const isGapPoint = point.hasGapBefore;
+          const showPoint = isStart || isEnd || isGapPoint || index % 5 === 0;
+          
+          if (showPoint && (isStart || isEnd)) {
+            console.log(`Rendering ${isStart ? 'START' : 'END'} marker at [${point.latitude}, ${point.longitude}]`);
+          }
+          
+          if (!showPoint) return null;
+
+          return (
+            <Marker
+              key={`route-point-${index}`}
+              position={[point.latitude, point.longitude]}
+              icon={createRoutePointIcon(index, routeHistory.length, isGapPoint)}
+            >
+              <Tooltip direction="top" offset={[0, -5]} opacity={0.95}>
+                <Box sx={{ minWidth: 120 }}>
+                  <Typography variant="caption" fontWeight="bold" display="block">
+                    {isStart ? '🟢 Start' : isEnd ? '🔵 End' : isGapPoint ? '⚠️ Gap' : `Point ${index + 1}`}
+                  </Typography>
+                  <Typography variant="caption" display="block">
+                    {format(new Date(point.timestamp), 'MMM dd, HH:mm:ss')}
+                  </Typography>
+                  {isGapPoint && point.gapMinutes && (
+                    <Typography variant="caption" display="block" color="warning.main">
+                      {point.gapMinutes >= 60 
+                        ? `${Math.round(point.gapMinutes / 60)}h ${point.gapMinutes % 60}m gap`
+                        : `${point.gapMinutes}m gap`}
+                    </Typography>
+                  )}
+                  {point.speed !== undefined && (
+                    <Typography variant="caption" display="block">
+                      Speed: {Math.round(point.speed)} km/h
+                    </Typography>
+                  )}
+                </Box>
+              </Tooltip>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
       {/* Map Controls - Always show */}
@@ -400,32 +743,56 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
         />
       )}
 
-      {/* Refetching Indicator */}
+      {/* Refetching Indicator - Google Maps style toast */}
       {isRefetching && (
         <Box
           sx={{
             position: 'absolute',
-            top: 10,
+            top: 60, // Below potential search bar
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 1001,
           }}
         >
-          <Paper
+          <Box
             sx={{
-              px: 2,
-              py: 1,
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
-              backgroundColor: 'rgba(33, 150, 243, 0.9)',
+              gap: 1.5,
+              px: 2,
+              py: 1,
+              backgroundColor: '#202124',
               color: 'white',
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+              fontSize: '13px',
             }}
           >
-            <CircularProgress size={16} sx={{ color: 'white' }} />
-            <Box>Updating locations...</Box>
-          </Paper>
+            <CircularProgress size={14} sx={{ color: 'white' }} />
+            Updating...
+          </Box>
         </Box>
+      )}
+
+      {/* Location History Modal */}
+      {locationHistoryAmbulance && (
+        <LocationHistoryModal
+          isOpen={!!locationHistoryAmbulance}
+          onClose={handleCloseLocationHistory}
+          ambulanceId={locationHistoryAmbulance.id}
+          ambulanceCallSign={locationHistoryAmbulance.callSign}
+          onRouteLoaded={handleRouteLoaded}
+          onClearRoute={handleClearRoute}
+        />
+      )}
+
+      {/* Route History Legend */}
+      {routeHistory.length > 0 && (
+        <RouteHistoryLegend
+          routeAmbulanceCallSign={routeAmbulanceCallSign}
+          routePointsCount={routeHistory.length}
+          onClear={handleClearRoute}
+        />
       )}
     </Box>
   );

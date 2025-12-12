@@ -129,10 +129,10 @@ export class EmsLocationWorkflowService {
           assignment.ticket.destinationHospital.latitude,
           assignment.ticket.destinationHospital.longitude
         );
-        isInDestinationZone = destinationDistance <= 2; // 2km radius
+        isInDestinationZone = destinationDistance <= 2.5; // 2.5km radius
       }
 
-      const isInOriginZone = originDistance <= 2; // 2km radius
+      const isInOriginZone = originDistance <= 2.5; // 2.5km radius
 
       this.logger.log(`Ambulance distances - Origin: ${originDistance.toFixed(3)}km, Destination: ${destinationDistance.toFixed(3)}km`);
       this.logger.log(`In origin zone: ${isInOriginZone}, In destination zone: ${isInDestinationZone}`);

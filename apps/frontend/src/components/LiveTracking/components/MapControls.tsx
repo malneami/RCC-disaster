@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, IconButton, Tooltip, TextField, InputAdornment, Chip, CircularProgress } from '@mui/material';
+import { Box, IconButton, Tooltip, TextField, CircularProgress } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faRefresh,
   faExpand,
   faSearch,
   faFilter,
-  faMapMarkerAlt,
-  faClock,
+  faTimes,
 } from '@fortawesome/free-solid-svg-icons';
 
 interface MapControlsProps {
@@ -22,20 +21,35 @@ interface MapControlsProps {
   totalAmbulances?: number;
 }
 
+// Shared styles for map control buttons
+const controlButtonStyle = {
+  width: 40,
+  height: 40,
+  backgroundColor: 'white',
+  boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+  borderRadius: '8px',
+  '&:hover': { 
+    backgroundColor: '#f5f5f5',
+  },
+  '&:disabled': {
+    backgroundColor: 'white',
+    opacity: 0.6,
+  },
+};
+
 const MapControls: React.FC<MapControlsProps> = ({
   onRefresh,
   onFitBounds,
   onSearchChange,
   onFilterToggle,
   isRefreshing = false,
-  lastUpdateTime,
   secondsUntilRefresh,
   totalAmbulances = 0,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [countdown, setCountdown] = useState<number | null>(secondsUntilRefresh ?? null);
+  const [showSearch, setShowSearch] = useState(false);
 
-  // Update countdown every second
   useEffect(() => {
     if (secondsUntilRefresh !== null && secondsUntilRefresh !== undefined) {
       setCountdown(secondsUntilRefresh);
@@ -54,211 +68,180 @@ const MapControls: React.FC<MapControlsProps> = ({
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    if (onSearchChange) {
-      onSearchChange(query);
-    }
+    onSearchChange?.(query);
   };
 
-  const formatCountdown = (seconds: number | null): string => {
-    if (seconds === null) return '--';
-    if (seconds <= 0) return 'Refreshing...';
-    
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    onSearchChange?.('');
+    setShowSearch(false);
   };
 
   return (
-    <Box
-      sx={{
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 1.5,
-        maxWidth: 280,
-      }}
-    >
-      {/* Search Bar */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 1.5,
-          backgroundColor: 'rgba(255, 255, 255, 0.98)',
-          backdropFilter: 'blur(10px)',
-        }}
-      >
-        <TextField
-          size="small"
-          placeholder="Search ambulances..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          fullWidth
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <FontAwesomeIcon icon={faSearch} size="sm" />
-              </InputAdornment>
-            ),
+    <>
+      {/* Search Bar - Top center when expanded */}
+      {showSearch && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            width: 320,
+            maxWidth: 'calc(100% - 120px)',
           }}
-        />
-      </Paper>
-
-      {/* Control Panel */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 1.5,
-          backgroundColor: 'rgba(255, 255, 255, 0.98)',
-          backdropFilter: 'blur(10px)',
-        }}
-      >
-        {/* Stats Row */}
-        <Box sx={{ mb: 1.5, display: 'flex', gap: 1, flexDirection: 'column' }}>
-          {/* Countdown Timer */}
-          {countdown !== null && (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                px: 1.5,
-                py: 1,
-                backgroundColor: '#e3f2fd',
-                borderRadius: 1,
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FontAwesomeIcon icon={faClock} color="#1976d2" />
-                <Box sx={{ fontSize: '13px', color: '#1976d2', fontWeight: 500 }}>
-                  Next refresh
-                </Box>
-              </Box>
-              <Chip
-                label={formatCountdown(countdown)}
-                size="small"
-                color="primary"
-                sx={{ fontSize: '12px', height: '24px', fontWeight: 'bold' }}
-              />
-            </Box>
-          )}
-
-          {/* Total Ambulances */}
+        >
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 1.5,
-              py: 1,
-              backgroundColor: '#f5f5f5',
-              borderRadius: 1,
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+              overflow: 'hidden',
+              pl: 2,
+              pr: 0.5,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FontAwesomeIcon icon={faMapMarkerAlt} color="#666" />
-              <Box sx={{ fontSize: '13px', color: '#666', fontWeight: 500 }}>
-                Total Ambulances
-              </Box>
-            </Box>
-            <Chip
-              label={totalAmbulances}
+            <FontAwesomeIcon icon={faSearch} size="sm" color="#5f6368" />
+            <TextField
               size="small"
-              sx={{ 
-                fontSize: '12px', 
-                height: '24px', 
-                fontWeight: 'bold',
-                backgroundColor: '#1976d2',
-                color: 'white',
+              placeholder="Search ambulances..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              autoFocus
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { border: 'none' },
+                },
+                '& .MuiInputBase-input': {
+                  py: 1.25,
+                  px: 1.5,
+                  fontSize: '14px',
+                },
               }}
             />
+            <IconButton size="small" onClick={handleClearSearch} sx={{ mr: 0.5 }}>
+              <FontAwesomeIcon icon={faTimes} size="sm" color="#5f6368" />
+            </IconButton>
           </Box>
         </Box>
+      )}
 
-        {/* Action Buttons Row */}
-        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between' }}>
-          {/* Refresh Button */}
-          <Tooltip title="Refresh now" placement="bottom">
-            <span style={{ flex: 1 }}>
-              <IconButton
-                onClick={onRefresh}
-                disabled={isRefreshing}
-                color="primary"
-                size="medium"
-                sx={{
-                  width: '100%',
-                  backgroundColor: '#f5f5f5',
-                  '&:hover': { backgroundColor: '#e0e0e0' },
-                  borderRadius: 1,
-                }}
-              >
-                {isRefreshing ? (
-                  <CircularProgress size={20} />
-                ) : (
-                  <FontAwesomeIcon icon={faRefresh} />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
-
-          {/* Fit Bounds Button */}
-          <Tooltip title="Fit all ambulances" placement="bottom">
+      {/* Control Buttons - Right side stack (Google Maps style) */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+        }}
+      >
+        {/* Search Button */}
+        {!showSearch && (
+          <Tooltip title="Search ambulances" placement="left">
             <IconButton
-              onClick={onFitBounds}
-              color="primary"
-              size="medium"
-              sx={{
-                flex: 1,
-                backgroundColor: '#f5f5f5',
-                '&:hover': { backgroundColor: '#e0e0e0' },
-                borderRadius: 1,
-              }}
+              onClick={() => setShowSearch(true)}
+              sx={controlButtonStyle}
             >
-              <FontAwesomeIcon icon={faExpand} />
+              <FontAwesomeIcon icon={faSearch} size="sm" color="#5f6368" />
             </IconButton>
           </Tooltip>
+        )}
 
-          {/* Filter Button */}
-          {onFilterToggle && (
-            <Tooltip title="Filters" placement="bottom">
-              <IconButton
-                onClick={onFilterToggle}
-                color="primary"
-                size="medium"
-                sx={{
-                  flex: 1,
-                  backgroundColor: '#f5f5f5',
-                  '&:hover': { backgroundColor: '#e0e0e0' },
-                  borderRadius: 1,
-                }}
-              >
-                <FontAwesomeIcon icon={faFilter} />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
+        {/* Filter Button */}
+        {onFilterToggle && (
+          <Tooltip title="Filter by status" placement="left">
+            <IconButton
+              onClick={onFilterToggle}
+              sx={controlButtonStyle}
+            >
+              <FontAwesomeIcon icon={faFilter} size="sm" color="#5f6368" />
+            </IconButton>
+          </Tooltip>
+        )}
 
-        {/* Last Update Info */}
-        {lastUpdateTime && (
+        {/* Refresh Button with countdown */}
+        <Tooltip 
+          title={countdown !== null && countdown > 0 ? `Refresh (${countdown}s)` : 'Refresh now'} 
+          placement="left"
+        >
+          <span>
+            <IconButton
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              sx={{
+                ...controlButtonStyle,
+                position: 'relative',
+              }}
+            >
+              {isRefreshing ? (
+                <CircularProgress size={18} sx={{ color: '#5f6368' }} />
+              ) : (
+                <FontAwesomeIcon icon={faRefresh} size="sm" color="#5f6368" />
+              )}
+            </IconButton>
+          </span>
+        </Tooltip>
+
+        {/* Fit Bounds Button */}
+        <Tooltip title="Fit all on map" placement="left">
+          <IconButton
+            onClick={onFitBounds}
+            sx={controlButtonStyle}
+          >
+            <FontAwesomeIcon icon={faExpand} size="sm" color="#5f6368" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* Status Pill - Bottom right (subtle info) */}
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: 10,
+          right: 10,
+          zIndex: 1000,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+            px: 1.5,
+            py: 0.75,
+            fontSize: '12px',
+            fontWeight: 500,
+            color: '#5f6368',
+          }}
+        >
           <Box
             sx={{
-              mt: 1.5,
-              pt: 1.5,
-              borderTop: '1px solid #e0e0e0',
-              textAlign: 'center',
-              fontSize: '11px',
-              color: 'text.secondary',
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              backgroundColor: isRefreshing ? '#fbbc04' : '#34a853',
+              animation: isRefreshing ? 'pulse 1s infinite' : 'none',
+              '@keyframes pulse': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.5 },
+              },
             }}
-          >
-            Last update: {lastUpdateTime.toLocaleTimeString()}
-          </Box>
-        )}
-      </Paper>
-    </Box>
+          />
+          {totalAmbulances} ambulances
+        </Box>
+      </Box>
+    </>
   );
 };
 
 export default MapControls;
-

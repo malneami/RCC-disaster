@@ -4,6 +4,7 @@ import { AmbulanceTrackingService } from '../../common/services/ambulance-tracki
 import { HospitalBoundsService } from '../../common/services/hospital-bounds.service';
 import { EMSStatusUpdaterService } from '../../common/services/ems-status-updater.service';
 import { GPSPollingService } from '../../common/services/gps-polling.service';
+import { FileLoggerService } from '../../common/services/file-logger.service';
 import { DatabaseModule } from '../../database/database.module';
 
 import { AmbulancesModule } from '../ambulances/ambulances.module';
@@ -12,6 +13,7 @@ import { AmbulancesModule } from '../ambulances/ambulances.module';
   imports: [DatabaseModule, AmbulancesModule],
   controllers: [AmbulanceTrackingController],
   providers: [
+    FileLoggerService,
     AmbulanceTrackingService,
     HospitalBoundsService,
     EMSStatusUpdaterService,

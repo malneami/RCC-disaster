@@ -22,7 +22,7 @@ export interface AmbulancePosition {
 export class HospitalBoundsService {
   private readonly logger = new Logger(HospitalBoundsService.name);
   private readonly EARTH_RADIUS_KM = 6371; // Earth's radius in kilometers
-  private readonly DEFAULT_RADIUS_KM = 1; // Default 1km radius
+  private readonly DEFAULT_RADIUS_KM = 2.5; // Default 2.5km radius
 
   constructor(private prisma: PrismaService) {}
 

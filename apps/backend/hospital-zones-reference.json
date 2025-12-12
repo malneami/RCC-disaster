@@ -1,0 +1,164 @@
+[
+  {
+    "id": "39f71609-2906-433e-8a39-6472a25c8d7b",
+    "name": "Abu Arish General Hospital (AAGH)",
+    "currentLat": 16.9770664,
+    "currentLng": 42.8732559,
+    "address": "Abu Arish, Jazan, Saudi Arabia",
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.9770664,42.8732559"
+  },
+  {
+    "id": "48c2d907-020f-425c-ab2b-906ec066fa85",
+    "name": "Ahad Al-Masarhah General Hospital",
+    "currentLat": 16.733231,
+    "currentLng": 42.937143,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.733231,42.937143"
+  },
+  {
+    "id": "e06f9335-e34f-40fd-ace5-1b66e8ae87b0",
+    "name": "Al-Aidabi General Hospital",
+    "currentLat": 17.2388064,
+    "currentLng": 42.9098925,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.2388064,42.9098925"
+  },
+  {
+    "id": "a3cde00b-df9c-4a5e-bce4-c646f24bc381",
+    "name": "Al-Aridha General Hospital",
+    "currentLat": 17.0446963,
+    "currentLng": 43.0445554,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.0446963,43.0445554"
+  },
+  {
+    "id": "7d4ae8fc-b005-41d5-a6a0-3c10e0c313ef",
+    "name": "Al-Darb General Hospital",
+    "currentLat": 17.7077154,
+    "currentLng": 42.2166516,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.7077154,42.2166516"
+  },
+  {
+    "id": "13640da2-19a5-4866-a7e7-03e9d3359219",
+    "name": "Al-Hurrath General Hospital",
+    "currentLat": 17.10979,
+    "currentLng": 42.7693838,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.10979,42.7693838"
+  },
+  {
+    "id": "4d890d0f-1c29-486a-9124-ecc47c130888",
+    "name": "Al-Rayth General Hospital",
+    "currentLat": 17.6167942,
+    "currentLng": 42.8273415,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.6167942,42.8273415"
+  },
+  {
+    "id": "b446fce2-bb71-4cc1-8277-a08e25900c6d",
+    "name": "Al-Tuwal General Hospital",
+    "currentLat": 16.5345717,
+    "currentLng": 42.9476277,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.5345717,42.9476277"
+  },
+  {
+    "id": "2e6f1369-8acb-4eed-984a-07b4ec20e63f",
+    "name": "Bani Malik General Hospital",
+    "currentLat": 17.3306284,
+    "currentLng": 43.1159548,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.3306284,43.1159548"
+  },
+  {
+    "id": "30962a30-0034-4033-bd2d-bef92ffd5cf1",
+    "name": "Baysh General Hospital",
+    "currentLat": 17.4397852,
+    "currentLng": 42.5274381,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.4397852,42.5274381"
+  },
+  {
+    "id": "aebc781b-0a7e-4e20-a5d4-21eb275d0082",
+    "name": "Farasan General Hospital",
+    "currentLat": 16.6954553,
+    "currentLng": 42.1188235,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.6954553,42.1188235"
+  },
+  {
+    "id": "7a85245e-3a19-46a3-8776-9c0e6c127ff1",
+    "name": "Fayfa General Hospital",
+    "currentLat": 17.2682963,
+    "currentLng": 43.1134234,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.2682963,43.1134234"
+  },
+  {
+    "id": "b5c3e694-26f5-4d78-b399-4d04fbe5e660",
+    "name": "Jazan General Hospital (JGH)",
+    "currentLat": 16.8957234,
+    "currentLng": 42.5557874,
+    "address": "Jazan, Saudi Arabia",
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.8957234,42.5557874"
+  },
+  {
+    "id": "c239c223-5380-4f37-9466-82f22b80e676",
+    "name": "Jazan Specialized Hospital",
+    "currentLat": 16.806384,
+    "currentLng": 42.6555153,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.806384,42.6555153"
+  },
+  {
+    "id": "102ad4ac-654b-44b9-a7a2-77f9d588013d",
+    "name": "King Fahad Central Hospital (KFCH)",
+    "currentLat": 16.9220163,
+    "currentLng": 42.7355263,
+    "address": "Jazan, Saudi Arabia",
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.9220163,42.7355263"
+  },
+  {
+    "id": "34470413-f3dc-42f9-b418-320483fdf115",
+    "name": "Prince Mohammed Bin Nasser Hospital (PMNH)",
+    "currentLat": 16.9951348,
+    "currentLng": 42.6183107,
+    "address": "Jazan, Saudi Arabia",
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.9951348,42.6183107"
+  },
+  {
+    "id": "a4bfde37-f401-45cb-9b42-15ae53ae1150",
+    "name": "Sabya General Hospital",
+    "currentLat": 17.1525193,
+    "currentLng": 42.6473855,
+    "address": null,
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=17.1525193,42.6473855"
+  },
+  {
+    "id": "fa77b26a-f337-4add-9c75-5a0b4dae3b1e",
+    "name": "Samtah General Hospital",
+    "currentLat": 16.606612,
+    "currentLng": 42.941007,
+    "address": "Samtah, Jazan, Saudi Arabia",
+    "cluster": "Jazan",
+    "googleMapsLink": "https://www.google.com/maps/search/?api=1&query=16.606612,42.941007"
+  }
+]

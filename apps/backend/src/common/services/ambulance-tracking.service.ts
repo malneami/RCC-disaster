@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { HospitalBoundsService, AmbulancePosition } from './hospital-bounds.service';
 import { AmbulancesService } from '../../modules/ambulances/ambulances.service';
 import { EMSStatusUpdaterService } from './ems-status-updater.service';
+import { FileLoggerService } from './file-logger.service';
 
 export interface AmbulanceLocationUpdate {
   latitude: number;
@@ -33,13 +34,17 @@ export interface AmbulanceStatus {
 @Injectable()
 export class AmbulanceTrackingService {
   private readonly logger = new Logger(AmbulanceTrackingService.name);
+  private readonly fileLogger: FileLoggerService;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly hospitalBoundsService: HospitalBoundsService,
     private readonly ambulancesService: AmbulancesService,
-    private readonly emsStatusUpdater: EMSStatusUpdaterService
-  ) {}
+    private readonly emsStatusUpdater: EMSStatusUpdaterService,
+    fileLogger: FileLoggerService
+  ) {
+    this.fileLogger = fileLogger;
+  }
 
   /**
    * Sync locations from external GPS provider
@@ -97,7 +102,13 @@ export class AmbulanceTrackingService {
         }
       }
 
-      this.logger.log(`GPS sync completed. Updated ${updatedCount} ambulances.`);
+      const message = `GPS sync completed. Updated ${updatedCount} ambulances.`;
+      this.logger.log(message);
+      this.fileLogger.logAmbulanceTracking(message, {
+        updatedCount,
+        totalRecords: gpsData.length,
+        errors: errors.length > 0 ? errors : undefined,
+      });
       
       return {
         success: true,
@@ -107,9 +118,72 @@ export class AmbulanceTrackingService {
       };
 
     } catch (error) {
-      this.logger.error(`GPS sync error: ${(error as Error).message}`, error);
+      const errorMsg = `GPS sync error: ${(error as Error).message}`;
+      this.logger.error(errorMsg, error);
+      this.fileLogger.error(errorMsg, error);
       throw error;
     }
+  }
+
+  /**
+   * Validate GPS coordinates for validity and sanity
+   */
+  private validateGPSData(update: AmbulanceLocationUpdate, previousLocation: AmbulancePosition | null): {
+    isValid: boolean;
+    reason?: string;
+  } {
+    // Check for valid coordinate ranges (Saudi Arabia approximate bounds)
+    const SAUDI_MIN_LAT = 16.0;
+    const SAUDI_MAX_LAT = 32.0;
+    const SAUDI_MIN_LNG = 34.0;
+    const SAUDI_MAX_LNG = 55.0;
+
+    if (update.latitude < SAUDI_MIN_LAT || update.latitude > SAUDI_MAX_LAT) {
+      return { isValid: false, reason: `Latitude ${update.latitude} out of valid range` };
+    }
+
+    if (update.longitude < SAUDI_MIN_LNG || update.longitude > SAUDI_MAX_LNG) {
+      return { isValid: false, reason: `Longitude ${update.longitude} out of valid range` };
+    }
+
+    // Check for zero coordinates (invalid)
+    if (update.latitude === 0 && update.longitude === 0) {
+      return { isValid: false, reason: 'Zero coordinates detected' };
+    }
+
+    // Check for erratic movement (if previous location exists)
+    if (previousLocation) {
+      const distance = this.calculateDistance(
+        previousLocation.latitude,
+        previousLocation.longitude,
+        update.latitude,
+        update.longitude
+      );
+
+      // Calculate time difference (in seconds)
+      const timeDiff = (update.timestamp.getTime() - new Date().getTime()) / 1000;
+      const absTimeDiff = Math.abs(timeDiff);
+
+      // If coordinates are very recent (within last minute), check for unrealistic speed
+      if (absTimeDiff < 60) {
+        // Maximum reasonable speed for ambulance: 150 km/h
+        const maxReasonableSpeed = 150; // km/h
+        const timeHours = absTimeDiff / 3600;
+        const calculatedSpeed = distance / timeHours;
+
+        if (calculatedSpeed > maxReasonableSpeed) {
+          this.logger.warn(
+            `Erratic GPS data detected for ambulance: ` +
+            `distance=${distance.toFixed(2)}km, ` +
+            `calculated_speed=${calculatedSpeed.toFixed(2)}km/h, ` +
+            `time_diff=${absTimeDiff.toFixed(1)}s`
+          );
+          // Don't reject, but log warning - GPS can have temporary spikes
+        }
+      }
+    }
+
+    return { isValid: true };
   }
 
   /**
@@ -118,6 +192,12 @@ export class AmbulanceTrackingService {
   async updateAmbulanceLocation(ambulanceId: string, update: AmbulanceLocationUpdate): Promise<AmbulanceStatus> {
     try {
       this.logger.log(`Updating location for ambulance ${ambulanceId}`);
+      this.fileLogger.logAmbulanceTracking(`Updating location for ambulance ${ambulanceId}`, {
+        ambulanceId,
+        latitude: update.latitude,
+        longitude: update.longitude,
+        timestamp: update.timestamp.toISOString(),
+      });
 
       // Validate ambulance exists
       const ambulance = await this.prisma.ambulance.findFirst({
@@ -129,6 +209,36 @@ export class AmbulanceTrackingService {
 
       if (!ambulance) {
         throw new Error(`Ambulance ${ambulanceId} not found`);
+      }
+
+      // Get previous location for validation
+      const previousLocation = await this.getPreviousLocation(ambulanceId);
+
+      // Validate GPS data
+      const gpsValidation = this.validateGPSData(update, previousLocation);
+      if (!gpsValidation.isValid) {
+        const warnMsg = `Invalid GPS data for ambulance ${ambulanceId}: ${gpsValidation.reason}`;
+        this.logger.warn(warnMsg);
+        this.fileLogger.warn(warnMsg, { ambulanceId, update });
+        
+        // If we have a previous valid location, use it instead
+        if (previousLocation) {
+          this.logger.log(`Using previous valid location for ambulance ${ambulanceId}`);
+          update.latitude = previousLocation.latitude;
+          update.longitude = previousLocation.longitude;
+        } else {
+          // No previous location and invalid data - skip this update silently
+          // This ambulance will be updated when valid GPS data arrives
+          this.logger.debug(`Skipping update for ambulance ${ambulanceId} - no valid GPS data yet`);
+          return {
+            ambulanceId: ambulanceId,
+            currentPosition: { latitude: 0, longitude: 0 },
+            isWithinHospital: false,
+            nearbyHospitals: [],
+            nearestHospital: undefined,
+            lastUpdated: update.timestamp
+          };
+        }
       }
 
       // Store location update and manage rolling window
@@ -145,19 +255,41 @@ export class AmbulanceTrackingService {
         }
       });
 
+      // Validate GPS coordinates before zone processing
+      // Skip zone processing for invalid coordinates (0,0) to prevent false zone entries/exits
+      // IMPORTANT: This validation should match the validation in storeLocationUpdate
+      const isInvalidCoordinates = (update.latitude === 0 && update.longitude === 0) ||
+                                   isNaN(update.latitude) || isNaN(update.longitude) ||
+                                   update.latitude < 16 || update.latitude > 32 ||
+                                   update.longitude < 34 || update.longitude > 55;
+      
+      if (isInvalidCoordinates) {
+        this.logger.debug(`Skipping zone processing for ambulance ${ambulanceId} - invalid GPS coordinates: (${update.latitude}, ${update.longitude})`);
+        // Still return a status, but don't process zones
+        // Use previous valid location if available, otherwise return invalid position
+        const previousLocation = await this.getPreviousLocation(ambulanceId);
+        return {
+          ambulanceId: ambulanceId,
+          currentPosition: previousLocation || {
+            latitude: update.latitude,
+            longitude: update.longitude
+          },
+          isWithinHospital: false,
+          nearbyHospitals: [],
+          nearestHospital: undefined,
+          lastUpdated: update.timestamp
+        };
+      }
+
       // Check hospital proximity
       const validation = await this.hospitalBoundsService.validateAmbulancePosition({
         latitude: update.latitude,
         longitude: update.longitude
       });
 
-      // Handle Zone Logic (Permanent Log)
+      // Handle Zone Logic (Permanent Log) - only for valid GPS coordinates
       await this.handleZoneLogic(ambulanceId, validation);
 
-      // Calculate Direction/Status (Solution 1 & 2)
-      // We need at least one previous point to calculate direction
-      const previousLocation = await this.getPreviousLocation(ambulanceId);
-      
       // Build response
       const status: AmbulanceStatus = {
         ambulanceId: ambulanceId,
@@ -179,20 +311,33 @@ export class AmbulanceTrackingService {
         lastUpdated: update.timestamp
       };
 
-      // Log the result
+      // Log the result to both console and file
       if (validation.isWithinAnyHospital) {
-        this.logger.log(
-          `Ambulance ${ambulanceId} is within ${validation.nearbyHospitals.length} hospital(s)`
-        );
+        const message = `Ambulance ${ambulanceId} is within ${validation.nearbyHospitals.length} hospital(s)`;
+        this.logger.log(message);
+        this.fileLogger.logLocationUpdate(ambulanceId, {
+          latitude: update.latitude,
+          longitude: update.longitude,
+          isWithinHospital: true,
+          nearbyHospitalsCount: validation.nearbyHospitals.length,
+          hospitalNames: validation.nearbyHospitals.map((h: any) => h.hospital.hospitalName),
+        });
       } else {
-        this.logger.log(
-          `Ambulance ${ambulanceId} is not within any hospital zone.`
-        );
+        const message = `Ambulance ${ambulanceId} is not within any hospital zone.`;
+        this.logger.log(message);
+        this.fileLogger.logLocationUpdate(ambulanceId, {
+          latitude: update.latitude,
+          longitude: update.longitude,
+          isWithinHospital: false,
+          nearbyHospitalsCount: 0,
+        });
       }
 
       return status;
     } catch (error) {
-      this.logger.error(`Failed to update ambulance location: ${(error as Error).message}`, error);
+      const errorMsg = `Failed to update ambulance location: ${(error as Error).message}`;
+      this.logger.error(errorMsg, error);
+      this.fileLogger.error(errorMsg, error, { ambulanceId });
       throw error;
     }
   }
@@ -265,22 +410,68 @@ export class AmbulanceTrackingService {
   }
 
   /**
-   * Store location update in database and maintain rolling 20-minute window
+   * Store location update in database and maintain rolling 10-day window
+   * Avoids storing duplicate coordinates with same timestamp
+   * IMPORTANT: Only stores valid coordinates (not 0,0 and within valid range)
    */
   private async storeLocationUpdate(ambulanceId: string, update: AmbulanceLocationUpdate): Promise<void> {
     try {
-      // 1. Save new location
+      // CRITICAL: Validate coordinates before storing
+      // Skip invalid coordinates (0,0) or coordinates outside valid range
+      if (update.latitude === 0 && update.longitude === 0) {
+        this.logger.debug(`Skipping storage of invalid coordinates (0,0) for ambulance ${ambulanceId}`);
+        return;
+      }
+      
+      if (isNaN(update.latitude) || isNaN(update.longitude)) {
+        this.logger.debug(`Skipping storage of NaN coordinates for ambulance ${ambulanceId}`);
+        return;
+      }
+      
+      // Validate coordinates are within Saudi Arabia bounds
+      if (update.latitude < 16 || update.latitude > 32 || 
+          update.longitude < 34 || update.longitude > 55) {
+        this.logger.debug(`Skipping storage of coordinates outside valid range for ambulance ${ambulanceId}: (${update.latitude}, ${update.longitude})`);
+        return;
+      }
+
+      // 1. Check if we already have this exact location stored recently (within 30 seconds)
+      // This prevents duplicate entries from multiple polling cycles reporting same GPS data
+      // Reduced from 1 minute to 30 seconds to allow more frequent updates
+      const recentDuplicate = await this.prisma.gPSTrackingLog.findFirst({
+        where: {
+          ambulanceId: ambulanceId,
+          latitude: update.latitude,
+          longitude: update.longitude,
+          timestamp: {
+            gte: new Date(update.timestamp.getTime() - 30 * 1000), // Within 30 seconds
+            lte: new Date(update.timestamp.getTime() + 30 * 1000)
+          }
+        }
+      });
+
+      // Skip if exact duplicate exists within 30 seconds
+      if (recentDuplicate) {
+        this.logger.debug(`Skipping duplicate location for ambulance ${ambulanceId} at (${update.latitude}, ${update.longitude})`);
+        return;
+      }
+
+      // 2. Save new location
       await this.prisma.gPSTrackingLog.create({
         data: {
           ambulanceId: ambulanceId,
           latitude: update.latitude,
           longitude: update.longitude,
           timestamp: update.timestamp,
+          speed: update.speed,
+          direction: update.direction,
         }
       });
+      
+      this.logger.debug(`Stored location update for ambulance ${ambulanceId}: (${update.latitude}, ${update.longitude}) at ${update.timestamp.toISOString()}`);
 
-      // 2. Delete logs older than 24 hours for this ambulance (increased from 20 mins to handle timezone diffs)
-      const retentionPeriod = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      // 3. Delete logs older than 10 days for this ambulance (for investigation purposes)
+      const retentionPeriod = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
       await this.prisma.gPSTrackingLog.deleteMany({
         where: {
           ambulanceId: ambulanceId,
@@ -297,9 +488,22 @@ export class AmbulanceTrackingService {
 
   /**
    * Handle Zone Entry/Exit Logic and trigger EMS status updates
+   * Includes debouncing to prevent rapid entry/exit due to GPS noise
+   * IMPORTANT: This function should only be called with valid GPS coordinates
    */
   private async handleZoneLogic(ambulanceId: string, validation: any): Promise<void> {
     let zoneChanged = false;
+    const MIN_ZONE_DURATION_MS = 3 * 60 * 1000; // Minimum 3 minutes in zone before exit is valid (increased from 2 to reduce GPS noise)
+    const MIN_ENTRY_CONFIRMATION_MS = 45 * 1000; // Require 45 seconds of consistent zone presence before logging entry (increased from 30)
+    const ZONE_TRANSITION_COOLDOWN_MS = 3 * 60 * 1000; // 3 minute cooldown between zone transitions (prevents rapid re-entries)
+    const now = new Date();
+    
+    // Safety check: Ensure validation has valid coordinates
+    // This is a double-check in case invalid data somehow gets through
+    if (!validation || !validation.nearbyHospitals) {
+      this.logger.warn(`Invalid validation data for ambulance ${ambulanceId} - skipping zone processing`);
+      return;
+    }
 
     // If within a hospital zone
     if (validation.isWithinAnyHospital) {
@@ -313,8 +517,127 @@ export class AmbulanceTrackingService {
           }
         });
 
-        // If no open entry, create one
+        // If no open entry, check if we should create one
         if (!openEntry) {
+          // Check if there was a recent exit from this zone (within last 5 minutes)
+          // This prevents rapid re-entry after a brief exit due to GPS noise
+          const recentExit = await this.prisma.ambulanceZoneLog.findFirst({
+            where: {
+              ambulanceId: ambulanceId,
+              hospitalId: hospital.hospital.hospitalId,
+              exitTime: {
+                not: null,
+                gte: new Date(now.getTime() - 5 * 60 * 1000) // Within last 5 minutes
+              }
+            },
+            orderBy: {
+              exitTime: 'desc'
+            }
+          });
+
+          // If there was a recent exit with very short duration (< 3 minutes), 
+          // it might be GPS noise - check if we should merge instead of creating new entry
+          if (recentExit && recentExit.durationMinutes && recentExit.durationMinutes < 3) {
+            // This was likely GPS noise - reopen the previous entry instead
+            const timeSinceExit = now.getTime() - recentExit.exitTime!.getTime();
+            if (timeSinceExit < ZONE_TRANSITION_COOLDOWN_MS) { // Within cooldown period
+              // Reopen the previous entry (treat as continuous stay)
+              await this.prisma.ambulanceZoneLog.update({
+                where: { id: recentExit.id },
+                data: {
+                  exitTime: null,
+                  durationMinutes: null
+                }
+              });
+              this.logger.log(`Ambulance ${ambulanceId} zone entry merged with previous entry for ${hospital.hospital.hospitalName} (GPS noise correction)`);
+              zoneChanged = true;
+              continue;
+            }
+          }
+          
+          // Check for zone transition cooldown - prevent rapid re-entries from GPS noise
+          if (recentExit && recentExit.exitTime) {
+            const timeSinceExit = now.getTime() - recentExit.exitTime.getTime();
+            if (timeSinceExit < ZONE_TRANSITION_COOLDOWN_MS) {
+              this.logger.debug(
+                `Ambulance ${ambulanceId} attempted to re-enter ${hospital.hospital.hospitalName} within cooldown period ` +
+                `(${Math.round(timeSinceExit / 1000)}s since exit). Waiting for cooldown...`
+              );
+              continue; // Skip entry - still in cooldown period
+            }
+          }
+
+          // IMPORTANT: Check recent GPS history to confirm ambulance has been in zone consistently
+          // This prevents false entries from single GPS noise spikes or invalid coordinates
+          // Increased from 30s to 45s and from 3 to 5 points for better confirmation
+          const recentGPSLogs = await this.prisma.gPSTrackingLog.findMany({
+            where: {
+              ambulanceId: ambulanceId,
+              timestamp: {
+                gte: new Date(now.getTime() - MIN_ENTRY_CONFIRMATION_MS) // Last 45 seconds
+              },
+              // Filter out invalid coordinates at query level
+              latitude: {
+                not: 0,
+                gte: 16.0,
+                lte: 32.0
+              },
+              longitude: {
+                not: 0,
+                gte: 34.0,
+                lte: 55.0
+              }
+            },
+            orderBy: {
+              timestamp: 'desc'
+            },
+            take: 6 // Check last 6 GPS updates (increased from 5 for better confirmation)
+          });
+
+          // Filter out any remaining invalid coordinates (double-check)
+          const validGPSLogs = recentGPSLogs.filter(log => {
+            if (log.latitude === 0 && log.longitude === 0) return false;
+            if (isNaN(log.latitude) || isNaN(log.longitude)) return false;
+            if (log.latitude < 16 || log.latitude > 32 || log.longitude < 34 || log.longitude > 55) return false;
+            return true;
+          });
+
+          // Verify at least 3 of the valid GPS points are also in this hospital zone
+          // This confirms the ambulance is actually in the zone, not just a GPS glitch
+          // Increased from 2 to 3 points for better confirmation
+          if (validGPSLogs.length >= 3) {
+            let pointsInZone = 0;
+            const hospitalBounds = hospital.hospital; // HospitalBounds object
+            for (const log of validGPSLogs) {
+              const distance = this.hospitalBoundsService.calculateDistance(
+                log.latitude,
+                log.longitude,
+                hospitalBounds.centerLat,
+                hospitalBounds.centerLng
+              );
+              if (distance <= hospitalBounds.radiusKm) {
+                pointsInZone++;
+              }
+            }
+            
+            // Require at least 3 out of valid points to be in zone before logging entry
+            // This prevents false entries from GPS noise or invalid coordinates
+            // Require 70% of points (increased from 60%) to be in zone for better accuracy
+            const requiredPoints = Math.max(3, Math.ceil(validGPSLogs.length * 0.7)); // At least 70% of valid points
+            if (pointsInZone < requiredPoints) {
+              this.logger.debug(
+                `Ambulance ${ambulanceId} appears near ${hospitalBounds.hospitalName} but only ${pointsInZone}/${validGPSLogs.length} valid GPS points confirm (need ${requiredPoints}) - waiting for confirmation before logging entry`
+              );
+              continue; // Skip entry - not enough confirmation
+            }
+          } else {
+            // Not enough valid GPS logs in recent history - skip entry to avoid false positives
+            this.logger.debug(
+              `Ambulance ${ambulanceId} appears near ${hospital.hospital.hospitalName} but only ${validGPSLogs.length} GPS points available (need at least 3) - skipping entry`
+            );
+            continue;
+          }
+
           // Classify zone type (origin/destination/other)
           const zoneType = await this.classifyZoneType(ambulanceId, hospital.hospital.hospitalId);
           
@@ -323,10 +646,10 @@ export class AmbulanceTrackingService {
               ambulanceId: ambulanceId,
               hospitalId: hospital.hospital.hospitalId,
               zoneType: zoneType,
-              entryTime: new Date()
+              entryTime: now
             }
           });
-          this.logger.log(`Ambulance ${ambulanceId} entered ${zoneType} zone of ${hospital.hospital.hospitalName}`);
+          this.logger.log(`Ambulance ${ambulanceId} entered ${zoneType} zone of ${hospital.hospital.hospitalName} (confirmed by recent GPS history)`);
           zoneChanged = true;
           
           // Trigger zone entry status update
@@ -354,9 +677,22 @@ export class AmbulanceTrackingService {
       );
 
       if (!isStillNearby) {
+        // Check minimum duration threshold before allowing exit
+        const entryDuration = now.getTime() - entry.entryTime.getTime();
+        
+        if (entryDuration < MIN_ZONE_DURATION_MS) {
+          // Too short - likely GPS noise, don't exit yet
+          this.logger.debug(
+            `Ambulance ${ambulanceId} appears to have exited ${entry.hospital.name} zone, ` +
+            `but duration (${Math.round(entryDuration / 1000)}s) is below minimum threshold. ` +
+            `Waiting for confirmation...`
+          );
+          continue; // Skip this exit for now
+        }
+
         // Close the entry
-        const exitTime = new Date();
-        const durationMinutes = Math.round((exitTime.getTime() - entry.entryTime.getTime()) / 60000);
+        const exitTime = now;
+        const durationMinutes = Math.round(entryDuration / 60000);
         
         await this.prisma.ambulanceZoneLog.update({
           where: { id: entry.id },
@@ -841,6 +1177,273 @@ export class AmbulanceTrackingService {
       }));
     } catch (error) {
       this.logger.error(`Failed to get ambulances for assignment: ${(error as Error).message}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get suspicious zone entries for investigation
+   * Finds entries with unusually short durations that might indicate GPS issues
+   */
+  async getSuspiciousZoneEntries(filters: {
+    minDurationMinutes?: number;
+    maxDurationMinutes?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<Array<{
+    id: string;
+    ambulanceId: string;
+    ambulance: any;
+    hospitalId: string;
+    hospitalName: string;
+    zoneType: string;
+    entryTime: Date;
+    exitTime: Date | null;
+    durationMinutes: number | null;
+    isSuspicious: boolean;
+    suspiciousReason: string;
+  }>> {
+    try {
+      const where: any = {
+        exitTime: { not: null }, // Only completed entries
+        durationMinutes: { not: null }
+      };
+
+      // Apply duration filters
+      if (filters.minDurationMinutes !== undefined || filters.maxDurationMinutes !== undefined) {
+        where.durationMinutes = {};
+        if (filters.minDurationMinutes !== undefined) {
+          where.durationMinutes.gte = filters.minDurationMinutes;
+        }
+        if (filters.maxDurationMinutes !== undefined) {
+          where.durationMinutes.lte = filters.maxDurationMinutes;
+        }
+      }
+
+      // Apply date filters
+      if (filters.startDate) {
+        where.entryTime = { ...where.entryTime, gte: filters.startDate };
+      }
+      if (filters.endDate) {
+        where.entryTime = { ...where.entryTime, lte: filters.endDate };
+      }
+
+      const logs = await this.prisma.ambulanceZoneLog.findMany({
+        where,
+        include: {
+          ambulance: {
+            select: {
+              id: true,
+              vehicleImei: true,
+              callSign: true,
+              plateNumber: true,
+              status: true
+            }
+          },
+          hospital: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          entryTime: 'desc'
+        }
+      });
+
+      return logs.map(log => {
+        let suspiciousReason = '';
+        const duration = log.durationMinutes || 0;
+
+        if (duration < 3) {
+          suspiciousReason = 'Very short duration (< 3 mins) - likely GPS noise';
+        } else if (duration < 5) {
+          suspiciousReason = 'Short duration (< 5 mins) - possible brief stop or GPS fluctuation';
+        } else if (duration <= 10) {
+          suspiciousReason = 'Short duration (5-10 mins) - quick stop, possible drive-through';
+        }
+
+        return {
+          id: log.id,
+          ambulanceId: log.ambulanceId,
+          ambulance: log.ambulance,
+          hospitalId: log.hospitalId,
+          hospitalName: log.hospital.name,
+          zoneType: log.zoneType,
+          entryTime: log.entryTime,
+          exitTime: log.exitTime,
+          durationMinutes: log.durationMinutes,
+          isSuspicious: duration <= 10,
+          suspiciousReason
+        };
+      });
+    } catch (error) {
+      this.logger.error(`Failed to get suspicious zone entries: ${(error as Error).message}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get ambulance route history for map visualization
+   * Returns GPS tracking points within the specified time range
+   */
+  async getAmbulanceRoute(
+    ambulanceId: string,
+    options: {
+      startTime: Date;
+      endTime: Date;
+      limit?: number;
+    }
+  ): Promise<{
+    ambulanceId: string;
+    ambulance: any;
+    route: Array<{
+      latitude: number;
+      longitude: number;
+      timestamp: Date;
+      speed?: number;
+      direction?: number;
+    }>;
+    totalPoints: number;
+    startTime: Date;
+    endTime: Date;
+    distanceTraveled: number;
+  }> {
+    try {
+      // Get ambulance details
+      const ambulance = await this.prisma.ambulance.findFirst({
+        where: {
+          id: ambulanceId,
+          deletedAt: null
+        },
+        select: {
+          id: true,
+          vehicleImei: true,
+          callSign: true,
+          plateNumber: true,
+          status: true
+        }
+      });
+
+      if (!ambulance) {
+        throw new Error(`Ambulance ${ambulanceId} not found`);
+      }
+
+      // Get GPS tracking logs within time range
+      // IMPORTANT: Filter out invalid coordinates (0,0) and coordinates outside valid range
+      this.logger.debug(`Fetching route for ambulance ${ambulanceId} from ${options.startTime.toISOString()} to ${options.endTime.toISOString()}`);
+      
+      const allLogs = await this.prisma.gPSTrackingLog.findMany({
+        where: {
+          ambulanceId,
+          timestamp: {
+            gte: options.startTime,
+            lte: options.endTime
+          },
+          // Filter out invalid coordinates at query level
+          latitude: {
+            not: 0,
+            gte: 16.0, // Saudi Arabia minimum latitude
+            lte: 32.0  // Saudi Arabia maximum latitude
+          },
+          longitude: {
+            not: 0,
+            gte: 34.0, // Saudi Arabia minimum longitude
+            lte: 55.0  // Saudi Arabia maximum longitude
+          }
+        },
+        orderBy: {
+          timestamp: 'asc'
+        },
+        // Remove the limit multiplication - we want all valid points
+        take: options.limit ? options.limit * 10 : 10000 // Get more points to account for deduplication
+      });
+
+      this.logger.debug(`Found ${allLogs.length} GPS logs in database for ambulance ${ambulanceId} in time range`);
+
+      // Filter out any remaining invalid coordinates (double-check)
+      const validLogs = allLogs.filter(log => {
+        // Skip invalid coordinates
+        if (log.latitude === 0 && log.longitude === 0) return false;
+        if (isNaN(log.latitude) || isNaN(log.longitude)) return false;
+        if (log.latitude < 16 || log.latitude > 32 || log.longitude < 34 || log.longitude > 55) return false;
+        return true;
+      });
+      
+      this.logger.debug(`After filtering invalid coordinates: ${validLogs.length} valid logs for ambulance ${ambulanceId}`);
+
+      // Remove duplicate consecutive coordinates (GPS sometimes reports same location multiple times)
+      // BUT: Only remove if they are EXACTLY the same AND within 30 seconds (likely duplicate from polling)
+      // This is less aggressive - we keep points even if they're close together (ambulance might be moving slowly)
+      const logs = validLogs.filter((log, index) => {
+        if (index === 0) return true;
+        const prev = validLogs[index - 1];
+        
+        // If coordinates are exactly the same AND timestamp is very close (< 30 seconds), it's likely a duplicate
+        const isExactDuplicate = prev.latitude === log.latitude && 
+                                  prev.longitude === log.longitude;
+        const timeDiff = Math.abs(log.timestamp.getTime() - prev.timestamp.getTime());
+        const isRecentDuplicate = timeDiff < 30 * 1000; // 30 seconds
+        
+        // Remove only if it's an exact duplicate within 30 seconds
+        if (isExactDuplicate && isRecentDuplicate) {
+          return false;
+        }
+        
+        // Otherwise keep the point (even if close together - ambulance might be moving slowly)
+        return true;
+      }).slice(0, options.limit || 1000);
+      
+      this.logger.debug(`After deduplication: ${logs.length} unique route points for ambulance ${ambulanceId} (limit: ${options.limit || 1000})`);
+
+      // Calculate total distance traveled and detect gaps
+      // A gap is defined as > 10 minutes between consecutive points
+      const GAP_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+      let distanceTraveled = 0;
+      const routeWithGaps = logs.map((log, index) => {
+        let hasGapBefore = false;
+        let gapMinutes = 0;
+        
+        if (index > 0) {
+          const prev = logs[index - 1];
+          const timeDiff = log.timestamp.getTime() - prev.timestamp.getTime();
+          hasGapBefore = timeDiff > GAP_THRESHOLD_MS;
+          gapMinutes = Math.round(timeDiff / 60000);
+          
+          // Only add to distance if not a gap (gaps indicate missing data, not actual travel)
+          if (!hasGapBefore) {
+            distanceTraveled += this.calculateDistance(
+              prev.latitude,
+              prev.longitude,
+              log.latitude,
+              log.longitude
+            );
+          }
+        }
+        
+        return {
+          latitude: log.latitude,
+          longitude: log.longitude,
+          timestamp: log.timestamp,
+          speed: log.speed ?? undefined,
+          direction: log.direction ?? undefined,
+          hasGapBefore, // True if there's a data gap before this point
+          gapMinutes: hasGapBefore ? gapMinutes : undefined // Minutes since previous point if gap
+        };
+      });
+
+      return {
+        ambulanceId,
+        ambulance,
+        route: routeWithGaps,
+        totalPoints: logs.length,
+        startTime: options.startTime,
+        endTime: options.endTime,
+        distanceTraveled: Math.round(distanceTraveled * 100) / 100 // Round to 2 decimal places (km)
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get ambulance route: ${(error as Error).message}`, error);
       throw error;
     }
   }

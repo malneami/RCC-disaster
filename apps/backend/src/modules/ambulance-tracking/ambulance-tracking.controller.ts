@@ -13,6 +13,11 @@ export class AmbulanceTrackingController {
     private gpsPolling: GPSPollingService
   ) {}
 
+  // ==========================================
+  // STATIC ROUTES (no dynamic params in first segment)
+  // These MUST come before routes with :param in first segment
+  // ==========================================
+
   /**
    * Update ambulance location
    */
@@ -163,26 +168,6 @@ export class AmbulanceTrackingController {
   }
 
   /**
-   * Get location history for an ambulance (last N minutes)
-   */
-  @Get(':ambulanceId/history')
-  async getLocationHistory(
-    @Param('ambulanceId') ambulanceId: string,
-    @Query('minutes') minutes?: string
-  ) {
-    const minutesNum = minutes ? parseInt(minutes) : 20;
-    return await this.ambulanceTrackingService.getLocationHistory(ambulanceId, minutesNum);
-  }
-
-  /**
-   * Get zone logs for a specific ambulance
-   */
-  @Get(':ambulanceId/zone-logs')
-  async getAmbulanceZoneLogs(@Param('ambulanceId') ambulanceId: string) {
-    return await this.ambulanceTrackingService.getZoneLogs({ ambulanceId });
-  }
-
-  /**
    * Get ambulances that entered a zone within the last N minutes
    */
   @Get('zones/:hospitalId/recent')
@@ -228,5 +213,91 @@ export class AmbulanceTrackingController {
   @Post('polling/trigger')
   async triggerPoll() {
     return await this.gpsPolling.triggerPoll();
+  }
+
+  /**
+   * Get suspicious zone entries (very short durations, likely GPS noise or data issues)
+   * Finds entries with duration around 10 minutes (8-12 minutes range)
+   */
+  @Get('investigation/suspicious-zone-entries')
+  async getSuspiciousZoneEntries(
+    @Query('minMinutes') minMinutes?: string,
+    @Query('maxMinutes') maxMinutes?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string
+  ) {
+    const minDuration = minMinutes ? parseInt(minMinutes) : 8; // Default: 8 minutes
+    const maxDuration = maxMinutes ? parseInt(maxMinutes) : 12; // Default: 12 minutes
+    
+    return await this.ambulanceTrackingService.getSuspiciousZoneEntries({
+      minDurationMinutes: minDuration,
+      maxDurationMinutes: maxDuration,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+    });
+  }
+
+  // ==========================================
+  // DYNAMIC ROUTES with :ambulanceId in first segment
+  // These MUST come AFTER all static routes
+  // ==========================================
+
+  /**
+   * Get ambulance route history for visualization
+   */
+  @Get('route/:ambulanceId')
+  async getAmbulanceRoute(
+    @Param('ambulanceId') ambulanceId: string,
+    @Query('startTime') startTime?: string,
+    @Query('endTime') endTime?: string,
+    @Query('limit') limit?: string
+  ) {
+    this.logger.log(`Getting route for ambulance ${ambulanceId}`);
+    const start = startTime ? new Date(startTime) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const end = endTime ? new Date(endTime) : new Date();
+    const limitNum = limit ? parseInt(limit) : 1000; // Default: 1000 points
+    
+    const result = await this.ambulanceTrackingService.getAmbulanceRoute(ambulanceId, {
+      startTime: start,
+      endTime: end,
+      limit: limitNum
+    });
+    
+    // Enhanced debug logging
+    this.logger.log(`Route for ${ambulanceId}: ${result.route.length} points, distance: ${result.distanceTraveled}km`);
+    this.logger.log(`  Time range: ${start.toISOString()} to ${end.toISOString()}`);
+    this.logger.log(`  Requested limit: ${limitNum}, Actual points returned: ${result.route.length}`);
+    
+    if (result.route.length > 0) {
+      const firstPt = result.route[0];
+      const lastPt = result.route[result.route.length - 1];
+      this.logger.log(`  First point: lat=${firstPt.latitude}, lng=${firstPt.longitude}, time=${firstPt.timestamp}`);
+      this.logger.log(`  Last point: lat=${lastPt.latitude}, lng=${lastPt.longitude}, time=${lastPt.timestamp}`);
+    } else {
+      this.logger.warn(`  WARNING: No route points returned for ambulance ${ambulanceId} in time range ${start.toISOString()} to ${end.toISOString()}`);
+      this.logger.warn(`  This could indicate: 1) No GPS data in this range, 2) All coordinates were invalid (0,0), 3) All points were filtered out`);
+    }
+    
+    return result;
+  }
+
+  /**
+   * Get location history for an ambulance (last N minutes)
+   */
+  @Get('history/:ambulanceId')
+  async getLocationHistory(
+    @Param('ambulanceId') ambulanceId: string,
+    @Query('minutes') minutes?: string
+  ) {
+    const minutesNum = minutes ? parseInt(minutes) : 20;
+    return await this.ambulanceTrackingService.getLocationHistory(ambulanceId, minutesNum);
+  }
+
+  /**
+   * Get zone logs for a specific ambulance
+   */
+  @Get('zone-logs/:ambulanceId')
+  async getAmbulanceZoneLogs(@Param('ambulanceId') ambulanceId: string) {
+    return await this.ambulanceTrackingService.getZoneLogs({ ambulanceId });
   }
 }

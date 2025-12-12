@@ -1,16 +1,12 @@
 import React from 'react';
 import {
   Box,
-  Paper,
   Typography,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
   IconButton,
   Chip,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { MapFilters as MapFiltersType } from '../types';
 
 interface MapFiltersProps {
@@ -21,10 +17,10 @@ interface MapFiltersProps {
 
 const MapFiltersComponent: React.FC<MapFiltersProps> = ({ filters, onFiltersChange, onClose }) => {
   const statusOptions = [
-    { value: 'AVAILABLE', label: 'Available', color: '#4caf50' },
-    { value: 'IN_USE', label: 'Assigned / In Use', color: '#2196f3' },
-    { value: 'MAINTENANCE', label: 'Maintenance', color: '#ff9800' },
-    { value: 'OUT_OF_SERVICE', label: 'Out of Service', color: '#f44336' },
+    { value: 'AVAILABLE', label: 'Available', color: '#34a853' },
+    { value: 'IN_USE', label: 'In Use', color: '#4285f4' },
+    { value: 'MAINTENANCE', label: 'Maintenance', color: '#fbbc04' },
+    { value: 'OUT_OF_SERVICE', label: 'Out of Service', color: '#ea4335' },
   ];
 
   const handleStatusChange = (status: string) => {
@@ -40,88 +36,121 @@ const MapFiltersComponent: React.FC<MapFiltersProps> = ({ filters, onFiltersChan
     onFiltersChange({});
   };
 
-  const hasActiveFilters = (filters.status && filters.status.length > 0);
+  const activeFilterCount = filters.status?.length || 0;
 
   return (
-    <Paper
-      elevation={3}
+    <Box
       sx={{
         position: 'absolute',
-        top: 20,
-        left: 20,
+        top: 10,
+        left: 10,
         zIndex: 1000,
-        p: 2,
-        width: 280,
-        maxHeight: '80vh',
-        overflow: 'auto',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(10px)',
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+        overflow: 'hidden',
+        minWidth: 200,
       }}
     >
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Filters</Typography>
-        <IconButton size="small" onClick={onClose}>
-          <FontAwesomeIcon icon={faTimes} />
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          py: 1.5,
+          borderBottom: '1px solid #e8eaed',
+        }}
+      >
+        <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#202124' }}>
+          Filter by status
+        </Typography>
+        <IconButton size="small" onClick={onClose} sx={{ ml: 1 }}>
+          <FontAwesomeIcon icon={faTimes} size="sm" color="#5f6368" />
         </IconButton>
       </Box>
 
-      {/* Clear All Button */}
-      {hasActiveFilters && (
-        <Box sx={{ mb: 2 }}>
+      {/* Status Options */}
+      <Box sx={{ p: 1.5 }}>
+        {statusOptions.map((option) => {
+          const isSelected = filters.status?.includes(option.value);
+          return (
+            <Box
+              key={option.value}
+              onClick={() => handleStatusChange(option.value)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                px: 1.5,
+                py: 1,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                backgroundColor: isSelected ? `${option.color}10` : 'transparent',
+                '&:hover': {
+                  backgroundColor: isSelected ? `${option.color}15` : '#f8f9fa',
+                },
+                transition: 'background-color 0.15s ease',
+              }}
+            >
+              {/* Status indicator */}
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  backgroundColor: option.color,
+                  flexShrink: 0,
+                }}
+              />
+              
+              {/* Label */}
+              <Typography
+                sx={{
+                  flex: 1,
+                  fontSize: '13px',
+                  color: '#202124',
+                }}
+              >
+                {option.label}
+              </Typography>
+
+              {/* Checkmark */}
+              {isSelected && (
+                <FontAwesomeIcon icon={faCheck} size="sm" color={option.color} />
+              )}
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* Clear All */}
+      {activeFilterCount > 0 && (
+        <Box
+          sx={{
+            px: 2,
+            pb: 1.5,
+          }}
+        >
           <Chip
-            label="Clear All Filters"
-            onDelete={handleClearAll}
-            color="primary"
-            variant="outlined"
+            label={`Clear ${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''}`}
+            onClick={handleClearAll}
             size="small"
-            sx={{ width: '100%' }}
+            sx={{
+              fontSize: '12px',
+              height: 28,
+              backgroundColor: '#f1f3f4',
+              color: '#5f6368',
+              '&:hover': {
+                backgroundColor: '#e8eaed',
+              },
+            }}
           />
         </Box>
       )}
-
-      {/* Status Filters */}
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>
-          Status
-        </Typography>
-        <FormGroup>
-          {statusOptions.map((option) => (
-            <FormControlLabel
-              key={option.value}
-              control={
-                <Checkbox
-                  checked={filters.status?.includes(option.value) || false}
-                  onChange={() => handleStatusChange(option.value)}
-                  size="small"
-                  sx={{
-                    color: option.color,
-                    '&.Mui-checked': {
-                      color: option.color,
-                    },
-                  }}
-                />
-              }
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      backgroundColor: option.color,
-                    }}
-                  />
-                  <Typography variant="body2">{option.label}</Typography>
-                </Box>
-              }
-            />
-          ))}
-        </FormGroup>
-      </Box>
-    </Paper>
+    </Box>
   );
 };
 
 export default MapFiltersComponent;
-

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Box, Paper, Typography, Chip, IconButton, Collapse } from '@mui/material';
+import { Box, Typography, IconButton } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faInfoCircle, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { getStatusColor } from '../utils/mapHelpers';
 
 interface MapLegendProps {
@@ -17,149 +17,138 @@ interface MapLegendProps {
 }
 
 const MapLegend: React.FC<MapLegendProps> = ({ stats }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const legendItems = [
-    {
-      label: 'Available',
-      color: getStatusColor('AVAILABLE'),
-      count: stats.available,
-      status: 'AVAILABLE',
-    },
-    {
-      label: 'In Use',
-      color: getStatusColor('IN_USE'),
-      count: stats.inUse,
-      status: 'IN_USE',
-    },
-    {
-      label: 'Maintenance',
-      color: getStatusColor('MAINTENANCE'),
-      count: stats.maintenance,
-      status: 'MAINTENANCE',
-    },
-    {
-      label: 'Out of Service',
-      color: getStatusColor('OUT_OF_SERVICE'),
-      count: stats.outOfService,
-      status: 'OUT_OF_SERVICE',
-    },
+    { label: 'Available', color: getStatusColor('AVAILABLE'), count: stats.available },
+    { label: 'In Use', color: getStatusColor('IN_USE'), count: stats.inUse },
+    { label: 'Maintenance', color: getStatusColor('MAINTENANCE'), count: stats.maintenance },
+    { label: 'Out of Service', color: getStatusColor('OUT_OF_SERVICE'), count: stats.outOfService },
   ];
 
   return (
-    <Paper
-      elevation={3}
+    <Box
       sx={{
         position: 'absolute',
-        bottom: 20,
-        left: 20,
+        bottom: 10,
+        left: 10,
         zIndex: 1000,
-        minWidth: isExpanded ? 250 : 'auto',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(10px)',
       }}
     >
-      {/* Header - Always Visible */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          p: 2,
-          cursor: 'pointer',
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+          overflow: 'hidden',
+          minWidth: isExpanded ? 160 : 'auto',
+          transition: 'min-width 0.2s ease',
         }}
-        onClick={() => setIsExpanded(!isExpanded)}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FontAwesomeIcon icon={faInfoCircle} color="#1976d2" />
-          <Typography variant="subtitle2" fontWeight="bold">
-            Ambulance Status
-          </Typography>
-          <Chip
-            label={stats.total}
-            size="small"
-            color="primary"
-            sx={{ minWidth: 40, height: 20, fontSize: '11px' }}
-          />
-        </Box>
-        <IconButton size="small">
-          <FontAwesomeIcon icon={isExpanded ? faChevronDown : faChevronUp} size="xs" />
-        </IconButton>
-      </Box>
-
-      {/* Collapsible Content */}
-      <Collapse in={isExpanded}>
-        <Box sx={{ px: 2, pb: 2 }}>
-          {/* Status Legend */}
-          <Box sx={{ mb: 2 }}>
-        {legendItems.map((item) => (
-          <Box
-            key={item.status}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 1,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: '50%',
-                  backgroundColor: item.color,
-                  border: '2px solid white',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-                }}
-              />
-              <Typography variant="body2">{item.label}</Typography>
+        {/* Collapsed: Inline summary */}
+        <Box
+          onClick={() => setIsExpanded(!isExpanded)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.5,
+            py: 1,
+            cursor: 'pointer',
+            '&:hover': { backgroundColor: '#f8f9fa' },
+          }}
+        >
+          {!isExpanded ? (
+            // Compact inline view
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              {legendItems.map((item) => (
+                <Box
+                  key={item.label}
+                  sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                >
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: item.color,
+                    }}
+                  />
+                  <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#5f6368' }}>
+                    {item.count}
+                  </Typography>
+                </Box>
+              ))}
             </Box>
-            <Chip
-              label={item.count}
-              size="small"
-              sx={{
-                minWidth: 40,
-                height: 20,
-                fontSize: '11px',
-                fontWeight: 'bold',
-              }}
+          ) : (
+            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#202124' }}>
+              Status Legend
+            </Typography>
+          )}
+          
+          <IconButton size="small" sx={{ p: 0.25, ml: 'auto' }}>
+            <FontAwesomeIcon 
+              icon={isExpanded ? faChevronDown : faChevronUp} 
+              size="xs" 
+              color="#5f6368" 
             />
-          </Box>
-        ))}
-          </Box>
+          </IconButton>
+        </Box>
 
-          {/* Total Stats */}
-          <Box
-            sx={{
-              pt: 2,
-              borderTop: '1px solid #e0e0e0',
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 1,
-            }}
-          >
-            <Box>
-              <Typography variant="caption" color="text.secondary" display="block">
+        {/* Expanded: Full legend */}
+        {isExpanded && (
+          <Box sx={{ px: 1.5, pb: 1.5 }}>
+            {legendItems.map((item) => (
+              <Box
+                key={item.label}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  py: 0.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: item.color,
+                    }}
+                  />
+                  <Typography sx={{ fontSize: '12px', color: '#5f6368' }}>
+                    {item.label}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#202124' }}>
+                  {item.count}
+                </Typography>
+              </Box>
+            ))}
+            
+            {/* Summary row */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                mt: 1,
+                pt: 1,
+                borderTop: '1px solid #e8eaed',
+              }}
+            >
+              <Typography sx={{ fontSize: '12px', color: '#5f6368' }}>
                 Total
               </Typography>
-              <Typography variant="h6" fontWeight="bold">
+              <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#202124' }}>
                 {stats.total}
               </Typography>
             </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary" display="block">
-                With Drivers
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {stats.withDriver}
-              </Typography>
-            </Box>
           </Box>
-        </Box>
-      </Collapse>
-    </Paper>
+        )}
+      </Box>
+    </Box>
   );
 };
 
 export default MapLegend;
-

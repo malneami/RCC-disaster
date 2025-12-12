@@ -28,6 +28,7 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:seed:critical": "ts-node prisma/seed-critical-cases.ts",
     "db:clean:critical": "ts-node prisma/clean-critical-cases.ts",
+    "analyze:zones": "python3 scripts/analyze_zone_entries.py",
     "db:seed:kpi-test": "ts-node prisma/seed-kpi-test-data.ts",
     "db:reset:kpi-test": "npm run db:clean:critical && npm run db:seed:kpi-test",
     "db:restore-users": "ts-node prisma/restore-users.ts",

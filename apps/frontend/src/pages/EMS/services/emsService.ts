@@ -244,6 +244,48 @@ class EMSService {
     await apiClient.post(`${this.baseUrl}/ambulance-tracking/sync`);
   }
 
+  async getAmbulanceRoute(
+    ambulanceId: string,
+    options?: {
+      startTime?: string;
+      endTime?: string;
+      limit?: number;
+    }
+  ): Promise<Array<{
+    latitude: number;
+    longitude: number;
+    timestamp: string;
+    speed?: number;
+    direction?: number;
+    distanceFromPrevious?: number;
+    timeFromPrevious?: number;
+  }>> {
+    const url = `/ambulance-tracking/route/${encodeURIComponent(ambulanceId)}`;
+    console.log('Fetching route from URL:', url, 'with options:', options);
+    
+    const response = await apiClient.get(url, {
+      params: options,
+    });
+    // The backend returns { ambulanceId, ambulance, route: [...], totalPoints, ... }
+    // Extract the route array from the response
+    if (response.data && response.data.route) {
+      return response.data.route;
+    }
+    return response.data;
+  }
+
+  async getSuspiciousZoneEntries(options?: {
+    minMinutes?: number;
+    maxMinutes?: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any[]> {
+    const response = await apiClient.get(`${this.baseUrl}/ambulance-tracking/investigation/suspicious-zone-entries`, {
+      params: options,
+    });
+    return response.data;
+  }
+
   async getZoneLogs(filters: {
     hospitalIds?: string[];
     ambulanceId?: string;
