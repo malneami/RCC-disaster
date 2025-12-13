@@ -37,13 +37,7 @@ async function bootstrap() {
 
   // CORS configuration
   app.enableCors({
-    origin: [
-      configService.get('FRONTEND_URL') || 'http://localhost:3000',
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:5175',
-      'https://rcc-front.onrender.com',
-    ],
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
