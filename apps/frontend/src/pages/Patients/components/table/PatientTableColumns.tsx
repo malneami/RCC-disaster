@@ -12,6 +12,7 @@ import {
 import { format } from 'date-fns';
 import { Patient } from '../../../../services/patientService';
 import { TableColumn } from '../../../../components/Common/DataTable';
+import { formatAgeForDisplay } from '../../../../utils/ageCalculator';
 
 interface PatientTableColumnsProps {
   onViewPatient: (patient: Patient) => void;
@@ -90,7 +91,7 @@ export const usePatientTableColumns = ({
       render: (patient: Patient) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2">
-            {patient.age || 'N/A'}y
+            {formatAgeForDisplay(patient.age, patient.dateOfBirth, patient.ageMonths, patient.ageDays)}
           </Typography>
         </Box>
       ),

@@ -389,7 +389,23 @@ const PatientsPortalPage: React.FC = () => {
                           <strong>Gender:</strong> {selectedPatient.gender}
                         </Typography>
                         <Typography variant="body2">
-                          <strong>Date of Birth:</strong> {selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'N/A'}
+                          <strong>Date of Birth:</strong> {selectedPatient.dateOfBirth ? (() => {
+                            try {
+                              const dob = new Date(selectedPatient.dateOfBirth);
+                              const today = new Date();
+                              const minDate = new Date('1900-01-01');
+                              // Validate date of birth
+                              if (dob > today) {
+                                return `${dob.toLocaleDateString()} (Invalid: Future date)`;
+                              }
+                              if (dob < minDate) {
+                                return `${dob.toLocaleDateString()} (Invalid: Before 1900)`;
+                              }
+                              return dob.toLocaleDateString();
+                            } catch (error) {
+                              return 'Invalid date';
+                            }
+                          })() : 'N/A'}
                         </Typography>
                       </Box>
                     </CardContent>

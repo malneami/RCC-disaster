@@ -1,5 +1,6 @@
 import { IsString, IsOptional, IsDateString, IsEnum, IsBoolean, IsNumber, IsArray, IsEmail } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { PatientGender } from '@prisma/client';
 
 // Define enums locally until Prisma generates them
@@ -46,6 +47,7 @@ export class CreatePatientDto {
 
   @ApiPropertyOptional({ description: 'Date of Birth (will be replaced by age)' })
   @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
   @IsDateString()
   dateOfBirth?: string;
 
@@ -53,6 +55,16 @@ export class CreatePatientDto {
   @IsOptional()
   @IsNumber()
   age?: number;
+
+  @ApiPropertyOptional({ description: 'Age in months (for precise age when manually entered)' })
+  @IsOptional()
+  @IsNumber()
+  ageMonths?: number;
+
+  @ApiPropertyOptional({ description: 'Age in days (for precise age when manually entered)' })
+  @IsOptional()
+  @IsNumber()
+  ageDays?: number;
 
   @ApiProperty({ enum: PatientGender, description: 'Gender' })
   @IsEnum(PatientGender)
@@ -233,6 +245,7 @@ export class UpdatePatientDto {
 
   @ApiPropertyOptional({ description: 'Date of Birth (will be replaced by age)' })
   @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
   @IsDateString()
   dateOfBirth?: string;
 
@@ -240,6 +253,16 @@ export class UpdatePatientDto {
   @IsOptional()
   @IsNumber()
   age?: number;
+
+  @ApiPropertyOptional({ description: 'Age in months (for precise age when manually entered)' })
+  @IsOptional()
+  @IsNumber()
+  ageMonths?: number;
+
+  @ApiPropertyOptional({ description: 'Age in days (for precise age when manually entered)' })
+  @IsOptional()
+  @IsNumber()
+  ageDays?: number;
 
   @ApiPropertyOptional({ enum: PatientGender, description: 'Gender' })
   @IsOptional()

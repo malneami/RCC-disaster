@@ -11,18 +11,28 @@ export class PatientMergeService {
   /**
    * Find and merge duplicate patients based on National ID
    * Returns the primary patient ID to use
+   * Special case: "00000000000000" can be used multiple times (for new babies without ID)
    */
   async findAndMergeDuplicatesByNationalId(nationalId: string): Promise<string | null> {
     if (!nationalId || nationalId.trim().length === 0) {
       throw new Error('National ID is required for duplicate checking');
     }
 
-    this.logger.log(`Checking for duplicates with National ID: ${nationalId}`);
+    const trimmedNationalId = nationalId.trim();
+    
+    // Special case: "00000000000000" can be used multiple times for new babies
+    // Skip duplicate checking for this ID
+    if (trimmedNationalId === '00000000000000') {
+      this.logger.log(`National ID "00000000000000" detected - allowing multiple uses (for new babies)`);
+      return null; // Allow creating new patient with this ID
+    }
+
+    this.logger.log(`Checking for duplicates with National ID: ${trimmedNationalId}`);
 
     // Find all patients with this National ID
     const duplicatePatients = await this.prisma.patient.findMany({
       where: {
-        nationalId: nationalId.trim(),
+        nationalId: trimmedNationalId,
         deletedAt: null,
       },
       include: {
@@ -40,17 +50,17 @@ export class PatientMergeService {
     });
 
     if (duplicatePatients.length === 0) {
-      this.logger.log(`No existing patients found with National ID: ${nationalId}`);
+      this.logger.log(`No existing patients found with National ID: ${trimmedNationalId}`);
       return null; // No duplicates found
     }
 
     if (duplicatePatients.length === 1) {
-      this.logger.log(`Found 1 existing patient with National ID: ${nationalId}`);
+      this.logger.log(`Found 1 existing patient with National ID: ${trimmedNationalId}`);
       return duplicatePatients[0].id; // Return existing patient ID
     }
 
     // Multiple duplicates found - merge them
-    this.logger.warn(`Found ${duplicatePatients.length} duplicate patients with National ID: ${nationalId}`);
+    this.logger.warn(`Found ${duplicatePatients.length} duplicate patients with National ID: ${trimmedNationalId}`);
     return await this.mergeDuplicatePatients(duplicatePatients);
   }
 

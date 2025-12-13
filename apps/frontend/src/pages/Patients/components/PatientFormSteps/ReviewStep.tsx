@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { CreatePatientData } from '../../../../services/patientService';
 import { Info as InfoIcon } from '@mui/icons-material';
+import { formatAgeForDisplay } from '../../../../utils/ageCalculator';
 
 interface ReviewStepProps {
   formData: CreatePatientData;
@@ -44,7 +45,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, isEditing = false }) 
               </Box>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="text.secondary">Age</Typography>
-                <Typography variant="body1">{formData.age ? `${formData.age} years` : 'N/A'}</Typography>
+                <Typography variant="body1">{formatAgeForDisplay(formData.age, formData.dateOfBirth, formData.ageMonths, formData.ageDays)}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="text.secondary">Gender</Typography>

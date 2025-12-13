@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import * as PDFDocument from 'pdfkit';
+import { CreatePatientDto } from './dto/patient.dto';
+import { Patient } from '@prisma/client';
 
 @Injectable()
 export class PatientsService {
@@ -123,8 +125,16 @@ export class PatientsService {
       this.prisma.patient.count({ where: whereClause }),
     ]);
 
+    // Normalize "00000000000000-*" back to "00000000000000" for display
+    const normalizedPatients = patients.map(patient => {
+      if (patient.nationalId && patient.nationalId.startsWith('00000000000000-')) {
+        return { ...patient, nationalId: '00000000000000' };
+      }
+      return patient;
+    });
+
     return {
-      data: patients,
+      data: normalizedPatients,
       total,
       page,
       limit,
@@ -133,7 +143,7 @@ export class PatientsService {
   }
 
   async findById(id: string) {
-    return this.prisma.patient.findUnique({
+    const patient = await this.prisma.patient.findUnique({
       where: { id },
       include: {
         createdBy: {
@@ -215,6 +225,13 @@ export class PatientsService {
         },
       },
     });
+
+    // Normalize "00000000000000-*" back to "00000000000000" for display
+    if (patient && patient.nationalId && patient.nationalId.startsWith('00000000000000-')) {
+      patient.nationalId = '00000000000000';
+    }
+
+    return patient;
   }
 
   async search(query: string) {
@@ -222,16 +239,26 @@ export class PatientsService {
       return [];
     }
 
-    return this.prisma.patient.findMany({
-      where: {
-        deletedAt: null,
-        OR: [
+    // Special handling for "00000000000000" - also search for variants with suffix
+    const searchConditions: any[] = [
           { firstName: { contains: query, mode: 'insensitive' } },
           { lastName: { contains: query, mode: 'insensitive' } },
           { mrn: { contains: query, mode: 'insensitive' } },
           { phoneNumber: { contains: query, mode: 'insensitive' } },
           { nationalId: { contains: query, mode: 'insensitive' } },
-        ],
+    ];
+
+    // If searching for "00000000000000", also search for variants with suffix
+    if (query.trim() === '00000000000000' || query.includes('00000000000000')) {
+      searchConditions.push({
+        nationalId: { startsWith: '00000000000000-', mode: 'insensitive' },
+      });
+    }
+
+    const patients = await this.prisma.patient.findMany({
+      where: {
+        deletedAt: null,
+        OR: searchConditions,
       },
       take: 20,
       orderBy: [
@@ -239,18 +266,58 @@ export class PatientsService {
         { lastName: 'asc' },
       ],
     });
+
+    // Normalize "00000000000000-*" back to "00000000000000" for display
+    return patients.map(patient => {
+      if (patient.nationalId && patient.nationalId.startsWith('00000000000000-')) {
+        return { ...patient, nationalId: '00000000000000' };
+      }
+      return patient;
+    });
   }
 
-  async create(createPatientDto: any, userId: string) {
+  async create(createPatientDto: CreatePatientDto, userId: string): Promise<Patient & { createdBy: { firstName: string; lastName: string; email: string | null } }> {
     try {
       console.log('Service: Creating patient with data:', createPatientDto);
       console.log('Service: User ID:', userId);
       
-      const result = await this.prisma.patient.create({
-        data: {
+      // Special handling for "00000000000000" - allow multiple uses for new babies
+      // Make it unique by appending a short UUID suffix
+      let nationalId = createPatientDto.nationalId;
+      if (nationalId && nationalId.trim() === '00000000000000') {
+        // Generate a short unique suffix (last 6 chars of UUID)
+        const suffix = require('crypto').randomUUID().replace(/-/g, '').substring(26);
+        nationalId = `00000000000000-${suffix}`;
+        console.log('Service: Special National ID "00000000000000" detected, using unique variant:', nationalId);
+      }
+      
+      // Prepare data for Prisma, converting dateOfBirth string to Date if provided
+      const patientData: any = {
           ...createPatientDto,
+        nationalId: nationalId,
           createdById: userId,
-        },
+      };
+      
+      // Convert dateOfBirth from string to Date if provided
+      if (patientData.dateOfBirth) {
+        patientData.dateOfBirth = new Date(patientData.dateOfBirth);
+      }
+      
+      // Convert insuranceExpiry from string to Date if provided
+      if (patientData.insuranceExpiry) {
+        patientData.insuranceExpiry = new Date(patientData.insuranceExpiry);
+      }
+      
+      // Only include ageMonths and ageDays if they are defined (to avoid Prisma errors before migration)
+      if (patientData.ageMonths === undefined) {
+        delete patientData.ageMonths;
+      }
+      if (patientData.ageDays === undefined) {
+        delete patientData.ageDays;
+      }
+      
+      const result = await this.prisma.patient.create({
+        data: patientData,
         include: {
           createdBy: {
             select: {
@@ -262,10 +329,25 @@ export class PatientsService {
         },
       });
       
+      // Return the original nationalId value to the frontend (not the unique variant)
+      if (createPatientDto.nationalId && createPatientDto.nationalId.trim() === '00000000000000') {
+        result.nationalId = '00000000000000';
+      }
+      
       console.log('Service: Patient created successfully:', result);
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Service: Error creating patient:', error);
+      // Handle unique constraint violation
+      if (error.code === 'P2002' && error.meta?.target?.includes('nationalId')) {
+        // If it's the special "00000000000000" ID, retry with a unique suffix
+        if (createPatientDto.nationalId && createPatientDto.nationalId.trim() === '00000000000000') {
+          const suffix = require('crypto').randomUUID().replace(/-/g, '').substring(26);
+          const uniqueNationalId = `00000000000000-${suffix}`;
+          return this.create({ ...createPatientDto, nationalId: uniqueNationalId }, userId);
+        }
+        throw new Error('A patient with this National ID already exists. Please use a different National ID or update the existing patient.');
+      }
       throw error;
     }
   }
@@ -280,14 +362,60 @@ export class PatientsService {
       throw new Error('Patient not found');
     }
 
+    // Special handling for "00000000000000" - allow multiple uses for new babies
+    // Make it unique by appending a short UUID suffix
+    let nationalId = updatePatientDto.nationalId;
+    if (nationalId && nationalId.trim() === '00000000000000') {
+      // Check if the existing patient already has a variant of "00000000000000"
+      if (existingPatient.nationalId && existingPatient.nationalId.startsWith('00000000000000-')) {
+        // Keep the existing unique variant
+        nationalId = existingPatient.nationalId;
+      } else {
+        // Generate a short unique suffix (last 6 chars of UUID)
+        const suffix = require('crypto').randomUUID().replace(/-/g, '').substring(26);
+        nationalId = `00000000000000-${suffix}`;
+      }
+      console.log('Service: Special National ID "00000000000000" detected in update, using unique variant:', nationalId);
+    }
+
+    // Prepare update data, converting dateOfBirth string to Date if provided
+    const updateData: any = {
+        ...updatePatientDto,
+      nationalId: nationalId || updatePatientDto.nationalId,
+        lastAccessedAt: new Date(),
+        lastAccessedBy: userId,
+    };
+    
+    // Handle dateOfBirth: convert from string to Date if provided, or set to null if explicitly cleared
+    if (updateData.dateOfBirth !== undefined) {
+      if (updateData.dateOfBirth === null || updateData.dateOfBirth === '') {
+        updateData.dateOfBirth = null;
+      } else {
+        updateData.dateOfBirth = new Date(updateData.dateOfBirth);
+      }
+    }
+    
+    // Handle insuranceExpiry: convert from string to Date if provided, or set to null if explicitly cleared
+    if (updateData.insuranceExpiry !== undefined) {
+      if (updateData.insuranceExpiry === null || updateData.insuranceExpiry === '') {
+        updateData.insuranceExpiry = null;
+      } else {
+        updateData.insuranceExpiry = new Date(updateData.insuranceExpiry);
+      }
+    }
+    
+    // Only include ageMonths and ageDays if they are defined (to avoid Prisma errors before migration)
+    if (updateData.ageMonths === undefined) {
+      delete updateData.ageMonths;
+    }
+    if (updateData.ageDays === undefined) {
+      delete updateData.ageDays;
+    }
+
     // Update the patient
     const updatedPatient = await this.prisma.patient.update({
       where: { id },
-      data: {
-        ...updatePatientDto,
-        lastAccessedAt: new Date(),
-        lastAccessedBy: userId,
-      },
+      data: updateData,
       include: {
         createdBy: {
           select: {
@@ -305,6 +433,13 @@ export class PatientsService {
         },
       },
     });
+
+    // Return the original nationalId value to the frontend (not the unique variant)
+    if (updatePatientDto.nationalId && updatePatientDto.nationalId.trim() === '00000000000000') {
+      updatedPatient.nationalId = '00000000000000';
+    } else if (updatedPatient.nationalId && updatedPatient.nationalId.startsWith('00000000000000-')) {
+      updatedPatient.nationalId = '00000000000000';
+    }
 
     return updatedPatient;
   }
@@ -539,6 +674,70 @@ export class PatientsService {
     };
   }
 
+  private formatAgeForDisplay(patient: any): string {
+    // If date of birth exists, calculate age from it
+    if (patient.dateOfBirth) {
+      try {
+        const birthDate = new Date(patient.dateOfBirth);
+        const today = new Date();
+        
+        let years = today.getFullYear() - birthDate.getFullYear();
+        let months = today.getMonth() - birthDate.getMonth();
+        let days = today.getDate() - birthDate.getDate();
+        
+        // Adjust for negative days
+        if (days < 0) {
+          months--;
+          const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+          days += lastMonth.getDate();
+        }
+        
+        // Adjust for negative months
+        if (months < 0) {
+          years--;
+          months += 12;
+        }
+        
+        const parts: string[] = [];
+        if (years > 0) {
+          parts.push(`${years} ${years === 1 ? 'year' : 'years'}`);
+        }
+        if (months > 0) {
+          parts.push(`${months} ${months === 1 ? 'month' : 'months'}`);
+        }
+        if (days > 0 || parts.length === 0) {
+          parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+        }
+        
+        return parts.join(', ');
+      } catch (error) {
+        // If DOB is invalid, fall through to stored values
+      }
+    }
+    
+    // If ageMonths or ageDays exist, show formatted age from stored values
+    if (patient.ageMonths !== undefined || patient.ageDays !== undefined) {
+      const parts: string[] = [];
+      if (patient.age !== undefined && patient.age !== null && patient.age > 0) {
+        parts.push(`${patient.age} ${patient.age === 1 ? 'year' : 'years'}`);
+      }
+      if (patient.ageMonths !== undefined && patient.ageMonths > 0) {
+        parts.push(`${patient.ageMonths} ${patient.ageMonths === 1 ? 'month' : 'months'}`);
+      }
+      if (patient.ageDays !== undefined && patient.ageDays > 0) {
+        parts.push(`${patient.ageDays} ${patient.ageDays === 1 ? 'day' : 'days'}`);
+      }
+      return parts.length > 0 ? parts.join(', ') : 'N/A';
+    }
+    
+    // If only age exists (no date of birth, no months/days), show years only
+    if (patient.age !== undefined && patient.age !== null) {
+      return `${patient.age} ${patient.age === 1 ? 'year' : 'years'}`;
+    }
+    
+    return 'N/A';
+  }
+
   private generatePdfExport(patient: any) {
     return new Promise<{ data: Buffer; contentType: string; filename: string }>((resolve) => {
       const doc = new PDFDocument({
@@ -586,8 +785,18 @@ export class PatientsService {
         .text(`Name: ${patient.firstName} ${patient.middleName || ''} ${patient.lastName}`)
         .text(`MRN: ${patient.mrn || 'N/A'}`)
         .text(`National ID: ${patient.nationalId || 'N/A'}`)
-        .text(`Date of Birth: ${new Date(patient.dateOfBirth).toLocaleDateString()}`)
-        .text(`Gender: ${patient.gender}`)
+        .text(`Age: ${this.formatAgeForDisplay(patient)}`);
+      
+      // Only show date of birth if it exists
+      if (patient.dateOfBirth) {
+        try {
+          doc.text(`Date of Birth: ${new Date(patient.dateOfBirth).toLocaleDateString()}`);
+        } catch (error) {
+          // If date is invalid, skip it
+        }
+      }
+      
+      doc.text(`Gender: ${patient.gender}`)
         .text(`Marital Status: ${patient.maritalStatus || 'N/A'}`)
         .moveDown(1);
 

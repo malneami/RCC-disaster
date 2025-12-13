@@ -67,6 +67,14 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
 
   // Debounced search function
   const searchPatients = useCallback(async (nationalId: string) => {
+    // Don't search if the ID starts with "000" (special case for new babies)
+    if (nationalId.startsWith('000')) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setLatestCaseInfo(null);
+      return;
+    }
+
     if (nationalId.length < 4) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -104,6 +112,14 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   // Debounce the search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      // Don't search if the ID starts with "000" (special case for new babies)
+      if (value && value.startsWith('000')) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setLatestCaseInfo(null);
+        return;
+      }
+      
       if (value && value.length >= 4) {
         searchPatients(value);
       } else {
@@ -216,6 +232,16 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
         onInputChange={(_, newInputValue) => {
           // Only allow numeric input
           const numericValue = newInputValue.replace(/\D/g, '');
+          
+          // Auto-complete to "00000000000000" when user starts typing "000"
+          if (numericValue.startsWith('000') && numericValue.length >= 3) {
+            onChange('00000000000000');
+            setSuggestions([]);
+            setShowSuggestions(false);
+            setLatestCaseInfo(null);
+            return;
+          }
+          
           onChange(numericValue);
         }}
         onChange={(_, newValue) => {
@@ -339,10 +365,10 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
           </Box>
           );
         }}
-        open={showSuggestions && suggestions.length > 0}
+        open={showSuggestions && suggestions.length > 0 && !value.startsWith('000')}
         onClose={() => setShowSuggestions(false)}
         onOpen={() => {
-          if (value.length >= 4 && suggestions.length > 0) {
+          if (value.length >= 4 && suggestions.length > 0 && !value.startsWith('000')) {
             setShowSuggestions(true);
           }
         }}
