@@ -81,7 +81,6 @@ async function seedEMSData() {
           driverName: 'Ahmed Al-Rashid',
           driverPhone: '+966501234567',
           equipmentStatus: 'OPERATIONAL',
-          fuelLevel: 85.5,
           mileage: 12500.5,
           lastMaintenanceDate: new Date('2024-01-15'),
           nextMaintenanceDue: new Date('2024-04-15'),
@@ -107,7 +106,6 @@ async function seedEMSData() {
           driverName: 'Fatima Al-Zahra',
           driverPhone: '+966501234568',
           equipmentStatus: 'OPERATIONAL',
-          fuelLevel: 92.0,
           mileage: 18750.0,
           lastMaintenanceDate: new Date('2024-01-20'),
           nextMaintenanceDue: new Date('2024-04-20'),
@@ -130,7 +128,6 @@ async function seedEMSData() {
           currentLocationLng: 42.5511,
           currentLocationAddress: 'Jazan Central Station, Jazan, Saudi Arabia',
           equipmentStatus: 'MAINTENANCE_REQUIRED',
-          fuelLevel: 45.0,
           mileage: 8750.0,
           lastMaintenanceDate: new Date('2024-02-01'),
           nextMaintenanceDue: new Date('2024-02-15'),
@@ -153,7 +150,6 @@ async function seedEMSData() {
           currentLocationLng: 42.5511,
           currentLocationAddress: 'Jazan Central Station, Jazan, Saudi Arabia',
           equipmentStatus: 'OUT_OF_SERVICE',
-          fuelLevel: 0.0,
           mileage: 45600.0,
           lastMaintenanceDate: new Date('2023-12-15'),
           nextMaintenanceDue: new Date('2024-01-15'),
@@ -317,7 +313,6 @@ async function seedEMSData() {
           averageResponseTime: 12.5,
           averageTransferTime: 45.0,
           totalDistanceKm: 180.5,
-          fuelConsumptionLiters: 25.5,
           maintenanceHours: 0,
           driverRating: 4.8,
           patientSatisfactionScore: 9.2,
@@ -335,7 +330,6 @@ async function seedEMSData() {
           averageResponseTime: 15.2,
           averageTransferTime: 52.0,
           totalDistanceKm: 165.0,
-          fuelConsumptionLiters: 22.8,
           maintenanceHours: 0,
           driverRating: 4.6,
           patientSatisfactionScore: 8.8,
@@ -366,7 +360,6 @@ async function seedEMSData() {
             speed: Math.random() * 80 + 20, // 20-100 km/h
             direction: Math.random() * 360,
             timestamp,
-            fuelLevel: Math.max(0, (ambulance.fuelLevel || 0) - Math.random() * 2),
             engineStatus: Math.random() > 0.1, // 90% chance engine is on
             locationAddress: `Location ${i} near Jazan`,
             accuracy: Math.random() * 5 + 1, // 1-6 meters accuracy
@@ -388,16 +381,6 @@ async function seedEMSData() {
           ambulanceId: ambulances[3].id,
           status: 'ACTIVE',
           metadata: JSON.stringify({ daysUntilDue: 3 }),
-        },
-      }),
-      prisma.eMSAlert.create({
-        data: {
-          type: 'LOW_FUEL',
-          priority: 'MEDIUM',
-          message: 'Low fuel alert for ambulance Charlie-3: 45% remaining',
-          ambulanceId: ambulances[2].id,
-          status: 'ACTIVE',
-          metadata: JSON.stringify({ fuelLevel: 45 }),
         },
       }),
       prisma.eMSAlert.create({

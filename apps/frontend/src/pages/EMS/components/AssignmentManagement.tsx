@@ -111,16 +111,23 @@ const AssignmentManagement: React.FC = () => {
   const handleOpenDialog = (assignment?: EMSAssignment) => {
     if (assignment) {
       setEditingAssignment(assignment);
+      // Helper to convert date to ISO string for datetime-local inputs
+      const toISOString = (date: Date | string | null | undefined): string => {
+        if (!date) return '';
+        const d = date instanceof Date ? date : new Date(date);
+        return isNaN(d.getTime()) ? '' : d.toISOString();
+      };
+      
       setFormData({
         ticketId: assignment.ticketId,
-        ambulanceId: assignment.ambulanceId,
-        driverId: assignment.driverId,
-        assignedAt: assignment.assignedAt ? assignment.assignedAt.toString() : '',
+        ambulanceId: assignment.ambulanceId || '',
+        driverId: assignment.driverId || '',
+        assignedAt: toISOString(assignment.assignedAt),
         status: assignment.status,
-        emsContactTime: assignment.emsContactTime ? assignment.emsContactTime.toString() : '',
-        journeyStartTime: assignment.journeyStartTime ? assignment.journeyStartTime.toString() : '',
-        actualArrivalTime: assignment.actualArrivalTime ? assignment.actualArrivalTime.toString() : '',
-        journeyEndTime: assignment.journeyEndTime ? assignment.journeyEndTime.toString() : '',
+        emsContactTime: toISOString(assignment.emsContactTime),
+        journeyStartTime: toISOString(assignment.journeyStartTime),
+        actualArrivalTime: toISOString(assignment.actualArrivalTime),
+        journeyEndTime: toISOString(assignment.journeyEndTime),
         notes: assignment.notes || '',
       });
     } else {
@@ -254,9 +261,33 @@ const AssignmentManagement: React.FC = () => {
     await completeAssignment(id);
   };
 
-  const assignedAssignments = assignments?.filter(a => a.status === 'EMS_CONTACT') || [];
-  const activeAssignments = assignments?.filter(a => ['EMS_ARRIVAL', 'DEPARTED'].includes(a.status)) || [];
-  const completedAssignments = assignments?.filter(a => a.status === 'ARRIVED') || [];
+  // Helper function to infer status from timestamps if status field is missing/invalid
+  const getInferredStatus = (assignment: EMSAssignment): string => {
+    if (assignment.status && ['EMS_CONTACT', 'EMS_ARRIVAL', 'DEPARTED', 'ARRIVED', 'CANCELLED'].includes(assignment.status)) {
+      return assignment.status;
+    }
+    // Infer from timestamps
+    if (assignment.journeyEndTime) return 'ARRIVED';
+    if (assignment.journeyStartTime) return 'DEPARTED';
+    if (assignment.actualArrivalTime) return 'EMS_ARRIVAL';
+    if (assignment.emsContactTime) return 'EMS_CONTACT';
+    return assignment.status || 'UNKNOWN';
+  };
+
+  const assignedAssignments = assignments?.filter(a => {
+    const status = getInferredStatus(a);
+    return status === 'EMS_CONTACT';
+  }) || [];
+  
+  const activeAssignments = assignments?.filter(a => {
+    const status = getInferredStatus(a);
+    return ['EMS_ARRIVAL', 'DEPARTED'].includes(status);
+  }) || [];
+  
+  const completedAssignments = assignments?.filter(a => {
+    const status = getInferredStatus(a);
+    return status === 'ARRIVED';
+  }) || [];
 
   if (isLoading || loadingData) return <Box>Loading...</Box>;
   if (error) return <Box>Error: {(error as Error)?.message || 'An error occurred'}</Box>;

@@ -1,6 +1,6 @@
 export interface EMSAlert {
   id: string;
-  type: 'MAINTENANCE_DUE' | 'LOW_FUEL' | 'DRIVER_OVERTIME' | 'SPEED_VIOLATION' | 'EQUIPMENT_FAILURE' | 'EMERGENCY';
+  type: 'MAINTENANCE_DUE' | 'DRIVER_OVERTIME' | 'SPEED_VIOLATION' | 'EQUIPMENT_FAILURE' | 'EMERGENCY';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   message: string;
   ambulanceId?: string;

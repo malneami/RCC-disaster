@@ -95,7 +95,67 @@ export class EmsDashboardController {
     @Param('driverId') driverId: string,
     @Query('days') days?: number,
   ) {
-    return this.emsDashboardService.getDriverPerformance(driverId, days);
   }
 
+  @Get('trigger-daily-metrics')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Trigger generation of daily performance metrics (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Metrics generation triggered successfully' })
+  async triggerDailyMetrics(@Query('date') date?: string) {
+    const targetDate = date ? new Date(date) : undefined;
+    await this.emsDashboardService.generateDailyPerformanceMetric(targetDate);
+    return { success: true, message: 'Daily metrics generation started', date: targetDate || 'yesterday' };
+  }
+
+  @Get('assignment-status-distribution')
+  @Roles(UserRole.ADMIN, UserRole.EMS)
+  @ApiOperation({ summary: 'Get assignment status distribution for a date range' })
+  @ApiResponse({ status: 200, description: 'Status distribution retrieved successfully' })
+  async getAssignmentStatusDistribution(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    try {
+      const parsedStartDate = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const parsedEndDate = endDate ? new Date(endDate) : new Date();
+      
+      const validStartDate = !isNaN(parsedStartDate.getTime()) ? parsedStartDate : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const validEndDate = !isNaN(parsedEndDate.getTime()) ? parsedEndDate : new Date();
+      
+      return await this.emsDashboardService.getAssignmentStatusDistribution(
+        validStartDate,
+        validEndDate,
+      );
+    } catch (error) {
+      return [
+        { name: 'Arrived', value: 0 },
+        { name: 'In Progress', value: 0 },
+        { name: 'Cancelled', value: 0 },
+      ];
+    }
+  }
+
+  @Get('response-time-trends')
+  @Roles(UserRole.ADMIN, UserRole.EMS)
+  @ApiOperation({ summary: 'Get response time trends for a date range' })
+  @ApiResponse({ status: 200, description: 'Response time trends retrieved successfully' })
+  async getResponseTimeTrends(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    try {
+      const parsedStartDate = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const parsedEndDate = endDate ? new Date(endDate) : new Date();
+      
+      const validStartDate = !isNaN(parsedStartDate.getTime()) ? parsedStartDate : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const validEndDate = !isNaN(parsedEndDate.getTime()) ? parsedEndDate : new Date();
+      
+      return await this.emsDashboardService.getResponseTimeTrends(
+        validStartDate,
+        validEndDate,
+      );
+    } catch (error) {
+      return [];
+    }
+  }
 }

@@ -58,8 +58,9 @@ const PatientJourneyTimeline: React.FC<PatientJourneyTimelineProps> = ({ assignm
                 id: 'arrived_destination',
                 label: 'Arrived',
                 icon: <FontAwesomeIcon icon={faCheck} />,
-                completed: assignment.status === 'ARRIVED',
-                active: assignment.status === 'ARRIVED',
+                // Completed if status is ARRIVED OR if journeyEndTime exists (timestamp is source of truth)
+                completed: assignment.status === 'ARRIVED' || !!assignment.journeyEndTime,
+                active: assignment.status === 'ARRIVED' || !!assignment.journeyEndTime,
                 timestamp: assignment.journeyEndTime ? new Date(assignment.journeyEndTime).toLocaleTimeString() : undefined,
             },
         ];

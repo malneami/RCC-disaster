@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -19,7 +20,9 @@ import DriverManagement from './components/DriverManagement';
 import { LiveAmbulanceMap } from '../../components/LiveTracking';
 
 const EMSPortal: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(0);
+  const location = useLocation();
+  const initialTab = location.state?.activeTab || 0;
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);

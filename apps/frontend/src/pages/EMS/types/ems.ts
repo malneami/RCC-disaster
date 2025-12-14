@@ -7,7 +7,6 @@ export interface Ambulance {
   vehicleImei: string;
   capacity: number;
   equipment?: string;
-  fuelLevel?: number;
   currentLocationLat?: number;
   currentLocationLng?: number;
   currentLocationAddress?: string;
@@ -87,7 +86,6 @@ export interface GPSTrackingLog {
   speed?: number;
   direction?: number;
   timestamp: Date;
-  fuelLevel?: number;
   engineStatus?: boolean;
   locationAddress?: string;
   accuracy?: number;
@@ -136,7 +134,6 @@ export interface EMSPerformanceMetric {
   averageResponseTime: number;
   averageTransferTime: number;
   totalDistanceKm: number;
-  fuelConsumptionLiters: number;
   maintenanceHours: number;
   driverRating: number;
   patientSatisfactionScore: number;
@@ -154,7 +151,7 @@ export interface EMSPerformanceMetric {
 
 export interface EMSAlert {
   id: string;
-  type: 'MAINTENANCE_DUE' | 'LOW_FUEL' | 'DRIVER_OVERTIME' | 'SPEED_VIOLATION' | 'EQUIPMENT_FAILURE' | 'EMERGENCY';
+  type: 'MAINTENANCE_DUE' | 'DRIVER_OVERTIME' | 'SPEED_VIOLATION' | 'EQUIPMENT_FAILURE' | 'EMERGENCY';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   title: string;
   message: string;
@@ -186,9 +183,29 @@ export interface EMSDashboardData {
     availableAmbulances: number;
     activeAssignments: number;
     activeSchedules: number;
-    totalAssignments: number;
+    totalAssignments?: number;
+    todayCompletedAssignments?: number;
+    responseTime?: number;
+    averageResponseTime?: number;
   };
   recentAlerts: EMSAlert[];
+  recentAssignments?: Array<{
+    id: string;
+    ticketNumber?: string;
+    status: string;
+    assignedAt: Date | string;
+    patientName: string;
+    ambulanceCallSign?: string;
+    driverName?: string | null;
+    priority?: string;
+  }>;
+  upcomingSchedules?: Array<{
+    id: string;
+    shiftStart: Date | string;
+    shiftEnd: Date | string;
+    driverName: string;
+  }>;
+  assignmentsByStatus?: Record<string, number>;
   timestamp: string;
 }
 

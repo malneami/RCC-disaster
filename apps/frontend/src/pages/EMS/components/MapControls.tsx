@@ -17,7 +17,6 @@ interface AmbulanceLocation {
   status: string;
   speed?: number;
   direction?: number;
-  fuelLevel?: number;
   driver?: {
     firstName: string;
     lastName: string;

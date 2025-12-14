@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -65,7 +65,7 @@ const TicketsPage: React.FC = () => {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   // Load tickets and statistics
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [ticketsResponse, statsResponse] = await Promise.all([
@@ -81,7 +81,7 @@ const TicketsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   // WebSocket setup
   useEffect(() => {
@@ -125,11 +125,18 @@ const TicketsPage: React.FC = () => {
 
     webSocketService.onEmergencyTicket(handleEmergencyTicket);
 
+    // Listen for EMS assignment changes to refresh tickets
+    const handleEMSAssignmentChanged = () => {
+      loadData();
+    };
+    window.addEventListener('ems-assignment-changed', handleEMSAssignmentChanged);
+
     return () => {
       webSocketService.unsubscribe('ticketUpdated');
       webSocketService.unsubscribe('emergencyTicket');
+      window.removeEventListener('ems-assignment-changed', handleEMSAssignmentChanged);
     };
-  }, [user]);
+  }, [user, loadData]);
 
   // Load initial data
   useEffect(() => {
@@ -170,8 +177,16 @@ const TicketsPage: React.FC = () => {
   const getFilteredTickets = () => {
     if (tabValue === 0) return tickets; // All tickets
     if (tabValue === 1) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'EMS_CONTACT');
-    if (tabValue === 2) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'EMS_ARRIVAL');
-    if (tabValue === 3) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'DEPARTED');
+    // Assigned tab: Show EMS_CONTACT and EMS_ARRIVAL statuses
+    if (tabValue === 2) return tickets.filter(t => {
+      const status = t?.emsAssignments?.[0]?.status;
+      return status === 'EMS_CONTACT' || status === 'EMS_ARRIVAL';
+    });
+    // In Transport tab: Show DEPARTED status
+    if (tabValue === 3) return tickets.filter(t => {
+      const status = t?.emsAssignments?.[0]?.status;
+      return status === 'DEPARTED';
+    });
     if (tabValue === 4) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'ARRIVED');
     return tickets;
   };

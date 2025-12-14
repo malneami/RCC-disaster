@@ -6,7 +6,6 @@ export interface GPSTrackingLog {
   speed?: number;
   direction?: number;
   timestamp: Date;
-  fuelLevel?: number;
   engineStatus?: boolean;
   locationAddress?: string;
   accuracy?: number;
@@ -37,7 +36,6 @@ export interface CreateTrackingLogData {
   speed?: number;
   direction?: number;
   timestamp: string;
-  fuelLevel?: number;
   engineStatus?: boolean;
   locationAddress?: string;
   accuracy?: number;
@@ -53,7 +51,6 @@ export interface AmbulanceLocation {
   status: string;
   speed?: number;
   direction?: number;
-  fuelLevel?: number;
   driver?: {
     firstName: string;
     lastName: string;

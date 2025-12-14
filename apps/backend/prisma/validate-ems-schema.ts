@@ -26,7 +26,7 @@ async function validateEMSSchema() {
     console.log('✅ AssignmentStatus enum values:', assignmentStatuses);
 
     // Test AlertType enum
-    const alertTypes = ['LOW_FUEL', 'MAINTENANCE_DUE', 'DRIVER_OVERTIME', 'SPEEDING_VIOLATION', 'EMERGENCY_BUTTON', 'GPS_SIGNAL_LOST', 'EQUIPMENT_MALFUNCTION', 'PATIENT_EMERGENCY', 'VEHICLE_BREAKDOWN', 'ROUTE_DEVIATION'];
+    const alertTypes = ['MAINTENANCE_DUE', 'DRIVER_OVERTIME', 'SPEEDING_VIOLATION', 'EMERGENCY_BUTTON', 'GPS_SIGNAL_LOST', 'EQUIPMENT_MALFUNCTION', 'PATIENT_EMERGENCY', 'VEHICLE_BREAKDOWN', 'ROUTE_DEVIATION'];
     console.log('✅ AlertType enum values:', alertTypes);
 
     // Test relationships by creating sample data
@@ -63,7 +63,6 @@ async function validateEMSSchema() {
         driverName: 'Test User',
         driverPhone: '+966501234999',
         equipmentStatus: 'OPERATIONAL',
-        fuelLevel: 100.0,
         mileage: 0.0,
         isActive: true,
       },
@@ -109,7 +108,6 @@ async function validateEMSSchema() {
         speed: 50.0,
         direction: 180.0,
         timestamp: new Date(),
-        fuelLevel: 95.0,
         engineStatus: true,
         locationAddress: 'Test Location',
         accuracy: 3.0,
@@ -154,7 +152,6 @@ async function validateEMSSchema() {
         averageResponseTime: 12.5,
         averageTransferTime: 45.0,
         totalDistanceKm: 150.0,
-        fuelConsumptionLiters: 20.0,
         maintenanceHours: 0,
         driverRating: 4.5,
         patientSatisfactionScore: 9.0,
@@ -166,15 +163,14 @@ async function validateEMSSchema() {
     });
     console.log('✅ Test performance metric created:', testMetric.id);
 
-    // Create test alert
+    // Create test alert (removed LOW_FUEL alert test as fuel is not used)
     const testAlert = await prisma.eMSAlert.create({
       data: {
-        type: 'LOW_FUEL',
+        type: 'MAINTENANCE_DUE',
         priority: 'MEDIUM',
-        message: 'Test low fuel alert',
+        message: 'Test maintenance alert',
         ambulanceId: testAmbulance.id,
         status: 'ACTIVE',
-        metadata: JSON.stringify({ fuelLevel: 15 }),
       },
     });
     console.log('✅ Test alert created:', testAlert.id);
@@ -243,28 +239,7 @@ async function validateEMSSchema() {
       console.log('✅ Unique constraint test passed - duplicate vehicle ID rejected');
     }
 
-    // Test check constraints
-    try {
-      await prisma.ambulance.create({
-        data: {
-          vehicleImei: '123456789012002',
-          callSign: 'TEST-3',
-          plateNumber: 'TEST-003',
-          model: 'Test Model',
-          year: 2024,
-          type: 'BASIC',
-          manufacturer: 'Test Manufacturer',
-          baseStation: 'Test Station',
-          status: 'AVAILABLE',
-          equipmentStatus: 'OPERATIONAL',
-          fuelLevel: 150.0, // Invalid fuel level > 100
-          isActive: true,
-        },
-      });
-      console.log('❌ Check constraint test failed - invalid fuel level allowed');
-    } catch (error) {
-      console.log('✅ Check constraint test passed - invalid fuel level rejected');
-    }
+    // Test check constraints (removed fuel level constraint test as fuel is not used)
 
     // Test foreign key constraints
     try {

@@ -60,7 +60,7 @@ const EMSAlertsPanel: React.FC<EMSAlertsPanelProps> = ({ alerts = [], onAlertCli
             <FontAwesomeIcon icon={faBell} />
             System Alerts
           </Typography>
-          
+
           <Alert severity="success" sx={{ mt: 2 }}>
             All systems operational. No alerts at this time.
           </Alert>
@@ -76,7 +76,7 @@ const EMSAlertsPanel: React.FC<EMSAlertsPanelProps> = ({ alerts = [], onAlertCli
           <FontAwesomeIcon icon={faBell} />
           System Alerts ({alerts.length})
         </Typography>
-        
+
         <List sx={{ maxHeight: 300, overflow: 'auto' }}>
           {alerts.map((alert) => (
             <ListItem
@@ -84,11 +84,10 @@ const EMSAlertsPanel: React.FC<EMSAlertsPanelProps> = ({ alerts = [], onAlertCli
               button
               onClick={() => onAlertClick?.(alert)}
               sx={{
-                borderLeft: `4px solid ${
-                  alert.type === 'error' ? '#d32f2f' :
-                  alert.type === 'warning' ? '#ed6c02' :
-                  alert.type === 'info' ? '#1976d2' : '#2e7d32'
-                }`,
+                borderLeft: `4px solid ${alert.type === 'error' ? '#d32f2f' :
+                    alert.type === 'warning' ? '#ed6c02' :
+                      alert.type === 'info' ? '#1976d2' : '#2e7d32'
+                  }`,
                 mb: 1,
                 borderRadius: 1,
                 '&:hover': {
@@ -114,14 +113,23 @@ const EMSAlertsPanel: React.FC<EMSAlertsPanelProps> = ({ alerts = [], onAlertCli
                   </Box>
                 }
                 secondary={
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
+                  <React.Fragment>
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      color="text.secondary"
+                      display="block"
+                    >
                       {alert.message}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      color="text.secondary"
+                    >
                       {alert.timestamp.toLocaleString()}
                     </Typography>
-                  </Box>
+                  </React.Fragment>
                 }
               />
             </ListItem>

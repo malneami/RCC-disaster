@@ -20,7 +20,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:10"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 91.5,
     mileage: 8491.136614000015,
     isActive: true
   },
@@ -40,7 +39,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:10"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 81.1,
     mileage: 18931.60348200009,
     isActive: true
   },
@@ -60,7 +58,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:54"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 96.2,
     mileage: 3802.2076769999962,
     isActive: true
   },
@@ -80,7 +77,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:22"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 92.5,
     mileage: 7510.325131000008,
     isActive: true
   },
@@ -100,7 +96,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-03 07:05:13"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 100.0,
     mileage: 46.98320700000002,
     isActive: true
   },
@@ -120,7 +115,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:19"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 76.2,
     mileage: 23844.763794000144,
     isActive: true
   },
@@ -140,7 +134,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:38"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 90.6,
     mileage: 9363.463503999978,
     isActive: true
   },
@@ -160,7 +153,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:17"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 91.6,
     mileage: 8352.999416999992,
     isActive: true
   },
@@ -180,7 +172,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:14"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 76.2,
     mileage: 23841.600606999793,
     isActive: true
   },
@@ -200,7 +191,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-01 01:36:49"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 92.8,
     mileage: 7197.3575299999975,
     isActive: true
   },
@@ -220,7 +210,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:57"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 95.3,
     mileage: 4712.805388999994,
     isActive: true
   },
@@ -240,7 +229,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:11"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 80.7,
     mileage: 19265.128803999938,
     isActive: true
   },
@@ -260,7 +248,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:06"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 87.3,
     mileage: 12673.832707999996,
     isActive: true
   },
@@ -280,7 +267,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-26 20:29:17"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 92.2,
     mileage: 7797.442789000017,
     isActive: true
   },
@@ -300,7 +286,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:59"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 93.1,
     mileage: 6930.670838000004,
     isActive: true
   },
@@ -320,7 +305,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-07 10:20:33"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 98.8,
     mileage: 1228.4331759999984,
     isActive: true
   },
@@ -340,7 +324,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-08-25 03:55:15"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 100.0,
     mileage: 25.86594299999999,
     isActive: true
   },
@@ -360,7 +343,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:33"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 98.8,
     mileage: 1247.0830150000013,
     isActive: true
   },
@@ -380,7 +362,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:02:05"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 83.5,
     mileage: 16470.176842999892,
     isActive: true
   },
@@ -400,7 +381,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-06-22 19:16:10"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 100.0,
     mileage: 0,
     isActive: true
   },
@@ -420,7 +400,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:55"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 99.6,
     mileage: 407.0613619999999,
     isActive: true
   },
@@ -440,7 +419,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:43"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 90.8,
     mileage: 9154.997861999998,
     isActive: true
   },
@@ -460,7 +438,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-08-26 13:40:52"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 100.0,
     mileage: 0.010852,
     isActive: true
   },
@@ -480,7 +457,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:43"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 99.5,
     mileage: 524.286206,
     isActive: true
   },
@@ -500,7 +476,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:04"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 95.3,
     mileage: 4714.959981000001,
     isActive: true
   },
@@ -520,7 +495,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:39"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 91.6,
     mileage: 8444.215800999998,
     isActive: true
   },
@@ -540,7 +514,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:36"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 89.3,
     mileage: 10728.345935999945,
     isActive: true
   },
@@ -560,7 +533,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-23 12:24:51"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 91.0,
     mileage: 8990.55907199998,
     isActive: true
   },
@@ -580,7 +552,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:40"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 89.7,
     mileage: 10340.580110999987,
     isActive: true
   },
@@ -600,7 +571,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:35"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 91.8,
     mileage: 8208.747576000005,
     isActive: true
   },
@@ -620,7 +590,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:51"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 87.1,
     mileage: 12854.094525000037,
     isActive: true
   },
@@ -640,7 +609,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:57"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 94.5,
     mileage: 5518.506666999993,
     isActive: true
   },
@@ -660,7 +628,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:25"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 88.6,
     mileage: 11354.579076000098,
     isActive: true
   },
@@ -680,7 +647,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:16"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 66.5,
     mileage: 33456.44905500009,
     isActive: true
   },
@@ -700,7 +666,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:02:00"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 84.9,
     mileage: 15055.23885000003,
     isActive: true
   },
@@ -720,7 +685,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-07-25 07:23:50"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 90.1,
     mileage: 9931.393678000026,
     isActive: true
   },
@@ -740,7 +704,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:51"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 61.0,
     mileage: 39027.16400599988,
     isActive: true
   },
@@ -760,7 +723,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:20"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 98.3,
     mileage: 1732.5936659999993,
     isActive: true
   },
@@ -780,7 +742,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:57:29"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 95.6,
     mileage: 4398.826319000024,
     isActive: true
   },
@@ -800,7 +761,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:57"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 73.6,
     mileage: 26390.967869999862,
     isActive: true
   },
@@ -820,7 +780,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-24 10:01:21"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 99.5,
     mileage: 539.9717760000008,
     isActive: true
   },
@@ -840,7 +799,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:18"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 64.3,
     mileage: 35657.63142900002,
     isActive: true
   },
@@ -860,7 +818,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:21"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 96.7,
     mileage: 3305.1111100000044,
     isActive: true
   },
@@ -880,7 +837,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:34"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 86.6,
     mileage: 13445.181411999998,
     isActive: true
   },
@@ -900,7 +856,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:05"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 96.1,
     mileage: 3862.593801999986,
     isActive: true
   },
@@ -920,7 +875,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:29"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 90.3,
     mileage: 9715.014859999994,
     isActive: true
   },
@@ -940,7 +894,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:42"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 57.0,
     mileage: 42962.13398500036,
     isActive: true
   },
@@ -960,7 +913,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:32"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 73.6,
     mileage: 26369.640997999843,
     isActive: true
   },
@@ -980,7 +932,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:44"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 90.7,
     mileage: 9346.590095000001,
     isActive: true
   },
@@ -1000,7 +951,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-25 14:24:26"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 94.1,
     mileage: 5942.045973000012,
     isActive: true
   },
@@ -1020,7 +970,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:02:03"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 86.7,
     mileage: 13281.94284899995,
     isActive: true
   },
@@ -1040,7 +989,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:47"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 92.6,
     mileage: 7438.392419999943,
     isActive: true
   },
@@ -1060,7 +1008,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 14:15:43"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 48.4,
     mileage: 51555.828877999644,
     isActive: true
   },
@@ -1080,7 +1027,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-26 20:46:59"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 80.8,
     mileage: 19153.378819999907,
     isActive: true
   },
@@ -1100,7 +1046,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:13"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 75.9,
     mileage: 24121.097702000123,
     isActive: true
   },
@@ -1120,7 +1065,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:59:54"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 92.1,
     mileage: 7928.579478000001,
     isActive: true
   },
@@ -1140,7 +1084,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:11"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 92.3,
     mileage: 7703.917651000004,
     isActive: true
   },
@@ -1160,7 +1103,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:01:45"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 90.3,
     mileage: 9732.443456000043,
     isActive: true
   },
@@ -1180,7 +1122,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:44"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 92.7,
     mileage: 7262.337456999987,
     isActive: true
   },
@@ -1200,7 +1141,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:13"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 88.2,
     mileage: 11849.00165700008,
     isActive: true
   },
@@ -1220,7 +1160,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:02:02"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 88.4,
     mileage: 11635.41928300004,
     isActive: true
   },
@@ -1240,7 +1179,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:57:53"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 96.9,
     mileage: 3092.828825999993,
     isActive: true
   },
@@ -1260,7 +1198,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-13 05:33:40"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 72.7,
     mileage: 27331.744175999942,
     isActive: true
   },
@@ -1280,7 +1217,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:36"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 99.0,
     mileage: 1041.6332690000008,
     isActive: true
   },
@@ -1300,7 +1236,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 16:58:09"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 99.5,
     mileage: 500.34941700000013,
     isActive: true
   },
@@ -1320,7 +1255,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:30"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 99.9,
     mileage: 94.72429199999998,
     isActive: true
   },
@@ -1340,7 +1274,6 @@ const ambulanceData = [
     currentLocationAddress: "Jazan, Saudi Arabia",
     lastUpdated: new Date("2025-09-27 17:00:02"),
     equipmentStatus: "OPERATIONAL" as const,
-    fuelLevel: 100.0,
     mileage: 0.019189,
     isActive: true
   }

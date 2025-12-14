@@ -11,9 +11,8 @@ model EMSPerformanceMetric {
   averageResponseTime    Float?          @map("average_response_time") // minutes
   averageTransferTime    Float?          @map("average_transfer_time") // minutes
   
-  // Distance & Fuel
+  // Distance
   totalDistanceKm        Float?          @map("total_distance_km")
-  fuelConsumptionLiters  Float?          @map("fuel_consumption_liters")
   
   // Maintenance
   maintenanceHours       Float?          @map("maintenance_hours")

@@ -102,11 +102,12 @@ export class AmbulancesService {
         externalGPSData = this.gpsMappingService.mapGPSObjects(response.data.data);
       }
 
-      // Also fetch GPS data from database for ALL ambulances
+      // Also fetch GPS data from database for ALL ambulances (not just active ones)
+      // This ensures ambulances with GPS logs are shown even if isActive is false
       const testAmbulances = await this.prisma.ambulance.findMany({
         where: {
           deletedAt: null,
-          isActive: true
+          // Don't filter by isActive - show all ambulances with GPS data
         },
         include: {
           driver: {
@@ -123,7 +124,7 @@ export class AmbulancesService {
 
       // Get latest GPS tracking log for each ambulance
       const testGPSData: any[] = [];
-      const FRESHNESS_THRESHOLD = 20 * 60 * 1000; // 20 minutes
+      const FRESHNESS_THRESHOLD = 60 * 60 * 1000; // Increased to 60 minutes to show more ambulances
       
       for (const ambulance of testAmbulances) {
         const latestLog = await this.prisma.gPSTrackingLog.findFirst({
@@ -136,10 +137,13 @@ export class AmbulancesService {
         });
 
         if (latestLog) {
-          // Filter out stale data (older than 20 minutes)
           const age = Date.now() - latestLog.timestamp.getTime();
-          if (age > FRESHNESS_THRESHOLD) {
-            continue; // Skip stale data
+          const isStale = age > FRESHNESS_THRESHOLD;
+          
+          // Log when skipping stale data for debugging
+          if (isStale) {
+            this.logger.debug(`Skipping stale GPS data for ambulance ${ambulance.callSign} (${ambulance.vehicleImei}): ${Math.round(age / 60000)} minutes old`);
+            continue;
           }
           
           testGPSData.push({
@@ -155,8 +159,13 @@ export class AmbulancesService {
             type: ambulance.type,
             driver: ambulance.driver
           });
+        } else {
+          // Log when ambulance has no GPS logs
+          this.logger.debug(`Ambulance ${ambulance.callSign} (${ambulance.vehicleImei}) has no GPS tracking logs`);
         }
       }
+      
+      this.logger.log(`Found ${testGPSData.length} ambulances with GPS data from database (out of ${testAmbulances.length} total)`);
 
       // Combine external GPS data with test ambulance data
       const combinedData = [...externalGPSData, ...testGPSData];
@@ -169,10 +178,11 @@ export class AmbulancesService {
       this.logger.error(`Failed to fetch GPS data: ${(error as Error).message}`);
       
       // Fallback: return only database data if external API fails
+      // Include all ambulances, not just active ones
       const testAmbulances = await this.prisma.ambulance.findMany({
         where: {
           deletedAt: null,
-          isActive: true
+          // Don't filter by isActive in fallback either
         },
         include: {
           driver: {

@@ -137,20 +137,39 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   };
 
   const getStatusInfo = () => {
-    switch (assignment.status) {
-      case 'EMS_CONTACT':
-        return { label: 'EMS Contact', color: 'info', icon: faUserMd };
-      case 'EMS_ARRIVAL':
-        return { label: 'EMS Arrival', color: 'primary', icon: faAmbulance };
-      case 'DEPARTED':
-        return { label: 'Departed', color: 'warning', icon: faMapMarkerAlt };
-      case 'ARRIVED':
-        return { label: 'Arrived', color: 'success', icon: faCheck };
-      case 'CANCELLED':
-        return { label: 'Cancelled', color: 'error', icon: faStop };
-      default:
-        return { label: 'Unknown', color: 'default', icon: faClock };
+    // PRIORITY: Check timestamps FIRST - they are the source of truth
+    // If timestamps exist, they override the status field (which might be stale)
+    if (assignment.journeyEndTime) {
+      return { label: 'Arrived', color: 'success', icon: faCheck };
     }
+    if (assignment.journeyStartTime) {
+      return { label: 'Departed', color: 'warning', icon: faMapMarkerAlt };
+    }
+    if (assignment.actualArrivalTime) {
+      return { label: 'EMS Arrival', color: 'primary', icon: faAmbulance };
+    }
+    if (assignment.emsContactTime) {
+      return { label: 'EMS Contact', color: 'info', icon: faUserMd };
+    }
+    
+    // Fallback: Use explicit status field if no timestamps exist
+    if (assignment.status) {
+      switch (assignment.status) {
+        case 'EMS_CONTACT':
+          return { label: 'EMS Contact', color: 'info', icon: faUserMd };
+        case 'EMS_ARRIVAL':
+          return { label: 'EMS Arrival', color: 'primary', icon: faAmbulance };
+        case 'DEPARTED':
+          return { label: 'Departed', color: 'warning', icon: faMapMarkerAlt };
+        case 'ARRIVED':
+          return { label: 'Arrived', color: 'success', icon: faCheck };
+        case 'CANCELLED':
+          return { label: 'Cancelled', color: 'error', icon: faStop };
+      }
+    }
+    
+    // Default fallback
+    return { label: 'Unknown', color: 'default', icon: faClock };
   };
 
   const getPriorityInfo = () => {
@@ -202,7 +221,16 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   const getActionButtons = () => {
     const buttons: React.ReactElement[] = [];
 
-    switch (assignment.status) {
+    // Infer status from timestamps if status field is missing/invalid
+    const inferredStatus = assignment.status && ['EMS_CONTACT', 'EMS_ARRIVAL', 'DEPARTED', 'ARRIVED', 'CANCELLED'].includes(assignment.status)
+      ? assignment.status
+      : assignment.journeyEndTime ? 'ARRIVED'
+      : assignment.journeyStartTime ? 'DEPARTED'
+      : assignment.actualArrivalTime ? 'EMS_ARRIVAL'
+      : assignment.emsContactTime ? 'EMS_CONTACT'
+      : assignment.status || 'EMS_CONTACT';
+
+    switch (inferredStatus) {
       case 'EMS_CONTACT':
         // Add ambulance & driver assignment button if not already assigned
         buttons.push(

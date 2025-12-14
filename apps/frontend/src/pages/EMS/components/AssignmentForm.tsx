@@ -141,39 +141,39 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          
-          {/* Journey Timeline Fields */}
+
+          {/* Journey Timeline Section */}
           <Grid item xs={12}>
-            <Typography variant="h6" sx={{ mt: 2, mb: 1, color: 'primary.main' }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main', fontWeight: 600 }}>
               Journey Timeline
             </Typography>
           </Grid>
-          
-          <Grid item xs={12} sm={4}>
+
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="EMS Arrival Time"
               type="datetime-local"
-              value={formatForDateTimeLocal(formData.journeyStartTime)}
-              onChange={(e) => onFormDataChange('journeyStartTime', e.target.value)}
+              value={formatForDateTimeLocal(formData.actualArrivalTime)}
+              onChange={(e) => onFormDataChange('actualArrivalTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
               helperText="When EMS arrived at pickup location"
             />
           </Grid>
-          
-          <Grid item xs={12} sm={4}>
+
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="Departed Time"
               type="datetime-local"
-              value={formatForDateTimeLocal(formData.actualArrivalTime)}
-              onChange={(e) => onFormDataChange('actualArrivalTime', e.target.value)}
+              value={formatForDateTimeLocal(formData.journeyStartTime)}
+              onChange={(e) => onFormDataChange('journeyStartTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
               helperText="When EMS departed from pickup location"
             />
           </Grid>
-          
-          <Grid item xs={12} sm={4}>
+
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="Arrived Time"

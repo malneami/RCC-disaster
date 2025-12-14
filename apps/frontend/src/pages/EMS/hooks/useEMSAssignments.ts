@@ -27,6 +27,11 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
       onSuccess: () => {
         queryClient.invalidateQueries('ems-assignments');
         queryClient.invalidateQueries('active-assignments');
+        // Invalidate tickets queries so TicketsPage refreshes
+        queryClient.invalidateQueries('tickets');
+        queryClient.invalidateQueries(['tickets']);
+        // Dispatch custom event to trigger TicketsPage refresh
+        window.dispatchEvent(new CustomEvent('ems-assignment-changed'));
       },
     }
   );
@@ -38,6 +43,11 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
       onSuccess: () => {
         queryClient.invalidateQueries('ems-assignments');
         queryClient.invalidateQueries('active-assignments');
+        // Invalidate tickets queries so TicketsPage refreshes
+        queryClient.invalidateQueries('tickets');
+        queryClient.invalidateQueries(['tickets']);
+        // Dispatch custom event to trigger TicketsPage refresh
+        window.dispatchEvent(new CustomEvent('ems-assignment-changed'));
       },
     }
   );
@@ -48,6 +58,9 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
       onSuccess: () => {
         queryClient.invalidateQueries('ems-assignments');
         queryClient.invalidateQueries('active-assignments');
+        queryClient.invalidateQueries('tickets');
+        queryClient.invalidateQueries(['tickets']);
+        window.dispatchEvent(new CustomEvent('ems-assignment-changed'));
       },
     }
   );
@@ -58,6 +71,9 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
       onSuccess: () => {
         queryClient.invalidateQueries('ems-assignments');
         queryClient.invalidateQueries('active-assignments');
+        queryClient.invalidateQueries('tickets');
+        queryClient.invalidateQueries(['tickets']);
+        window.dispatchEvent(new CustomEvent('ems-assignment-changed'));
       },
     }
   );
@@ -68,6 +84,9 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
       onSuccess: () => {
         queryClient.invalidateQueries('ems-assignments');
         queryClient.invalidateQueries('active-assignments');
+        queryClient.invalidateQueries('tickets');
+        queryClient.invalidateQueries(['tickets']);
+        window.dispatchEvent(new CustomEvent('ems-assignment-changed'));
       },
     }
   );
@@ -78,6 +97,9 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
       onSuccess: () => {
         queryClient.invalidateQueries('ems-assignments');
         queryClient.invalidateQueries('active-assignments');
+        queryClient.invalidateQueries('tickets');
+        queryClient.invalidateQueries(['tickets']);
+        window.dispatchEvent(new CustomEvent('ems-assignment-changed'));
       },
     }
   );
@@ -88,6 +110,9 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
       onSuccess: () => {
         queryClient.invalidateQueries('ems-assignments');
         queryClient.invalidateQueries('active-assignments');
+        queryClient.invalidateQueries('tickets');
+        queryClient.invalidateQueries(['tickets']);
+        window.dispatchEvent(new CustomEvent('ems-assignment-changed'));
       },
     }
   );
@@ -98,6 +123,9 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
       onSuccess: () => {
         queryClient.invalidateQueries('ems-assignments');
         queryClient.invalidateQueries('active-assignments');
+        queryClient.invalidateQueries('tickets');
+        queryClient.invalidateQueries(['tickets']);
+        window.dispatchEvent(new CustomEvent('ems-assignment-changed'));
       },
     }
   );

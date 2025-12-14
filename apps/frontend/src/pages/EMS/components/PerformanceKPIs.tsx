@@ -1,62 +1,76 @@
 import React from 'react';
 import { Box, Card, CardContent, Typography, Grid } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faRoute, faGasPump, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faRoute, faChartLine } from '@fortawesome/free-solid-svg-icons';
 
 interface PerformanceKPIsProps {
   kpis: {
     avgResponseTime: number;
-    totalAssignments: number;
-    avgFuelConsumption: number;
-    onTimeArrivals: number;
-    totalDistance: number;
+    avgCasePreparationTime: number;
     avgAssignmentDuration: number;
+    avgTotalTransferTime: number;
+    onTimeArrivals: number;
+    totalAssignments: number;
   };
 }
 
 const PerformanceKPIs: React.FC<PerformanceKPIsProps> = ({ kpis }) => {
+  const getResponseTimeColor = (val: number) => {
+    if (val < 5) return '#4caf50'; // Green
+    if (val <= 10) return '#ff9800'; // Yellow
+    return '#f44336'; // Red
+  };
+
+  const getCPTColor = (val: number) => {
+    if (val < 10) return '#4caf50';
+    if (val <= 20) return '#ff9800';
+    return '#f44336';
+  };
+
+  const getOnTimeColor = (val: number) => val >= 90 ? '#4caf50' : '#f44336';
+
   const kpiCards = [
     {
-      title: 'Avg Response Time',
+      title: 'EMS Response Time',
       value: `${kpis.avgResponseTime.toFixed(1)} min`,
       icon: faClock,
-      color: '#1976d2',
+      color: getResponseTimeColor(kpis.avgResponseTime),
+      subtitle: 'Target: < 5 min',
+    },
+    {
+      title: 'Case Preparation Time',
+      value: `${kpis.avgCasePreparationTime.toFixed(1)} min`,
+      icon: faClock,
+      color: getCPTColor(kpis.avgCasePreparationTime),
       subtitle: 'Target: < 10 min',
+    },
+    {
+      title: 'Avg Assignment Duration',
+      value: `${kpis.avgAssignmentDuration.toFixed(1)} min`,
+      icon: faRoute,
+      color: kpis.avgAssignmentDuration <= 45 ? '#4caf50' : '#ff9800',
+      subtitle: 'Door-out to Dest',
+    },
+    {
+      title: 'Total Transfer Time',
+      value: `${kpis.avgTotalTransferTime.toFixed(1)} min`,
+      icon: faClock,
+      color: kpis.avgTotalTransferTime <= 75 ? '#4caf50' : '#ff9800',
+      subtitle: 'Contact to Dest',
+    },
+    {
+      title: 'On-Time Arrival Rate',
+      value: `${kpis.onTimeArrivals}%`,
+      icon: faChartLine,
+      color: getOnTimeColor(kpis.onTimeArrivals),
+      subtitle: 'Target: ≥ 90%',
     },
     {
       title: 'Total Assignments',
       value: kpis.totalAssignments.toString(),
       icon: faRoute,
-      color: '#4caf50',
-      subtitle: 'This period',
-    },
-    {
-      title: 'Avg Fuel Consumption',
-      value: `${kpis.avgFuelConsumption.toFixed(1)} L`,
-      icon: faGasPump,
-      color: '#ff9800',
-      subtitle: 'Per assignment',
-    },
-    {
-      title: 'On-Time Arrivals',
-      value: `${kpis.onTimeArrivals}%`,
-      icon: faChartLine,
-      color: '#9c27b0',
-      subtitle: 'Success rate',
-    },
-    {
-      title: 'Total Distance',
-      value: `${kpis.totalDistance.toFixed(0)} km`,
-      icon: faRoute,
-      color: '#f44336',
-      subtitle: 'This period',
-    },
-    {
-      title: 'Avg Assignment Duration',
-      value: `${kpis.avgAssignmentDuration.toFixed(1)} min`,
-      icon: faClock,
-      color: '#607d8b',
-      subtitle: 'Door to door',
+      color: '#1976d2',
+      subtitle: 'Completed',
     },
   ];
 
@@ -67,16 +81,16 @@ const PerformanceKPIs: React.FC<PerformanceKPIsProps> = ({ kpis }) => {
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Box sx={{ mb: 2 }}>
-                <FontAwesomeIcon 
-                  icon={kpi.icon} 
-                  size="2x" 
+                <FontAwesomeIcon
+                  icon={kpi.icon}
+                  size="2x"
                   style={{ color: kpi.color }}
                 />
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
                 {kpi.value}
               </Typography>
-              <Typography variant="h6" sx={{ mb: 1 }}>
+              <Typography variant="h6" sx={{ mb: 1, fontSize: '1rem', fontWeight: 500 }}>
                 {kpi.title}
               </Typography>
               <Typography variant="body2" color="text.secondary">

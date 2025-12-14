@@ -21,7 +21,6 @@ model TimelineEvent {
   gpsCoordinates          String?         @map("gps_coordinates") // JSON: {lat, lng}
   distanceKm              Float?          @map("distance_km")
   speed                   Float?          // km/h
-  fuelLevel               Float?          @map("fuel_level")
   
   // Stroke-specific fields
   fromStatus              String?         @map("from_status") // StrokeStatus

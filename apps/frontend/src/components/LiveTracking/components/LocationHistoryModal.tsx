@@ -436,3 +436,4 @@ const LocationHistoryModal: React.FC<LocationHistoryModalProps> = ({
 };
 
 export default LocationHistoryModal;
+

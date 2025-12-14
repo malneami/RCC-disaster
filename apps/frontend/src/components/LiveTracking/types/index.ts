@@ -11,7 +11,6 @@ export interface AmbulanceGPSData {
   direction?: number;
   address?: string;
   lastUpdate: Date;
-  fuelLevel?: number;
   engineStatus?: boolean;
   accuracy?: number;
   driver?: {

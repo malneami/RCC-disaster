@@ -5,15 +5,14 @@ A comprehensive React frontend for Emergency Medical Services (EMS) management w
 ## 🚑 Features
 
 ### Real-time Dashboard
-- **Live KPI Monitoring**: Total ambulances, active assignments, response times, fuel levels
+- **Live KPI Monitoring**: Total ambulances, active assignments, response times
 - **Real-time Updates**: WebSocket integration for live data streaming
-- **Performance Metrics**: Response time trends, transfer time analysis, fuel consumption tracking
+- **Performance Metrics**: Response time trends, transfer time analysis
 
 ### Ambulance Management
 - **Fleet Overview**: Complete ambulance fleet management with status tracking
 - **Real-time Status**: Available, in-use, maintenance, out-of-service statuses
 - **Location Tracking**: GPS coordinates and address information
-- **Fuel Monitoring**: Real-time fuel level tracking with low-fuel alerts
 - **Equipment Management**: Equipment inventory and maintenance tracking
 
 ### Assignment Management
@@ -26,7 +25,6 @@ A comprehensive React frontend for Emergency Medical Services (EMS) management w
 ### Performance Analytics
 - **Response Time Charts**: Daily/weekly/monthly response time trends
 - **Transfer Time Analysis**: Average transfer times with target comparisons
-- **Fuel Consumption**: Per-ambulance fuel usage tracking
 - **Status Distribution**: Assignment completion rates and status breakdowns
 - **KPI Dashboard**: Key performance indicators with trend analysis
 
@@ -40,14 +38,13 @@ A comprehensive React frontend for Emergency Medical Services (EMS) management w
 ### Real-time Map
 - **Interactive Tracking**: Real-time ambulance location display
 - **Status Indicators**: Visual status representation on map
-- **Fuel Level Alerts**: Low fuel warnings with visual indicators
 - **Driver Information**: Driver details and contact information
 - **Location History**: Historical location tracking and route analysis
 
 ### Notifications System
 - **Real-time Alerts**: Critical, high, medium, low priority alerts
 - **Alert Management**: Acknowledge and dismiss notification functionality
-- **Alert Types**: Maintenance due, low fuel, driver overtime, speed violations
+- **Alert Types**: Maintenance due, driver overtime, speed violations
 - **Priority Handling**: Critical alert highlighting and immediate attention
 - **Alert History**: Complete alert log with timestamps and status
 

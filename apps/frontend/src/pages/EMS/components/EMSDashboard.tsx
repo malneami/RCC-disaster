@@ -1,11 +1,14 @@
 import React from 'react';
-import { Box, Grid, Card, CardContent, Typography, Chip, LinearProgress } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, Chip, LinearProgress, List, ListItem, ListItemText, Divider, Avatar } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faAmbulance,
   faUserMd,
   faClock,
-  faCheckCircle
+  faCheckCircle,
+  faHistory,
+  faCalendarAlt,
+  faTasks
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useEMSDashboard } from '../hooks/useEMSDashboard';
@@ -85,7 +88,7 @@ const EMSDashboard: React.FC = () => {
   // Check if we have any data to display
   const hasData = dashboardData && (
     dashboardData.summary.totalAmbulances > 0 ||
-    dashboardData.summary.totalAssignments > 0 ||
+    (dashboardData.summary.totalAssignments ?? 0) > 0 ||
     dashboardData.recentAlerts?.length > 0
   );
 
@@ -169,14 +172,146 @@ const EMSDashboard: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <KPICard
               title="Response Time"
-              value="8.5 min"
+              value={summary.averageResponseTime ? `${summary.averageResponseTime} min` : '0 min'}
               icon={<FontAwesomeIcon icon={faClock} />}
               color="#2e7d32"
               subtitle="Average Today"
-              trend={-12}
             />
           </Grid>
+
+          {summary.todayCompletedAssignments !== undefined && (
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="Completed Today"
+                value={summary.todayCompletedAssignments || 0}
+                icon={<FontAwesomeIcon icon={faCheckCircle} />}
+                color="#2e7d32"
+                subtitle="Assignments Completed"
+              />
+            </Grid>
+          )}
+
+          {summary.totalAssignments !== undefined && (
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="Total Assignments"
+                value={summary.totalAssignments || 0}
+                icon={<FontAwesomeIcon icon={faTasks} />}
+                color="#1976d2"
+                subtitle="All Time"
+              />
+            </Grid>
+          )}
         </Grid>
+
+        {/* Recent Activity Section */}
+        {((dashboardData?.recentAssignments?.length ?? 0) > 0 || (dashboardData?.upcomingSchedules?.length ?? 0) > 0) && (
+          <>
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <FontAwesomeIcon icon={faHistory} />
+              Recent Activity
+            </Typography>
+            
+            <Grid container spacing={3}>
+              {/* Recent Assignments */}
+              {dashboardData?.recentAssignments && dashboardData.recentAssignments.length > 0 && (
+                <Grid item xs={12} md={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FontAwesomeIcon icon={faAmbulance} size="sm" />
+                        Recent Assignments
+                      </Typography>
+                      <List dense>
+                        {dashboardData.recentAssignments.slice(0, 5).map((assignment, index) => (
+                          <React.Fragment key={assignment.id}>
+                            <ListItem>
+                              <Avatar sx={{ bgcolor: assignment.status === 'ARRIVED' ? 'success.main' : 'primary.main', mr: 2 }}>
+                                {assignment.ticketNumber?.slice(-2) || '?'}
+                              </Avatar>
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="body2" fontWeight="medium">
+                                      {assignment.patientName}
+                                    </Typography>
+                                    <Chip 
+                                      label={assignment.status.replace('_', ' ')} 
+                                      size="small" 
+                                      color={assignment.status === 'ARRIVED' ? 'success' : 'default'}
+                                    />
+                                  </Box>
+                                }
+                                secondary={
+                                  <Box>
+                                    {assignment.ambulanceCallSign && (
+                                      <Typography variant="caption" display="block">
+                                        Ambulance: {assignment.ambulanceCallSign}
+                                      </Typography>
+                                    )}
+                                    {assignment.driverName && (
+                                      <Typography variant="caption" display="block">
+                                        Driver: {assignment.driverName}
+                                      </Typography>
+                                    )}
+                                    <Typography variant="caption" color="text.secondary">
+                                      {new Date(assignment.assignedAt).toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                            </ListItem>
+                            {index < dashboardData.recentAssignments!.slice(0, 5).length - 1 && <Divider component="li" />}
+                          </React.Fragment>
+                        ))}
+                      </List>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Upcoming Schedules */}
+              {dashboardData?.upcomingSchedules && dashboardData.upcomingSchedules.length > 0 && (
+                <Grid item xs={12} md={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FontAwesomeIcon icon={faCalendarAlt} size="sm" />
+                        Upcoming Schedules
+                      </Typography>
+                      <List dense>
+                        {dashboardData.upcomingSchedules.map((schedule, index) => (
+                          <React.Fragment key={schedule.id}>
+                            <ListItem>
+                              <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                                <FontAwesomeIcon icon={faClock} />
+                              </Avatar>
+                              <ListItemText
+                                primary={schedule.driverName}
+                                secondary={
+                                  <Box>
+                                    <Typography variant="caption" display="block">
+                                      Start: {new Date(schedule.shiftStart).toLocaleString()}
+                                    </Typography>
+                                    <Typography variant="caption" display="block">
+                                      End: {new Date(schedule.shiftEnd).toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                            </ListItem>
+                            {index < dashboardData.upcomingSchedules!.length - 1 && <Divider component="li" />}
+                          </React.Fragment>
+                        ))}
+                      </List>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+            </Grid>
+          </>
+        )}
       </CardContent>
     </Card>
   );

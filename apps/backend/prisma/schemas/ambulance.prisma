@@ -29,7 +29,6 @@ model Ambulance {
   
   // Equipment & Maintenance
   equipmentStatus         EquipmentStatus @default(OPERATIONAL) @map("equipment_status")
-  fuelLevel               Float?          @map("fuel_level") // Percentage
   mileage                 Float?          // Odometer reading in km
   lastMaintenanceDate     DateTime?       @map("last_maintenance_date")
   nextMaintenanceDue      DateTime?       @map("next_maintenance_due")

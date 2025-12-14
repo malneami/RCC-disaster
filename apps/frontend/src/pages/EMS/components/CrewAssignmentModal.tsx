@@ -81,10 +81,19 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
             ]);
             setRecommendations(recs);
             setTicket(ticketData);
-            setAllDrivers(driversData.data);
+            // Ensure drivers data is set even if empty
+            setAllDrivers(driversData?.data || []);
         } catch (err) {
             setError('Failed to load data');
-            console.error(err);
+            console.error('Error fetching crew assignment data:', err);
+            // Try to still fetch drivers separately if other calls fail
+            try {
+                const driversData = await emsService.getEMSDrivers({ pageSize: 100 });
+                setAllDrivers(driversData?.data || []);
+            } catch (driverErr) {
+                console.error('Error fetching drivers:', driverErr);
+                setAllDrivers([]);
+            }
         } finally {
             setLoading(false);
         }
@@ -136,12 +145,26 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
                 }
             }
 
+            // Infer status from timestamps if not explicitly set
+            let inferredStatus = isRetroactive ? derivedStatus : 'EMS_CONTACT';
+            
+            // If timestamps are being set, ensure status matches
+            if (isRetroactive && selectedLog) {
+                if (derivedStatus === 'ARRIVED' && selectedSequence) {
+                    inferredStatus = 'ARRIVED';
+                } else if (derivedStatus === 'DEPARTED') {
+                    inferredStatus = 'DEPARTED';
+                } else if (derivedStatus === 'EMS_ARRIVAL') {
+                    inferredStatus = 'EMS_ARRIVAL';
+                }
+            }
+            
             const payload: any = {
                 ticketId,
                 ambulanceId: selectedAmbulanceId,
                 driverId: selectedDriverId || undefined,
                 assignedAt: new Date().toISOString(),
-                status: isRetroactive ? derivedStatus : 'ASSIGNED',
+                status: inferredStatus,
             };
 
             // Add retroactive times if applicable
@@ -183,9 +206,11 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
 
             onSuccess?.();
             onClose();
-        } catch (err) {
-            setError('Failed to assign ambulance');
-            console.error(err);
+        } catch (err: any) {
+            // Show detailed error message if available
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to assign ambulance';
+            setError(errorMessage);
+            console.error('Error assigning crew:', err);
         } finally {
             setSubmitting(false);
         }

@@ -11,10 +11,14 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
+import { useQuery } from 'react-query';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { useEMSPerformance } from '../hooks/useEMSPerformance';
+import { emsService } from '../services/emsService';
 import PerformanceKPIs from './PerformanceKPIs';
 import PerformanceCharts from './PerformanceCharts';
+import FleetMetrics from './FleetMetrics';
 import GenericPageHeader from '../../../components/Common/GenericPageHeader';
 
 interface TabPanelProps {
@@ -30,46 +34,39 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 );
 
 const PerformanceAnalytics: React.FC = () => {
-  const { isLoading, error } = useEMSPerformance();
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const { data: performanceData, isLoading, error } = useEMSPerformance(selectedPeriod);
   const [tabValue, setTabValue] = useState(0);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-  // Sample data - in real implementation, this would come from the API
-  const responseTimeData = [
-    { name: 'Mon', avg: 8.2, target: 10 },
-    { name: 'Tue', avg: 7.8, target: 10 },
-    { name: 'Wed', avg: 9.1, target: 10 },
-    { name: 'Thu', avg: 8.5, target: 10 },
-    { name: 'Fri', avg: 7.9, target: 10 },
-    { name: 'Sat', avg: 8.7, target: 10 },
-    { name: 'Sun', avg: 8.3, target: 10 },
-  ];
+  // Fetch response time trends
+  const { data: responseTimeData = [] } = useQuery(
+    ['ems-response-time-trends', selectedPeriod],
+    () => emsService.getResponseTimeTrends(selectedPeriod),
+    {
+      refetchInterval: 300000,
+      staleTime: 60000,
+    }
+  );
 
-  const fuelConsumptionData = [
-    { name: 'Mon', consumption: 45 },
-    { name: 'Tue', consumption: 52 },
-    { name: 'Wed', consumption: 38 },
-    { name: 'Thu', consumption: 48 },
-    { name: 'Fri', consumption: 55 },
-    { name: 'Sat', consumption: 42 },
-    { name: 'Sun', consumption: 39 },
-  ];
-
-  const assignmentStatusData = [
-    { name: 'Completed', value: 85 },
-    { name: 'In Progress', value: 10 },
-    { name: 'Cancelled', value: 5 },
-  ];
+  // Fetch assignment status distribution
+  const { data: assignmentStatusData = [] } = useQuery(
+    ['ems-assignment-status-distribution', selectedPeriod],
+    () => emsService.getAssignmentStatusDistribution(selectedPeriod),
+    {
+      refetchInterval: 300000,
+      staleTime: 60000,
+    }
+  );
 
   const kpis = {
-    avgResponseTime: 8.4,
-    totalAssignments: 156,
-    avgFuelConsumption: 45.7,
-    onTimeArrivals: 92,
-    totalDistance: 2847,
-    avgAssignmentDuration: 28.5,
+    avgResponseTime: performanceData?.summary?.avgResponseTime || 0,
+    avgCasePreparationTime: performanceData?.summary?.avgCasePreparationTime || 0,
+    avgAssignmentDuration: performanceData?.summary?.avgAssignmentDuration || 0,
+    avgTotalTransferTime: performanceData?.summary?.avgTotalTransferTime || 0,
+    onTimeArrivals: performanceData?.summary?.onTimeArrivals || 0,
+    totalAssignments: performanceData?.summary?.totalAssignments || 0,
   };
 
   if (isLoading) return <Box>Loading...</Box>;
@@ -82,7 +79,7 @@ const PerformanceAnalytics: React.FC = () => {
         subtitle="Track and analyze EMS performance metrics"
         actions={[]}
       />
-      
+
       <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Time Period</InputLabel>
@@ -116,31 +113,53 @@ const PerformanceAnalytics: React.FC = () => {
           <TabPanel value={tabValue} index={0}>
             <PerformanceCharts
               responseTimeData={responseTimeData}
-              fuelConsumptionData={fuelConsumptionData}
               assignmentStatusData={assignmentStatusData}
               COLORS={COLORS}
             />
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="h6" color="text.secondary">
-                Resource Utilization Charts
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Additional charts for resource utilization analysis
-              </Typography>
-            </Box>
+            {performanceData?.fleet ? (
+              <FleetMetrics metrics={performanceData.fleet} />
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body1">No fleet data available for this period</Typography>
+              </Box>
+            )}
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="h6" color="text.secondary">
-                Assignment Analysis Charts
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Assignment Status Distribution
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Detailed assignment analysis and reporting
-              </Typography>
+              {assignmentStatusData.length > 0 ? (
+                <Box>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <Pie
+                        data={assignmentStatusData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                        outerRadius={120}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {assignmentStatusData.map((_item: { name: string; value: number }, index: number) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body1">No assignment data available for this period</Typography>
+                </Box>
+              )}
             </Box>
           </TabPanel>
         </CardContent>

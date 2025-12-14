@@ -80,6 +80,22 @@ export class EmsAssignmentsController {
     return this.emsAssignmentsService.findById(id);
   }
 
+  @Get(':id/diagnose')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Diagnose assignment status and zone logs' })
+  @ApiResponse({ status: 200, description: 'Diagnostic information retrieved successfully' })
+  async diagnoseAssignment(@Param('id') id: string) {
+    return this.emsAssignmentsService.diagnoseAssignment(id);
+  }
+
+  @Post(':id/auto-fix')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Auto-fix assignment status based on timestamps and zone logs' })
+  @ApiResponse({ status: 200, description: 'Assignment status fixed successfully' })
+  async autoFixAssignment(@Param('id') id: string) {
+    return this.emsAssignmentsService.autoFixAssignmentStatus(id);
+  }
+
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
   @ApiOperation({ summary: 'Update EMS assignment' })
@@ -108,8 +124,8 @@ export class EmsAssignmentsController {
   @ApiResponse({ status: 404, description: 'Assignment not found' })
   async markArrived(@Param('id') id: string, @Request() req: any) {
     return this.emsAssignmentsService.update(id, { 
-      status: 'DEPARTED',
-      journeyStartTime: new Date().toISOString()
+      status: 'ARRIVED',
+      journeyEndTime: new Date().toISOString()
     }, req.user.id);
   }
 

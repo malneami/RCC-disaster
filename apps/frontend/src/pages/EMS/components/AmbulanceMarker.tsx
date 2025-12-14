@@ -13,7 +13,6 @@ interface AmbulanceLocation {
   status: string;
   speed?: number;
   direction?: number;
-  fuelLevel?: number;
   driver?: {
     firstName: string;
     lastName: string;
@@ -61,11 +60,6 @@ const AmbulanceMarker: React.FC<AmbulanceMarkerProps> = ({
           {ambulance.speed && (
             <Typography variant="body2">
               Speed: {ambulance.speed} km/h
-            </Typography>
-          )}
-          {ambulance.fuelLevel && (
-            <Typography variant="body2">
-              Fuel: {ambulance.fuelLevel}%
             </Typography>
           )}
           <Typography variant="body2">

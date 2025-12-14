@@ -91,7 +91,6 @@ The system requires ambulances with valid GPS coordinates. Ensure your database 
     - Status chip with color coding
     - Driver information (if assigned)
     - Speed and direction
-    - Fuel level (if available)
     - Location address
     - Last update time
 - ✅ **Multiple Clicks**: Only one marker is selected at a time
@@ -333,7 +332,6 @@ INSERT INTO ambulances (status, currentLocationLat, currentLocationLng) VALUES
 - Some with drivers assigned, some without
 - Varied GPS coordinates covering a reasonable area
 - Some ambulances with speed > 0 (moving)
-- Valid fuel level data (0-100)
 
 ## ✅ Acceptance Criteria
 

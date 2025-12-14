@@ -388,7 +388,6 @@ enum ScheduleStatus {
 
 enum AlertType {
   MAINTENANCE_DUE
-  LOW_FUEL
   DRIVER_OVERTIME
   SPEED_VIOLATION
   EQUIPMENT_FAILURE
@@ -416,7 +415,6 @@ enum EMSEventType {
   AMBULANCE_RETURNED
   MAINTENANCE_STARTED
   MAINTENANCE_COMPLETED
-  FUEL_LOW_WARNING
   SPEED_VIOLATION
   DRIVER_BREAK_STARTED
   DRIVER_BREAK_ENDED
@@ -429,7 +427,6 @@ enum PerformanceMetricType {
   RESPONSE_TIME
   TRANSFER_TIME
   DISTANCE_TRAVELED
-  FUEL_CONSUMPTION
   MAINTENANCE_HOURS
   DRIVER_RATING
   PATIENT_SATISFACTION
@@ -1549,7 +1546,6 @@ model Ambulance {
   
   // Equipment & Maintenance
   equipmentStatus         EquipmentStatus @default(OPERATIONAL) @map("equipment_status")
-  fuelLevel               Float?          @map("fuel_level") // Percentage
   mileage                 Float?          // Odometer reading in km
   lastMaintenanceDate     DateTime?       @map("last_maintenance_date")
   nextMaintenanceDue      DateTime?       @map("next_maintenance_due")
@@ -1764,9 +1760,8 @@ model EMSPerformanceMetric {
   averageResponseTime    Float?          @map("average_response_time") // minutes
   averageTransferTime    Float?          @map("average_transfer_time") // minutes
   
-  // Distance & Fuel
+  // Distance
   totalDistanceKm        Float?          @map("total_distance_km")
-  fuelConsumptionLiters  Float?          @map("fuel_consumption_liters")
   
   // Maintenance
   maintenanceHours       Float?          @map("maintenance_hours")
@@ -1860,7 +1855,6 @@ model GPSTrackingLog {
   timestamp               DateTime        // When GPS data was recorded
   
   // Vehicle Status
-  fuelLevel               Float?          @map("fuel_level") // Percentage if available
   engineStatus            Boolean?        @map("engine_status") // on/off
   
   // Location Details
@@ -1993,7 +1987,6 @@ model TimelineEvent {
   gpsCoordinates          String?         @map("gps_coordinates") // JSON: {lat, lng}
   distanceKm              Float?          @map("distance_km")
   speed                   Float?          // km/h
-  fuelLevel               Float?          @map("fuel_level")
   
   // Stroke-specific fields
   fromStatus              String?         @map("from_status") // StrokeStatus

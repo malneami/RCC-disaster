@@ -16,7 +16,6 @@ model GPSTrackingLog {
   timestamp               DateTime        // When GPS data was recorded
   
   // Vehicle Status
-  fuelLevel               Float?          @map("fuel_level") // Percentage if available
   engineStatus            Boolean?        @map("engine_status") // on/off
   
   // Location Details

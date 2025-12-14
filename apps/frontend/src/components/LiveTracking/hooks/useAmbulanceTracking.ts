@@ -77,22 +77,33 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
   const mergeGPSWithDatabaseData = (gpsData: any[], ambulances: Ambulance[]): AmbulanceGPSData[] => {
     if (!Array.isArray(gpsData) || !Array.isArray(ambulances)) return [];
     
-    // Create a map of ambulances by IMEI for quick lookup
-    const ambulanceMap = new Map<string, Ambulance>();
+    // Create maps for lookup by IMEI and callSign
+    const ambulanceMapByImei = new Map<string, Ambulance>();
+    const ambulanceMapByCallSign = new Map<string, Ambulance>();
     ambulances.forEach(amb => {
       if (amb.vehicleImei) {
-        ambulanceMap.set(amb.vehicleImei, amb);
+        ambulanceMapByImei.set(amb.vehicleImei, amb);
+      }
+      if (amb.callSign) {
+        ambulanceMapByCallSign.set(amb.callSign.toLowerCase().trim(), amb);
       }
     });
     
     // Deduplicate by IMEI - keep first occurrence
     const seenImeis = new Set<string>();
+    const seenCallSigns = new Set<string>();
     
     return gpsData
       .filter(item => item.lat && item.lng)
       .map(item => {
         const imei = item.imei || item.vehicleImei || '';
-        const dbAmbulance = ambulanceMap.get(imei);
+        const callSign = item.callSign || item.name || '';
+        
+        // Try to find ambulance by IMEI first, then by callSign
+        let dbAmbulance = ambulanceMapByImei.get(imei);
+        if (!dbAmbulance && callSign) {
+          dbAmbulance = ambulanceMapByCallSign.get(callSign.toLowerCase().trim());
+        }
         
         // Parse coordinates
         const latitude = parseFloat(item.lat) || parseFloat(item.latitude);
@@ -101,8 +112,8 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
         // Use database data for status, driver, and other info, GPS data for location and movement
         return {
           id: dbAmbulance?.id || item.id || `gps-${imei}`,
-          vehicleImei: imei,
-          callSign: dbAmbulance?.callSign || item.callSign || item.name || imei || 'Unknown',
+          vehicleImei: imei || dbAmbulance?.vehicleImei || '',
+          callSign: dbAmbulance?.callSign || callSign || imei || 'Unknown',
           plateNumber: dbAmbulance?.plateNumber || item.plateNumber || item.plate || 'N/A',
           type: dbAmbulance?.type || item.type || 'BASIC',
           status: dbAmbulance?.status || item.status || 'AVAILABLE', // Use DB status, never infer from speed
@@ -112,7 +123,6 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
           direction: item.direction || item.course || item.angle,
           address: item.address || item.location_address || dbAmbulance?.currentLocationAddress,
           lastUpdate: item.timestamp ? new Date(item.timestamp) : (dbAmbulance?.updatedAt ? new Date(dbAmbulance.updatedAt) : new Date()),
-          fuelLevel: dbAmbulance?.fuelLevel || item.fuelLevel || item.fuel,
           engineStatus: item.engineStatus || item.ignition,
           accuracy: item.accuracy,
           driver: dbAmbulance?.driver, // Get driver from database
@@ -120,16 +130,18 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
       })
       .filter(item => {
         // Filter out invalid coordinates
-        if (isNaN(item.latitude) || isNaN(item.longitude)) {
+        if (isNaN(item.latitude) || isNaN(item.longitude) || item.latitude === 0 || item.longitude === 0) {
           console.warn(`Skipping ambulance ${item.callSign} with invalid coordinates: (${item.latitude}, ${item.longitude})`);
           return false;
         }
         
-        // Deduplicate by IMEI
-        if (seenImeis.has(item.vehicleImei)) {
+        // Deduplicate by IMEI or callSign
+        const key = item.vehicleImei || item.callSign.toLowerCase();
+        if (seenImeis.has(key) || seenCallSigns.has(item.callSign.toLowerCase())) {
           return false;
         }
-        seenImeis.add(item.vehicleImei);
+        if (item.vehicleImei) seenImeis.add(key);
+        if (item.callSign) seenCallSigns.add(item.callSign.toLowerCase());
         return true;
       });
   };
@@ -137,23 +149,38 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
 
 
   // Map regular Ambulance data to AmbulanceGPSData
+  // Include ambulances even if they don't have currentLocationLat/Lng set
+  // They might have GPS data from tracking logs or external API
   const mapAmbulancesToGPS = (ambulances: Ambulance[]): AmbulanceGPSData[] => {
     return ambulances
-      .filter(amb => amb.currentLocationLat && amb.currentLocationLng)
-      .map(amb => ({
-        id: amb.id,
-        vehicleImei: amb.vehicleImei,
-        callSign: amb.callSign,
-        plateNumber: amb.plateNumber,
-        type: amb.type,
-        status: amb.status,
-        latitude: amb.currentLocationLat!,
-        longitude: amb.currentLocationLng!,
-        address: amb.currentLocationAddress,
-        lastUpdate: amb.updatedAt ? new Date(amb.updatedAt) : new Date(),
-        fuelLevel: amb.fuelLevel,
-        driver: amb.driver,
-      }));
+      .filter(amb => {
+        // Include if has current location OR if it's active (might get GPS data from API)
+        return (amb.currentLocationLat && amb.currentLocationLng) || amb.isActive;
+      })
+      .map(amb => {
+        // Use current location if available, otherwise use placeholder (will be updated by GPS API if available)
+        const hasLocation = amb.currentLocationLat && amb.currentLocationLng;
+        return {
+          id: amb.id,
+          vehicleImei: amb.vehicleImei,
+          callSign: amb.callSign,
+          plateNumber: amb.plateNumber,
+          type: amb.type,
+          status: amb.status,
+          latitude: amb.currentLocationLat || 0, // Will be updated by GPS merge if available
+          longitude: amb.currentLocationLng || 0, // Will be updated by GPS merge if available
+          address: amb.currentLocationAddress,
+          lastUpdate: amb.updatedAt ? new Date(amb.updatedAt) : new Date(),
+          driver: amb.driver,
+          // Mark if location is missing so we can filter it out if GPS API also doesn't have it
+          hasLocation: !!hasLocation,
+        };
+      })
+      .filter(amb => {
+        // Filter out ambulances without valid coordinates after GPS merge attempt
+        // But keep them if they have a vehicleImei (might get GPS data from external API)
+        return amb.hasLocation || (amb.latitude !== 0 && amb.longitude !== 0) || !!amb.vehicleImei;
+      });
   };
 
 

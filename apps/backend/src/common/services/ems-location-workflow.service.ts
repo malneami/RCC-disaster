@@ -209,11 +209,14 @@ export class EmsLocationWorkflowService {
       // Use emsContactTime as the primary baseline because ticket.createdAt might be retroactive (e.g. created at 9:34 PM for a 2:08 PM case).
       // If emsContactTime is missing, fall back to ticket.createdAt.
       const referenceTime = assignment.emsContactTime || assignment.ticket.createdAt;
+      let missedArrivalLogTime: Date | null = null;
       
+      // Check for missed arrivals: Look for destination zone logs even if current status isn't DEPARTED
+      // This handles cases where timestamps were set but status wasn't updated
       if (!newStatus && 
-          currentStatus === 'DEPARTED' && 
           referenceTime && 
-          assignment.ticket.destinationHospital) {
+          assignment.ticket.destinationHospital &&
+          !assignment.journeyEndTime) { // Only check if journeyEndTime is missing
         
         this.logger.log(`Checking historical logs for assignment ${assignmentId} at hospital ${assignment.ticket.destinationHospital.id} after ${new Date(referenceTime).toISOString()}`);
 
@@ -238,9 +241,7 @@ export class EmsLocationWorkflowService {
             newStatus = 'ARRIVED';
             reason = 'Detected past arrival from zone logs';
             hospitalName = assignment.ticket.destinationHospital.name;
-            
-            // Use the log time for the journey end
-            // We'll handle this in the update block logic by checking if we have a missedArrivalLog
+            missedArrivalLogTime = missedArrivalLog.entryTime;
           } else {
             this.logger.log(`No missed arrival log found after ${new Date(referenceTime).toISOString()}`);
           }
@@ -257,19 +258,35 @@ export class EmsLocationWorkflowService {
           updatedAt: now
         };
 
-        // Add the appropriate timestamp based on the new status
+        // Only update timestamps if they haven't been manually set
+        // This allows manual time entry to take precedence over GPS-based updates
+        // Exception: If we found a missed arrival log, use that time
         switch (newStatus) {
           case 'EMS_CONTACT':
-            updateData.emsContactTime = now;
+            // Only set if not already manually set
+            if (!assignment.emsContactTime) {
+              updateData.emsContactTime = now;
+            }
             break;
           case 'EMS_ARRIVAL':
-            updateData.actualArrivalTime = now;
+            // Only set if not already manually set
+            if (!assignment.actualArrivalTime) {
+              updateData.actualArrivalTime = now;
+            }
             break;
           case 'DEPARTED':
-            updateData.journeyStartTime = now;
+            // Only set if not already manually set
+            if (!assignment.journeyStartTime) {
+              updateData.journeyStartTime = now;
+            }
             break;
           case 'ARRIVED':
-            updateData.journeyEndTime = now; 
+            // Use missed arrival log time if available, otherwise use now (but only if not manually set)
+            if (missedArrivalLogTime) {
+              updateData.journeyEndTime = missedArrivalLogTime;
+            } else if (!assignment.journeyEndTime) {
+              updateData.journeyEndTime = now; 
+            }
             break;
         }
 

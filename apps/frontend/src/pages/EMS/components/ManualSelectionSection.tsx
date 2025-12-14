@@ -63,12 +63,23 @@ const ManualSelectionSection: React.FC<ManualSelectionSectionProps> = ({
                     getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
                     value={allDrivers.find(d => d.id === selectedDriverId) || null}
                     onChange={(_, newValue) => onDriverChange(newValue)}
+                    loading={loading}
+                    noOptionsText={loading ? "Loading drivers..." : "No drivers available"}
                     renderInput={(params) => (
                         <TextField
                             {...params}
                             label="Select Driver"
                             size="small"
                             placeholder="Optional"
+                            InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                    <>
+                                        {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                                        {params.InputProps.endAdornment}
+                                    </>
+                                ),
+                            }}
                         />
                     )}
                 />

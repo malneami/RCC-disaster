@@ -139,41 +139,6 @@ export class EmsAlertService {
     return 'MEDIUM';
   }
 
-  async checkFuelAlerts(): Promise<void> {
-    const ambulancesWithLowFuel = await this.prisma.ambulance.findMany({
-      where: {
-        fuelLevel: { lte: 20 },
-        isActive: true,
-        status: { in: ['AVAILABLE', 'IN_USE'] },
-      },
-    });
-
-    for (const ambulance of ambulancesWithLowFuel) {
-      if (ambulance.fuelLevel !== null) {
-        const priority = this.getFuelPriority(ambulance.fuelLevel);
-        const existingAlert = await this.prisma.eMSAlert.findFirst({
-          where: { type: 'LOW_FUEL', ambulanceId: ambulance.id, status: 'ACTIVE' },
-        });
-
-        if (!existingAlert) {
-          await this.createAlert({
-            type: 'LOW_FUEL',
-            priority,
-            message: `Low fuel alert for ambulance ${ambulance.callSign}: ${ambulance.fuelLevel}% remaining`,
-            ambulanceId: ambulance.id,
-            metadata: { fuelLevel: ambulance.fuelLevel },
-          });
-        }
-      }
-    }
-  }
-
-  private getFuelPriority(fuelLevel: number): AlertPriority {
-    if (fuelLevel <= 10) return 'CRITICAL';
-    if (fuelLevel <= 15) return 'HIGH';
-    return 'MEDIUM';
-  }
-
   async checkDriverOvertimeAlerts(): Promise<void> {
     const activeSchedules = await this.prisma.driverSchedule.findMany({
       where: {
@@ -300,7 +265,6 @@ export class EmsAlertService {
     
     await Promise.all([
       this.checkMaintenanceAlerts(),
-      this.checkFuelAlerts(),
       this.checkDriverOvertimeAlerts(),
       this.checkSpeedViolations(),
     ]);

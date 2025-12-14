@@ -220,10 +220,6 @@ export class DashboardService {
           lt: endOfDay,
         },
         deletedAt: null,
-        // Check if the duration exceeds 30 minutes (1800000 milliseconds)
-        assignedAt: {
-          lt: new Date(endOfDay.getTime() - 30 * 60 * 1000), // 30 minutes ago
-        },
       };
 
       // Add hospital filter if provided
@@ -234,12 +230,27 @@ export class DashboardService {
         ];
       }
 
-      const delayedAssignments = await this.prisma.eMSAssignment.count({
+      // Fetch timestamps to calculate duration in memory
+      // (Prisma doesn't easily support field comparison in where clause)
+      const completedAssignments = await this.prisma.eMSAssignment.findMany({
         where: whereClause,
+        select: {
+          assignedAt: true,
+          journeyEndTime: true,
+        },
       });
 
-      this.logger.debug(`Delayed transfers today: ${delayedAssignments}`);
-      return delayedAssignments;
+      // Filter for assignments that took > 30 minutes
+      const TARGET_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+      
+      const delayedCount = completedAssignments.filter(assignment => {
+        if (!assignment.assignedAt || !assignment.journeyEndTime) return false;
+        const duration = new Date(assignment.journeyEndTime).getTime() - new Date(assignment.assignedAt).getTime();
+        return duration > TARGET_DURATION_MS;
+      }).length;
+
+      this.logger.debug(`Delayed transfers today: ${delayedCount}`);
+      return delayedCount;
     } catch (error) {
       this.logger.error('Error counting delayed transfers:', error);
       return 0;

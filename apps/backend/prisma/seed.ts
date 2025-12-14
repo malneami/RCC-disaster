@@ -7,6 +7,8 @@ import { seedStrokeKpiTest } from './seed-stroke-kpi';
 import { seedComprehensiveStemiCases } from './seed-comprehensive-stemi';
 import { seedComprehensiveStrokeCases } from './seed-comprehensive-stroke';
 import { seedComprehensiveTraumaCases } from './seed-comprehensive-trauma';
+import seedEMSData from './seed-ems-data';
+import seedAmbulances from './seed-ambulances';
 
 const prisma = new PrismaClient();
 
@@ -17,11 +19,13 @@ async function main() {
   const existingHospitals = await prisma.hospital.count();
   const existingUsers = await prisma.user.count();
   const existingCriticalCases = await prisma.criticalCase.count();
+  const existingAmbulances = await prisma.ambulance.count();
 
   console.log(`📊 Existing data found:`);
   console.log(`   - Hospitals: ${existingHospitals}`);
   console.log(`   - Users: ${existingUsers}`);
   console.log(`   - Critical Cases: ${existingCriticalCases}`);
+  console.log(`   - Ambulances: ${existingAmbulances}`);
 
   // Only seed if no data exists
   if (existingHospitals === 0) {
@@ -64,6 +68,18 @@ async function main() {
   // Always run stroke KPI test seed for comprehensive testing
   console.log('🧠 Running stroke KPI test seed...');
   await seedStrokeKpiTest();
+
+  // Seed EMS data (drivers, ambulances, etc.)
+  if (existingAmbulances === 0) {
+    console.log('🚑 No ambulances found, seeding ambulances...');
+    await seedAmbulances();
+  } else {
+    console.log('🚑 Ambulances already exist, skipping ambulance seeding');
+  }
+
+  // Always run EMS data seeding (includes drivers and other EMS-related data)
+  console.log('🚨 Running EMS data seeding...');
+  await seedEMSData();
 
   console.log('✅ Seeding completed successfully!');
 }

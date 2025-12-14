@@ -8,7 +8,7 @@ A comprehensive, reusable live tracking system for ambulances with real-time GPS
 - **Real-time GPS Tracking**: Updates ambulance locations every 2 minutes automatically
 - **Live Status Monitoring**: Track ambulance status (Available, In Use, Maintenance, Out of Service)
 - **Driver Information**: View assigned drivers and their contact details
-- **Performance Metrics**: Monitor speed, direction, fuel levels, and more
+- **Performance Metrics**: Monitor speed, direction, and more
 - **Search & Filter**: Advanced filtering by status, type, driver availability, and search queries
 
 ### Map Features

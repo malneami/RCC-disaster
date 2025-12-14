@@ -534,7 +534,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
   return (
     <Box sx={{ position: 'relative', height }}>
       {/* No Data Alert - Show as overlay */}
-      {showNoDataAlert && (
+      {showNoDataAlert ? (
         <Box
           sx={{
             position: 'absolute',
@@ -564,7 +564,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
             </Box>
           </Alert>
         </Box>
-      )}
+      ) : null}
 
       <MapContainer
         ref={mapRef}
@@ -582,7 +582,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
         />
 
         {/* Fit bounds handler */}
-        {shouldFitBounds && mapBounds && <MapBoundsFitter bounds={mapBounds} />}
+        {shouldFitBounds && mapBounds ? <MapBoundsFitter bounds={mapBounds} /> : null}
 
         {/* Render Hospital Zones */}
         {hospitals.map((hospital) => (
@@ -607,7 +607,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
         ))}
 
         {/* Render ambulance markers - hide others when showing route history */}
-        {ambulances && ambulances
+        {ambulances ? ambulances
           .filter(ambulance => 
             routeHistory.length === 0 || 
             ambulance.callSign === routeAmbulanceCallSign
@@ -620,10 +620,10 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
               onClick={handleAmbulanceClick}
               onShowLocationHistory={handleShowLocationHistory}
             />
-          ))}
+          )) : null}
 
         {/* Render route history polylines - split at gaps to avoid false connections */}
-        {routeHistory.length > 1 && (() => {
+        {routeHistory.length > 1 ? (() => {
           console.log('=== RENDERING ROUTE POLYLINES ===');
           console.log('Route history length:', routeHistory.length);
           
@@ -669,10 +669,9 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
             }
             return null;
           });
-        })()}
+        })() : null}
 
         {/* Render route history points as red dots */}
-        {routeHistory.length > 0 && console.log('=== RENDERING ROUTE MARKERS ===', routeHistory.length, 'total points')}
         {routeHistory.map((point, index) => {
           // Show every 5th point for performance, plus start, end, and gap points
           const isStart = index === 0;

@@ -40,16 +40,6 @@ const EMSNotifications: React.FC = () => {
   useEffect(() => {
     const sampleNotifications: Notification[] = [
       {
-        id: '1',
-        type: 'ALERT',
-        title: 'Low Fuel Alert',
-        message: 'Ambulance Alpha-1 has less than 20% fuel remaining',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000),
-        ambulanceId: 'amb-1',
-        priority: 'HIGH',
-        acknowledged: false,
-      },
-      {
         id: '2',
         type: 'INFO',
         title: 'Assignment Completed',
