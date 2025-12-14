@@ -82,8 +82,10 @@ export class StemiCommandCenterService {
     );
 
     // Parse dates for additional data
-    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const end = endDate ? new Date(endDate) : new Date();
+    // Set start date to beginning of day (00:00:00) in UTC to include all cases created on that day
+    const start = startDate ? new Date(startDate + 'T00:00:00.000Z') : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    // Set end date to end of day (23:59:59.999) in UTC to include all cases created on that day
+    const end = endDate ? new Date(endDate + 'T23:59:59.999Z') : new Date();
 
     // Build where clause for filtering
     const whereClause: any = {
@@ -599,20 +601,34 @@ export class StemiCommandCenterService {
     // PCI Breakdown - Updated logic
     const thrombolyticGiven = cases.filter(c => c.thrombolyticGiven).length;
     const primaryPCI = cases.filter(c => c.eligibleForPrimaryPci).length;
-    const transferredIn = cases.filter(c => c.originHospital?.name && c.originHospital.name.toLowerCase().includes('stemi')).length;
+    const transferredIn = cases.filter(c => c.caseType === 'TRANSFER').length;
 
-    // DIDO Compliance
-    const didoCases = cases.filter(c => c.doorInDoorOutMinutes !== null);
-    const didoCompliant = didoCases.filter(c => c.doorInDoorOutMinutes <= 30).length;
+    // DIDO Compliance - Calculate from triageTime and doorOutTime for transfer PCI-eligible cases
+    const didoCases = cases.filter(c => {
+      if (c.caseType !== 'TRANSFER') return false;
+      if (!c.eligibleForPrimaryPci) return false;
+      if (!c.triageTime || !c.doorOutTime) return false;
+      const triage = new Date(c.triageTime);
+      const doorOut = new Date(c.doorOutTime);
+      const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
+      return diffMinutes > 0 && diffMinutes <= 1440; // Valid time within 24 hours
+    });
+    const didoCompliant = didoCases.filter(c => {
+      const triage = new Date(c.triageTime);
+      const doorOut = new Date(c.doorOutTime);
+      const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
+      return diffMinutes <= 30;
+    }).length;
     const didoNonCompliant = didoCases.length - didoCompliant;
 
     // Treatment Distribution (PCI Only vs Thrombolysis Only)
     const pciOnly = cases.filter(c => c.eligibleForPrimaryPci && !c.thrombolyticGiven).length;
     const thrombolysisOnly = cases.filter(c => c.thrombolyticGiven && !c.eligibleForPrimaryPci).length;
+    const bothPciAndThrombolysis = cases.filter(c => c.eligibleForPrimaryPci && c.thrombolyticGiven).length;
 
     // Patient Outcomes (Mortality vs Survival)
     const totalCases = cases.length;
-    const deceasedCases = cases.filter(c => c.mortality || c.dischargeStatus === 'DECEASED').length;
+    const deceasedCases = cases.filter(c => c.dischargeStatus === 'DECEASED').length;
     const survivedCases = totalCases - deceasedCases;
 
     // Generate hospital performance charts using real data
@@ -655,11 +671,11 @@ export class StemiCommandCenterService {
         }],
       },
       treatmentDistribution: {
-        labels: ['PCI Only', 'Thrombolysis Only'],
+        labels: ['PCI Only', 'Thrombolysis Only', 'Both PCI & Thrombolysis'],
         datasets: [{
           label: 'Treatment Type',
-          data: [pciOnly, thrombolysisOnly],
-          backgroundColor: ['#2196f3', '#ff9800'],
+          data: [pciOnly, thrombolysisOnly, bothPciAndThrombolysis],
+          backgroundColor: ['#2196f3', '#ff9800', '#9c27b0'],
         }],
       },
       outcomes: {
@@ -717,26 +733,22 @@ export class StemiCommandCenterService {
     const heatmapData: HospitalPerformanceHeatmapDto[] = [];
 
     for (const hospital of hospitals) {
-      // Use the STEMI KPI service to get hospital-specific KPIs
-      const hospitalKpiData = await this.stemiKpiService.getKpiSummary(
-        hospital.id,
-        filters.startDate,
-        filters.endDate
-      );
+      // Get hospital-specific cases for accurate KPI calculations
+      const whereClause: any = {
+        originHospitalId: hospital.id,
+      };
+      
+      if (filters.startDate && filters.endDate) {
+        whereClause.createdAt = {
+          // Set start date to beginning of day (00:00:00) in UTC to include all cases created on that day
+          gte: new Date(filters.startDate + 'T00:00:00.000Z'),
+          // Set end date to end of day (23:59:59.999) in UTC to include all cases created on that day
+          lte: new Date(filters.endDate + 'T23:59:59.999Z')
+        };
+      }
 
-      console.log(`[Heatmap] Hospital: ${hospital.name} - Cases: ${hospitalKpiData.totalCases}`);
-
-      // Calculate data quality and completeness scores
       const cases = await this.prisma.stemiCase.findMany({
-        where: {
-          originHospitalId: hospital.id,
-          ...(filters.startDate && filters.endDate ? {
-            createdAt: {
-              gte: new Date(filters.startDate),
-              lte: new Date(filters.endDate)
-            }
-          } : {})
-        },
+        where: whereClause,
         include: {
           patient: {
             select: {
@@ -744,10 +756,100 @@ export class StemiCommandCenterService {
               lastName: true,
               nationalId: true,
             }
+          },
+          ticket: {
+            select: {
+              emsContactTime: true,
+            }
           }
         }
       });
 
+      const totalCases = cases.length;
+      console.log(`[Heatmap] Hospital: ${hospital.name} - Cases: ${totalCases}`);
+
+      // Calculate Door-to-ECG (KPI 1) - All cases with valid times
+      const d2ecgCases = cases.filter(c => {
+        const time = this.calculateDoorToEcgTime(c.triageTime, c.firstEcgTime);
+        return time > 0;
+      });
+      const d2ecgCompliant = d2ecgCases.filter(c => {
+        const time = this.calculateDoorToEcgTime(c.triageTime, c.firstEcgTime);
+        return time <= 10;
+      }).length;
+      const doorToEcgCompliance = d2ecgCases.length > 0 
+        ? Math.round((d2ecgCompliant / d2ecgCases.length) * 100) 
+        : 0;
+
+      // Calculate Door-to-Needle (KPI 3) - Only transfer cases with thrombolytic given
+      const d2nCases = cases.filter(c => {
+        if (c.caseType !== 'TRANSFER' || !c.thrombolyticGiven) return false;
+        const time = this.calculateDoorToNeedleTime(c.triageTime, c.thrombolyticAdminTime);
+        return time > 0;
+      });
+      const d2nCompliant = d2nCases.filter(c => {
+        const time = this.calculateDoorToNeedleTime(c.triageTime, c.thrombolyticAdminTime);
+        return time <= 30;
+      }).length;
+      const doorToNeedleCompliance = d2nCases.length > 0 
+        ? Math.round((d2nCompliant / d2nCases.length) * 100) 
+        : 0;
+
+      // Calculate Door-to-Balloon (KPI 2) - PCI-eligible cases with valid balloon time
+      // Combined for both direct (≤90min) and transfer (≤120min)
+      const d2bCases = cases.filter(c => {
+        if (!c.eligibleForPrimaryPci) return false;
+        const time = this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime);
+        return time > 0;
+      });
+      const d2bCompliant = d2bCases.filter(c => {
+        const time = this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime);
+        const target = c.caseType === 'DIRECT' ? 90 : 120;
+        return time <= target;
+      }).length;
+      const doorToBalloonCompliance = d2bCases.length > 0 
+        ? Math.round((d2bCompliant / d2bCases.length) * 100) 
+        : 0;
+
+      // Calculate Activation-to-Door-Out (KPI 4) - Transfer PCI-eligible cases with EMS contact
+      const activationCases = cases.filter(c => {
+        if (c.caseType !== 'TRANSFER' || !c.eligibleForPrimaryPci) return false;
+        if (!c.ticket?.emsContactTime || !c.doorOutTime) return false;
+        const emsContact = new Date(c.ticket.emsContactTime);
+        const doorOut = new Date(c.doorOutTime);
+        const diffMinutes = (doorOut.getTime() - emsContact.getTime()) / (1000 * 60);
+        return diffMinutes > 0 && diffMinutes <= 1440;
+      });
+      const activationCompliant = activationCases.filter(c => {
+        const emsContact = new Date(c.ticket!.emsContactTime!);
+        const doorOut = new Date(c.doorOutTime!);
+        const diffMinutes = (doorOut.getTime() - emsContact.getTime()) / (1000 * 60);
+        return diffMinutes <= 15;
+      }).length;
+      const activationDoorOutCompliance = activationCases.length > 0 
+        ? Math.round((activationCompliant / activationCases.length) * 100) 
+        : 0;
+
+      // Calculate Door-In-Door-Out (KPI 5) - Transfer PCI-eligible cases
+      const didoCases = cases.filter(c => {
+        if (c.caseType !== 'TRANSFER' || !c.eligibleForPrimaryPci) return false;
+        if (!c.triageTime || !c.doorOutTime) return false;
+        const triage = new Date(c.triageTime);
+        const doorOut = new Date(c.doorOutTime);
+        const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
+        return diffMinutes > 0 && diffMinutes <= 1440;
+      });
+      const didoCompliant = didoCases.filter(c => {
+        const triage = new Date(c.triageTime!);
+        const doorOut = new Date(c.doorOutTime!);
+        const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
+        return diffMinutes <= 30;
+      }).length;
+      const doorInDoorOutCompliance = didoCases.length > 0 
+        ? Math.round((didoCompliant / didoCases.length) * 100) 
+        : 0;
+
+      // Calculate data quality and completeness scores
       const totalFields = cases.length * 20; // 20 key fields per case
       const populatedFields = cases.reduce((count, c) => {
         const fields = [
@@ -763,39 +865,42 @@ export class StemiCommandCenterService {
       }, 0);
       
       const dataCompletenessScore = totalFields > 0 ? Math.round((populatedFields / totalFields) * 100) : 0;
-      const dataQualityScore = Math.min(dataCompletenessScore + Math.floor(Math.random() * 10), 100);
+      // Data quality based on completeness and valid time calculations
+      const validTimeCases = d2ecgCases.length + d2nCases.length + d2bCases.length + didoCases.length;
+      const expectedTimeCases = totalCases * 4; // 4 time KPIs per case
+      const timeDataQuality = expectedTimeCases > 0 ? (validTimeCases / expectedTimeCases) * 100 : 0;
+      const dataQualityScore = Math.round((dataCompletenessScore + timeDataQuality) / 2);
 
       const result: HospitalPerformanceHeatmapDto = {
         hospitalId: hospital.id,
         hospitalName: hospital.name,
-        totalCases: hospitalKpiData.totalCases,
+        totalCases,
         
-        // Use KPI service data for compliance calculations
-        doorToEcgCompliance: Math.round(hospitalKpiData.kpi1?.percentage || 0),
-        doorToEcgValid: hospitalKpiData.kpi1?.validCases || 0,
-        doorToEcgCompliant: hospitalKpiData.kpi1?.compliantCases || 0,
+        doorToEcgCompliance,
+        doorToEcgValid: d2ecgCases.length,
+        doorToEcgCompliant: d2ecgCompliant,
         
-        doorToNeedleCompliance: Math.round(hospitalKpiData.kpi3?.percentage || 0),
-        doorToNeedleValid: hospitalKpiData.kpi3?.validCases || 0,
-        doorToNeedleCompliant: hospitalKpiData.kpi3?.compliantCases || 0,
+        doorToNeedleCompliance,
+        doorToNeedleValid: d2nCases.length,
+        doorToNeedleCompliant: d2nCompliant,
         
-        doorToBalloonCompliance: Math.round(hospitalKpiData.kpi2Direct?.percentage || 0),
-        doorToBalloonValid: hospitalKpiData.kpi2Direct?.validCases || 0,
-        doorToBalloonCompliant: hospitalKpiData.kpi2Direct?.compliantCases || 0,
+        doorToBalloonCompliance,
+        doorToBalloonValid: d2bCases.length,
+        doorToBalloonCompliant: d2bCompliant,
         
-        activationDoorOutCompliance: Math.round(hospitalKpiData.kpi4?.percentage || 0),
-        activationDoorOutValid: hospitalKpiData.kpi4?.validCases || 0,
-        activationDoorOutCompliant: hospitalKpiData.kpi4?.compliantCases || 0,
+        activationDoorOutCompliance,
+        activationDoorOutValid: activationCases.length,
+        activationDoorOutCompliant: activationCompliant,
         
-        doorInDoorOutCompliance: Math.round(hospitalKpiData.kpi5?.percentage || 0),
-        doorInDoorOutValid: hospitalKpiData.kpi5?.validCases || 0,
-        doorInDoorOutCompliant: hospitalKpiData.kpi5?.compliantCases || 0,
+        doorInDoorOutCompliance,
+        doorInDoorOutValid: didoCases.length,
+        doorInDoorOutCompliant: didoCompliant,
         
         dataQualityScore,
         dataCompletenessScore
       };
 
-      console.log(`[Heatmap] ${hospital.name}: Total=${result.totalCases}, D2ECG=${result.doorToEcgCompliance}%, D2N=${result.doorToNeedleCompliance}%, D2B=${result.doorToBalloonCompliance}%`);
+      console.log(`[Heatmap] ${hospital.name}: Total=${result.totalCases}, D2ECG=${result.doorToEcgCompliance}% (${d2ecgCompliant}/${d2ecgCases.length}), D2N=${result.doorToNeedleCompliance}% (${d2nCompliant}/${d2nCases.length}), D2B=${result.doorToBalloonCompliance}% (${d2bCompliant}/${d2bCases.length})`);
       heatmapData.push(result);
     }
 

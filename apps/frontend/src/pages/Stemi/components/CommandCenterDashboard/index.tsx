@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
+  CircularProgress,
 } from '@mui/material';
+import {
+  LocalHospital as HospitalIcon,
+} from '@mui/icons-material';
 
 import { CommandCenterHeader } from '../../../../components/Common/CommandCenterHeader';
 import LiveClock from './components/LiveClock';
@@ -74,27 +78,63 @@ const CommandCenterDashboard: React.FC = () => {
 
   if (loading && !data) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <Typography>Loading Command Center Dashboard...</Typography>
+      <Box 
+        display="flex" 
+        flexDirection="column"
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="60vh"
+        gap={2}
+        sx={{ backgroundColor: '#121212' }}
+      >
+        <CircularProgress sx={{ color: '#64b5f6' }} size={48} />
+        <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '1rem' }}>
+          {language === 'ar' ? 'جاري تحميل لوحة القيادة...' : 'Loading Command Center...'}
+        </Typography>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box p={3}>
-        <Typography color="error">Error loading dashboard data: {error}</Typography>
+      <Box 
+        p={4} 
+        sx={{ 
+          backgroundColor: '#121212', 
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Box 
+          sx={{ 
+            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+            border: '1px solid rgba(244, 67, 54, 0.3)',
+            borderRadius: '12px',
+            p: 3,
+            maxWidth: '500px',
+            textAlign: 'center',
+          }}
+        >
+          <Typography sx={{ color: '#f44336', fontSize: '1.1rem', fontWeight: 500 }}>
+            {language === 'ar' ? 'خطأ في تحميل البيانات' : 'Error loading dashboard data'}
+          </Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', mt: 1 }}>
+            {error}
+          </Typography>
+        </Box>
       </Box>
     );
   }
 
   return (
     <Box sx={{ 
-      p: isFullscreen ? 0 : 3,
-      backgroundColor: '#121212', // Dark background
+      p: isFullscreen ? 2 : 3,
+      backgroundColor: '#121212',
       minHeight: '100vh',
       direction: language === 'ar' ? 'rtl' : 'ltr',
-      color: '#ffffff' // White text for dark mode
+      color: '#ffffff',
     }}>
       {/* Common Header */}
       <CommandCenterHeader
@@ -112,33 +152,40 @@ const CommandCenterDashboard: React.FC = () => {
         hospitals={hospitals}
       />
 
-      {/* Live Clock */}
-      <Box mb={2}>
+      {/* Live Clock - More compact */}
+      <Box sx={{ mb: 3, mt: 2 }}>
         <LiveClock language={language} />
       </Box>
 
       {/* Dashboard Content */}
-      <Box id="dashboard-content" sx={{ p: isFullscreen ? 2 : 0 }}>
-        {/* KPI Metrics */}
+      <Box id="dashboard-content">
+        {/* Overview KPI Cards */}
         <KPIMetrics
           data={data}
           language={language}
         />
 
-        {/* Traffic Light System */}
+        {/* Performance Indicators */}
         <TrafficLightSystem
           data={data}
           language={language}
         />
 
-        {/* Visual Analytics */}
+        {/* Analytics Charts */}
         <VisualAnalytics
           data={data}
           language={language}
         />
 
-        {/* Hospital Performance Heatmap */}
-        <Box mt={3}>
+        {/* Hospital Performance Matrix */}
+        <Box sx={{ mb: 4 }}>
+          {/* Section Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+            <HospitalIcon sx={{ color: '#64b5f6', fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 600 }}>
+              {language === 'ar' ? 'أداء المستشفيات' : 'Hospital Performance'}
+            </Typography>
+          </Box>
           <HospitalPerformanceHeatmap
             data={data?.hospitalPerformanceHeatmap}
             loading={loading}

@@ -232,18 +232,14 @@ const HospitalPerformanceHeatmap: React.FC<HospitalPerformanceHeatmapProps> = ({
     <Paper sx={{ 
       p: 3, 
       backgroundColor: '#1a1a1a', 
-      border: '1px solid #333333',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '12px',
       color: '#ffffff'
     }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-        <Box display="flex" alignItems="center">
-          <LocalHospital sx={{ mr: 1, color: '#9c27b0' }} />
-          <Typography variant="h6" sx={{ color: '#ffffff' }}>
-            {language === 'ar' ? 'مصفوفة أداء المستشفيات STEMI' : 'Hospital-Wise STEMI Performance Matrix'}
-          </Typography>
-        </Box>
-        <Typography variant="body2" sx={{ color: '#666' }}>
-          {language === 'ar' ? `إجمالي المستشفيات: ${data.length}` : `Total Hospitals: ${data.length}`}
+      {/* Compact sub-header with hospital count */}
+      <Box display="flex" alignItems="center" justifyContent="flex-end" mb={2}>
+        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+          {language === 'ar' ? `${data.length} مستشفى` : `${data.length} hospitals`}
         </Typography>
       </Box>
 
@@ -334,11 +330,22 @@ const HospitalPerformanceHeatmap: React.FC<HospitalPerformanceHeatmapProps> = ({
                 </TableCell>
                 {columns.map((column) => {
                   const value = hospital[column.key as keyof typeof hospital] as number;
-                  const validField = `${column.key.replace('Compliance', 'Valid')}` as keyof typeof hospital;
-                  const compliantField = `${column.key.replace('Compliance', 'Compliant')}` as keyof typeof hospital;
+                  const isComplianceColumn = column.key.includes('Compliance');
+                  const isQualityColumn = column.key === 'dataQualityScore' || column.key === 'dataCompletenessScore';
                   
-                  const validCount = hospital[validField] as number || 0;
-                  const compliantCount = hospital[compliantField] as number || 0;
+                  let validCount = 0;
+                  let compliantCount = 0;
+                  
+                  if (isComplianceColumn) {
+                    const validField = `${column.key.replace('Compliance', 'Valid')}` as keyof typeof hospital;
+                    const compliantField = `${column.key.replace('Compliance', 'Compliant')}` as keyof typeof hospital;
+                    validCount = hospital[validField] as number || 0;
+                    compliantCount = hospital[compliantField] as number || 0;
+                  } else if (isQualityColumn) {
+                    // For quality/completeness columns, use total cases
+                    validCount = hospital.totalCases || 0;
+                    compliantCount = validCount; // These are scores, not compliance counts
+                  }
                   
                   return (
                     <TableCell key={column.key} sx={{ 
@@ -352,12 +359,25 @@ const HospitalPerformanceHeatmap: React.FC<HospitalPerformanceHeatmapProps> = ({
                             <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                               {hospital.hospitalName} - {column.label}
                             </Typography>
-                            <Typography variant="body2">
-                              {language === 'ar' ? 'الامتثال:' : 'Compliance:'} {compliantCount}/{validCount} {language === 'ar' ? 'حالة' : 'cases'} {value === 0 ? '(—)' : `(${value}%)`}
-                            </Typography>
-                            <Typography variant="body2">
-                              {language === 'ar' ? 'الحالة:' : 'Status:'} {getComplianceStatus(value)}
-                            </Typography>
+                            {isQualityColumn ? (
+                              <>
+                                <Typography variant="body2">
+                                  {language === 'ar' ? 'النتيجة:' : 'Score:'} {value}%
+                                </Typography>
+                                <Typography variant="body2">
+                                  {language === 'ar' ? 'إجمالي الحالات:' : 'Total Cases:'} {validCount}
+                                </Typography>
+                              </>
+                            ) : (
+                              <>
+                                <Typography variant="body2">
+                                  {language === 'ar' ? 'الامتثال:' : 'Compliance:'} {compliantCount}/{validCount} {language === 'ar' ? 'حالة' : 'cases'} {value === 0 ? '(—)' : `(${value}%)`}
+                                </Typography>
+                                <Typography variant="body2">
+                                  {language === 'ar' ? 'الحالة:' : 'Status:'} {getComplianceStatus(value)}
+                                </Typography>
+                              </>
+                            )}
                             <Typography variant="caption" sx={{ color: '#999' }}>
                               {language === 'ar' ? 'الهدف:' : 'Target:'} {column.target}
                             </Typography>

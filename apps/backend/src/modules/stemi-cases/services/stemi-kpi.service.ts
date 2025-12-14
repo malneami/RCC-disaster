@@ -72,10 +72,12 @@ export class StemiKpiService {
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) {
-        where.createdAt.gte = new Date(startDate);
+        // Set start date to beginning of day (00:00:00) in UTC to include all cases created on that day
+        where.createdAt.gte = new Date(startDate + 'T00:00:00.000Z');
       }
       if (endDate) {
-        where.createdAt.lte = new Date(endDate);
+        // Set end date to end of day (23:59:59.999) in UTC to include all cases created on that day
+        where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
       }
     }
 
@@ -236,8 +238,8 @@ export class StemiKpiService {
     const kpi6Cases = primaryPciCases.filter(c => c.successful === true).length;
     const primaryPciCasesCount = primaryPciCases.length;
 
-    // Calculate mortality rate (cases that are not successful)
-    const deceasedCases = allCases.filter(c => c.dischargeStatus=== 'DECEASED').length;
+    // Calculate mortality rate - only count cases with dischargeStatus === 'DECEASED'
+    const deceasedCases = allCases.filter(c => c.dischargeStatus === 'DECEASED').length;
     const mortalityRate = totalCases > 0 ? (deceasedCases / totalCases) * 100 : 0;
 
     // Calculate readmission rate
@@ -259,79 +261,142 @@ export class StemiKpiService {
         target: '≤10 minutes',
         totalCases,
         withinTarget: kpi1Cases,
+        validCases: allCases.filter(c => this.calculateDoorToEcgTime(c.triageTime, c.firstEcgTime) > 0).length,
+        compliantCases: kpi1Cases,
         percentage: totalCases > 0 ? Math.round((kpi1Cases / totalCases) * 100 * 10) / 10 : 0,
         status: totalCases > 0 && (kpi1Cases / totalCases) >= 0.9 ? 'GREEN' : 
                 totalCases > 0 && (kpi1Cases / totalCases) >= 0.75 ? 'YELLOW' : 'RED',
       },
-      kpi2: {
-        name: 'Door to Balloon (Combined)',
-        target: '≤90min (Direct) / ≤120min (Transfer)',
-        totalCases,
-        withinTarget: kpi2Cases,
-        percentage: totalCases > 0 ? Math.round((kpi2Cases / totalCases) * 100 * 10) / 10 : 0,
-        status: totalCases > 0 && (kpi2Cases / totalCases) >= 0.9 ? 'GREEN' : 
-                totalCases > 0 && (kpi2Cases / totalCases) >= 0.75 ? 'YELLOW' : 'RED',
-      },
-      kpi2Direct: {
-        name: 'Door to Balloon (Direct)',
-        target: '≤90 minutes',
-        totalCases: allCases.filter(c => c.caseType === 'DIRECT' && c.eligibleForPrimaryPci).length,
-        withinTarget: kpi2DirectCases,
-        percentage: allCases.filter(c => c.caseType === 'DIRECT' && c.eligibleForPrimaryPci).length > 0 ? 
-                   Math.round((kpi2DirectCases / allCases.filter(c => c.caseType === 'DIRECT' && c.eligibleForPrimaryPci).length) * 100 * 10) / 10 : 0,
-        status: allCases.filter(c => c.caseType === 'DIRECT' && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi2DirectCases / allCases.filter(c => c.caseType === 'DIRECT' && c.eligibleForPrimaryPci).length) >= 0.9 ? 'GREEN' : 
-                allCases.filter(c => c.caseType === 'DIRECT' && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi2DirectCases / allCases.filter(c => c.caseType === 'DIRECT' && c.eligibleForPrimaryPci).length) >= 0.75 ? 'YELLOW' : 'RED',
-      },
-      kpi2Transfer: {
-        name: 'Door to Balloon (Transfer)',
-        target: '≤120 minutes',
-        totalCases: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length,
-        withinTarget: kpi2TransferCases,
-        percentage: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 ? 
-                   Math.round((kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) * 100 * 10) / 10 : 0,
-        status: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) >= 0.9 ? 'GREEN' : 
-                allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi2TransferCases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) >= 0.75 ? 'YELLOW' : 'RED',
-      },
-      kpi3: {
-        name: 'Door to Needle ≤30min (Transfer Cases Only)',
-        target: '≤30 minutes',
-        totalCases: allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length,
-        withinTarget: kpi3Cases,
-        percentage: allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length > 0 ? 
-                   Math.round((kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length) * 100 * 10) / 10 : 0,
-        status: allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length > 0 && 
-                (kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length) >= 0.9 ? 'GREEN' : 
-                allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length > 0 && 
-                (kpi3Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven).length) >= 0.75 ? 'YELLOW' : 'RED',
-      },
-      kpi4: {
-        name: 'RCC Activation ≤15min',
-        target: '≤15 minutes',
-        totalCases: allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci ).length,
-        withinTarget: kpi4Cases,
-        percentage: allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length > 0 ? 
-                   Math.round((kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length) * 100 * 10) / 10 : 0,
-        status: allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length) >= 0.9 ? 'GREEN' : 
-                allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi4Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci).length) >= 0.75 ? 'YELLOW' : 'RED',
-      },
-      kpi5: {
-        name: 'Door In Door Out ≤30min (Transfer Cases Only)',
-        target: '≤30 minutes',
-        totalCases: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length,
-        withinTarget: kpi5Cases,
-        percentage: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 ? 
-                   Math.round((kpi5Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) * 100 * 10) / 10 : 0,
-        status: allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi5Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) >= 0.9 ? 'GREEN' : 
-                allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length > 0 && 
-                (kpi5Cases / allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci).length) >= 0.75 ? 'YELLOW' : 'RED',
-      },
+      kpi2: (() => {
+        // Calculate valid cases: PCI-eligible cases with positive door-to-balloon time (both direct and transfer)
+        const pciEligibleCases = allCases.filter(c => c.eligibleForPrimaryPci);
+        const validKpi2Cases = pciEligibleCases.filter(c => {
+          const doorToBalloon = this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime);
+          return doorToBalloon > 0;
+        });
+        
+        // Calculate compliant cases: valid cases meeting time targets (≤90 min direct, ≤120 min transfer)
+        const compliantKpi2Cases = validKpi2Cases.filter(c => {
+          const doorToBalloon = this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime);
+          if (c.caseType === 'DIRECT') {
+            return doorToBalloon <= 90;
+          } else if (c.caseType === 'TRANSFER') {
+            return doorToBalloon <= 120;
+          }
+          return false;
+        }).length;
+        
+        return {
+          name: 'Door to Balloon (Combined)',
+          target: '≤90min (Direct) / ≤120min (Transfer)',
+          totalCases,
+          withinTarget: kpi2Cases,
+          validCases: validKpi2Cases.length,
+          compliantCases: compliantKpi2Cases,
+          percentage: validKpi2Cases.length > 0 ? 
+                     Math.round((compliantKpi2Cases / validKpi2Cases.length) * 100 * 10) / 10 : 0,
+          status: validKpi2Cases.length > 0 && 
+                  (compliantKpi2Cases / validKpi2Cases.length) >= 0.9 ? 'GREEN' : 
+                  validKpi2Cases.length > 0 && 
+                  (compliantKpi2Cases / validKpi2Cases.length) >= 0.75 ? 'YELLOW' : 'RED',
+        };
+      })(),
+      kpi2Direct: (() => {
+        const directPciCases = allCases.filter(c => c.caseType === 'DIRECT' && c.eligibleForPrimaryPci);
+        const validDirectCases = directPciCases.filter(c => this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime) > 0);
+        return {
+          name: 'Door to Balloon (Direct)',
+          target: '≤90 minutes',
+          totalCases: directPciCases.length,
+          withinTarget: kpi2DirectCases,
+          validCases: validDirectCases.length,
+          compliantCases: kpi2DirectCases,
+          percentage: validDirectCases.length > 0 ? 
+                     Math.round((kpi2DirectCases / validDirectCases.length) * 100 * 10) / 10 : 0,
+          status: validDirectCases.length > 0 && 
+                  (kpi2DirectCases / validDirectCases.length) >= 0.9 ? 'GREEN' : 
+                  validDirectCases.length > 0 && 
+                  (kpi2DirectCases / validDirectCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+        };
+      })(),
+      kpi2Transfer: (() => {
+        const transferPciCases = allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci);
+        const validTransferCases = transferPciCases.filter(c => this.calculateDoorToBalloonTime(c.triageTime, c.balloonInflationTime) > 0);
+        return {
+          name: 'Door to Balloon (Transfer)',
+          target: '≤120 minutes',
+          totalCases: transferPciCases.length,
+          withinTarget: kpi2TransferCases,
+          validCases: validTransferCases.length,
+          compliantCases: kpi2TransferCases,
+          percentage: validTransferCases.length > 0 ? 
+                     Math.round((kpi2TransferCases / validTransferCases.length) * 100 * 10) / 10 : 0,
+          status: validTransferCases.length > 0 && 
+                  (kpi2TransferCases / validTransferCases.length) >= 0.9 ? 'GREEN' : 
+                  validTransferCases.length > 0 && 
+                  (kpi2TransferCases / validTransferCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+        };
+      })(),
+      kpi3: (() => {
+        const thrombolyticTransferCases = allCases.filter(c => c.caseType === 'TRANSFER' && c.thrombolyticGiven);
+        const validD2nCases = thrombolyticTransferCases.filter(c => this.calculateDoorToNeedleTime(c.triageTime, c.thrombolyticAdminTime) > 0);
+        return {
+          name: 'Door to Needle ≤30min (Transfer Cases Only)',
+          target: '≤30 minutes',
+          totalCases: thrombolyticTransferCases.length,
+          withinTarget: kpi3Cases,
+          validCases: validD2nCases.length,
+          compliantCases: kpi3Cases,
+          percentage: validD2nCases.length > 0 ? 
+                     Math.round((kpi3Cases / validD2nCases.length) * 100 * 10) / 10 : 0,
+          status: validD2nCases.length > 0 && 
+                  (kpi3Cases / validD2nCases.length) >= 0.9 ? 'GREEN' : 
+                  validD2nCases.length > 0 && 
+                  (kpi3Cases / validD2nCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+        };
+      })(),
+      kpi4: (() => {
+        const rccEligibleCases = allCases.filter(c => c.caseType === 'TRANSFER' && c.ticketId && c.eligibleForPrimaryPci);
+        const validRccCases = rccEligibleCases.filter(c => c.ticket?.emsContactTime && c.doorOutTime);
+        return {
+          name: 'RCC Activation ≤15min',
+          target: '≤15 minutes',
+          totalCases: rccEligibleCases.length,
+          withinTarget: kpi4Cases,
+          validCases: validRccCases.length,
+          compliantCases: kpi4Cases,
+          percentage: validRccCases.length > 0 ? 
+                     Math.round((kpi4Cases / validRccCases.length) * 100 * 10) / 10 : 0,
+          status: validRccCases.length > 0 && 
+                  (kpi4Cases / validRccCases.length) >= 0.9 ? 'GREEN' : 
+                  validRccCases.length > 0 && 
+                  (kpi4Cases / validRccCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+        };
+      })(),
+      kpi5: (() => {
+        const didoEligibleCases = allCases.filter(c => c.caseType === 'TRANSFER' && c.eligibleForPrimaryPci);
+        const validDidoCases = didoEligibleCases.filter(c => {
+          if (!c.triageTime || !c.doorOutTime) return false;
+          const triage = new Date(c.triageTime);
+          const doorOut = new Date(c.doorOutTime);
+          const diffMinutes = (doorOut.getTime() - triage.getTime()) / (1000 * 60);
+          return diffMinutes > 0 && diffMinutes <= 1440;
+        });
+        return {
+          name: 'Door In Door Out ≤30min (Transfer Cases Only)',
+          target: '≤30 minutes',
+          totalCases: didoEligibleCases.length,
+          withinTarget: kpi5Cases,
+          validCases: validDidoCases.length,
+          compliantCases: kpi5Cases,
+          percentage: validDidoCases.length > 0 ? 
+                     Math.round((kpi5Cases / validDidoCases.length) * 100 * 10) / 10 : 0,
+          status: validDidoCases.length > 0 && 
+                  (kpi5Cases / validDidoCases.length) >= 0.9 ? 'GREEN' : 
+                  validDidoCases.length > 0 && 
+                  (kpi5Cases / validDidoCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+        };
+      })(),
       kpi6: {
         name: 'Primary PCI Success',
         target: '≥95%',

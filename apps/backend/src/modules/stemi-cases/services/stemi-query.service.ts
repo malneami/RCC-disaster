@@ -76,7 +76,8 @@ export class StemiQueryService {
         where.createdAt.gte = new Date(startDate);
       }
       if (endDate) {
-        where.createdAt.lte = new Date(endDate);
+        // Set end date to end of day (23:59:59.999) to include all cases created on that day
+        where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
       }
     }
 

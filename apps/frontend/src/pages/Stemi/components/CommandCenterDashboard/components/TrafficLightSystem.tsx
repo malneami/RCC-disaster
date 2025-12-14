@@ -1,16 +1,16 @@
 import React from 'react';
 import {
-  Paper,
-  Grid,
   Box,
+  Grid,
   Typography,
-  Chip,
   LinearProgress,
+  Tooltip,
 } from '@mui/material';
 import {
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
-  Error as ErrorIcon,
+  Cancel as ErrorIcon,
+  Speed as PerformanceIcon,
 } from '@mui/icons-material';
 import { CommandCenterData } from '../types';
 
@@ -19,125 +19,212 @@ interface TrafficLightSystemProps {
   language: 'en' | 'ar';
 }
 
+// Shared styling constants
+const CARD_STYLES = {
+  borderRadius: '12px',
+  padding: '20px',
+  minHeight: '160px',
+  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+  },
+};
+
 const TrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
   data,
   language,
 }) => {
   if (!data) return null;
 
-  const getComplianceStatus = (percentage: number) => {
-    if (percentage >= 90) return { color: 'success', icon: CheckIcon, label: language === 'ar' ? 'ممتاز' : 'Excellent' };
-    if (percentage >= 75) return { color: 'warning', icon: WarningIcon, label: language === 'ar' ? 'جيد' : 'Needs Improvement' };
-    return { color: 'error', icon: ErrorIcon, label: language === 'ar' ? 'يحتاج تحسين' : 'Not Good' };
+  // Short names for cleaner display
+  const getShortName = (id: string, fullName: string): string => {
+    const shortNames: Record<string, string> = {
+      'd2b-direct': 'D2B Direct',
+      'd2b-transfer': 'D2B Transfer',
+      'd2ecg': 'Door-to-ECG',
+      'd2n': 'Door-to-Needle',
+      'dido': 'DIDO',
+      'rcc-activation': 'RCC Activation',
+      'mortality': 'Mortality',
+      'follow-up-call': 'Follow-up Call',
+    };
+    return shortNames[id] || fullName;
+  };
+
+  // Target descriptions for tooltips
+  const getTargetDescription = (id: string, target: number, isLowerBetter: boolean): string => {
+    const descriptions: Record<string, string> = {
+      'd2b-direct': language === 'ar' ? 'وقت الباب إلى البالون للحالات المباشرة ≤90 دقيقة' : 'Door-to-Balloon time for direct cases ≤90 minutes',
+      'd2b-transfer': language === 'ar' ? 'وقت الباب إلى البالون للحالات المحولة ≤120 دقيقة' : 'Door-to-Balloon time for transfer cases ≤120 minutes',
+      'd2ecg': language === 'ar' ? 'وقت الباب إلى رسم القلب ≤10 دقائق' : 'Door-to-ECG time ≤10 minutes',
+      'd2n': language === 'ar' ? 'وقت الباب إلى الإبرة ≤30 دقيقة' : 'Door-to-Needle time ≤30 minutes',
+      'dido': language === 'ar' ? 'وقت الدخول إلى الخروج ≤30 دقيقة' : 'Door-In-Door-Out time ≤30 minutes',
+      'rcc-activation': language === 'ar' ? 'وقت التفعيل إلى الخروج ≤15 دقيقة' : 'Activation to Door-Out ≤15 minutes',
+      'mortality': language === 'ar' ? 'معدل الوفيات ≤5%' : 'Mortality rate ≤5%',
+      'follow-up-call': language === 'ar' ? 'معدل إكمال مكالمات المتابعة' : 'Follow-up call completion rate',
+    };
+    return descriptions[id] || `Target: ${isLowerBetter ? '≤' : '≥'}${target}%`;
   };
 
   const complianceMetrics = data.kpis
-    .filter(kpi => kpi.id !== 'mortality' && kpi.id !== 'pciSuccess') // Exclude mortality and PCI success KPIs
+    .filter(kpi => kpi.id !== 'pciSuccess')
     .map(kpi => ({
-      name: kpi.name,
+      id: kpi.id,
+      name: getShortName(kpi.id, kpi.name),
+      fullName: kpi.name,
       value: kpi.value,
       target: kpi.target,
       status: kpi.status,
+      isLowerBetter: kpi.id === 'mortality',
     }));
 
   return (
-    <Paper 
-      elevation={2} 
-      sx={{ 
-        p: 3, 
-        mb: 3,
-        backgroundColor: '#1e1e1e',
-        color: '#ffffff',
-        border: '1px solid #333333'
-      }}
-    >
-      <Grid container spacing={3}>
-        {complianceMetrics.map((metric, index) => {
-          const status = getComplianceStatus(metric.value);
-          const IconComponent = status.icon;
-          const isMet = metric.value >= metric.target;
+    <Box sx={{ mb: 4 }}>
+      {/* Section Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+        <PerformanceIcon sx={{ color: '#64b5f6', fontSize: 28 }} />
+        <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 600 }}>
+          {language === 'ar' ? 'مؤشرات الامتثال' : 'Performance Indicators'}
+        </Typography>
+      </Box>
+
+      {/* Uniform 4-column Grid */}
+      <Grid container spacing={2.5}>
+        {complianceMetrics.map((metric) => {
+          const isMet = metric.status === 'met';
+          const isWarning = metric.status === 'warning';
           
-          // First 4 cards get md={3}, remaining cards get md={4}
-          const gridSize = index < 4 ? 3 : 4;
+          // Calculate progress bar value
+          const progressValue = metric.isLowerBetter 
+            ? Math.max(0, Math.min(100, 100 - (metric.value / (metric.target * 2)) * 100))
+            : Math.min(100, (metric.value / metric.target) * 100);
+
+          // Colors based on status
+          const statusColor = isMet ? '#4caf50' : isWarning ? '#ff9800' : '#f44336';
+          const bgGradient = isMet 
+            ? 'linear-gradient(135deg, #1a3c1a 0%, #2d4a2d 100%)'
+            : isWarning 
+              ? 'linear-gradient(135deg, #3c3a1a 0%, #4a3c2a 100%)'
+              : 'linear-gradient(135deg, #3c1a1a 0%, #4a2d2d 100%)';
+
+          const StatusIcon = isMet ? CheckIcon : isWarning ? WarningIcon : ErrorIcon;
 
           return (
-            <Grid item xs={12} sm={6} md={gridSize} key={index}>
-              <Box
-                sx={{
-                  p: 2,
-                  border: `2px solid ${
-                    isMet ? '#4caf50' : metric.value >= metric.target * 0.8 ? '#ff9800' : '#f44336'
-                  }`,
-                  borderRadius: 2,
-                  backgroundColor: isMet ? '#2d4a2d' : metric.value >= metric.target * 0.8 ? '#4a3c2a' : '#4a2d2d',
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'scale(1.02)',
-                    boxShadow: 2,
-                  },
-                }}
+            <Grid item xs={12} sm={6} md={3} key={metric.id}>
+              <Tooltip 
+                title={getTargetDescription(metric.id, metric.target, metric.isLowerBetter)} 
+                arrow 
+                placement="top"
               >
-                <Box display="flex" justifyContent="center" mb={1}>
-                  <IconComponent
-                    sx={{
-                      fontSize: 40,
-                      color: isMet ? '#4caf50' : metric.value >= metric.target * 0.8 ? '#ff9800' : '#f44336',
-                    }}
-                  />
-                </Box>
-
-                <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: '#ffffff' }}>
-                  {metric.name}
-                </Typography>
-
-                <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ color: '#64b5f6' }}>
-                  {Math.round(metric.value * 10) / 10}%
-                </Typography>
-
-                <Typography variant="body2" gutterBottom sx={{ color: '#b0b0b0' }}>
-                  {language === 'ar' ? 'الهدف' : 'Target'}: {Math.round(metric.target * 10) / 10}%
-                </Typography>
-
-                <LinearProgress
-                  variant="determinate"
-                  value={(metric.value / metric.target) * 100}
+                <Box
                   sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: '#444444',
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: isMet ? '#4caf50' : metric.value >= metric.target * 0.8 ? '#ff9800' : '#f44336',
-                    },
+                    ...CARD_STYLES,
+                    background: bgGradient,
+                    border: `2px solid ${statusColor}`,
+                    cursor: 'pointer',
                   }}
-                />
+                >
+                  {/* Header with Icon and Status */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                    <Typography 
+                      variant="subtitle1" 
+                      sx={{ 
+                        color: '#ffffff', 
+                        fontWeight: 600,
+                        fontSize: '1rem',
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {metric.name}
+                    </Typography>
+                    <StatusIcon sx={{ color: statusColor, fontSize: 24, flexShrink: 0, ml: 1 }} />
+                  </Box>
 
-                <Box mt={1}>
-                  <Chip
-                    label={status.label}
-                    size="small"
+                  {/* Value */}
+                  <Typography 
+                    variant="h3" 
                     sx={{ 
-                      fontWeight: 'bold',
-                      backgroundColor: isMet ? '#2e7d32' : metric.value >= metric.target * 0.8 ? '#f57c00' : '#d32f2f',
-                      color: '#ffffff'
+                      color: statusColor, 
+                      fontWeight: 700,
+                      fontSize: '2.25rem',
+                      lineHeight: 1.1,
+                      mb: 1,
+                    }}
+                  >
+                    {Math.round(metric.value * 10) / 10}%
+                  </Typography>
+
+                  {/* Target */}
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: 'rgba(255,255,255,0.6)',
+                      fontSize: '0.85rem',
+                      mb: 1.5,
+                    }}
+                  >
+                    {language === 'ar' ? 'الهدف' : 'Target'}: {metric.isLowerBetter ? '≤' : '≥'}{Math.round(metric.target)}%
+                  </Typography>
+
+                  {/* Progress Bar */}
+                  <LinearProgress
+                    variant="determinate"
+                    value={progressValue}
+                    sx={{
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: statusColor,
+                        borderRadius: 3,
+                      },
                     }}
                   />
                 </Box>
-              </Box>
+              </Tooltip>
             </Grid>
           );
         })}
       </Grid>
 
-      <Box mt={3} p={2} sx={{ backgroundColor: '#2a2a2a', borderRadius: 1, border: '1px solid #444444' }}>
-        <Typography variant="body2" textAlign="center" sx={{ color: '#b0b0b0' }}>
-          {language === 'ar' 
-            ? '🟢 ممتاز (90.0%+) | 🟡 جيد (75.0-89.9%) | 🔴 يحتاج تحسين (<75.0%)'
-            : '🟢 Excellent (90.0%+) | 🟡 Needs Improvement (75.0-89.9%) | 🔴 Not Good (<75.0%)'
-          }
-        </Typography>
+      {/* Legend */}
+      <Box 
+        sx={{ 
+          mt: 3, 
+          p: 2, 
+          backgroundColor: 'rgba(255,255,255,0.03)', 
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 4,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#4caf50' }} />
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+            {language === 'ar' ? 'ممتاز (≥90%)' : 'Excellent (≥90%)'}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ff9800' }} />
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+            {language === 'ar' ? 'يحتاج تحسين (75-89%)' : 'Needs Work (75-89%)'}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#f44336' }} />
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+            {language === 'ar' ? 'ضعيف (<75%)' : 'Below Target (<75%)'}
+          </Typography>
+        </Box>
       </Box>
-    </Paper>
+    </Box>
   );
 };
 

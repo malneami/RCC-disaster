@@ -1,17 +1,14 @@
- import React, { useState } from 'react';
+import React from 'react';
 import {
-  Paper,
   Grid,
   Box,
   Typography,
-  ToggleButton,
-  ToggleButtonGroup,
-  Card,
-  CardContent,
 } from '@mui/material';
+import {
+  PieChart as AnalyticsIcon,
+} from '@mui/icons-material';
 import { CommandCenterData } from '../types';
 import DonutChartComponent from './charts/DonutChartComponent';
-import HeatmapChartComponent from './charts/HeatmapChartComponent';
 
 interface VisualAnalyticsProps {
   data: CommandCenterData | null;
@@ -19,19 +16,7 @@ interface VisualAnalyticsProps {
 }
 
 const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({ data, language }) => {
-  const [timePeriod, setTimePeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
-
   if (!data) return null;
-
-  const handleTimePeriodChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newTimePeriod: 'daily' | 'weekly' | 'monthly' | null,
-  ) => {
-    if (newTimePeriod !== null) {
-      setTimePeriod(newTimePeriod);
-    }
-  };
-
 
   // Transform chart data for DonutChartComponent
   const transformChartData = (chartData: any) => {
@@ -46,137 +31,57 @@ const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({ data, language }) => 
     }));
   };
 
+  // Selected 4 most important charts for 2x2 grid
+  const chartConfigs = [
+    {
+      id: 'referralSource',
+      data: transformChartData(data?.charts.referralSource),
+      title: language === 'ar' ? 'مصدر الإحالة' : 'Referral Source',
+      colors: ['#4caf50', '#2196f3'],
+    },
+    {
+      id: 'treatmentDistribution',
+      data: transformChartData(data?.charts.treatmentDistribution),
+      title: language === 'ar' ? 'توزيع العلاج' : 'Treatment Distribution',
+      colors: ['#2196f3', '#ff9800', '#9c27b0'],
+    },
+    {
+      id: 'outcomes',
+      data: transformChartData(data?.charts.outcomes),
+      title: language === 'ar' ? 'نتائج المرضى' : 'Patient Outcomes',
+      colors: ['#4caf50', '#f44336'],
+    },
+    {
+      id: 'didoCompliance',
+      data: transformChartData(data?.charts.didoCompliance),
+      title: language === 'ar' ? 'امتثال DIDO' : 'DIDO Compliance',
+      colors: ['#4caf50', '#f44336'],
+    },
+  ];
+
   return (
-    <Paper 
-      elevation={2} 
-      sx={{ 
-        p: 3,
-        backgroundColor: '#1e1e1e',
-        color: '#ffffff',
-        border: '1px solid #333333'
-      }}
-    >
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6" sx={{ color: '#ffffff' }}>
-          {language === 'ar' ? 'التحليلات المرئية' : 'Visual Analytics'}
+    <Box sx={{ mb: 4 }}>
+      {/* Section Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+        <AnalyticsIcon sx={{ color: '#64b5f6', fontSize: 28 }} />
+        <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 600 }}>
+          {language === 'ar' ? 'التحليلات' : 'Analytics'}
         </Typography>
-        
-        <Box display="flex" gap={2} alignItems="center">
-          <ToggleButtonGroup
-            value={timePeriod}
-            exclusive
-            onChange={handleTimePeriodChange}
-            size="small"
-            sx={{
-              '& .MuiToggleButton-root': {
-                color: '#ffffff',
-                borderColor: '#555555',
-                '&.Mui-selected': {
-                  backgroundColor: '#1976d2',
-                  color: '#ffffff',
-                  '&:hover': {
-                    backgroundColor: '#1565c0',
-                  },
-                },
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                },
-              },
-            }}
-          >
-            <ToggleButton value="daily">
-              {language === 'ar' ? 'يومي' : 'Daily'}
-            </ToggleButton>
-            <ToggleButton value="weekly">
-              {language === 'ar' ? 'أسبوعي' : 'Weekly'}
-            </ToggleButton>
-            <ToggleButton value="monthly">
-              {language === 'ar' ? 'شهري' : 'Monthly'}
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
       </Box>
 
+      {/* 2x2 Chart Grid */}
       <Grid container spacing={3}>
-        {/* Referral Source Distribution */}
-        <Grid item xs={12} md={6}>
-          <DonutChartComponent
-            data={transformChartData(data?.charts.referralSource)}
-            title={language === 'ar' ? 'توزيع حالات STEMI حسب مصدر الإحالة' : 'STEMI Cases by Referral Source'}
-            colors={['#4caf50', '#2196f3']}
-          />
-        </Grid>
-
-        {/* PCI Cases Breakdown */}
-        <Grid item xs={12} md={6}>
-          <DonutChartComponent
-            data={transformChartData(data?.charts.pciBreakdown)}
-            title={language === 'ar' ? 'توزيع حالات PCI' : 'PCI Cases Breakdown'}
-            colors={['#ff9800', '#9c27b0', '#607d8b']}
-          />
-        </Grid>
-
-        {/* DIDO Compliance */}
-        <Grid item xs={12} md={6}>
-          <DonutChartComponent
-            data={transformChartData(data?.charts.didoCompliance)}
-            title={language === 'ar' ? 'امتثال DIDO لعمليات PCI الأولية' : 'DIDO Compliance for Primary PCI Transfers'}
-            colors={['#4caf50', '#f44336']}
-          />
-        </Grid>
-
-        {/* Treatment Distribution */}
-        <Grid item xs={12} md={6}>
-          <DonutChartComponent
-            data={transformChartData(data?.charts.treatmentDistribution)}
-            title={language === 'ar' ? 'توزيع العلاج' : 'Treatment Distribution'}
-            colors={['#2196f3', '#ff9800']}
-          />
-        </Grid>
-
-        {/* Patient Outcomes */}
-        <Grid item xs={12} md={6}>
-          <DonutChartComponent
-            data={transformChartData(data?.charts.outcomes)}
-            title={language === 'ar' ? 'توزيع نتائج المرضى' : 'Patient Outcomes Distribution'}
-            colors={['#4caf50', '#f44336']}
-          />
-        </Grid>
-
-
-        {/* Hospital Performance Heatmap */}
-        <Grid item xs={12}>
-          <Card sx={{ 
-            backgroundColor: '#1a1a1a',
-            border: '1px solid #333333'
-          }}>
-            <CardContent sx={{ backgroundColor: '#1a1a1a' }}>
-              <HeatmapChartComponent
-                data={transformChartData(data?.charts.heatmap)}
-                title={language === 'ar' ? 'خريطة حرارية لأداء مستشفيات المنطقة الأولى - امتثال D2B' : 'Zone 1 Hospital D2B Compliance Heatmap'}
-                threshold={90}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
+        {chartConfigs.map((config) => (
+          <Grid item xs={12} sm={6} key={config.id}>
+            <DonutChartComponent
+              data={config.data}
+              title={config.title}
+              colors={config.colors}
+            />
+          </Grid>
+        ))}
       </Grid>
-
-      <Box mt={3} p={2} sx={{ 
-        backgroundColor: '#2a3f5f', 
-        borderRadius: 1,
-        border: '1px solid #444444'
-      }}>
-        <Typography variant="body2" sx={{ 
-          color: '#64b5f6', 
-          textAlign: 'center' 
-        }}>
-          {language === 'ar' 
-            ? '💡 جميع الرسوم البيانية تفاعلية مع إمكانية التمرير والتفاصيل عند النقر'
-            : '💡 All charts are interactive with hover tooltips and clickable details'
-          }
-        </Typography>
-      </Box>
-    </Paper>
+    </Box>
   );
 };
 

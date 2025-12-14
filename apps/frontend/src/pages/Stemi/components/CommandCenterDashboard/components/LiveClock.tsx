@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography } from '@mui/material';
+import {
+  AccessTime as ClockIcon,
+  Autorenew as RefreshIcon,
+} from '@mui/icons-material';
 
 interface LiveClockProps {
   language: 'en' | 'ar';
@@ -29,41 +33,72 @@ const LiveClock: React.FC<LiveClockProps> = ({ language }) => {
     return date.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
       weekday: 'long',
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
     });
   };
 
   return (
-    <Paper 
-      elevation={1} 
+    <Box 
       sx={{ 
-        p: 2, 
-        backgroundColor: '#2a3f5f', 
-        color: 'white',
-        border: '1px solid #444444'
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(42, 63, 95, 0.5)',
+        borderRadius: '8px',
+        px: 2.5,
+        py: 1.5,
+        border: '1px solid rgba(255,255,255,0.08)',
       }}
     >
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Typography variant="h3" component="div" fontWeight="bold" fontFamily="monospace" sx={{ color: '#64b5f6' }}>
-            {formatTime(currentTime)}
-          </Typography>
-          <Typography variant="h6" component="div" sx={{ opacity: 0.9, color: '#ffffff' }}>
+      {/* Date and Time */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <ClockIcon sx={{ color: '#64b5f6', fontSize: 22 }} />
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5 }}>
+          <Typography 
+            variant="h6" 
+            component="span" 
+            sx={{ 
+              color: '#ffffff',
+              fontWeight: 600,
+              fontSize: '1rem',
+            }}
+          >
             {formatDate(currentTime)}
           </Typography>
-        </Box>
-        
-        <Box textAlign="right">
-          <Typography variant="body2" sx={{ opacity: 0.8, color: '#b0b0b0' }}>
-            {language === 'ar' ? 'الوقت الحالي' : 'Current Time'}
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.8, color: '#b0b0b0' }}>
-            {language === 'ar' ? 'تحديث تلقائي كل 30 ثانية' : 'Auto-refresh every 30s'}
+          <Typography 
+            variant="h5" 
+            component="span" 
+            sx={{ 
+              color: '#64b5f6',
+              fontWeight: 700,
+              fontFamily: 'monospace',
+              fontSize: '1.25rem',
+            }}
+          >
+            {formatTime(currentTime)}
           </Typography>
         </Box>
       </Box>
-    </Paper>
+      
+      {/* Auto-refresh indicator */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <RefreshIcon 
+          sx={{ 
+            color: 'rgba(255,255,255,0.5)', 
+            fontSize: 16,
+            animation: 'spin 2s linear infinite',
+            '@keyframes spin': {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' },
+            },
+          }} 
+        />
+        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>
+          {language === 'ar' ? 'تحديث تلقائي' : 'Auto-refresh'}
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 

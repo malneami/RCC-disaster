@@ -295,6 +295,8 @@ export interface StemiKpiResponse {
     target: string;
     totalCases: number;
     withinTarget: number;
+    validCases: number;
+    compliantCases: number;
     percentage: number;
     status: 'GREEN' | 'YELLOW' | 'RED';
   };
@@ -303,6 +305,8 @@ export interface StemiKpiResponse {
     target: string;
     totalCases: number;
     withinTarget: number;
+    validCases: number;
+    compliantCases: number;
     percentage: number;
     status: 'GREEN' | 'YELLOW' | 'RED';
   };
@@ -311,6 +315,8 @@ export interface StemiKpiResponse {
     target: string;
     totalCases: number;
     withinTarget: number;
+    validCases: number;
+    compliantCases: number;
     percentage: number;
     status: 'GREEN' | 'YELLOW' | 'RED';
   };
