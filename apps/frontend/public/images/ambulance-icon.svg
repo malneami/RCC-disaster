@@ -1,0 +1,26 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .ambulance-body { fill: #ffffff; stroke: #333333; stroke-width: 1; }
+      .ambulance-cross { fill: #ff0000; }
+      .ambulance-wheel { fill: #333333; }
+    </style>
+  </defs>
+  
+  <!-- Ambulance body -->
+  <rect x="4" y="8" width="24" height="12" rx="2" class="ambulance-body"/>
+  
+  <!-- Ambulance cab -->
+  <rect x="4" y="8" width="8" height="8" rx="2" class="ambulance-body"/>
+  
+  <!-- Red cross -->
+  <rect x="14" y="12" width="8" height="2" class="ambulance-cross"/>
+  <rect x="17" y="9" width="2" height="8" class="ambulance-cross"/>
+  
+  <!-- Wheels -->
+  <circle cx="8" cy="22" r="2" class="ambulance-wheel"/>
+  <circle cx="24" cy="22" r="2" class="ambulance-wheel"/>
+  
+  <!-- Siren light -->
+  <rect x="6" y="4" width="2" height="4" rx="1" fill="#ff0000"/>
+</svg>
