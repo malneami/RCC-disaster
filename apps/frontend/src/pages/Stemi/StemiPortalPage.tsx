@@ -12,6 +12,7 @@ import ViewStemiCaseDialog from './components/ViewStemiCaseDialog';
 import LiveFilterDialog from './components/LiveFilterDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
+import FloatingScrollbar from '../../components/Common/FloatingScrollbar';
 import { StemiService, StemiCase, StemiKpiResponse, StemiFilterParams } from './services/stemiService';
 import { StemiExportService } from './services/stemiExportService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -1103,6 +1104,9 @@ const StemiPortalPage: React.FC = () => {
         values={{ ...unifiedFilters, search: searchInput }}
         resetButtonText="Reset All"
       />
+
+      {/* Floating Horizontal Scrollbar */}
+      <FloatingScrollbar />
     </>
   );
 };

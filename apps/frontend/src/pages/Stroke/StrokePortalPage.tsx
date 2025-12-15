@@ -12,6 +12,7 @@ import EditStrokeCaseDialog from './components/EditStrokeCaseDialog';
 import StrokeOutcomeForm from './components/StrokeOutcomeForm';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
+import FloatingScrollbar from '../../components/Common/FloatingScrollbar';
 import { StrokeService, StrokeCase, StrokeKPISummary } from '../../services/strokeService';
 import { StrokeExportService } from './services/strokeExportService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -485,6 +486,9 @@ const StrokePortalPage: React.FC = () => {
           </Fab>
         </Tooltip>
       </Box>
+
+      {/* Floating Horizontal Scrollbar */}
+      <FloatingScrollbar />
     </>
   );
 };
