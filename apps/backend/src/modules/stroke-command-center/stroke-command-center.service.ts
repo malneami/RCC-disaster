@@ -8,7 +8,8 @@ import {
   TherapyPerformanceDataDto,
   AdmissionFollowupDataDto,
   StrokeTypeDistributionDataDto,
-  PerformanceTrendDataDto
+  PerformanceTrendDataDto,
+  StrokeHospitalPerformanceHeatmapDto
 } from './dto/stroke-command-center.dto';
 
 @Injectable()
@@ -145,6 +146,9 @@ export class StrokeCommandCenterService {
     // Get hospital performance data
     const hospitalPerformance = await this.getHospitalPerformanceData(cases);
 
+    // Generate hospital performance heatmap
+    const hospitalPerformanceHeatmap = await this.generateHospitalPerformanceHeatmap(filters);
+
     return {
       kpiData,
       distributionData,
@@ -155,6 +159,7 @@ export class StrokeCommandCenterService {
       kpis,
       hospitals,
       hospitalPerformance,
+      hospitalPerformanceHeatmap,
     };
   }
 
@@ -531,6 +536,8 @@ export class StrokeCommandCenterService {
         percentage: Math.round(kpi1Percentage * 10) / 10,
         status: this.getKpiStatus(kpi1Percentage, 80),
         trend: 'stable',
+        validCases: kpi1Total,
+        compliantCases: kpi1Met,
       },
       {
         id: 'doorToCT',
@@ -541,6 +548,8 @@ export class StrokeCommandCenterService {
         percentage: Math.round(kpi2Percentage * 10) / 10,
         status: this.getKpiStatus(kpi2Percentage, 80),
         trend: 'stable',
+        validCases: kpi2Total,
+        compliantCases: kpi2Met,
       },
       {
         id: 'doorToNeedle',
@@ -551,6 +560,8 @@ export class StrokeCommandCenterService {
         percentage: Math.round(kpi3Percentage * 10) / 10,
         status: this.getKpiStatus(kpi3Percentage, 80),
         trend: 'stable',
+        validCases: kpi3Total,
+        compliantCases: kpi3Met,
       },
       {
         id: 'doorToMechanicalThrombectomy',
@@ -561,6 +572,8 @@ export class StrokeCommandCenterService {
         percentage: Math.round(kpi4Percentage * 10) / 10,
         status: this.getKpiStatus(kpi4Percentage, 80),
         trend: 'stable',
+        validCases: totalCases,
+        compliantCases: kpi4Met,
       }
     ];
   }
@@ -758,6 +771,204 @@ export class StrokeCommandCenterService {
     }).sort((a, b) => b.cases - a.cases); // Sort by case count descending
   }
 
+  private async generateHospitalPerformanceHeatmap(filters: {
+    hospitalId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<StrokeHospitalPerformanceHeatmapDto[]> {
+    // Get all hospitals with stroke service
+    const hospitals = await this.prisma.hospital.findMany({
+      where: {
+        hasStrokeService: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    console.log(`[Heatmap] Found ${hospitals.length} hospitals with stroke service`);
+
+    const heatmapData: StrokeHospitalPerformanceHeatmapDto[] = [];
+
+    for (const hospital of hospitals) {
+      // Build where clause for hospital-specific cases
+      const whereClause: any = {
+        OR: [
+          { originHospitalId: hospital.id },
+          { destinationHospitalId: hospital.id },
+        ],
+      };
+
+      // Apply date filtering
+      if (filters.startDate || filters.endDate) {
+        whereClause.dateOfAdmission = {};
+        if (filters.startDate) {
+          whereClause.dateOfAdmission.gte = new Date(filters.startDate);
+        }
+        if (filters.endDate) {
+          // Set end date to end of day to include all cases created on that day
+          whereClause.dateOfAdmission.lte = new Date(filters.endDate + 'T23:59:59.999Z');
+        }
+      }
+
+      const cases = await this.prisma.strokeCase.findMany({
+        where: whereClause,
+        include: {
+          patient: {
+            select: {
+              firstName: true,
+              lastName: true,
+              nationalId: true,
+            },
+          },
+        },
+      });
+
+      const totalCases = cases.length;
+      console.log(`[Heatmap] Hospital: ${hospital.name} - Cases: ${totalCases}`);
+
+      // Calculate Door-to-Physician (KPI 1) - Cases with valid times, target ≤15min
+      const d2pCases = cases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.timeOfPhysicianAssessment);
+        return time > 0;
+      });
+      const d2pCompliant = d2pCases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.timeOfPhysicianAssessment);
+        return time <= 15;
+      }).length;
+      const doorToPhysicianCompliance = d2pCases.length > 0
+        ? Math.round((d2pCompliant / d2pCases.length) * 100)
+        : 0;
+
+      // Calculate Door-to-CT (KPI 2) - Cases with valid times, target ≤20min
+      const d2ctCases = cases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.timeOfCtScanStart);
+        return time > 0;
+      });
+      const d2ctCompliant = d2ctCases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.timeOfCtScanStart);
+        return time <= 20;
+      }).length;
+      const doorToCtCompliance = d2ctCases.length > 0
+        ? Math.round((d2ctCompliant / d2ctCases.length) * 100)
+        : 0;
+
+      // Calculate Door-to-CT Report (KPI 6) - Cases with valid times, target ≤45min
+      const d2ctReportCases = cases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.timeOfCtReportFinal);
+        return time > 0;
+      });
+      const d2ctReportCompliant = d2ctReportCases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.timeOfCtReportFinal);
+        return time <= 45;
+      }).length;
+      const doorToCtReportCompliance = d2ctReportCases.length > 0
+        ? Math.round((d2ctReportCompliant / d2ctReportCases.length) * 100)
+        : 0;
+
+      // Calculate Door-to-Needle (KPI 3) - Ischemic thrombolysis candidates with valid times, target ≤60min
+      const d2nCases = cases.filter(c => {
+        if (c.strokeType !== 'ISCHEMIC' || c.candidateForIVThrombolysis !== 'YES') return false;
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.ivThrombolysisAdministrationTime);
+        return time > 0;
+      });
+      const d2nCompliant = d2nCases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.ivThrombolysisAdministrationTime);
+        return time <= 60;
+      }).length;
+      const doorToNeedleCompliance = d2nCases.length > 0
+        ? Math.round((d2nCompliant / d2nCases.length) * 100)
+        : 0;
+
+      // Calculate Door-to-Mechanical Thrombectomy (KPI 4) - Cases with valid times, target ≤120min
+      const d2mtCases = cases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.timeOfMechanicalThrombectomyPuncture);
+        return time > 0;
+      });
+      const d2mtCompliant = d2mtCases.filter(c => {
+        const time = this.calculateTimeDifference(c.timeOfTriage, c.timeOfMechanicalThrombectomyPuncture);
+        return time <= 120;
+      }).length;
+      const doorToMechanicalThrombectomyCompliance = d2mtCases.length > 0
+        ? Math.round((d2mtCompliant / d2mtCases.length) * 100)
+        : 0;
+
+      // Calculate Stroke Unit Admission (KPI 5) - Cases meeting metKpi5, target ≥80%
+      const strokeUnitValid = totalCases;
+      const strokeUnitCompliant = cases.filter(c => c.metKpi5 === true).length;
+      const strokeUnitAdmissionCompliance = strokeUnitValid > 0
+        ? Math.round((strokeUnitCompliant / strokeUnitValid) * 100)
+        : 0;
+
+      // Calculate Swallowing Screening (KPI 10) - Cases meeting metKpi10, target ≥85%
+      const swallowingValid = totalCases;
+      const swallowingCompliant = cases.filter(c => c.metKpi10 === true).length;
+      const swallowingScreeningCompliance = swallowingValid > 0
+        ? Math.round((swallowingCompliant / swallowingValid) * 100)
+        : 0;
+
+      // Calculate data quality and completeness scores
+      const totalFields = cases.length * 25; // 25 key fields per case
+      const populatedFields = cases.reduce((count, c) => {
+        const fields = [
+          c.patient?.firstName, c.patient?.lastName, c.patient?.nationalId,
+          c.timeOfTriage, c.timeOfPhysicianAssessment, c.timeOfCtScanStart,
+          c.timeOfCtReportFinal, c.ivThrombolysisAdministrationTime,
+          c.timeOfMechanicalThrombectomyPuncture, c.timeOfSymptomOnset,
+          c.strokeType, c.candidateForIVThrombolysis, c.ivThrombolysisGiven,
+          c.admittedToStrokeUnit, c.swallowingScreeningWithin4Hours,
+          c.originHospitalId, c.destinationHospitalId, c.currentStatus,
+          c.createdAt, c.updatedAt, c.dateOfAdmission,
+          c.metKpi1, c.metKpi2, c.metKpi3, c.metKpi4, c.metKpi5
+        ];
+        return count + fields.filter(field => field !== null && field !== undefined && field !== '').length;
+      }, 0);
+
+      const dataCompletenessScore = totalFields > 0 ? Math.round((populatedFields / totalFields) * 100) : 0;
+      // Data quality based on completeness and valid time calculations
+      const validTimeCases = d2pCases.length + d2ctCases.length + d2ctReportCases.length + d2nCases.length + d2mtCases.length;
+      const expectedTimeCases = totalCases * 5; // 5 time KPIs per case
+      const timeDataQuality = expectedTimeCases > 0 ? (validTimeCases / expectedTimeCases) * 100 : 0;
+      const dataQualityScore = Math.round((dataCompletenessScore + timeDataQuality) / 2);
+
+      const result: StrokeHospitalPerformanceHeatmapDto = {
+        hospitalId: hospital.id,
+        hospitalName: hospital.name,
+        totalCases,
+        doorToPhysicianCompliance,
+        doorToPhysicianValid: d2pCases.length,
+        doorToPhysicianCompliant: d2pCompliant,
+        doorToCtCompliance,
+        doorToCtValid: d2ctCases.length,
+        doorToCtCompliant: d2ctCompliant,
+        doorToCtReportCompliance,
+        doorToCtReportValid: d2ctReportCases.length,
+        doorToCtReportCompliant: d2ctReportCompliant,
+        doorToNeedleCompliance,
+        doorToNeedleValid: d2nCases.length,
+        doorToNeedleCompliant: d2nCompliant,
+        doorToMechanicalThrombectomyCompliance,
+        doorToMechanicalThrombectomyValid: d2mtCases.length,
+        doorToMechanicalThrombectomyCompliant: d2mtCompliant,
+        strokeUnitAdmissionCompliance,
+        strokeUnitAdmissionValid: strokeUnitValid,
+        strokeUnitAdmissionCompliant: strokeUnitCompliant,
+        swallowingScreeningCompliance,
+        swallowingScreeningValid: swallowingValid,
+        swallowingScreeningCompliant: swallowingCompliant,
+        dataQualityScore,
+        dataCompletenessScore,
+      };
+
+      console.log(`[Heatmap] ${hospital.name}: Total=${result.totalCases}, D2P=${result.doorToPhysicianCompliance}% (${d2pCompliant}/${d2pCases.length}), D2CT=${result.doorToCtCompliance}% (${d2ctCompliant}/${d2ctCases.length}), D2N=${result.doorToNeedleCompliance}% (${d2nCompliant}/${d2nCases.length})`);
+      heatmapData.push(result);
+    }
+
+    return heatmapData;
+  }
+
   async getPerformanceComparisonData(filters: {
     hospitalId?: string;
     startDate?: string;
@@ -779,7 +990,8 @@ export class StrokeCommandCenterService {
         whereClause.dateOfAdmission.gte = new Date(filters.startDate);
       }
       if (filters.endDate) {
-        whereClause.dateOfAdmission.lte = new Date(filters.endDate);
+        // Set end date to end of day (23:59:59.999) to include all cases created on that day
+        whereClause.dateOfAdmission.lte = new Date(filters.endDate + 'T23:59:59.999Z');
       }
     }
 

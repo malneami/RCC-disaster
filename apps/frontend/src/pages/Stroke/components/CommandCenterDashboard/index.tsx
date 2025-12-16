@@ -18,6 +18,7 @@ import StrokeTrafficLightSystem from './components/StrokeTrafficLightSystem';
 import HospitalPerformanceTable, {
   HospitalPerformanceData,
 } from './components/HospitalPerformanceTable';
+import HospitalPerformanceHeatmap from './components/HospitalPerformanceHeatmap';
 import { useStrokeCommandCenterData } from './hooks/useStrokeCommandCenterData';
 import { useFullscreen } from '../../../../contexts/FullscreenContext';
 import { StrokeCommandCenterFilters } from './types';
@@ -188,6 +189,18 @@ const StrokeCommandCenterDashboard: React.FC = () => {
           <Box mt={3}>
             <HospitalPerformanceTable
               data={data.hospitalPerformance as HospitalPerformanceData[]}
+            />
+          </Box>
+        )}
+
+        {/* Hospital Performance Heatmap */}
+        {data?.hospitalPerformanceHeatmap && (
+          <Box mt={3}>
+            <HospitalPerformanceHeatmap
+              data={data.hospitalPerformanceHeatmap}
+              loading={loading}
+              error={error}
+              language={language}
             />
           </Box>
         )}

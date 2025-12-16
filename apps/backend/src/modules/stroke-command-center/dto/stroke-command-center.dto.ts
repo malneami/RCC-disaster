@@ -69,6 +69,12 @@ export class StrokeKPIMetricDto {
 
   @ApiProperty({ description: 'Trend direction' })
   trend!: 'up' | 'down' | 'stable';
+
+  @ApiProperty({ description: 'Number of valid cases for this KPI', required: false })
+  validCases?: number;
+
+  @ApiProperty({ description: 'Number of compliant cases for this KPI', required: false })
+  compliantCases?: number;
 }
 
 export class StrokeKPIDataDto {
@@ -173,6 +179,86 @@ export class PerformanceTrendDataDto {
   }>;
 }
 
+export class StrokeHospitalPerformanceHeatmapDto {
+  @ApiProperty({ description: 'Hospital ID' })
+  hospitalId!: string;
+
+  @ApiProperty({ description: 'Hospital name' })
+  hospitalName!: string;
+
+  @ApiProperty({ description: 'Total stroke cases' })
+  totalCases!: number;
+
+  @ApiProperty({ description: 'Door-to-Physician compliance percentage' })
+  doorToPhysicianCompliance!: number;
+
+  @ApiProperty({ description: 'Door-to-Physician valid cases count' })
+  doorToPhysicianValid!: number;
+
+  @ApiProperty({ description: 'Door-to-Physician compliant cases count' })
+  doorToPhysicianCompliant!: number;
+
+  @ApiProperty({ description: 'Door-to-CT compliance percentage' })
+  doorToCtCompliance!: number;
+
+  @ApiProperty({ description: 'Door-to-CT valid cases count' })
+  doorToCtValid!: number;
+
+  @ApiProperty({ description: 'Door-to-CT compliant cases count' })
+  doorToCtCompliant!: number;
+
+  @ApiProperty({ description: 'Door-to-CT Report compliance percentage' })
+  doorToCtReportCompliance!: number;
+
+  @ApiProperty({ description: 'Door-to-CT Report valid cases count' })
+  doorToCtReportValid!: number;
+
+  @ApiProperty({ description: 'Door-to-CT Report compliant cases count' })
+  doorToCtReportCompliant!: number;
+
+  @ApiProperty({ description: 'Door-to-Needle compliance percentage' })
+  doorToNeedleCompliance!: number;
+
+  @ApiProperty({ description: 'Door-to-Needle valid cases count' })
+  doorToNeedleValid!: number;
+
+  @ApiProperty({ description: 'Door-to-Needle compliant cases count' })
+  doorToNeedleCompliant!: number;
+
+  @ApiProperty({ description: 'Door-to-Mechanical Thrombectomy compliance percentage' })
+  doorToMechanicalThrombectomyCompliance!: number;
+
+  @ApiProperty({ description: 'Door-to-Mechanical Thrombectomy valid cases count' })
+  doorToMechanicalThrombectomyValid!: number;
+
+  @ApiProperty({ description: 'Door-to-Mechanical Thrombectomy compliant cases count' })
+  doorToMechanicalThrombectomyCompliant!: number;
+
+  @ApiProperty({ description: 'Stroke Unit Admission compliance percentage' })
+  strokeUnitAdmissionCompliance!: number;
+
+  @ApiProperty({ description: 'Stroke Unit Admission valid cases count' })
+  strokeUnitAdmissionValid!: number;
+
+  @ApiProperty({ description: 'Stroke Unit Admission compliant cases count' })
+  strokeUnitAdmissionCompliant!: number;
+
+  @ApiProperty({ description: 'Swallowing Screening compliance percentage' })
+  swallowingScreeningCompliance!: number;
+
+  @ApiProperty({ description: 'Swallowing Screening valid cases count' })
+  swallowingScreeningValid!: number;
+
+  @ApiProperty({ description: 'Swallowing Screening compliant cases count' })
+  swallowingScreeningCompliant!: number;
+
+  @ApiProperty({ description: 'Data quality score' })
+  dataQualityScore!: number;
+
+  @ApiProperty({ description: 'Data completeness score' })
+  dataCompletenessScore!: number;
+}
+
 export class StrokeCommandCenterDataDto {
   @ApiProperty({ description: 'KPI summary data' })
   kpiData!: StrokeKPIDataDto;
@@ -217,4 +303,7 @@ export class StrokeCommandCenterDataDto {
     strokeUnitPct: number;
     followUpPct: number;
   }>;
+
+  @ApiProperty({ description: 'Hospital performance heatmap data' })
+  hospitalPerformanceHeatmap!: StrokeHospitalPerformanceHeatmapDto[];
 }

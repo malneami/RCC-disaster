@@ -6,6 +6,7 @@ import {
   Typography,
   Chip,
   LinearProgress,
+  Tooltip,
 } from '@mui/material';
 import {
   CheckCircle as CheckIcon,
@@ -66,6 +67,8 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
         targetValue: kpi.targetValue,
         percentage: kpi.percentage,
         status: kpi.status,
+        validCases: kpi.validCases,
+        compliantCases: kpi.compliantCases,
       };
   });
 
@@ -97,26 +100,54 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
 
           return (
             <Grid item {...gridSize} key={index}>
-              <Box
-                sx={{
-                  p: 3,
-                  border: `2px solid ${
-                    isTargetMet ? '#4caf50' : performancePercentage >= 75 ? '#ff9800' : '#f44336'
-                  }`,
-                  borderRadius: 2,
-                  backgroundColor: isTargetMet ? '#2d4a2d' : performancePercentage >= 75 ? '#4a3c2a' : '#4a2d2d',
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'scale(1.02)',
-                    boxShadow: 2,
-                  },
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                }}
+              <Tooltip
+                title={
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                      {kpi.name}
+                    </Typography>
+                    {kpi.validCases !== undefined && kpi.compliantCases !== undefined ? (
+                      <>
+                        <Typography variant="body2">
+                          {language === 'ar' ? 'الامتثال:' : 'Compliance:'} {kpi.compliantCases}/{kpi.validCases} {language === 'ar' ? 'حالة' : 'cases'} ({kpi.percentage.toFixed(1)}%)
+                        </Typography>
+                        <Typography variant="body2">
+                          {language === 'ar' ? 'الحالة:' : 'Status:'} {status.label}
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography variant="body2">
+                        {language === 'ar' ? 'النسبة المئوية:' : 'Percentage:'} {kpi.percentage.toFixed(1)}%
+                      </Typography>
+                    )}
+                    <Typography variant="caption" sx={{ color: '#999' }}>
+                      {language === 'ar' ? 'الهدف:' : 'Target:'} {kpi.target}
+                    </Typography>
+                  </Box>
+                }
+                arrow
               >
+                <Box
+                  sx={{
+                    p: 3,
+                    border: `2px solid ${
+                      isTargetMet ? '#4caf50' : performancePercentage >= 75 ? '#ff9800' : '#f44336'
+                    }`,
+                    borderRadius: 2,
+                    backgroundColor: isTargetMet ? '#2d4a2d' : performancePercentage >= 75 ? '#4a3c2a' : '#4a2d2d',
+                    textAlign: 'center',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'scale(1.02)',
+                      boxShadow: 2,
+                    },
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                  }}
+                >
                 <Box>
                   <Box display="flex" justifyContent="center" mb={2}>
                     <Box
@@ -174,7 +205,8 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
                     }}
                   />
                 </Box>
-              </Box>
+                </Box>
+              </Tooltip>
             </Grid>
           );
         })}

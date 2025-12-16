@@ -91,6 +91,37 @@ export interface StrokeKPIMetric {
   percentage: number;
   status: 'GREEN' | 'YELLOW' | 'RED';
   trend: 'up' | 'down' | 'stable';
+  validCases?: number;
+  compliantCases?: number;
+}
+
+export interface StrokeHospitalPerformanceHeatmap {
+  hospitalId: string;
+  hospitalName: string;
+  totalCases: number;
+  doorToPhysicianCompliance: number;
+  doorToPhysicianValid: number;
+  doorToPhysicianCompliant: number;
+  doorToCtCompliance: number;
+  doorToCtValid: number;
+  doorToCtCompliant: number;
+  doorToCtReportCompliance: number;
+  doorToCtReportValid: number;
+  doorToCtReportCompliant: number;
+  doorToNeedleCompliance: number;
+  doorToNeedleValid: number;
+  doorToNeedleCompliant: number;
+  doorToMechanicalThrombectomyCompliance: number;
+  doorToMechanicalThrombectomyValid: number;
+  doorToMechanicalThrombectomyCompliant: number;
+  strokeUnitAdmissionCompliance: number;
+  strokeUnitAdmissionValid: number;
+  strokeUnitAdmissionCompliant: number;
+  swallowingScreeningCompliance: number;
+  swallowingScreeningValid: number;
+  swallowingScreeningCompliant: number;
+  dataQualityScore: number;
+  dataCompletenessScore: number;
 }
 
 export interface StrokeCommandCenterData {
@@ -121,4 +152,5 @@ export interface StrokeCommandCenterData {
     strokeUnitPct: number;
     followUpPct: number;
   }>;
+  hospitalPerformanceHeatmap: StrokeHospitalPerformanceHeatmap[];
 }
