@@ -207,7 +207,7 @@ const AmbulanceMarker: React.FC<AmbulanceMarkerProps> = ({ ambulance, isSelected
             sx={{
               background: `linear-gradient(135deg, ${statusColor} 0%, ${statusColor}dd 100%)`,
               color: 'white',
-              p: 2,
+              p: 1,
               position: 'relative',
             }}
           >
@@ -216,73 +216,70 @@ const AmbulanceMarker: React.FC<AmbulanceMarkerProps> = ({ ambulance, isSelected
               size="small"
               sx={{
                 position: 'absolute',
-                top: 8,
-                right: 8,
+                top: 4,
+                right: 4,
                 color: 'white',
                 backgroundColor: 'rgba(255,255,255,0.15)',
+                width: 24,
+                height: 24,
+                padding: 0,
+                minWidth: 24,
                 '&:hover': { backgroundColor: 'rgba(255,255,255,0.25)' },
               }}
               onClick={() => markerRef.current?.closePopup()}
             >
-              <FontAwesomeIcon icon={faTimes} size="sm" />
+              <FontAwesomeIcon icon={faTimes} size="xs" />
             </IconButton>
 
-            <Box sx={{ pr: 4 }}>
-              <Typography sx={{ fontSize: '20px', fontWeight: 700, letterSpacing: '-0.02em' }}>
+            {/* Consistent single-row layout */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, pr: 3 }}>
+              {/* Left: Call sign (Number) */}
+              <Typography sx={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2, flex: 1 }}>
                 {ambulance.callSign}
               </Typography>
-              <Typography sx={{ fontSize: '12px', opacity: 0.9, mt: 0.25 }}>
-                {ambulance.plateNumber} • {ambulance.type}
-              </Typography>
-            </Box>
 
-            {/* Status badge */}
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.75,
-                mt: 1.5,
-                px: 1.5,
-                py: 0.5,
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                borderRadius: '20px',
-              }}
-            >
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white' }} />
-              <Typography sx={{ fontSize: '11px', fontWeight: 600 }}>
-                {getStatusLabel()}
-              </Typography>
-            </Box>
-
-            {/* Speed indicator */}
-            {ambulance.speed !== undefined && ambulance.speed > 0 && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  mt: 1.5,
-                  pt: 1.5,
-                  borderTop: '1px solid rgba(255,255,255,0.2)',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <FontAwesomeIcon icon={faTachometerAlt} size="sm" />
-                  <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
-                    {Math.round(ambulance.speed)} km/h
+              {/* Right: Status badge and speed/direction */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                {/* Status badge - redesigned for consistency */}
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    px: 1,
+                    py: 0.4,
+                    backgroundColor: 'rgba(255,255,255,0.25)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                  }}
+                >
+                  <Box sx={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: 'white' }} />
+                  <Typography sx={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.02em' }}>
+                    {getStatusLabel()}
                   </Typography>
                 </Box>
-                {ambulance.direction !== undefined && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <FontAwesomeIcon icon={faCompass} size="sm" style={{ opacity: 0.8 }} />
-                    <Typography sx={{ fontSize: '13px', opacity: 0.9 }}>
-                      {formatDirection(ambulance.direction)}
-                    </Typography>
+
+                {/* Speed and direction - compact inline */}
+                {ambulance.speed !== undefined && ambulance.speed > 0 && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                      <FontAwesomeIcon icon={faTachometerAlt} size="xs" style={{ fontSize: '10px', opacity: 0.9 }} />
+                      <Typography sx={{ fontSize: '11px', fontWeight: 600, opacity: 0.95 }}>
+                        {Math.round(ambulance.speed)} km/h
+                      </Typography>
+                    </Box>
+                    {ambulance.direction !== undefined && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                        <FontAwesomeIcon icon={faCompass} size="xs" style={{ opacity: 0.85, fontSize: '10px' }} />
+                        <Typography sx={{ fontSize: '10px', opacity: 0.9 }}>
+                          {formatDirection(ambulance.direction)}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 )}
               </Box>
-            )}
+            </Box>
           </Box>
 
           {/* Tab buttons - Segmented control style */}
