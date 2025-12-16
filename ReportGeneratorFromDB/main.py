@@ -136,7 +136,7 @@ def nvidia_chat(messages):
     resp = client.chat.completions.create(
         model=NVIDIA_MODEL,
         messages=messages,
-        temperature=0.2,
+        temperature=0,
         timeout=LLM_TIMEOUT_SECONDS,
     )
     return resp.choices[0].message.content
@@ -265,7 +265,8 @@ def generate_sql(user_prompt: str, schema_text: str) -> str:
 
 def generate_report(user_prompt: str, sql: str, df: pd.DataFrame) -> str:
     preview_rows = min(len(df), 30)
-    preview = df.head(preview_rows).to_dict(orient="records")
+    # converting to json string and back to dict handles NaT/Date serialization automatically
+    preview = json.loads(df.head(preview_rows).to_json(orient="records", date_format="iso"))
 
     messages = [
         {"role": "system", "content": REPORT_SYSTEM},
