@@ -26,7 +26,7 @@ interface StrokeCasesFiltersProps {
     dateFrom: string;
     dateTo: string;
   };
-  hospitals: Array<{ id: string; name: string }>;
+  hospitals?: Array<{ id: string; name: string }>;
   onFiltersChange: (filters: any) => void;
   onApplyFilters: () => void;
   onClearFilters: () => void;
@@ -138,7 +138,7 @@ const StrokeCasesFilters: React.FC<StrokeCasesFiltersProps> = ({
                 }}
               >
                 <MenuItem value="">All Hospitals</MenuItem>
-                {hospitals.map((hospital) => (
+                {hospitals?.map((hospital) => (
                   <MenuItem key={hospital.id} value={hospital.id}>
                     {hospital.name}
                   </MenuItem>
@@ -162,7 +162,7 @@ const StrokeCasesFilters: React.FC<StrokeCasesFiltersProps> = ({
                 }}
               >
                 <MenuItem value="">All Hospitals</MenuItem>
-                {hospitals.map((hospital) => (
+                {hospitals?.map((hospital) => (
                   <MenuItem key={hospital.id} value={hospital.id}>
                     {hospital.name}
                   </MenuItem>

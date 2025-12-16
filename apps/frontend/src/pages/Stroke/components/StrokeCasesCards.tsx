@@ -69,6 +69,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     status: '',
     originHospitalId: '',
     destinationHospitalId: '',
+    modeOfArrival: '',
     dateFrom: '',
     dateTo: '',
   });
@@ -113,6 +114,9 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     if (filters.destinationHospitalId) {
       filtered = filtered.filter(case_ => case_.destinationHospitalId === filters.destinationHospitalId);
     }
+    if (filters.modeOfArrival) {
+      filtered = filtered.filter(case_ => case_.modeOfArrival === filters.modeOfArrival);
+    }
     if (filters.dateFrom) {
       const fromDate = new Date(filters.dateFrom);
       fromDate.setHours(0, 0, 0, 0);
@@ -152,6 +156,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       status: '',
       originHospitalId: '',
       destinationHospitalId: '',
+      modeOfArrival: '',
       dateFrom: '',
       dateTo: '',
     });
