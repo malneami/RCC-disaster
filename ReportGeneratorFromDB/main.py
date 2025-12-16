@@ -240,10 +240,11 @@ Rules:
 - Produce ONE single SELECT query only.
 - No INSERT/UPDATE/DELETE/DDL.
 - Use only tables/columns from the provided schema.
-- Keep it efficient.
-- If user asks "last week", interpret as CURRENT_DATE - 7 days through CURRENT_DATE.
-- Do not use created_at for time conditioned generation. 
+- Keep it efficient and concise.
+- Always use admission time or time of registration instead of created_at.
 """
+# - If user asks "last week", interpret as CURRENT_DATE - 7 days through CURRENT_DATE.
+
 
 REPORT_SYSTEM = """You are a reporting assistant.
 Write a concise report using ONLY the provided query results.
