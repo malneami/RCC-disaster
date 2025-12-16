@@ -1,0 +1,11 @@
+openai
+sqlglot
+sqlalchemy
+pandas
+requests
+python-dotenv
+psycopg2-binary
+fastapi
+uvicorn
+websockets
+

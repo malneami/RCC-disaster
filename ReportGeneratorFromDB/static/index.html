@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB Report Generator</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background-color: var(--border-color);
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.connected {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.disconnected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .input-section {
+            background: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        button:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .output-section {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-background);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            background-color: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        pre {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .markdown-body {
+            font-size: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            margin-left: 0.5rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+        }
+
+        .log-info {
+            color: var(--text-secondary);
+        }
+
+        .log-error {
+            color: var(--error-color);
+        }
+
+        .log-success {
+            color: var(--success-color);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Report Generator</h1>
+            <div id="connection-status" class="status-badge disconnected">Disconnected</div>
+        </header>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="user-prompt" placeholder="Ask a question about the database..."
+                    autocomplete="off">
+                <button id="send-btn" disabled>Send</button>
+            </div>
+        </div>
+
+        <div class="output-section">
+
+            <!-- Progress/Logs -->
+            <div class="card">
+                <div class="card-header">Activity Log</div>
+                <div class="card-body">
+                    <div id="log-container"></div>
+                </div>
+            </div>
+
+            <!-- SQL String -->
+            <div id="sql-card" class="card hidden">
+                <div class="card-header">Generated SQL</div>
+                <div class="card-body">
+                    <pre id="sql-content"></pre>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div id="data-card" class="card hidden">
+                <div class="card-header">Data Preview</div>
+                <div class="card-body">
+                    <div id="table-container"></div>
+                </div>
+            </div>
+
+            <!-- Report -->
+            <div id="report-card" class="card hidden">
+                <div class="card-header">Report</div>
+                <div class="card-body">
+                    <div id="report-content" class="markdown-body"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+
+        let ws;
+        const statusEl = document.getElementById('connection-status');
+        const promptInput = document.getElementById('user-prompt');
+        const sendBtn = document.getElementById('send-btn');
+        const logContainer = document.getElementById('log-container');
+
+        const sqlCard = document.getElementById('sql-card');
+        const sqlContent = document.getElementById('sql-content');
+
+        const dataCard = document.getElementById('data-card');
+        const tableContainer = document.getElementById('table-container');
+
+        const reportCard = document.getElementById('report-card');
+        const reportContent = document.getElementById('report-content');
+
+        function connect() {
+            log('System', 'Connecting to WebSocket...', 'info');
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status-badge connected';
+                sendBtn.disabled = false;
+                log('System', 'WebSocket connected.', 'success');
+            };
+
+            ws.onclose = () => {
+                statusEl.textContent = 'Disconnected';
+                statusEl.className = 'status-badge disconnected';
+                sendBtn.disabled = true;
+                log('System', 'WebSocket disconnected. Retrying in 3s...', 'error');
+                setTimeout(connect, 3000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('WS Error', err);
+                log('System', 'WebSocket error occurred.', 'error');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    handleMessage(msg);
+                } catch (e) {
+                    console.error('Parse error', e);
+                }
+            };
+        }
+
+        function handleMessage(msg) {
+            switch (msg.type) {
+                case 'status':
+                    log('Server', msg.message, 'info');
+                    break;
+                case 'error':
+                    log('Error', msg.message, 'error');
+                    break;
+                case 'sql':
+                    showSql(msg.content);
+                    break;
+                case 'data':
+                    showData(msg.content);
+                    break;
+                case 'report':
+                    showReport(msg.content);
+                    break;
+                default:
+                    log('Unknown', JSON.stringify(msg), 'info');
+            }
+        }
+
+        function sendMessage() {
+            const text = promptInput.value.trim();
+            if (!text) return;
+
+            // Clear previous results
+            resetUI();
+
+            log('User', text, 'info');
+            ws.send(text);
+        }
+
+        function resetUI() {
+            sqlCard.classList.add('hidden');
+            dataCard.classList.add('hidden');
+            reportCard.classList.add('hidden');
+            sqlContent.textContent = '';
+            tableContainer.innerHTML = '';
+            reportContent.textContent = '';
+        }
+
+        function showSql(sql) {
+            sqlCard.classList.remove('hidden');
+            sqlContent.textContent = sql;
+        }
+
+        function showData(data) {
+            dataCard.classList.remove('hidden');
+            if (!data || data.length === 0) {
+                tableContainer.innerHTML = '<p>No data returned.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+
+            // Headers
+            const headers = Object.keys(data[0]);
+            const trHead = document.createElement('tr');
+            headers.forEach(h => {
+                const th = document.createElement('th');
+                th.textContent = h;
+                trHead.appendChild(th);
+            });
+            thead.appendChild(trHead);
+
+            // Rows
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(h => {
+                    const td = document.createElement('td');
+                    td.textContent = row[h] !== null ? row[h] : '';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            tableContainer.appendChild(table);
+        }
+
+        function showReport(markdown) {
+            reportCard.classList.remove('hidden');
+            // Simple line-break to <br> for now, or just text. 
+            // In a real app, use a markdown library like marked.js
+            // For now, we'll just put it in pre-wrap styled div or extremely basic parse
+            reportContent.innerHTML = markdown.replace(/\n/g, '<br>');
+        }
+
+        function log(source, message, type) {
+            const div = document.createElement('div');
+            div.className = `log-entry log-${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${source}: ${message}`;
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', sendMessage);
+        promptInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Start
+        connect();
+
+    </script>
+</body>
+
+</html>

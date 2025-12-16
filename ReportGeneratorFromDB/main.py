@@ -6,6 +6,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 from sqlglot import parse_one, exp
 from openai import OpenAI  # pip install openai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 schema_text = """
@@ -53,22 +57,23 @@ public.users(id:text, email:text, first_name:text, last_name:text, phone_number:
 # =========================================================
 
 # ---- NVIDIA API (OpenAI-compatible) ----
-NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
-NVIDIA_API_KEY = "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"
+NVIDIA_BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 
 # IMPORTANT: Use an INSTRUCT model you actually have access to.
 # Try one of these:
 #   - "meta/llama-3.1-8b-instruct"
 #   - "meta/llama-3.1-70b-instruct"
 #   - "mistralai/mistral-7b-instruct-v0.3"
-NVIDIA_MODEL = "meta/llama-3.1-405b-instruct"
+NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
 
 # ---- Postgres ----
-DB_HOST = "localhost"
-DB_PORT = 5432
-DB_NAME = "rcc_healthcare"
-DB_USER = "rcc_admin"
-DB_PASSWORD = "healthcare_secure_2024"
+# ---- Postgres ----
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = int(os.getenv("DB_PORT", "5432"))
+DB_NAME = os.getenv("DB_NAME", "")
+DB_USER = os.getenv("DB_USER", "")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
 
 # ---- Safety/perf ----
@@ -107,7 +112,7 @@ def get_schema_text(engine) -> str:
     ORDER BY table_schema, table_name, ordinal_position;
     """
     df = pd.read_sql(q, engine)
-    print(df)
+    # print(df)
     lines = []
     grouped = df.groupby(["table_schema", "table_name"])
     for i, ((schema, table), g) in enumerate(grouped):
@@ -237,6 +242,7 @@ Rules:
 - Use only tables/columns from the provided schema.
 - Keep it efficient.
 - If user asks "last week", interpret as CURRENT_DATE - 7 days through CURRENT_DATE.
+- Do not use created_at for time conditioned generation. 
 """
 
 REPORT_SYSTEM = """You are a reporting assistant.
@@ -300,12 +306,19 @@ def main():
     verify_model_access()
     engine = make_engine()
     print(engine)
+    df_tables = pd.read_sql("""
+    SELECT schemaname, tablename
+    FROM pg_tables
+    WHERE schemaname NOT IN ('pg_catalog','information_schema')
+    ORDER BY schemaname, tablename;
+    """, engine)
+    print(df_tables)
     schema_text = get_schema_text(engine)
     print(schema_text)
 
 
 
-    print("NVIDIA + Postgres Report Agent (no env vars)")
+    print("NVIDIA + Postgres Report Agent (env vars enabled)")
     print("Type 'exit' to quit.\n")
 
     while True:
