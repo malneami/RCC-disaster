@@ -31,10 +31,12 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   async handleConnection(client: Socket) {
     try {
-      const user = client.handshake.auth.user;
+
+      let user = client.handshake.auth?.user;
+
       if (user) {
         this.connectedClients.set(client.id, { socket: client, userId: user.id, role: user.role });
-        this.logger.log(`Notifications client connected: ${client.id} - User: ${user.email} (${user.role})`);
+        this.logger.log(`✅ [NotificationsGateway] Client connected: ${client.id} - User: ${user.email} (${user.role})`);
         
         // Join user-specific room for targeted notifications
         await client.join(`user-${user.id}`);
@@ -46,17 +48,23 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         if (user.hospitalId) {
           await client.join(`hospital-${user.hospitalId}`);
         }
+      } else {
+        this.logger.warn(`⚠️ [NotificationsGateway] Client connected without user info: ${client.id}`);
+        this.logger.debug(`Available auth data:`, client.handshake.auth);
       }
     } catch (error) {
-      this.logger.error(`Error handling connection: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(`❌ [NotificationsGateway] Error handling connection: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(`Error stack:`, error instanceof Error ? error.stack : 'No stack trace');
     }
   }
 
   async handleDisconnect(client: Socket) {
     const clientData = this.connectedClients.get(client.id);
     if (clientData) {
-      this.logger.log(`Notifications client disconnected: ${client.id} - User: ${clientData.userId}`);
+      this.logger.log(`🔌 [NotificationsGateway] Client disconnected: ${client.id} - User: ${clientData.userId}`);
       this.connectedClients.delete(client.id);
+    } else {
+      this.logger.log(`🔌 [NotificationsGateway] Client disconnected: ${client.id} (no user data)`);
     }
   }
 

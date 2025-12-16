@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../services/authService';
+import { getWebSocketUrl } from '../utils/socketUtils';
 
 interface UseWebSocketReturn {
   socket: Socket | null;
@@ -14,49 +16,58 @@ export const useWebSocket = (namespace?: string): UseWebSocketReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
+    isMountedRef.current = true;
+    
+    const socketUrl = getWebSocketUrl(namespace) || "http://localhost:3001";
 
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-    const socketUrl = namespace ? `${baseUrl}/${namespace}` : baseUrl;
-
-    // Create socket connection
-    const newSocket = io(socketUrl, {
-      auth: {
-        userId: user.id,
-        role: user.role,
-      },
+    const token = authService.getToken();
+    
+    // Create socket connection using the same simple pattern as testPage
+    const socketOptions: any = {
       transports: ['websocket', 'polling'],
-      upgrade: true,
-      rememberUpgrade: true,
-      timeout: 20000,
-      forceNew: true,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
-    });
+      autoConnect: true,
+    };
 
+    if (token) {
+      socketOptions.auth = { token };
+    }
+
+    const newSocket = io(socketUrl, socketOptions);
     socketRef.current = newSocket;
 
-    // Connection event handlers
     newSocket.on('connect', () => {
-      console.log('WebSocket connected:', newSocket.id);
+      if (!isMountedRef.current) return;
       setIsConnected(true);
       setConnectionError(null);
     });
 
     newSocket.on('disconnect', (reason) => {
+      if (!isMountedRef.current) return;
       console.log('WebSocket disconnected:', reason);
       setIsConnected(false);
+      
+      // If server explicitly disconnects (namespace doesn't exist), disable reconnection
+      if (reason === 'io server disconnect') {
+        console.error(`Server disconnected: ${reason}. The namespace "${namespace || 'default'}" may not exist on the server.`);
+        setConnectionError(`Server disconnected: ${reason}. The namespace "${namespace || 'default'}" may not exist on the server.`);
+        newSocket.disconnect(); // Stop reconnection attempts
+      }
     });
 
+
     newSocket.on('connect_error', (error) => {
+      if (!isMountedRef.current) return;
       console.error('WebSocket connection error:', error);
       setConnectionError(error.message || 'Connection failed');
       setIsConnected(false);
+      
+      
     });
 
     newSocket.on('error', (error) => {
@@ -128,21 +139,16 @@ export const useWebSocket = (namespace?: string): UseWebSocketReturn => {
 
     // Cleanup on unmount
     return () => {
+      isMountedRef.current = false;
       if (socketRef.current) {
+        socketRef.current.removeAllListeners();
         socketRef.current.disconnect();
         socketRef.current = null;
       }
+      setSocket(null);
+      setIsConnected(false);
     };
   }, [user, namespace]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, []);
 
   return {
     socket,

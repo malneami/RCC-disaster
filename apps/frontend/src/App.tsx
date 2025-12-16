@@ -3,6 +3,7 @@ import { Box } from '@mui/material';
 
 import { useAuth } from './contexts/AuthContext';
 import { FullscreenProvider } from './contexts/FullscreenContext';
+import { VideoCallSocketProvider } from './contexts/VideoCallSocketContext';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/Auth/LoginPage';
 import UserRegistrationPage from './pages/Auth/UserRegistrationPage';
@@ -26,6 +27,8 @@ import NotificationCenterPage from './pages/NotificationCenter/NotificationCente
 import HospitalUserDashboard from './pages/Hospitals/HospitalUserDashboard';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import VideoCallPage from './pages/VideoCall/VideoCallPage';
+import IncomingCallNotification from './components/VideoCall/IncomingCallNotification';
 
 function App() {
   const { user, isLoading } = useAuth();
@@ -45,90 +48,94 @@ function App() {
 
   return (
     <FullscreenProvider>
-      <Layout>
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-          <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/tickets" element={<TicketsPage />} />
-          <Route path="/tickets/:ticketId" element={<TicketViewPage />} />
-          <Route path="/patients" element={<PatientsPage />} />
-          <Route path="/patients/:id" element={<PatientDetailsPage />} />
-          <Route path="/hospitals" element={<HospitalsPage />} />
-          <Route path="/hospitals/:hospitalId" element={<HospitalDashboardPage />} />
-          <Route path="/my-hospital" element={
-            <ProtectedRoute allowedRoles={['HOSPITAL_USER']}>
-              <HospitalUserDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/ems-dashboard" element={<EMSDashboardPage />} />
-          <Route path="/notifications" element={<NotificationCenterPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          
-          {/* Portal Routes */}
-          <Route
-            path="/portals/stemi"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR']}>
-                <StemiPortalPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/portals/stemi/command-center"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR']}>
-                <CommandCenterPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/portals/stroke"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
-                <StrokePortal />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/portals/stroke/command-center"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
-                <StrokeCommandCenterPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/portals/trauma"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
-                <TraumaPortalPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/portals/ems"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR']}>
-                <EMSPortal />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Admin Route */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <AdminPage />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-        </Box>
-      </Layout>
+      <VideoCallSocketProvider>
+        <Layout>
+          <Box sx={{ flexGrow: 1, p: 3 }}>
+            <IncomingCallNotification />
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/tickets" element={<TicketsPage />} />
+              <Route path="/tickets/:ticketId" element={<TicketViewPage />} />
+              <Route path="/patients" element={<PatientsPage />} />
+              <Route path="/video-call" element={<VideoCallPage />} />
+              <Route path="/patients/:id" element={<PatientDetailsPage />} />
+              <Route path="/hospitals" element={<HospitalsPage />} />
+              <Route path="/hospitals/:hospitalId" element={<HospitalDashboardPage />} />
+              <Route path="/my-hospital" element={
+                <ProtectedRoute allowedRoles={['HOSPITAL_USER']}>
+                  <HospitalUserDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/ems-dashboard" element={<EMSDashboardPage />} />
+              <Route path="/notifications" element={<NotificationCenterPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+
+              {/* Portal Routes */}
+              <Route
+                path="/portals/stemi"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR']}>
+                    <StemiPortalPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/portals/stemi/command-center"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'CATH_LAB_USER', 'DATA_COLLECTOR']}>
+                    <CommandCenterPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/portals/stroke"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                    <StrokePortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/portals/stroke/command-center"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                    <StrokeCommandCenterPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/portals/trauma"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                    <TraumaPortalPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/portals/ems"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR']}>
+                    <EMSPortal />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Route */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <AdminPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Box>
+        </Layout>
+      </VideoCallSocketProvider>
     </FullscreenProvider>
   );
 }

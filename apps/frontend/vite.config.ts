@@ -5,6 +5,14 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    global: 'globalThis',
+    'process.env': {},
+    process: {
+      env: {},
+      browser: true,
+    },
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

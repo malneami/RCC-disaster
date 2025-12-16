@@ -798,4 +798,3 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
 };
 
 export default LiveAmbulanceMap;
-

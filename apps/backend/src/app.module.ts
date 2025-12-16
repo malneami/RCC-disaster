@@ -37,6 +37,7 @@ import { EmsGatewayModule } from './modules/ems-gateway/ems-gateway.module';
 import { TimelineEventsModule } from './modules/timeline-events/timeline-events.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RepliesModule } from './modules/replies/replies.module';
+import { VideoCallsModule } from './modules/video-calls/video-calls.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { RepliesModule } from './modules/replies/replies.module';
     TimelineEventsModule,
     NotificationsModule,
     RepliesModule,
+    VideoCallsModule,
     
     AuthModule,
     UsersModule,

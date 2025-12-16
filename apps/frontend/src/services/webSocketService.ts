@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { authService } from './authService';
+import { getWebSocketUrl } from '../utils/socketUtils';
 
 export interface TicketUpdateEvent {
   ticket: any;
@@ -29,8 +30,9 @@ class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
+  private currentNamespace?: string;
 
-  connect() {
+  connect(namespace?: string) {
     if (this.socket && this.isConnected) {
       return;
     }
@@ -41,11 +43,21 @@ class WebSocketService {
       return;
     }
 
-    this.socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:3001', {
+    this.currentNamespace = namespace;
+    const socketUrl = getWebSocketUrl(namespace);
+    console.log(`[webSocketService] Connecting to: ${socketUrl}${namespace ? ` (namespace: ${namespace})` : ' (default namespace)'}`);
+
+    this.socket = io(socketUrl, {
       auth: {
         token,
       },
       transports: ['websocket', 'polling'],
+      upgrade: true,
+      rememberUpgrade: true,
+      timeout: 20000,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
     });
 
     this.setupEventListeners();
@@ -88,7 +100,7 @@ class WebSocketService {
 
     setTimeout(() => {
       console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-      this.connect();
+      this.connect(this.currentNamespace);
     }, delay);
   }
 
@@ -97,6 +109,8 @@ class WebSocketService {
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
+      this.currentNamespace = undefined;
+      this.reconnectAttempts = 0;
     }
   }
 

@@ -26,6 +26,7 @@ import {
   faShieldAlt,
   faBell,
   faChartLine,
+  faVideo,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -96,6 +97,12 @@ const Sidebar: React.FC = () => {
       text: 'Notification Center',
       icon: <FontAwesomeIcon icon={faBell} />,
       path: '/notifications',
+      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER', 'HOSPITAL_USER'],
+    },
+    {
+      text: 'Video Calls',
+      icon: <FontAwesomeIcon icon={faVideo} />,
+      path: '/video-call',
       roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER', 'HOSPITAL_USER'],
     },
   ];
