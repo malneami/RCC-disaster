@@ -4,55 +4,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DB Report Generator</title>
+    <title>Report Generator (Socket.IO)</title>
+    <!-- Simple Google Fonts import -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: #2563eb;
-            --background-color: #f8fafc;
-            --card-background: #ffffff;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
             --text-primary: #1e293b;
             --text-secondary: #64748b;
             --border-color: #e2e8f0;
-            --success-color: #10b981;
+            --success-color: #22c55e;
             --error-color: #ef4444;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--background-color);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
             color: var(--text-primary);
             margin: 0;
-            padding: 2rem;
-            line-height: 1.5;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 900px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         header {
-            margin-bottom: 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 1rem;
         }
 
         h1 {
-            font-size: 1.875rem;
-            font-weight: 700;
-            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
             margin: 0;
         }
 
         .status-badge {
-            padding: 0.5rem 1rem;
+            padding: 0.25rem 0.75rem;
             border-radius: 9999px;
             font-size: 0.875rem;
             font-weight: 500;
-            background-color: var(--border-color);
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
         }
 
         .status-badge.connected {
@@ -66,11 +70,11 @@
         }
 
         .input-section {
-            background: var(--card-background);
+            background: var(--card-bg);
             padding: 1.5rem;
             border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            border: 1px solid var(--border-color);
         }
 
         .input-group {
@@ -90,7 +94,6 @@
 
         input[type="text"]:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
         button {
@@ -101,11 +104,11 @@
             border-radius: 0.5rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: opacity 0.2s;
         }
 
         button:hover {
-            background-color: #1d4ed8;
+            opacity: 0.9;
         }
 
         button:disabled {
@@ -114,25 +117,34 @@
         }
 
         .output-section {
-            display: grid;
+            display: flex;
+            flex-direction: column;
             gap: 1.5rem;
         }
 
         .card {
-            background: var(--card-background);
+            background: var(--card-bg);
             border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            border: 1px solid var(--border-color);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card.hidden {
+            display: none;
         }
 
         .card-header {
             padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
+            background: #f1f5f9;
             font-weight: 600;
-            background-color: #f8fafc;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
         }
 
         .card-body {
@@ -141,45 +153,47 @@
         }
 
         pre {
-            background-color: #1e293b;
-            color: #e2e8f0;
+            background: #1e293b;
+            color: #f8fafc;
             padding: 1rem;
             border-radius: 0.5rem;
+            overflow-x: auto;
             margin: 0;
-            white-space: pre-wrap;
-            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
         }
 
         .markdown-body {
-            font-size: 1rem;
+            line-height: 1.6;
         }
 
+        /* Table Styles */
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.875rem;
+            font-size: 0.9rem;
         }
 
         th,
         td {
             text-align: left;
-            padding: 0.75rem 1rem;
+            padding: 0.75rem;
             border-bottom: 1px solid var(--border-color);
         }
 
         th {
-            background-color: #f1f5f9;
             font-weight: 600;
+            color: var(--text-secondary);
+            background: #f8fafc;
         }
 
-        .hidden {
-            display: none;
-        }
-
+        /* Spinner for loading state (optional) */
         .loading {
-            display: inline-block;
-            margin-left: 0.5rem;
-            animation: spin 1s linear infinite;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
         }
 
         @keyframes spin {
@@ -214,6 +228,8 @@
             color: var(--success-color);
         }
     </style>
+    <!-- Socket.IO Client Library -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 
 <body>
@@ -270,10 +286,6 @@
     </div>
 
     <script>
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
-
-        let ws;
         const statusEl = document.getElementById('connection-status');
         const promptInput = document.getElementById('user-prompt');
         const sendBtn = document.getElementById('send-btn');
@@ -288,60 +300,53 @@
         const reportCard = document.getElementById('report-card');
         const reportContent = document.getElementById('report-content');
 
-        function connect() {
-            log('System', 'Connecting to WebSocket...', 'info');
-            ws = new WebSocket(wsUrl);
+        let socket;
 
-            ws.onopen = () => {
+        function connect() {
+            log('System', 'Connecting to Socket.IO...', 'info');
+
+            // Connect to the server
+            socket = io(); // Defaults to window.location
+
+            socket.on('connect', () => {
                 statusEl.textContent = 'Connected';
                 statusEl.className = 'status-badge connected';
                 sendBtn.disabled = false;
-                log('System', 'WebSocket connected.', 'success');
-            };
+                log('System', 'Socket.IO connected.', 'success');
+            });
 
-            ws.onclose = () => {
+            socket.on('disconnect', () => {
                 statusEl.textContent = 'Disconnected';
                 statusEl.className = 'status-badge disconnected';
                 sendBtn.disabled = true;
-                log('System', 'WebSocket disconnected. Retrying in 3s...', 'error');
-                setTimeout(connect, 3000);
-            };
+                log('System', 'Socket.IO disconnected.', 'error');
+            });
 
-            ws.onerror = (err) => {
-                console.error('WS Error', err);
-                log('System', 'WebSocket error occurred.', 'error');
-            };
+            socket.on('connect_error', (err) => {
+                console.error('Connection Error', err);
+                log('System', 'Connection error: ' + err.message, 'error');
+            });
 
-            ws.onmessage = (event) => {
-                try {
-                    const msg = JSON.parse(event.data);
-                    handleMessage(msg);
-                } catch (e) {
-                    console.error('Parse error', e);
-                }
-            };
-        }
+            // Custom Events
+            socket.on('status', (data) => {
+                log('Server', data.message, 'info');
+            });
 
-        function handleMessage(msg) {
-            switch (msg.type) {
-                case 'status':
-                    log('Server', msg.message, 'info');
-                    break;
-                case 'error':
-                    log('Error', msg.message, 'error');
-                    break;
-                case 'sql':
-                    showSql(msg.content);
-                    break;
-                case 'data':
-                    showData(msg.content);
-                    break;
-                case 'report':
-                    showReport(msg.content);
-                    break;
-                default:
-                    log('Unknown', JSON.stringify(msg), 'info');
-            }
+            socket.on('error', (data) => {
+                log('Error', data.message, 'error');
+            });
+
+            socket.on('sql', (data) => {
+                showSql(data.content);
+            });
+
+            socket.on('data', (data) => {
+                showData(data.content);
+            });
+
+            socket.on('report', (data) => {
+                showReport(data.content);
+            });
         }
 
         function sendMessage() {
@@ -352,7 +357,8 @@
             resetUI();
 
             log('User', text, 'info');
-            ws.send(text);
+            // Emit user event
+            socket.emit('user_prompt', { prompt: text });
         }
 
         function resetUI() {
@@ -409,8 +415,6 @@
         function showReport(markdown) {
             reportCard.classList.remove('hidden');
             // Simple line-break to <br> for now, or just text. 
-            // In a real app, use a markdown library like marked.js
-            // For now, we'll just put it in pre-wrap styled div or extremely basic parse
             reportContent.innerHTML = markdown.replace(/\n/g, '<br>');
         }
 

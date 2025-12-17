@@ -136,7 +136,7 @@ def nvidia_chat(messages):
     resp = client.chat.completions.create(
         model=NVIDIA_MODEL,
         messages=messages,
-        temperature=0,
+        temperature=0.2,
         timeout=LLM_TIMEOUT_SECONDS,
     )
     return resp.choices[0].message.content
@@ -156,33 +156,7 @@ def extract_json(text_out: str) -> dict:
     return json.loads(m.group(0))
 
 
-# =========================================================
-# 5) SQL SAFETY
-# =========================================================
-# def enforce_select_only(sql: str) -> str:
-#     sql = sql.strip().strip(";")
-#
-#     if ";" in sql:
-#         raise ValueError("Rejected: multiple statements detected.")
-#
-#     try:
-#         ast = parse_one(sql, read="postgres")
-#     except Exception as e:
-#         raise ValueError(f"Rejected: SQL parse failed: {e}")
-#
-#     if not isinstance(ast, exp.Select) and not isinstance(ast, exp.Subqueryable):
-#         raise ValueError("Rejected: only SELECT queries are allowed.")
-#
-#     lowered = sql.lower()
-#     banned = ["insert", "update", "delete", "drop", "alter", "truncate", "create", "grant", "revoke"]
-#     if any(b in lowered for b in banned):
-#         raise ValueError("Rejected: write/admin keywords detected.")
-#
-#     # Enforce a LIMIT if missing
-#     if " limit " not in lowered:
-#         sql = f"{sql}\nLIMIT {MAX_ROWS}"
-#
-#     return sql
+
 from sqlglot import parse_one, exp
 
 def enforce_select_only(sql: str) -> str:
@@ -236,10 +210,10 @@ def run_query(engine, sql: str) -> pd.DataFrame:
 # =========================================================
 SQL_SYSTEM = """You are an expert PostgreSQL analyst.
 Return ONLY JSON with keys: sql, rationale.
-Rules:
+Follow the following rules strictly:
 - Produce ONE single SELECT query only.
 - No INSERT/UPDATE/DELETE/DDL.
-- Use only tables/columns from the provided schema.
+- Use exact column names from schema. Do not invent column names.
 - Keep it efficient and concise.
 - Always use admission time or time of registration instead of created_at.
 """
