@@ -279,9 +279,11 @@ const TicketsPage: React.FC = () => {
 
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Tooltip title="Refresh">
-              <IconButton onClick={loadData} disabled={loading}>
-                <RefreshIcon />
-              </IconButton>
+              <span>
+                <IconButton onClick={loadData} disabled={loading}>
+                  <RefreshIcon />
+                </IconButton>
+              </span>
             </Tooltip>
 
             <Tooltip title="Filters">

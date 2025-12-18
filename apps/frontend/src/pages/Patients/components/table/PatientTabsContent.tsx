@@ -5,6 +5,7 @@ import PatientStatistics from '../PatientStatistics';
 import DuplicateDetection from '../DuplicateDetection';
 import PatientAccessLogsTab from '../PatientAccessLogsTab';
 import { usePatientTableColumns } from './PatientTableColumns';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 interface PatientTabsContentProps {
   patients: Patient[];
@@ -27,13 +28,17 @@ export const usePatientTabsContent = ({
   onEditPatient,
   onExportPatient,
 }: PatientTabsContentProps) => {
+  const { user } = useAuth();
   const patientColumns = usePatientTableColumns({
     onViewPatient,
     onEditPatient,
     onExportPatient,
   });
 
-  return [
+  // Check if user has admin or RCC role
+  const canViewAccessLogs = user?.role === 'ADMIN' || user?.role === 'RCC';
+
+  const tabs = [
     {
       label: 'Patients',
       content: (
@@ -60,9 +65,15 @@ export const usePatientTabsContent = ({
       label: 'Duplicates',
       content: <DuplicateDetection />,
     },
-    {
+  ];
+
+  // Only add Access Logs tab for ADMIN and RCC users
+  if (canViewAccessLogs) {
+    tabs.push({
       label: 'Access Logs',
       content: <PatientAccessLogsTab />,
-    },
-  ];
+    });
+  }
+
+  return tabs;
 };

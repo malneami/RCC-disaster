@@ -107,7 +107,47 @@ export class StemiPatientService {
     }
   }
 
-  async updatePatient(patientId: string, patientInfo: PatientInfoDto, userId?: string) {
+  /**
+   * Helper function to generate detailed change description
+   */
+  private generateChangeDescription(oldData: any, newData: any): string {
+    const changes: string[] = [];
+    const fieldsToTrack = [
+      'firstName', 'lastName', 'nationalId', 'age', 'gender',
+      'phoneNumber', 'address', 'emergencyContact', 'emergencyPhone',
+      'medicalHistory', 'allergies', 'medications'
+    ];
+
+    for (const field of fieldsToTrack) {
+      const oldValue = oldData[field];
+      const newValue = newData[field];
+
+      // Skip if field wasn't in the update
+      if (newValue === undefined) {
+        continue;
+      }
+
+      // Handle null/undefined comparisons
+      const oldVal = oldValue === null || oldValue === undefined ? null : String(oldValue);
+      const newVal = newValue === null || newValue === undefined ? null : String(newValue);
+
+      // Only track if value actually changed
+      if (oldVal !== newVal) {
+        const fieldName = field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+        const oldDisplay = oldVal === null ? 'null' : (oldVal === '' ? 'empty' : oldVal);
+        const newDisplay = newVal === null ? 'null' : (newVal === '' ? 'empty' : newVal);
+        changes.push(`${fieldName} from "${oldDisplay}" to "${newDisplay}"`);
+      }
+    }
+
+    if (changes.length === 0) {
+      return 'No fields changed';
+    }
+
+    return changes.join(', ');
+  }
+
+  async updatePatient(patientId: string, patientInfo: PatientInfoDto, userId?: string, ipAddress?: string, userAgent?: string) {
     const {
       firstName,
       lastName,
@@ -124,10 +164,9 @@ export class StemiPatientService {
     } = patientInfo;
 
     try {
-      // First, get the current patient to check if nationalId is changing
+      // First, get the current patient data for comparison
       const currentPatient = await this.prisma.patient.findUnique({
         where: { id: patientId },
-        select: { nationalId: true }
       });
 
       if (!currentPatient) {
@@ -170,6 +209,12 @@ export class StemiPatientService {
         data: updateData,
       });
 
+      // Generate detailed change description
+      const changeDescription = this.generateChangeDescription(currentPatient, updateData);
+      const reason = changeDescription !== 'No fields changed' 
+        ? `Patient updated via STEMI updatePatient endpoint: ${changeDescription}`
+        : 'Patient updated via STEMI updatePatient endpoint (no fields changed)';
+
       // Log access for patient update - ALWAYS log, even if userId is missing
       try {
         if (!userId) {
@@ -179,6 +224,8 @@ export class StemiPatientService {
             patientId,
             userId,
             accessType: 'UPDATE',
+            ipAddress,
+            changes: changeDescription,
           });
           await this.accessLogService.logAccess({
             entityType: EntityType.PATIENT,
@@ -186,7 +233,9 @@ export class StemiPatientService {
             userId,
             accessType: 'UPDATE',
             accessMethod: 'API',
-            reason: 'Patient updated via STEMI updatePatient endpoint',
+            ipAddress: ipAddress || undefined,
+            userAgent: userAgent || undefined,
+            reason,
           });
           console.log('[StemiPatientService] Successfully logged patient update access');
         }

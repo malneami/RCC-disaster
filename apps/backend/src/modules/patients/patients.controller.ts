@@ -106,7 +106,8 @@ export class PatientsController {
   }
 
   @Get('access-logs')
-  @ApiOperation({ summary: 'Get patient access logs with filtering' })
+  @Roles(UserRole.ADMIN, UserRole.RCC)
+  @ApiOperation({ summary: 'Get patient access logs with filtering (Admin/RCC only)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'patientId', required: false, type: String })
@@ -230,7 +231,9 @@ export class PatientsController {
   @ApiOperation({ summary: 'Update patient by ID' })
   @ApiParam({ name: 'id', description: 'Patient ID' })
   async update(@Param('id') id: string, @Body() updatePatientDto: UpdatePatientDto, @Request() req: any) {
-    return this.patientsService.update(id, updatePatientDto, req.user.id);
+    const ipAddress = req?.ip || req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress || 'unknown';
+    const userAgent = req?.headers?.['user-agent'] || 'unknown';
+    return this.patientsService.update(id, updatePatientDto, req.user.id, ipAddress, userAgent);
   }
 
   @Get(':id/export')

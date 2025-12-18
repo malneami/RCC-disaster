@@ -14,7 +14,24 @@ import { PrismaService } from '../../database/prisma.service';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow connections with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      // Allow localhost with any port for development
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        callback(null, true);
+        return;
+      }
+      // Allow configured frontend URL
+      if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     credentials: true,
   },
   namespace: '/ems',

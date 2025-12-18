@@ -329,7 +329,7 @@ export class StemiCasesService {
     };
   }
 
-  async updateStemiCase(id: string, updateStemiCaseDto: UpdateStemiCaseDto, userId: string) {
+  async updateStemiCase(id: string, updateStemiCaseDto: UpdateStemiCaseDto, userId: string, ipAddress?: string, userAgent?: string) {
     console.log('updateStemiCase called with:', JSON.stringify({ id, updateStemiCaseDto, userId }, null, 2));
     
     const existingCase = await this.getStemiCaseById(id);
@@ -344,7 +344,7 @@ export class StemiCasesService {
 
       // Update patient if patientInfo provided
       if (patientInfo) {
-        await this.stemiPatientService.updatePatient(existingCase.patientId, patientInfo, validUserId);
+        await this.stemiPatientService.updatePatient(existingCase.patientId, patientInfo, validUserId, ipAddress, userAgent);
       }
 
       // Update ticket only if it exists

@@ -136,7 +136,15 @@ export class StemiCasesController {
     @Request() req: any,
   ) {
     console.log('Controller update called with:', JSON.stringify({ id, updateStemiCaseDto }, null, 2));
-    return await this.stemiCasesService.updateStemiCase(id, updateStemiCaseDto, req.user?.id || '4600ecc0-c41b-4d99-8ddd-78ef909182cb');
+    const ipAddress = req?.ip || req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress || 'unknown';
+    const userAgent = req?.headers?.['user-agent'] || 'unknown';
+    return await this.stemiCasesService.updateStemiCase(
+      id, 
+      updateStemiCaseDto, 
+      req.user?.id || '4600ecc0-c41b-4d99-8ddd-78ef909182cb',
+      ipAddress,
+      userAgent
+    );
   }
 
   @Delete(':id')
