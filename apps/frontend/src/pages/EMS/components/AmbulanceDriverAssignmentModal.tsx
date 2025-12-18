@@ -19,7 +19,7 @@ import { faAmbulance, faUserMd } from '@fortawesome/free-solid-svg-icons';
 import { EMSAssignment } from '../types/ems';
 import { useAmbulances } from '../hooks/useAmbulances';
 import { useEMSDrivers } from '../hooks/useEMSDrivers';
-import { emsService } from '../services/emsService';
+import { useEMSAssignments } from '../hooks/useEMSAssignments';
 
 interface AmbulanceDriverAssignmentModalProps {
   open: boolean;
@@ -39,6 +39,7 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
   assignment,
   onSuccess,
 }) => {
+  const { updateAssignment } = useEMSAssignments();
   const [formData, setFormData] = useState<FormData>({
     ambulanceId: '',
     driverId: '',
@@ -120,9 +121,12 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
       setError(null);
 
       // Update the assignment with ambulance and driver
-      await emsService.updateEMSAssignment(assignment.id, {
-        ambulanceId: formData.ambulanceId,
-        driverId: formData.driverId,
+      await updateAssignment({
+        id: assignment.id,
+        data: {
+          ambulanceId: formData.ambulanceId,
+          driverId: formData.driverId,
+        },
       });
 
       onSuccess?.();

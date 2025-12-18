@@ -24,6 +24,7 @@ import { emsService } from '../services/emsService';
 import { AmbulanceRecommendation, AmbulanceZoneLog } from '../types/recommendations';
 import { EMSAssignment } from '../types/ems';
 import { ticketService } from '../../../services/ticketService';
+import { useEMSAssignments } from '../hooks/useEMSAssignments';
 import ZoneActivityLogItem from './ZoneActivityLogItem';
 import CompletedTripsList from './CompletedTripsList';
 import ManualSelectionSection from './ManualSelectionSection';
@@ -43,6 +44,7 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
     ticketId,
     onSuccess,
 }) => {
+    const { createAssignment, updateAssignment } = useEMSAssignments();
     const [loading, setLoading] = useState(false);
     const [recommendations, setRecommendations] = useState<AmbulanceRecommendation[]>([]);
     const [ticket, setTicket] = useState<any>(null);
@@ -199,9 +201,9 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
             }
 
             if (assignment) {
-                await emsService.updateEMSAssignment(assignment.id, payload);
+                await updateAssignment({ id: assignment.id, data: payload });
             } else {
-                await emsService.createEMSAssignment(payload);
+                await createAssignment(payload);
             }
 
             onSuccess?.();
