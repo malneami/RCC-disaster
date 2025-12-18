@@ -33,6 +33,15 @@ export class EmsAssignmentsService {
     // Only check availability if ambulance and driver are provided
     if (createAssignmentDto.ambulanceId) {
       await this.checkAmbulanceAvailability(createAssignmentDto.ambulanceId);
+      
+      // Check if ambulance is already in route for another case
+      // Only check if the initial status is one of the "in route" statuses
+      const inRouteStatuses: AssignmentStatus[] = ['EN_ROUTE', 'EMS_ARRIVAL', 'DEPARTED'];
+      const initialStatus = createAssignmentDto.status || 'EMS_CONTACT';
+      
+      if (inRouteStatuses.includes(initialStatus)) {
+        await this.checkAmbulanceInRouteStatus(createAssignmentDto.ambulanceId);
+      }
     }
     if (createAssignmentDto.driverId) {
       await this.checkDriverAvailability(createAssignmentDto.driverId);
@@ -339,6 +348,7 @@ export class EmsAssignmentsService {
     
     // Auto-infer status from timestamps if status is not explicitly set but timestamps are
     // This ensures status matches the timestamps when they're set from zone logs
+    let inferredStatus: AssignmentStatus | null = null;
     if (!updateAssignmentDto.status) {
       const finalTimestamps = {
         journeyEndTime: updateAssignmentDto.journeyEndTime 
@@ -357,14 +367,37 @@ export class EmsAssignmentsService {
       
       // Infer status from the latest timestamp
       if (finalTimestamps.journeyEndTime) {
+        inferredStatus = 'ARRIVED';
         (updateData as any).status = 'ARRIVED';
       } else if (finalTimestamps.journeyStartTime) {
+        inferredStatus = 'DEPARTED';
         (updateData as any).status = 'DEPARTED';
       } else if (finalTimestamps.actualArrivalTime) {
+        inferredStatus = 'EMS_ARRIVAL';
         (updateData as any).status = 'EMS_ARRIVAL';
       } else if (finalTimestamps.emsContactTime) {
+        inferredStatus = 'EMS_CONTACT';
         (updateData as any).status = 'EMS_CONTACT';
       }
+    }
+
+    // Determine the final status (either explicitly provided or inferred)
+    const finalStatus = updateAssignmentDto.status || inferredStatus || existingAssignment.status;
+    const inRouteStatuses: AssignmentStatus[] = ['EN_ROUTE', 'EMS_ARRIVAL', 'DEPARTED'];
+    const willBeInRoute = inRouteStatuses.includes(finalStatus);
+
+    // Check if ambulance is being changed and if it will result in "in route" status
+    // Only check when ambulance is being assigned/changed, NOT when just updating status
+    const ambulanceIsBeingChanged = updateAssignmentDto.ambulanceId !== undefined && 
+                                     existingAssignment.ambulanceId && 
+                                     updateAssignmentDto.ambulanceId !== existingAssignment.ambulanceId;
+    const ambulanceIsBeingAssigned = updateAssignmentDto.ambulanceId !== undefined && 
+                                      !existingAssignment.ambulanceId && 
+                                      updateAssignmentDto.ambulanceId !== null;
+
+    if ((ambulanceIsBeingChanged || ambulanceIsBeingAssigned) && willBeInRoute) {
+      // Check if the new ambulance is already in route for another case
+      await this.checkAmbulanceInRouteStatus(updateAssignmentDto.ambulanceId!, id);
     }
 
     const assignment = await this.prisma.eMSAssignment.update({
@@ -373,8 +406,11 @@ export class EmsAssignmentsService {
       include: this.getAssignmentInclude(),
     });
 
-    // Update Ticket's EMS status and main status if status changed
-    if (updateAssignmentDto.status) {
+    // Determine if status changed
+    const statusChanged = assignment.status !== existingAssignment.status;
+
+    // Update Ticket's EMS status and main status if status changed (either explicitly or inferred)
+    if (statusChanged) {
       // Map EMS status to ticket status using StatusMappingService
       const newTicketStatus = StatusMappingService.mapEMSToTicket(assignment.status);
       
@@ -393,24 +429,95 @@ export class EmsAssignmentsService {
       );
     }
 
-    // Update ambulance status if ambulance is being assigned or status is changing
-    if (updateAssignmentDto.ambulanceId && updateAssignmentDto.status) {
-      await this.updateAmbulanceStatus(updateAssignmentDto.ambulanceId, updateAssignmentDto.status);
-    } else if (updateAssignmentDto.status && existingAssignment.ambulanceId) {
-      await this.updateAmbulanceStatus(existingAssignment.ambulanceId, updateAssignmentDto.status);
-    } else if (updateAssignmentDto.ambulanceId) {
-      // If only ambulance is being assigned, set it to IN_USE
-      await this.prisma.ambulance.update({
-        where: { id: updateAssignmentDto.ambulanceId },
-        data: { status: 'IN_USE' },
+    // Handle ambulance assignment changes: release old ambulance if ambulance is being changed or removed
+    // Only release if ambulanceId is explicitly provided in the update (not undefined)
+    const ambulanceIdProvided = updateAssignmentDto.ambulanceId !== undefined;
+    const ambulanceIsChanging = ambulanceIdProvided && 
+                                 existingAssignment.ambulanceId && 
+                                 updateAssignmentDto.ambulanceId !== existingAssignment.ambulanceId;
+    const ambulanceIsBeingRemoved = ambulanceIdProvided && 
+                                     existingAssignment.ambulanceId && 
+                                     updateAssignmentDto.ambulanceId === null;
+    
+    if (ambulanceIsChanging || ambulanceIsBeingRemoved) {
+      // Check if the old ambulance has other active assignments before releasing it
+      const activeStatuses: AssignmentStatus[] = ['EMS_CONTACT', 'EN_ROUTE', 'EMS_ARRIVAL', 'DEPARTED'];
+      const otherActiveAssignments = await this.prisma.eMSAssignment.findFirst({
+        where: {
+          ambulanceId: existingAssignment.ambulanceId!,
+          id: { not: id }, // Exclude the current assignment being updated
+          status: { in: activeStatuses },
+          deletedAt: null,
+        },
       });
+
+      if (!otherActiveAssignments) {
+        // No other active assignments - safe to release the old ambulance
+        const reason = ambulanceIsChanging 
+          ? `assignment ${id} now uses ambulance ${updateAssignmentDto.ambulanceId}`
+          : `ambulance removed from assignment ${id}`;
+        this.logger.log(`Releasing old ambulance ${existingAssignment.ambulanceId} (${reason})`);
+        await this.prisma.ambulance.update({
+          where: { id: existingAssignment.ambulanceId! },
+          data: { status: 'AVAILABLE' },
+        });
+      } else {
+        // Old ambulance has other active assignments - keep it IN_USE
+        this.logger.log(
+          `Keeping old ambulance ${existingAssignment.ambulanceId} as IN_USE ` +
+          `(has other active assignments besides assignment ${id})`
+        );
+      }
+    }
+
+    // Update ambulance status if ambulance is being assigned or status is changing
+    // Use finalStatus (which includes inferred status) to ensure ambulances are released when assignments complete
+    const ambulanceToUpdate = updateAssignmentDto.ambulanceId || existingAssignment.ambulanceId;
+    
+    if (ambulanceToUpdate) {
+      if (statusChanged) {
+        // Status changed (either explicitly or inferred) - update ambulance status accordingly
+        // But check if ambulance should be released (ARRIVED/CANCELLED) and if it has other active assignments
+        if (finalStatus === 'ARRIVED' || finalStatus === 'CANCELLED') {
+          // Check if this ambulance has other active assignments before releasing
+          const activeStatuses: AssignmentStatus[] = ['EMS_CONTACT', 'EN_ROUTE', 'EMS_ARRIVAL', 'DEPARTED'];
+          const otherActiveAssignments = await this.prisma.eMSAssignment.findFirst({
+            where: {
+              ambulanceId: ambulanceToUpdate,
+              id: { not: id }, // Exclude the current assignment being updated
+              status: { in: activeStatuses },
+              deletedAt: null,
+            },
+          });
+
+          if (!otherActiveAssignments) {
+            // No other active assignments - safe to release
+            await this.updateAmbulanceStatus(ambulanceToUpdate, finalStatus);
+          } else {
+            // Has other active assignments - keep it IN_USE
+            this.logger.log(
+              `Keeping ambulance ${ambulanceToUpdate} as IN_USE ` +
+              `(has other active assignments besides assignment ${id} which is now ${finalStatus})`
+            );
+          }
+        } else {
+          // Status changed to active status - update normally
+          await this.updateAmbulanceStatus(ambulanceToUpdate, finalStatus);
+        }
+      } else if (updateAssignmentDto.ambulanceId && !existingAssignment.ambulanceId) {
+        // New ambulance being assigned (no previous ambulance) - set to IN_USE
+        await this.prisma.ambulance.update({
+          where: { id: updateAssignmentDto.ambulanceId },
+          data: { status: 'IN_USE' },
+        });
+      }
     }
     
     // Create timeline event for status change or assignment
-    if (updateAssignmentDto.status) {
+    if (statusChanged) {
       await this.createStatusChangeEvent(
         existingAssignment.status,
-        updateAssignmentDto.status,
+        finalStatus,
         assignment,
         updatedBy || 'system'
       );
@@ -1029,6 +1136,50 @@ export class EmsAssignmentsService {
     }
   }
 
+  /**
+   * Check if an ambulance is already in route for another case
+   * An ambulance can have multiple EMS_CONTACT assignments, but cannot be in route
+   * (EN_ROUTE, EMS_ARRIVAL, or DEPARTED) for multiple cases simultaneously
+   */
+  private async checkAmbulanceInRouteStatus(
+    ambulanceId: string,
+    excludeAssignmentId?: string
+  ): Promise<void> {
+    // Statuses that indicate ambulance is "in route" and cannot be assigned to multiple cases
+    const inRouteStatuses: AssignmentStatus[] = ['EN_ROUTE', 'EMS_ARRIVAL', 'DEPARTED'];
+
+    // Find existing assignments where ambulance is in route
+    const existingInRouteAssignment = await this.prisma.eMSAssignment.findFirst({
+      where: {
+        ambulanceId,
+        status: { in: inRouteStatuses },
+        deletedAt: null,
+        ...(excludeAssignmentId ? { id: { not: excludeAssignmentId } } : {}),
+      },
+      include: {
+        ticket: {
+          select: {
+            ticketNumber: true,
+          },
+        },
+      },
+    });
+
+    if (existingInRouteAssignment) {
+      const ambulance = await this.prisma.ambulance.findUnique({
+        where: { id: ambulanceId },
+        select: { callSign: true },
+      });
+
+      const callSign = ambulance?.callSign || 'ambulance';
+      throw new BadRequestException(
+        `Ambulance ${callSign} is already in route for ticket ${existingInRouteAssignment.ticket.ticketNumber} ` +
+        `and cannot be assigned to multiple in-route cases simultaneously. ` +
+        `An ambulance can have multiple EMS_CONTACT assignments, but only one in-route assignment at a time.`
+      );
+    }
+  }
+
   private async checkAmbulanceAvailability(
     ambulanceId: string, 
     assignmentStart?: Date | null,
@@ -1346,6 +1497,7 @@ export class EmsAssignmentsService {
   /**
    * Sync ambulance statuses based on active assignments
    * Ensures ambulances with active assignments (EN_ROUTE, EMS_CONTACT, EMS_ARRIVAL, DEPARTED) are marked IN_USE
+   * and ambulances without active assignments are marked AVAILABLE
    */
   private async syncAmbulanceStatusesFromAssignments(assignments: EMSAssignment[]): Promise<void> {
     try {
@@ -1356,10 +1508,17 @@ export class EmsAssignmentsService {
       );
 
       // Group by ambulance ID
-      const ambulanceIds = new Set(activeAssignments.map(a => a.ambulanceId!));
+      const ambulanceIdsWithActiveAssignments = new Set(activeAssignments.map(a => a.ambulanceId!));
+      
+      // Get all unique ambulance IDs from all assignments (including completed ones)
+      const allAmbulanceIds = new Set(
+        assignments
+          .filter(a => a.ambulanceId)
+          .map(a => a.ambulanceId!)
+      );
       
       // Update each ambulance to IN_USE if it has an active assignment
-      for (const ambulanceId of ambulanceIds) {
+      for (const ambulanceId of ambulanceIdsWithActiveAssignments) {
         const ambulance = await this.prisma.ambulance.findUnique({
           where: { id: ambulanceId },
           select: { id: true, callSign: true, status: true }
@@ -1371,6 +1530,37 @@ export class EmsAssignmentsService {
             where: { id: ambulanceId },
             data: { status: 'IN_USE' }
           });
+        }
+      }
+
+      // Check ambulances that were in assignments but don't have active assignments
+      // These should be set to AVAILABLE if they're currently IN_USE
+      for (const ambulanceId of allAmbulanceIds) {
+        if (!ambulanceIdsWithActiveAssignments.has(ambulanceId)) {
+          // This ambulance was in an assignment but doesn't have active assignments
+          const ambulance = await this.prisma.ambulance.findUnique({
+            where: { id: ambulanceId },
+            select: { id: true, callSign: true, status: true }
+          });
+
+          if (ambulance && ambulance.status === 'IN_USE') {
+            // Double-check: verify it truly has no active assignments (in case of race conditions)
+            const hasActiveAssignments = await this.prisma.eMSAssignment.findFirst({
+              where: {
+                ambulanceId,
+                status: { in: activeStatuses },
+                deletedAt: null,
+              },
+            });
+
+            if (!hasActiveAssignments) {
+              this.logger.log(`Syncing ambulance ${ambulance.callSign} status to AVAILABLE (no active assignments)`);
+              await this.prisma.ambulance.update({
+                where: { id: ambulanceId },
+                data: { status: 'AVAILABLE' }
+              });
+            }
+          }
         }
       }
     } catch (error) {
