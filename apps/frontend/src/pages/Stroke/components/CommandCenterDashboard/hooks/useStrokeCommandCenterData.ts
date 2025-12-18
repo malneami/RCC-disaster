@@ -6,7 +6,7 @@ import { commandCenterService } from '../api/commandCenterService';
 export const useStrokeCommandCenterData = (filters: StrokeCommandCenterFilters) => {
   const [data, setData] = useState<StrokeCommandCenterData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | undefined>(undefined);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [hospitalsLoaded, setHospitalsLoaded] = useState(false);
 
@@ -26,7 +26,7 @@ export const useStrokeCommandCenterData = (filters: StrokeCommandCenterFilters) 
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setError(undefined);
 
     try {
       // Fetch hospitals first (only once)
