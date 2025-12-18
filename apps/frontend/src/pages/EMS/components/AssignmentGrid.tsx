@@ -11,6 +11,7 @@ interface AssignmentGridProps {
   onDelete: (id: string) => Promise<void>;
   onStartAssignment: (id: string) => Promise<void>;
   onMarkArrived: (id: string) => Promise<void>;
+  onMarkDeparted?: (id: string) => Promise<void>;
   onLoadPatient: (id: string) => void;
   onCompleteAssignment: (id: string) => Promise<void>;
   onAssignAmbulance?: (assignment: EMSAssignment) => void;
@@ -23,6 +24,7 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   onDelete,
   onStartAssignment,
   onMarkArrived,
+  onMarkDeparted,
   onCompleteAssignment,
   onAssignAmbulance,
 }) => {
@@ -60,6 +62,7 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
           onDelete={onDelete}
           onStartAssignment={onStartAssignment}
           onMarkArrived={onMarkArrived}
+          onMarkDeparted={onMarkDeparted}
           onCompleteAssignment={onCompleteAssignment}
           onAssignAmbulance={onAssignAmbulance}
         />

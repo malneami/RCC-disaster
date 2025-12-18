@@ -50,6 +50,7 @@ const AssignmentManagement: React.FC = () => {
     deleteAssignment,
     startAssignment: startAssignmentMutation,
     markArrived: markArrivedMutation,
+    markDeparted: markDepartedMutation,
     loadPatient,
     completeAssignment: completeAssignmentMutation,
   } = useEMSAssignments();
@@ -257,6 +258,10 @@ const AssignmentManagement: React.FC = () => {
     await markArrived(id);
   };
 
+  const handleMarkDeparted = async (id: string): Promise<void> => {
+    await markDepartedMutation(id);
+  };
+
   const handleCompleteAssignment = async (id: string): Promise<void> => {
     await completeAssignment(id);
   };
@@ -381,6 +386,7 @@ const AssignmentManagement: React.FC = () => {
               onDelete={deleteAssignment}
               onStartAssignment={handleStartAssignment}
               onMarkArrived={handleMarkArrived}
+              onMarkDeparted={handleMarkDeparted}
               onLoadPatient={loadPatient}
               onCompleteAssignment={handleCompleteAssignment}
               onAssignAmbulance={handleAssignAmbulance}
@@ -395,6 +401,7 @@ const AssignmentManagement: React.FC = () => {
               onDelete={deleteAssignment}
               onStartAssignment={handleStartAssignment}
               onMarkArrived={handleMarkArrived}
+              onMarkDeparted={handleMarkDeparted}
               onLoadPatient={loadPatient}
               onCompleteAssignment={handleCompleteAssignment}
               onAssignAmbulance={handleAssignAmbulance}
@@ -409,6 +416,7 @@ const AssignmentManagement: React.FC = () => {
               onDelete={deleteAssignment}
               onStartAssignment={handleStartAssignment}
               onMarkArrived={handleMarkArrived}
+              onMarkDeparted={handleMarkDeparted}
               onLoadPatient={loadPatient}
               onCompleteAssignment={handleCompleteAssignment}
               onAssignAmbulance={handleAssignAmbulance}

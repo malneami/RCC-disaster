@@ -44,6 +44,7 @@ interface AssignmentCardProps {
   onDelete: (id: string) => Promise<void>;
   onStartAssignment: (id: string) => Promise<void>;
   onMarkArrived: (id: string) => Promise<void>;
+  onMarkDeparted?: (id: string) => Promise<void>;
   onCompleteAssignment: (id: string) => Promise<void>;
   onAssignAmbulance?: (assignment: EMSAssignment) => void;
 }
@@ -54,6 +55,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   onDelete,
   onStartAssignment,
   onMarkArrived,
+  onMarkDeparted,
   onCompleteAssignment,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -97,10 +99,15 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     }
   };
 
-  const handleMarkArrived = async () => {
+  const handleMarkDeparted = async () => {
     setLoading('markArrived', true);
     try {
-      await onMarkArrived(assignment.id);
+      if (onMarkDeparted) {
+        await onMarkDeparted(assignment.id);
+      } else {
+        // Fallback to onMarkArrived if onMarkDeparted is not provided
+        await onMarkArrived(assignment.id);
+      }
     } finally {
       setLoading('markArrived', false);
     }
@@ -151,7 +158,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     if (assignment.emsContactTime) {
       return { label: 'EMS Contact', color: 'info', icon: faUserMd };
     }
-    
+
     // Fallback: Use explicit status field if no timestamps exist
     if (assignment.status) {
       switch (assignment.status) {
@@ -167,7 +174,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           return { label: 'Cancelled', color: 'error', icon: faStop };
       }
     }
-    
+
     // Default fallback
     return { label: 'Unknown', color: 'default', icon: faClock };
   };
@@ -225,10 +232,10 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     const inferredStatus = assignment.status && ['EMS_CONTACT', 'EMS_ARRIVAL', 'DEPARTED', 'ARRIVED', 'CANCELLED'].includes(assignment.status)
       ? assignment.status
       : assignment.journeyEndTime ? 'ARRIVED'
-      : assignment.journeyStartTime ? 'DEPARTED'
-      : assignment.actualArrivalTime ? 'EMS_ARRIVAL'
-      : assignment.emsContactTime ? 'EMS_CONTACT'
-      : assignment.status || 'EMS_CONTACT';
+        : assignment.journeyStartTime ? 'DEPARTED'
+          : assignment.actualArrivalTime ? 'EMS_ARRIVAL'
+            : assignment.emsContactTime ? 'EMS_CONTACT'
+              : assignment.status || 'EMS_CONTACT';
 
     switch (inferredStatus) {
       case 'EMS_CONTACT':
@@ -264,11 +271,11 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
       case 'EMS_ARRIVAL':
         buttons.push(
           <Button
-            key="arrived"
+            key="departed"
             variant="contained"
             color="warning"
             startIcon={loadingStates.markArrived ? <CircularProgress size={16} color="inherit" /> : <FontAwesomeIcon icon={faMapMarkerAlt} />}
-            onClick={handleMarkArrived}
+            onClick={handleMarkDeparted}
             disabled={loadingStates.markArrived}
             sx={{ minWidth: 120 }}
           >

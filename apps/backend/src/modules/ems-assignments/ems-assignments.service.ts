@@ -6,6 +6,7 @@ import { AssignmentFilterDto } from './dto/assignment-filter.dto';
 import { EMSAssignment, Prisma, AssignmentStatus } from '@prisma/client';
 import { TimelineEventsService } from '../timeline-events/timeline-events.service';
 import { EmsLocationWorkflowService } from '../../common/services/ems-location-workflow.service';
+import { StatusMappingService } from '../../common/services/status-mapping.service';
 
 interface AssignmentFilters {
   status?: AssignmentStatus;
@@ -372,16 +373,24 @@ export class EmsAssignmentsService {
       include: this.getAssignmentInclude(),
     });
 
-    // Update Ticket's EMS status if status changed
+    // Update Ticket's EMS status and main status if status changed
     if (updateAssignmentDto.status) {
+      // Map EMS status to ticket status using StatusMappingService
+      const newTicketStatus = StatusMappingService.mapEMSToTicket(assignment.status);
+      
       await this.prisma.ticket.update({
         where: { id: assignment.ticketId },
         data: { 
           emsAssignmentStatus: assignment.status,
+          status: newTicketStatus, // Update the main ticket status field
           emsStatusUpdatedAt: new Date(),
           emsStatusUpdatedBy: updatedBy
         }
       });
+      
+      this.logger.log(
+        `Ticket ${assignment.ticketId} status updated: EMS status -> ${assignment.status}, Ticket status -> ${newTicketStatus}`
+      );
     }
 
     // Update ambulance status if ambulance is being assigned or status is changing
