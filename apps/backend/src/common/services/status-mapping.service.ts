@@ -9,14 +9,26 @@ export class StatusMappingService {
    */
   static mapEMSToTicket(emsStatus: AssignmentStatus): TicketStatus {
     switch (emsStatus) {
+      case 'ASSIGNED':
+        return TicketStatus.ASSIGNED;
+      
       case 'EMS_CONTACT':
         return TicketStatus.ASSIGNED;
       
+      case 'EN_ROUTE':
+        return TicketStatus.IN_TRANSPORT; // Active mission - en route to pickup
+      
       case 'EMS_ARRIVAL':
-        return TicketStatus.ASSIGNED; // Still assigned, but EMS has arrived
+        return TicketStatus.IN_TRANSPORT; // Active mission - arrived at pickup location
+      
+      case 'AT_PICKUP':
+        return TicketStatus.IN_TRANSPORT; // Active mission - at pickup location
+      
+      case 'PATIENT_LOADED':
+        return TicketStatus.IN_TRANSPORT; // Active mission - patient loaded
       
       case 'DEPARTED':
-        return TicketStatus.IN_TRANSPORT; // Patient is being transported
+        return TicketStatus.IN_TRANSPORT; // Active mission - patient being transported
       
       case 'ARRIVED':
         return TicketStatus.COMPLETED; // Transport completed

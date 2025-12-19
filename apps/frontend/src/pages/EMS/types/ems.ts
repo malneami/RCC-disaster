@@ -187,6 +187,10 @@ export interface EMSDashboardData {
     todayCompletedAssignments?: number;
     responseTime?: number;
     averageResponseTime?: number;
+    pendingTickets?: number;
+    assignedAssignments?: number;
+    inTransportAssignments?: number;
+    totalCompletedAssignments?: number;
   };
   recentAlerts: EMSAlert[];
   recentAssignments?: Array<{

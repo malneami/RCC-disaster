@@ -430,6 +430,37 @@ export class TicketsService {
           },
           orderBy: { createdAt: 'desc' },
         },
+        emsAssignments: {
+              include: {
+                ambulance: {
+                  select: {
+                    id: true,
+                    status: true,
+                    callSign: true,
+                  },
+                },
+                driver: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    phoneNumber: true,
+                  },
+                },
+                createdByUser: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+              orderBy: {
+                assignedAt: 'desc',
+              },
+            },
       },
     });
 
@@ -784,44 +815,47 @@ export class TicketsService {
 
     const [total, pending, assigned, inTransport, completed, cancelled] = await Promise.all([
       this.prisma.ticket.count({ where }),
+      // Pending: Status is PENDING (waiting for assignment)
+      this.prisma.ticket.count({ 
+        where: { 
+          ...where, 
+          status: 'PENDING'
+        } 
+      }),
+      // Assigned: Contacted only (Assigned/Contacted)
       this.prisma.ticket.count({ 
         where: { 
           ...where, 
           emsAssignments: {
             some: {
-              status: 'EMS_CONTACT'
+              status: {
+                in: ['ASSIGNED', 'EMS_CONTACT']
+              }
             }
           }
         } 
       }),
+      // In Transport: En Route (Active Mission - En Route, Arrival, Pickup, Departed)
       this.prisma.ticket.count({ 
         where: { 
           ...where, 
           emsAssignments: {
             some: {
-              status: 'EMS_ARRIVAL'
+              status: {
+                in: ['EN_ROUTE', 'EMS_ARRIVAL', 'AT_PICKUP', 'PATIENT_LOADED', 'DEPARTED']
+              }
             }
           }
         } 
       }),
+      // Completed: Arrived or Ticket Completed
       this.prisma.ticket.count({ 
         where: { 
           ...where, 
-          emsAssignments: {
-            some: {
-              status: 'DEPARTED'
-            }
-          }
-        } 
-      }),
-      this.prisma.ticket.count({ 
-        where: { 
-          ...where, 
-          emsAssignments: {
-            some: {
-              status: 'ARRIVED'
-            }
-          }
+          OR: [
+            { status: 'COMPLETED' },
+            { emsAssignments: { some: { status: 'ARRIVED' } } }
+          ]
         } 
       }),
       this.prisma.ticket.count({ where: { ...where, status: TicketStatus.CANCELLED } }),

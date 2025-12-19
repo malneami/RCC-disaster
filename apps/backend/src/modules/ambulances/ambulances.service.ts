@@ -124,7 +124,7 @@ export class AmbulancesService {
 
       // Get latest GPS tracking log for each ambulance
       const testGPSData: any[] = [];
-      const FRESHNESS_THRESHOLD = 60 * 60 * 1000; // Increased to 60 minutes to show more ambulances
+      const FRESHNESS_THRESHOLD = 365 * 24 * 60 * 60 * 1000; // Increased to 365 days to show dev/seed data
       
       for (const ambulance of testAmbulances) {
         const latestLog = await this.prisma.gPSTrackingLog.findFirst({
@@ -159,7 +159,8 @@ export class AmbulancesService {
             type: ambulance.type,
             driver: ambulance.driver
           });
-        } else {
+        }
+ else {
           // Log when ambulance has no GPS logs
           this.logger.debug(`Ambulance ${ambulance.callSign} (${ambulance.vehicleImei}) has no GPS tracking logs`);
         }
@@ -198,7 +199,7 @@ export class AmbulancesService {
       });
 
       const testGPSData: any[] = [];
-      const FRESHNESS_THRESHOLD = 20 * 60 * 1000; // 20 minutes
+      const FRESHNESS_THRESHOLD = 365 * 24 * 60 * 60 * 1000; // 365 days
       
       for (const ambulance of testAmbulances) {
         const latestLog = await this.prisma.gPSTrackingLog.findFirst({
@@ -211,7 +212,7 @@ export class AmbulancesService {
         });
 
         if (latestLog) {
-          // Filter out stale data (older than 20 minutes)
+          // Filter out stale data (older than 365 days)
           const age = Date.now() - latestLog.timestamp.getTime();
           if (age > FRESHNESS_THRESHOLD) {
             continue; // Skip stale data

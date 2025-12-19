@@ -93,7 +93,7 @@ const TicketsPage: React.FC = () => {
         ticketService.getTickets(1, 50, filtersWithTab),
         ticketService.getStatistics(),
       ]);
-      
+
       setTickets(ticketsResponse.data);
       setStatistics(statsResponse);
     } catch (error) {
@@ -197,18 +197,28 @@ const TicketsPage: React.FC = () => {
 
   const getFilteredTickets = () => {
     if (tabValue === 0) return tickets; // All tickets
-    if (tabValue === 1) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'EMS_CONTACT');
-    // Assigned tab: Show EMS_CONTACT and EMS_ARRIVAL statuses
+
+    // Pending: Ticket status is PENDING (waiting for assignment)
+    if (tabValue === 1) return tickets.filter(t => t.status === 'PENDING');
+
+    // Assigned: Show assigned/contacted statuses only
     if (tabValue === 2) return tickets.filter(t => {
       const status = t?.emsAssignments?.[0]?.status;
-      return status === 'EMS_CONTACT' || status === 'EMS_ARRIVAL';
+      return status && ['ASSIGNED', 'EMS_CONTACT'].includes(status);
     });
-    // In Transport tab: Show DEPARTED status
+
+    // In Transport: Show Active Mission statuses (En Route, Arrival, Pickup, Departed)
     if (tabValue === 3) return tickets.filter(t => {
       const status = t?.emsAssignments?.[0]?.status;
-      return status === 'DEPARTED';
+      return status && ['EN_ROUTE', 'EMS_ARRIVAL', 'AT_PICKUP', 'PATIENT_LOADED', 'DEPARTED'].includes(status);
     });
-    if (tabValue === 4) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'ARRIVED');
+
+    // Completed: Show ARRIVED or COMPLETED tickets
+    if (tabValue === 4) return tickets.filter(t => {
+      const emsStatus = t?.emsAssignments?.[0]?.status;
+      return emsStatus === 'ARRIVED' || t.status === 'COMPLETED';
+    });
+
     return tickets;
   };
 
@@ -266,20 +276,20 @@ const TicketsPage: React.FC = () => {
               Manage patient transfer requests across the healthcare network
             </Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Tooltip title="Refresh">
               <IconButton onClick={loadData} disabled={loading}>
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
-            
+
             <Tooltip title="Filters">
               <IconButton onClick={() => setShowFilters(!showFilters)}>
                 <FilterIcon />
               </IconButton>
             </Tooltip>
-            
+
             {canCreateTicket && (
               <Button
                 variant="contained"
@@ -319,23 +329,23 @@ const TicketsPage: React.FC = () => {
             sx={{ borderBottom: 1, borderColor: 'divider' }}
           >
             <Tab label="All Tickets" />
-            <Tab 
-              label="Pending" 
+            <Tab
+              label="Pending"
               icon={<Chip size="small" label={statistics?.pending || 0} color="warning" />}
               iconPosition="end"
             />
-            <Tab 
-              label="Assigned" 
+            <Tab
+              label="Assigned"
               icon={<Chip size="small" label={statistics?.assigned || 0} color="info" />}
               iconPosition="end"
             />
-            <Tab 
-              label="In Transport" 
+            <Tab
+              label="In Transport"
               icon={<Chip size="small" label={statistics?.inTransport || 0} color="primary" />}
               iconPosition="end"
             />
-            <Tab 
-              label="Completed" 
+            <Tab
+              label="Completed"
               icon={<Chip size="small" label={statistics?.completed || 0} color="success" />}
               iconPosition="end"
             />
@@ -350,7 +360,7 @@ const TicketsPage: React.FC = () => {
               userRole={user?.role}
             />
           </TabPanel>
-          
+
           <TabPanel value={tabValue} index={1}>
             <TicketList
               tickets={getFilteredTickets()}
@@ -359,7 +369,7 @@ const TicketsPage: React.FC = () => {
               userRole={user?.role}
             />
           </TabPanel>
-          
+
           <TabPanel value={tabValue} index={2}>
             <TicketList
               tickets={getFilteredTickets()}
@@ -368,7 +378,7 @@ const TicketsPage: React.FC = () => {
               userRole={user?.role}
             />
           </TabPanel>
-          
+
           <TabPanel value={tabValue} index={3}>
             <TicketList
               tickets={getFilteredTickets()}
@@ -377,7 +387,7 @@ const TicketsPage: React.FC = () => {
               userRole={user?.role}
             />
           </TabPanel>
-          
+
           <TabPanel value={tabValue} index={4}>
             <TicketList
               tickets={getFilteredTickets()}

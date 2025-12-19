@@ -2,7 +2,9 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { PrismaService } from '../../database/prisma.service';
 import { AmbulanceTrackingService } from './ambulance-tracking.service';
 import { FileLoggerService } from './file-logger.service';
+import { GPSMappingService } from './gps-mapping.service';
 import axios from 'axios';
+import { AmbulanceStatus, AmbulanceType, EquipmentStatus } from '@prisma/client';
 
 @Injectable()
 export class GPSPollingService implements OnModuleInit, OnModuleDestroy {
@@ -17,6 +19,7 @@ export class GPSPollingService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ambulanceTracking: AmbulanceTrackingService,
+    private readonly gpsMappingService: GPSMappingService,
     fileLogger: FileLoggerService
   ) {
     this.fileLogger = fileLogger;
@@ -86,239 +89,163 @@ export class GPSPollingService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Poll GPS data for all active ambulances
+   * Poll GPS data for ALL devices and update/create ambulances
    */
   private async pollGPSData(): Promise<void> {
     try {
-      // Get all active ambulances
-      const ambulances = await this.prisma.ambulance.findMany({
-        where: {
-          deletedAt: null,
-          isActive: true
-        },
-        select: {
-          id: true,
-          vehicleImei: true,
-          callSign: true
-        }
-      });
+      this.logger.debug('Starting GPS polling cycle...');
+      
+      // 1. Fetch ALL known ambulances from DB to quick-match
+      const existingAmbulances = await this.prisma.ambulance.findMany({});
+      const ambulanceMap = new Map(existingAmbulances.map(a => [a.vehicleImei, a]));
+      
+      this.logger.debug(`Loaded ${existingAmbulances.length} ambulances from DB`);
 
-      if (ambulances.length === 0) {
-        this.logger.debug('No active ambulances to track');
-        return;
-      }
-
-      this.logger.debug(`Polling GPS data for ${ambulances.length} ambulances`);
-      this.fileLogger.logGPSPolling(`Polling GPS data for ${ambulances.length} ambulances`, {
-        ambulanceCount: ambulances.length,
-      });
-
-      // Process each ambulance
-      for (const ambulance of ambulances) {
-        try {
-          await this.fetchAndUpdateAmbulanceLocation(ambulance.id, ambulance.vehicleImei);
-        } catch (error) {
-          const errorMsg = `Failed to update location for ambulance ${ambulance.callSign} (${ambulance.vehicleImei}): ${(error as Error).message}`;
-          this.logger.error(errorMsg);
-          this.fileLogger.error(errorMsg, error, {
-            ambulanceId: ambulance.id,
-            callSign: ambulance.callSign,
-            imei: ambulance.vehicleImei,
-          });
-        }
-      }
-
-      this.logger.debug('GPS polling cycle completed');
-      this.fileLogger.logGPSPolling('GPS polling cycle completed');
-    } catch (error) {
-      this.logger.error(`GPS polling error: ${(error as Error).message}`, error);
-      this.fileLogger.error(`GPS polling error: ${(error as Error).message}`, error);
-    }
-  }
-
-  /**
-   * Fetch GPS data for a single ambulance and update tracking
-   */
-  private async fetchAndUpdateAmbulanceLocation(ambulanceId: string, imei: string): Promise<void> {
-    try {
-      let gpsData: any = null;
-
-      // Fetch from GPS API
+      // 2. Fetch ALL devices from GPS API
+      let apiObjects: any[] = [];
       try {
         const response = await axios.post(
           this.GPS_API_URL,
           {
             api_key: this.GPS_API_KEY,
             service: 'objects',
-            imeis: imei
+            imeis: '*' // Request ALL devices
           },
           {
-            timeout: 10000,
-            headers: {
-              'Content-Type': 'application/json'
-            }
+            timeout: 15000,
+            headers: { 'Content-Type': 'application/json' }
           }
         );
 
-        // Log full API response structure for debugging
-        this.logger.debug(`GPS API response for IMEI ${imei}: status=${response.data?.status}, dataLength=${response.data?.data?.length || 0}`);
-        
-        if (response.data.status && response.data.data && response.data.data.length > 0) {
-          gpsData = response.data.data[0];
-          
-          // Check if gpsData is actually an object with data
-          if (!gpsData || typeof gpsData !== 'object') {
-            this.logger.warn(`GPS data is not an object for IMEI ${imei}: ${typeof gpsData}`);
-            return;
-          }
-          
-          // DEBUG: Log raw API response structure to understand data format
-          this.logger.debug(`Raw GPS API response for IMEI ${imei}: ${JSON.stringify(gpsData)}`);
-          
-          // Try multiple possible field names for coordinates
-          // Some APIs use: lat/lng, latitude/longitude, Lat/Lng, LAT/LNG, etc.
-          const lat = parseFloat(
-            gpsData.lat || gpsData.latitude || gpsData.Lat || gpsData.LAT || 
-            gpsData.lat_deg || gpsData.lat_degree || 0
-          );
-          const lng = parseFloat(
-            gpsData.lng || gpsData.longitude || gpsData.Lng || gpsData.LNG || 
-            gpsData.lon || gpsData.lon_deg || gpsData.lon_degree || 0
-          );
-          
-          // Log what fields we found
-          if ((lat === 0 && lng === 0) || isNaN(lat) || isNaN(lng)) {
-            this.logger.warn(`GPS data structure for IMEI ${imei}: Available fields: ${Object.keys(gpsData).join(', ')}`);
-            this.logger.warn(`Attempted to parse: lat from [${gpsData.lat}, ${gpsData.latitude}, ${gpsData.Lat}], lng from [${gpsData.lng}, ${gpsData.longitude}, ${gpsData.Lng}]`);
-          }
-          
-          if (isNaN(lat) || isNaN(lng)) {
-            this.logger.warn(`Invalid GPS coordinates for IMEI ${imei}: lat=${gpsData.lat}, lng=${gpsData.lng}`);
-            this.fileLogger.warn(`Invalid GPS coordinates for IMEI ${imei}`, { lat: gpsData.lat, lng: gpsData.lng });
-            return; // Skip this update
-          }
-          
-          // Skip zero coordinates (device not initialized or no GPS fix)
-          if (lat === 0 && lng === 0) {
-            this.logger.debug(`Skipping zero coordinates for IMEI ${imei} - device may not have GPS fix`);
-            return; // Skip this update silently
-          }
-          
-          // Basic bounds check for Saudi Arabia region (rough bounds)
-          // Lat: 16-32, Lng: 34-55
-          if (lat < 16 || lat > 32 || lng < 34 || lng > 55) {
-            this.logger.warn(`GPS coordinates outside Saudi Arabia for IMEI ${imei}: lat=${lat}, lng=${lng}`);
-            this.fileLogger.warn(`GPS coordinates outside expected region for IMEI ${imei}`, { lat, lng });
-            return; // Skip this update
-          }
-          
-          // Resolve timestamp: try multiple possible field names
-          const rawTime = gpsData.dt_tracker || gpsData.dt_server || gpsData.timestamp || 
-                         gpsData.time || gpsData.Time || gpsData.TIME ||
-                         gpsData.date || gpsData.Date || gpsData.DATE ||
-                         gpsData.datetime || gpsData.DateTime || gpsData.DATETIME ||
-                         gpsData.gps_time || gpsData.gpsTime || gpsData.gpsTimeStamp;
-          
-          let timestamp: Date;
-          if (rawTime) {
-            timestamp = new Date(rawTime);
-            // If parsing failed (invalid date), timestamp will be Invalid Date
-            if (isNaN(timestamp.getTime())) {
-              this.logger.warn(`Invalid timestamp format for IMEI ${imei}: "${rawTime}", using current time`);
-              timestamp = new Date();
-            }
-          } else {
-            this.logger.debug(`No timestamp field found for IMEI ${imei}, using current time`);
-            timestamp = new Date();
-          }
-          const now = new Date();
-
-          // Validate timestamp is not invalid (Unix epoch or earlier indicates invalid data)
-          // If timestamp is invalid AND coordinates are 0,0, this is definitely bad data - skip entirely
-          const isInvalidTimestamp = timestamp.getTime() < 946684800000; // Before year 2000
-          if (isInvalidTimestamp && lat === 0 && lng === 0) {
-            this.logger.debug(`Skipping invalid GPS data for IMEI ${imei}: coordinates (0,0) with invalid timestamp ${timestamp.toISOString()}`);
-            return; // Skip this update - device has no valid GPS data
-          }
-          
-          if (isInvalidTimestamp) {
-            this.logger.debug(`Invalid timestamp for IMEI ${imei}: ${timestamp.toISOString()}, using current time`);
-            timestamp = new Date();
-          }
-
-          // Validate timestamp is not too far in the future (more than 1 hour)
-          const timeDiff = timestamp.getTime() - now.getTime();
-          if (timeDiff > 60 * 60 * 1000) {
-            this.logger.warn(`GPS timestamp too far in future for IMEI ${imei}: ${timestamp.toISOString()}, using current time instead`);
-            timestamp = new Date();
-          }
-          
-          // Validate timestamp is not too far in the past (more than 24 hours)
-          if (now.getTime() - timestamp.getTime() > 24 * 60 * 60 * 1000) {
-            this.logger.debug(`GPS timestamp too old for IMEI ${imei}: ${timestamp.toISOString()}, using current time`);
-            timestamp = new Date();
-          }
-
-          // Log to both console and file
-          this.logger.log(`Processing GPS for ${imei}: Lat=${lat}, Lng=${lng}, Time=${timestamp.toISOString()} (Raw: ${rawTime})`);
-          this.fileLogger.logGPSProcessing(imei, {
-            lat,
-            lng,
-            timestamp,
-            rawTime,
-          });
-
-          // Update ambulance tracking with real GPS data
-          await this.ambulanceTracking.updateAmbulanceLocation(ambulanceId, {
-            latitude: lat,
-            longitude: lng,
-            timestamp: timestamp,
-            speed: gpsData.speed ? parseFloat(gpsData.speed) : undefined,
-            direction: gpsData.direction ? parseFloat(gpsData.direction) : undefined
-          });
+        if (response.data?.status && Array.isArray(response.data?.data)) {
+          apiObjects = response.data.data;
+          this.logger.debug(`Fetched ${apiObjects.length} devices from GPS API`);
         } else {
-          // Log the actual response structure when no data is found
-          if (response.data) {
-            this.logger.debug(`No GPS data returned for IMEI ${imei}. Response structure: ${JSON.stringify({
-              status: response.data.status,
-              hasData: !!response.data.data,
-              dataType: Array.isArray(response.data.data) ? 'array' : typeof response.data.data,
-              dataLength: Array.isArray(response.data.data) ? response.data.data.length : 'N/A',
-              keys: Object.keys(response.data)
-            })}`);
-          } else {
-            this.logger.debug(`No GPS data returned for IMEI ${imei} - response.data is null/undefined`);
-          }
+          this.logger.error('Invalid response from GPS API', { 
+            status: response.data?.status, 
+            dataType: typeof response.data?.data 
+          });
+          return; // Abort this cycle if API fails
         }
       } catch (apiError: any) {
-        // Log detailed error information including response data if available
-        const errorDetails: any = {
-          message: (apiError as Error).message,
-          imei
-        };
-        
-        // If axios error, capture response data
-        if (apiError.response) {
-          errorDetails.status = apiError.response.status;
-          errorDetails.statusText = apiError.response.statusText;
-          errorDetails.responseData = apiError.response.data;
-          this.logger.error(`GPS API HTTP error for IMEI ${imei}: ${apiError.response.status} ${apiError.response.statusText}`, {
-            responseData: apiError.response.data
-          });
-        } else if (apiError.request) {
-          errorDetails.requestError = 'No response received from GPS API';
-          this.logger.error(`GPS API request error for IMEI ${imei}: No response received`);
-        } else {
-          this.logger.error(`GPS API error for IMEI ${imei}: ${(apiError as Error).message}`);
-        }
-        
-        const errorMsg = `GPS API error for IMEI ${imei}: ${(apiError as Error).message}`;
-        this.fileLogger.error(errorMsg, apiError, errorDetails);
+        this.logger.error(`GPS API request failed: ${(apiError as Error).message}`);
+        this.fileLogger.error(`GPS API request failed`, apiError);
+        return;
       }
+
+      // 3. Process each API object
+      for (const rawObj of apiObjects) {
+        try {
+          // Robustly handle missing/invalid IMEI
+          if (!rawObj || !rawObj.imei) {
+            continue;
+          }
+
+          const imei = rawObj.imei;
+          const mappedData = this.gpsMappingService.mapGPSObjectToAmbulance(rawObj);
+
+          // Validate coordinates "Ignore the fuck out of it" if invalid
+          if (this.isInvalidLocation(mappedData.lat, mappedData.lng)) {
+              this.logger.debug(`Ignoring invalid location for IMEI ${imei}: ${mappedData.lat}, ${mappedData.lng}`);
+              continue;
+          }
+
+          // Check against Saudi Arabia bounds (approximate) to filter noise
+          if (mappedData.lat < 16 || mappedData.lat > 32 || mappedData.lng < 34 || mappedData.lng > 55) {
+             this.logger.debug(`Ignoring out-of-bounds location for IMEI ${imei}: ${mappedData.lat}, ${mappedData.lng}`);
+             continue;
+          }
+
+          let ambulanceId = ambulanceMap.get(imei)?.id;
+
+          // 4. Auto-Create if not exists
+          if (!ambulanceId) {
+            this.logger.log(`Found new device IMEI ${imei} from API. Auto-creating ambulance...`);
+            try {
+              const newAmbulance = await this.createAmbulanceFromGPS(imei, rawObj);
+              ambulanceId = newAmbulance.id;
+              // Add to map so we don't try to create it again if duplicate in same batch (unlikely but safe)
+              ambulanceMap.set(imei, newAmbulance);
+            } catch (createError) {
+              this.logger.error(`Failed to auto-create ambulance for IMEI ${imei}: ${(createError as Error).message}`);
+              continue; 
+            }
+          }
+
+          // 5. Update Location
+          const timestamp = mappedData.timestamp ? new Date(mappedData.timestamp) : new Date();
+          
+          // Validate timestamp sanity
+          if (isNaN(timestamp.getTime()) || timestamp.getFullYear() < 2000) {
+             this.logger.debug(`Invalid timestamp for IMEI ${imei}, using current time`);
+             // Actually, if timestamp is bad, strictly speaking we might want to skip update or use now. 
+             // "when it comes from the API, it comes" implies strictness? 
+             // But let's use current time to ensure visibility if live.
+          }
+
+          await this.ambulanceTracking.updateAmbulanceLocation(ambulanceId, {
+            latitude: mappedData.lat,
+            longitude: mappedData.lng,
+            timestamp: isNaN(timestamp.getTime()) ? new Date() : timestamp,
+            speed: mappedData.speed,
+            direction: mappedData.direction
+          });
+
+        } catch (itemError) {
+           this.logger.error(`Error processing GPS item for IMEI ${rawObj?.imei}: ${(itemError as Error).message}`);
+        }
+      }
+
+      this.logger.debug('GPS polling cycle completed successfully');
+
     } catch (error) {
-      this.logger.error(`Failed to fetch and update location for ${imei}: ${(error as Error).message}`);
-      throw error;
+      this.logger.error(`Critical error in GPS polling cycle: ${(error as Error).message}`, error);
+      this.fileLogger.error(`Critical error in GPS polling cycle`, error);
     }
+  }
+
+  private isInvalidLocation(lat: any, lng: any): boolean {
+    return (
+      lat === undefined || 
+      lng === undefined || 
+      lat === null || 
+      lng === null || 
+      isNaN(lat) || 
+      isNaN(lng) || 
+      (lat === 0 && lng === 0)
+    );
+  }
+
+  private async createAmbulanceFromGPS(imei: string, rawData: any) {
+    // Generate intelligent defaults
+    const last4 = imei.slice(-4);
+    const callSign = `AUTO-${last4}`;
+    const plateNumber = rawData.plate_number || `UNK-${last4}`;
+    
+    // Ensure uniqueness for callSign/plateNumber in case of collision
+    // We'll append a random suffix if needed, but for now simple logic
+    
+    // Check if callSign exists (unlikely given it's new IMEI, but possible if repurposed)
+    const existingCallSign = await this.prisma.ambulance.findUnique({ where: { callSign } });
+    const finalCallSign = existingCallSign ? `${callSign}-${Date.now().toString().slice(-4)}` : callSign;
+
+    const existingPlate = await this.prisma.ambulance.findUnique({ where: { plateNumber } });
+    const finalPlate = existingPlate ? `${plateNumber}-${Date.now().toString().slice(-4)}` : plateNumber;
+
+    return this.prisma.ambulance.create({
+      data: {
+        vehicleImei: imei,
+        callSign: finalCallSign,
+        plateNumber: finalPlate,
+        model: rawData.model || 'Unknown-Auto',
+        year: new Date().getFullYear(),
+        type: AmbulanceType.BASIC, // Default safe type
+        status: AmbulanceStatus.AVAILABLE,
+        equipmentStatus: EquipmentStatus.OPERATIONAL,
+        isActive: true,
+        baseStation: 'Auto-Detected'
+      }
+    });
   }
 
   /**

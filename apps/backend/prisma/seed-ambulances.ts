@@ -1220,63 +1220,9 @@ const ambulanceData = [
     mileage: 1041.6332690000008,
     isActive: true
   },
-  {
-    vehicleImei: "868373075670937",
-    callSign: "ح أ ح 6183",
-    plateNumber: "ح أ ح 6183",
-    model: "Ford Transit",
-    year: 2023,
-    type: "ADVANCED" as const,
-    manufacturer: "Ford",
-    vin: "WDB000065A100064",
-    baseStation: "Jazan Central Station",
-    status: "AVAILABLE" as const,
-    currentLocationLat: 16.694582,
-    currentLocationLng: 42.118452,
-    currentLocationAddress: "Jazan, Saudi Arabia",
-    lastUpdated: new Date("2025-09-27 16:58:09"),
-    equipmentStatus: "OPERATIONAL" as const,
-    mileage: 500.34941700000013,
-    isActive: true
-  },
-  {
-    vehicleImei: "868373076684630",
-    callSign: "ب ح ر 7386",
-    plateNumber: "ب ح ر 7386",
-    model: "Volkswagen Crafter",
-    year: 2019,
-    type: "CRITICAL_CARE" as const,
-    manufacturer: "Volkswagen",
-    vin: "WDB000066A100065",
-    baseStation: "Jazan Central Station",
-    status: "AVAILABLE" as const,
-    currentLocationLat: 16.694652,
-    currentLocationLng: 42.118412,
-    currentLocationAddress: "Jazan, Saudi Arabia",
-    lastUpdated: new Date("2025-09-27 17:00:30"),
-    equipmentStatus: "OPERATIONAL" as const,
-    mileage: 94.72429199999998,
-    isActive: true
-  },
-  {
-    vehicleImei: "868373076684903",
-    callSign: "ح ص ل 4694",
-    plateNumber: "ح ص ل 4694",
-    model: "Mercedes Sprinter",
-    year: 2020,
-    type: "BASIC" as const,
-    manufacturer: "Mercedes-Benz",
-    vin: "WDB000067A100066",
-    baseStation: "Jazan Central Station",
-    status: "AVAILABLE" as const,
-    currentLocationLat: 16.836607,
-    currentLocationLng: 42.620263,
-    currentLocationAddress: "Jazan, Saudi Arabia",
-    lastUpdated: new Date("2025-09-27 17:00:02"),
-    equipmentStatus: "OPERATIONAL" as const,
-    mileage: 0.019189,
-    isActive: true
-  }
+
+
+
 ];
 
 async function seedAmbulances() {

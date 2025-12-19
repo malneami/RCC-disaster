@@ -1,3 +1,4 @@
+import { GPSMappingService } from '../../common/services/gps-mapping.service';
 import { Module } from '@nestjs/common';
 import { AmbulanceTrackingController } from './ambulance-tracking.controller';
 import { AmbulanceTrackingService } from '../../common/services/ambulance-tracking.service';
@@ -17,7 +18,8 @@ import { AmbulancesModule } from '../ambulances/ambulances.module';
     AmbulanceTrackingService,
     HospitalBoundsService,
     EMSStatusUpdaterService,
-    GPSPollingService
+    GPSPollingService,
+    GPSMappingService
   ],
   exports: [
     AmbulanceTrackingService,

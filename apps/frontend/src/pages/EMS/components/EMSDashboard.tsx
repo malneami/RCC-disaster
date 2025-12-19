@@ -44,7 +44,7 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, icon, color, trend, sub
       )}
       {trend !== undefined && (
         <Box sx={{ mt: 1 }}>
-          <Chip 
+          <Chip
             label={`${trend > 0 ? '+' : ''}${trend}%`}
             size="small"
             color={trend > 0 ? 'success' : trend < 0 ? 'error' : 'default'}
@@ -116,8 +116,50 @@ const EMSDashboard: React.FC = () => {
           <FontAwesomeIcon icon={faAmbulance} />
           EMS Dashboard Overview
         </Typography>
-        
+
         <Grid container spacing={3}>
+          {/* Row 1: Operations Status (The Numbers User Cares About) */}
+          <Grid item xs={12} sm={6} md={3}>
+            <KPICard
+              title="Pending Request"
+              value={summary.pendingTickets || 0}
+              icon={<FontAwesomeIcon icon={faClock} />}
+              color="#ed6c02" // Warning Orange
+              subtitle="Waiting for Assignment"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <KPICard
+              title="Assigned"
+              value={summary.assignedAssignments || 0}
+              icon={<FontAwesomeIcon icon={faUserMd} />}
+              color="#0288d1" // Info Blue
+              subtitle="Crew Assigned / En Route to Patient"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <KPICard
+              title="In Transport"
+              value={summary.inTransportAssignments || 0}
+              icon={<FontAwesomeIcon icon={faAmbulance} />}
+              color="#9c27b0" // Purple
+              subtitle="Patient On Board"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <KPICard
+              title="Completed Today"
+              value={summary.todayCompletedAssignments || 0}
+              icon={<FontAwesomeIcon icon={faCheckCircle} />}
+              color="#2e7d32" // Success Green
+              subtitle="Arrivals Today"
+            />
+          </Grid>
+
+          {/* Row 2: Fleet Status & Overview */}
           <Grid item xs={12} sm={6} md={3}>
             <KPICard
               title="Total Ambulances"
@@ -127,7 +169,7 @@ const EMSDashboard: React.FC = () => {
               subtitle="Fleet Size"
             />
           </Grid>
-          
+
           <Grid item xs={12} sm={6} md={3}>
             <KPICard
               title="Active Ambulances"
@@ -137,7 +179,7 @@ const EMSDashboard: React.FC = () => {
               subtitle="Currently in Service"
             />
           </Grid>
-          
+
           <Grid item xs={12} sm={6} md={3}>
             <KPICard
               title="Available Ambulances"
@@ -147,61 +189,16 @@ const EMSDashboard: React.FC = () => {
               subtitle="Ready for Dispatch"
             />
           </Grid>
-          
+
           <Grid item xs={12} sm={6} md={3}>
             <KPICard
-              title="Active Assignments"
-              value={summary.activeAssignments || 0}
-              icon={<FontAwesomeIcon icon={faUserMd} />}
-              color="#9c27b0"
-              subtitle="Ongoing Transfers"
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <KPICard
-              title="Active Schedules"
-              value={summary.activeSchedules || 0}
-              icon={<FontAwesomeIcon icon={faClock} />}
+              title="Total Completed"
+              value={summary.totalCompletedAssignments || summary.totalAssignments || 0}
+              icon={<FontAwesomeIcon icon={faTasks} />}
               color="#1976d2"
-              subtitle="Driver Shifts"
+              subtitle="All Time Arrivals"
             />
           </Grid>
-          
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <KPICard
-              title="Response Time"
-              value={summary.averageResponseTime ? `${summary.averageResponseTime} min` : '0 min'}
-              icon={<FontAwesomeIcon icon={faClock} />}
-              color="#2e7d32"
-              subtitle="Average Today"
-            />
-          </Grid>
-
-          {summary.todayCompletedAssignments !== undefined && (
-            <Grid item xs={12} sm={6} md={3}>
-              <KPICard
-                title="Completed Today"
-                value={summary.todayCompletedAssignments || 0}
-                icon={<FontAwesomeIcon icon={faCheckCircle} />}
-                color="#2e7d32"
-                subtitle="Assignments Completed"
-              />
-            </Grid>
-          )}
-
-          {summary.totalAssignments !== undefined && (
-            <Grid item xs={12} sm={6} md={3}>
-              <KPICard
-                title="Total Assignments"
-                value={summary.totalAssignments || 0}
-                icon={<FontAwesomeIcon icon={faTasks} />}
-                color="#1976d2"
-                subtitle="All Time"
-              />
-            </Grid>
-          )}
         </Grid>
 
         {/* Recent Activity Section */}
@@ -212,7 +209,7 @@ const EMSDashboard: React.FC = () => {
               <FontAwesomeIcon icon={faHistory} />
               Recent Activity
             </Typography>
-            
+
             <Grid container spacing={3}>
               {/* Recent Assignments */}
               {dashboardData?.recentAssignments && dashboardData.recentAssignments.length > 0 && (
@@ -236,9 +233,9 @@ const EMSDashboard: React.FC = () => {
                                     <Typography variant="body2" fontWeight="medium">
                                       {assignment.patientName}
                                     </Typography>
-                                    <Chip 
-                                      label={assignment.status.replace('_', ' ')} 
-                                      size="small" 
+                                    <Chip
+                                      label={assignment.status.replace('_', ' ')}
+                                      size="small"
                                       color={assignment.status === 'ARRIVED' ? 'success' : 'default'}
                                     />
                                   </Box>

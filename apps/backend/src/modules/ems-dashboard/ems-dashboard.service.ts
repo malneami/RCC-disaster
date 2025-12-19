@@ -15,16 +15,21 @@ export class EmsDashboardService {
       totalAmbulances,
       activeAmbulances,
       availableAmbulances,
-      activeAssignments,
+      activeAssignments, // This will be deprecated or mapped to 'Assigned'
       activeSchedules,
       recentAlerts,
       todayCompletedAssignments,
       recentAssignments,
       upcomingSchedules,
+      pendingTickets,
+      assignedAssignments,
+      inTransportAssignments,
+      totalCompletedAssignments,
     ] = await Promise.all([
       this.prisma.ambulance.count({ where: { deletedAt: null } }),
       this.prisma.ambulance.count({ where: { status: 'IN_USE', isActive: true } }),
       this.prisma.ambulance.count({ where: { status: 'AVAILABLE', isActive: true } }),
+      // Keep legacy activeAssignments for backward compatibility (all non-completed)
       this.prisma.eMSAssignment.count({
         where: {
           status: { in: ['ASSIGNED', 'EN_ROUTE', 'AT_PICKUP', 'PATIENT_LOADED', 'EMS_CONTACT', 'EMS_ARRIVAL', 'DEPARTED'] },
@@ -78,6 +83,34 @@ export class EmsDashboardService {
           driver: { select: { firstName: true, lastName: true } },
         },
       }),
+      // New Metric: Pending Tickets (Status is PENDING, waiting for assignment)
+      this.prisma.ticket.count({
+        where: {
+          status: 'PENDING',
+          deletedAt: null,
+        },
+      }),
+      // New Metric: Assigned (Crew assigned and contacted, but not yet en route)
+      this.prisma.eMSAssignment.count({
+        where: {
+          status: { in: ['ASSIGNED', 'EMS_CONTACT'] },
+          deletedAt: null,
+        },
+      }),
+      // New Metric: In Transport (Active mission - en route, at pickup, or transporting patient)
+      this.prisma.eMSAssignment.count({
+        where: {
+          status: { in: ['EN_ROUTE', 'EMS_ARRIVAL', 'AT_PICKUP', 'PATIENT_LOADED', 'DEPARTED'] },
+          deletedAt: null,
+        },
+      }),
+      // Total Completed (All Time)
+      this.prisma.eMSAssignment.count({
+        where: {
+          status: 'ARRIVED',
+          deletedAt: null,
+        },
+      }),
     ]);
 
     // Calculate today's average response time
@@ -126,6 +159,10 @@ export class EmsDashboardService {
         averageResponseTime: avgResponseTime,
         totalAssignments,
         todayCompletedAssignments,
+        pendingTickets,      // NEW
+        assignedAssignments, // NEW
+        inTransportAssignments, // NEW
+        totalCompletedAssignments, // NEW
       },
       recentAlerts,
       recentAssignments: recentAssignments.map(a => ({
