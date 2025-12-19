@@ -12,6 +12,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+from sentence_transformers import SentenceTransformer
+from embed_retrieve import (
+    build_schema_catalog_from_schema_text,
+    build_faiss_index,
+    retrieve_relevant_tables,
+    EMBED_MODEL_NAME
+)
+
 schema_text = """
 public._prisma_migrations(id:character varying, checksum:character varying, finished_at:timestamp with time zone, migration_name:character varying, logs:text, rolled_back_at:timestamp with time zone, started_at:timestamp with time zone, applied_steps_count:integer)
 public.activities(id:text, type:USER-DEFINED, description:text, user_id:text, ticket_id:text, metadata:text, ip_address:text, user_agent:text, created_at:timestamp without time zone)
@@ -81,6 +89,8 @@ MAX_ROWS = 200
 STATEMENT_TIMEOUT_MS = 8000
 SCHEMA_MAX_TABLES = 40
 LLM_TIMEOUT_SECONDS = 120
+MAX_REPAIR_ATTEMPTS = 3  # Number of times to retry SQL repair
+SAMPLE_ROWS_PER_TABLE = 3  # Number of sample rows to show per table
 
 
 # =========================================================
@@ -126,6 +136,40 @@ def get_schema_text(engine) -> str:
     return "\n".join(lines)
 
 
+def get_sample_data(engine, table_names: list[str], rows_per_table: int = SAMPLE_ROWS_PER_TABLE) -> str:
+    """
+    Fetch sample rows from the specified tables to help the model understand data format.
+    table_names should be in format 'schema.table_name'.
+    Returns a formatted string with sample data.
+    """
+    samples = []
+    
+    for full_table_name in table_names:
+        try:
+            # Parse schema.table format
+            if '.' in full_table_name:
+                parts = full_table_name.split('(')
+                schema_table = parts[0]  # e.g., "public.stroke_cases"
+            else:
+                schema_table = full_table_name
+            
+            # Fetch sample rows
+            query = f'SELECT * FROM {schema_table} LIMIT {rows_per_table}'
+            df = pd.read_sql(query, engine)
+            
+            if len(df) > 0:
+                # Convert to a compact string representation
+                # Show column names and sample values
+                sample_str = f"\n--- Sample from {schema_table} ---\n"
+                sample_str += df.head(rows_per_table).to_string(index=False, max_colwidth=50)
+                samples.append(sample_str)
+        except Exception as e:
+            # Skip tables that can't be sampled (permissions, etc.)
+            samples.append(f"\n--- {full_table_name}: Could not fetch sample ({str(e)[:50]}) ---")
+    
+    return "\n".join(samples) if samples else "No sample data available."
+
+
 # =========================================================
 # 4) LLM HELPERS
 # =========================================================
@@ -145,6 +189,7 @@ def nvidia_chat(messages):
 def extract_json(text_out: str) -> dict:
     """
     Extract JSON object from model output (handles code fences or extra prose).
+    Also sanitizes control characters that may break JSON parsing.
     """
     s = text_out.strip()
     s = re.sub(r"^```(?:json)?\s*", "", s)
@@ -153,7 +198,33 @@ def extract_json(text_out: str) -> dict:
     m = re.search(r"\{.*\}", s, flags=re.DOTALL)
     if not m:
         raise ValueError("Model did not return JSON. Raw output:\n" + text_out[:5000])
-    return json.loads(m.group(0))
+    
+    json_str = m.group(0)
+    
+    # Sanitize control characters inside JSON strings that break parsing
+    # Replace unescaped newlines/tabs inside the JSON with escaped versions
+    # This handles cases where LLM puts actual newlines in string values
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        # Try to fix common issues: unescape then re-escape problematic chars
+        # Replace literal newlines/tabs with escaped versions
+        sanitized = json_str.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+        # But we need to be careful not to double-escape already escaped ones
+        # A simpler approach: use strict=False isn't available, so we clean manually
+        
+        # Alternative: parse with a more lenient approach
+        # Remove control characters except those that are part of escape sequences
+        sanitized = re.sub(r'[\x00-\x1f\x7f]', lambda m: '\\n' if m.group(0) == '\n' else '', json_str)
+        
+        try:
+            return json.loads(sanitized)
+        except json.JSONDecodeError as e:
+            # Last resort: try to extract just the sql field manually
+            sql_match = re.search(r'"sql"\s*:\s*"(.*?)"', json_str, re.DOTALL)
+            if sql_match:
+                return {"sql": sql_match.group(1).replace('\\n', '\n'), "rationale": "extracted manually due to JSON parse error"}
+            raise ValueError(f"Failed to parse JSON: {e}\nRaw: {json_str[:2000]}")
 
 
 
@@ -227,10 +298,53 @@ If results are empty, say so and suggest likely reasons.
 """
 
 
-def generate_sql(user_prompt: str, schema_text: str) -> str:
+def generate_sql(user_prompt: str, schema_text: str, sample_data: str = "") -> str:
+    # Build context with schema and optional sample data
+    context = f"Schema:\n{schema_text}"
+    if sample_data:
+        context += f"\n\nSample Data (to understand data format):\n{sample_data}"
+    
     messages = [
         {"role": "system", "content": SQL_SYSTEM},
-        {"role": "user", "content": f"Schema:\n{schema_text}\n\nUser request:\n{user_prompt}\n\nReturn JSON only."},
+        {"role": "user", "content": f"{context}\n\nUser request:\n{user_prompt}\n\nReturn JSON only."},
+    ]
+    out = nvidia_chat(messages)
+    data = extract_json(out)
+    return data["sql"]
+
+
+# =========================================================
+# SQL REPAIR PROMPT
+# =========================================================
+SQL_REPAIR_SYSTEM = """You are an expert PostgreSQL analyst fixing SQL errors.
+Return ONLY JSON with keys: sql, rationale.
+
+CRITICAL RULES:
+1. PostgreSQL is CASE-SENSITIVE for column names. If a column is defined as "strokeType" (camelCase), you MUST use double quotes: "strokeType".
+2. Look at the EXACT column names in the schema. Match their case EXACTLY.
+3. For mixed-case columns like strokeType, deliveryStatus, totalScore, you MUST write them as: "strokeType", "deliveryStatus", "totalScore".
+4. For snake_case columns like door_to_needle_minutes, no quotes are needed.
+5. Fix ONLY the invalid identifiers. Keep the original query intent.
+6. Do NOT invent columns. Use ONLY columns from the provided schema.
+"""
+
+
+def repair_sql(original_sql: str, error_message: str, schema_text: str) -> str:
+    """
+    Re-prompt the LLM to fix an invalid SQL query based on the DB error.
+    """
+    print(error_message)
+    messages = [
+        {"role": "system", "content": SQL_REPAIR_SYSTEM},
+        {"role": "user", "content": (
+            f"The following SQL query failed with a database error.\n\n"
+            f"--- FAILED SQL ---\n{original_sql}\n\n"
+            f"--- DATABASE ERROR ---\n{error_message}\n\n"
+            f"--- SCHEMA (use EXACT column names from here) ---\n{schema_text}\n\n"
+            f"IMPORTANT: If the error mentions a column like 'stroketype' but the schema shows 'strokeType', "
+            f"you must use double quotes: \"strokeType\". PostgreSQL lowercases unquoted identifiers.\n\n"
+            f"Fix the SQL. Return JSON only with keys: sql, rationale."
+        )},
     ]
     out = nvidia_chat(messages)
     data = extract_json(out)
@@ -288,10 +402,16 @@ def main():
     WHERE schemaname NOT IN ('pg_catalog','information_schema')
     ORDER BY schemaname, tablename;
     """, engine)
-    print(df_tables)
+    # print(df_tables)
     schema_text = get_schema_text(engine)
     print(schema_text)
 
+    # Build retrieval index
+    print("Building schema index...")
+    catalog_df = build_schema_catalog_from_schema_text(schema_text)
+    embedder = SentenceTransformer(EMBED_MODEL_NAME)
+    schema_index, _ = build_faiss_index(catalog_df["table_text"].tolist(), embedder)
+    print("Schema index built.")
 
 
     print("NVIDIA + Postgres Report Agent (env vars enabled)")
@@ -305,14 +425,58 @@ def main():
             break
 
         try:
-            sql = generate_sql(user_prompt, schema_text)
-            print(sql)
+            # retrieve relevant tables
+            relevant_tables = retrieve_relevant_tables(user_prompt, catalog_df, schema_index, embedder)
+            print(f"--- Relevant Tables identified ---\n{relevant_tables}\n----------------------------------")
+            
+            # Extract table names for sample data fetching
+            table_lines = [line.strip() for line in relevant_tables.strip().split('\n') if line.strip()]
+            
+            # Fetch sample data from retrieved tables
+            print("Fetching sample data...")
+            sample_data = get_sample_data(engine, table_lines)
+            print(f"--- Sample Data ---\n{sample_data[:1000]}...\n----------------------------------")
+            
+            sql = generate_sql(user_prompt, relevant_tables, sample_data)
+            print(f"\n--- Generated SQL ---\n{sql}")
             sql = enforce_select_only(sql)
-            df = run_query(engine, sql)
-            print(f"Query Result{df}")
+            
+            # Attempt to run query with auto-repair loop
+            df = None
+            last_error = None
+            for attempt in range(MAX_REPAIR_ATTEMPTS + 1):
+                try:
+                    df = run_query(engine, sql)
+                    break  # Success, exit loop
+                except Exception as db_error:
+                    last_error = db_error
+                    error_str = str(db_error)
+                    print(error_str)
+                    # Check if it's a repairable error (column/table issues)
+                    if any(keyword in error_str.lower() for keyword in ['undefined', 'column', 'does not exist', 'relation']):
+                        if attempt < MAX_REPAIR_ATTEMPTS:
+                            print(f"\n[REPAIR ATTEMPT {attempt + 1}/{MAX_REPAIR_ATTEMPTS}] DB Error: {error_str}")
+                            print("Attempting to repair SQL...")
+                            
+                            # Repair the SQL
+                            repaired_sql = repair_sql(sql, error_str, relevant_tables)
+                            print(f"--- Repaired SQL ---\n{repaired_sql}")
+                            
+                            sql = enforce_select_only(repaired_sql)
+                        else:
+                            print(f"\n[REPAIR FAILED] Max attempts ({MAX_REPAIR_ATTEMPTS}) reached.")
+                            raise last_error
+                    else:
+                        # Non-repairable error, raise immediately
+                        raise db_error
+            
+            if df is None:
+                raise last_error
+            
+            print(f"\nQuery returned {len(df)} rows.")
             report = generate_report(user_prompt, sql, df)
 
-            print("\n--- SQL ---")
+            print("\n--- Final SQL ---")
             print(sql)
             print("\n--- Report ---")
             print(report)
