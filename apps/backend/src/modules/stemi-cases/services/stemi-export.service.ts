@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { StemiFilterDto } from '../dto/stemi-filter.dto';
 import * as ExcelJS from 'exceljs';
 
 interface StemiCaseData {
@@ -49,10 +50,12 @@ interface StemiCaseData {
 export class StemiExportService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async exportStemiCasesToExcel() {
+  async exportStemiCasesToExcel(filters: StemiFilterDto = {}) {
     try {
-      // Fetch all STEMI cases with related data
+      const where = this.buildWhereClause(filters);
+      
       const stemiCases = await this.prisma.stemiCase.findMany({
+        where,
         select: {
           id: true,
           ticketId: true,
@@ -211,8 +214,9 @@ export class StemiExportService {
 
       // Add header row with styling - matching spreadsheet color scheme
       const headerRow = worksheet.addRow(headers);
+      headerRow.height = 40; // Make header row taller
       headerRow.eachCell((cell, colNumber) => {
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 13 };
         
         // Color scheme based on column position
         let backgroundColor = 'FF808080'; // Default grey
@@ -258,7 +262,9 @@ export class StemiExportService {
       // Add data rows
       allData.forEach((rowData) => {
         const row = worksheet.addRow(Object.values(rowData));
+        row.height = 30; 
         row.eachCell((cell) => {
+          cell.font = { size: 12 }; 
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -293,6 +299,76 @@ export class StemiExportService {
       console.error('Error exporting STEMI cases to Excel:', error);
       throw new Error('Failed to export STEMI cases to Excel');
     }
+  }
+
+  private buildWhereClause(filters: StemiFilterDto): any {
+    const where: any = {};
+    const stringFilters: (keyof StemiFilterDto)[] = [
+      'patientId',
+      'originHospitalId',
+      'destinationHospitalId',
+      'modeOfArrival',
+      'currentStatus',
+      'selectedTreatment',
+      'ecgResult',
+    ];
+
+    stringFilters.forEach((key) => {
+      const value = filters[key];
+      if (value !== undefined && value !== null && value !== '') {
+        where[key] = value;
+      }
+    });
+
+    const booleanFilters: (keyof StemiFilterDto)[] = [
+      'eligibleForPrimaryPci',
+      'thrombolyticGiven',
+      'isTroponinPositive',
+      'rccActivated',
+    ];
+
+    booleanFilters.forEach((key) => {
+      const value = filters[key];
+      if (value !== undefined) {
+        where[key] = value;
+      }
+    });
+
+    const { startDate, endDate } = filters;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
+      }
+    }
+
+    if (filters.search && filters.search.trim()) {
+      const search = filters.search.trim();
+      where.OR = [
+        {
+          patient: {
+            OR: [
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
+              { nationalId: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        },
+        {
+          presentingSymptoms: { contains: search, mode: 'insensitive' },
+        },
+        {
+          ticket: {
+            ticketNumber: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
+
+    return where;
   }
 
   private transformCaseForExport(case_: StemiCaseData): Record<string, string | number | null> {

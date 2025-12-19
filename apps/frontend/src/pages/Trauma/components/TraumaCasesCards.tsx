@@ -47,6 +47,7 @@ interface TraumaCasesCardsProps {
   onEditCase: (case_: TraumaCase) => void;
   isAdmin: boolean;
   onViewModeChange?: (mode: 'table' | 'cards') => void;
+  onFiltersChange?: (filters: any) => void;
 }
 
 const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
@@ -56,6 +57,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   onViewDetails,
   onEditCase,
   onViewModeChange,
+  onFiltersChange,
 }) => {
   const [filteredCases, setFilteredCases] = useState<TraumaCase[]>(cases);
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,6 +89,12 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   useEffect(() => {
     applyFiltersAndSearch();
   }, [cases, filters]);
+
+  useEffect(() => {
+    if (onFiltersChange) {
+      onFiltersChange(filters);
+    }
+  }, [filters, onFiltersChange]);
 
   const applyFiltersAndSearch = () => {
     let filtered = cases.filter((case_) => {

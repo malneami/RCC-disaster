@@ -11,11 +11,14 @@ import {
   Tooltip,
   Alert,
   Snackbar,
+  Fab,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
+  FileDownload as FileDownloadIcon,
 } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 import { ticketService, Ticket, TicketStatistics, TicketFilter } from '../../services/ticketService';
@@ -26,6 +29,7 @@ import TicketStatisticsCards from './components/TicketStatisticsCards';
 import TicketFilters from './components/TicketFilters';
 import CreateTicketDialog from './components/CreateTicketDialog';
 import EmergencyNotification from './components/EmergencyNotification';
+import { TicketExportService } from './services/ticketExportService';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -63,13 +67,30 @@ const TicketsPage: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [emergencyTicket, setEmergencyTicket] = useState<Ticket | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const getEmsStatusForTab = (tab: number): string | undefined => {
+    if (tab === 1) return 'EMS_CONTACT';
+    if (tab === 2) return 'ASSIGNED'; 
+    if (tab === 3) return 'DEPARTED';
+    if (tab === 4) return 'ARRIVED';
+    return undefined;
+  };
 
   // Load tickets and statistics
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      const emsStatus = getEmsStatusForTab(tabValue);
+      const filtersWithTab = { ...filters };
+      if (emsStatus) {
+        filtersWithTab.emsStatus = emsStatus;
+      } else {
+        delete filtersWithTab.emsStatus;
+      }
+      
       const [ticketsResponse, statsResponse] = await Promise.all([
-        ticketService.getTickets(1, 50, filters),
+        ticketService.getTickets(1, 50, filtersWithTab),
         ticketService.getStatistics(),
       ]);
       
@@ -81,7 +102,7 @@ const TicketsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, tabValue]);
 
   // WebSocket setup
   useEffect(() => {
@@ -189,6 +210,41 @@ const TicketsPage: React.FC = () => {
     });
     if (tabValue === 4) return tickets.filter(t => t?.emsAssignments?.[0]?.status === 'ARRIVED');
     return tickets;
+  };
+
+
+  const handleExportToExcel = async () => {
+    try {
+      setExportLoading(true);
+      const exportFilters: TicketFilter & { emsStatus?: string } = {};
+      
+      Object.entries(filters).forEach(([key, value]) => {
+        if (key === 'sortBy' || key === 'sortOrder') {
+          return;
+        }
+        
+        if (key === 'search') {
+          if (value && typeof value === 'string' && value.trim()) {
+            exportFilters[key as keyof TicketFilter] = value.trim() as any;
+          }
+        } else if (value !== undefined && value !== null && value !== '') {
+          exportFilters[key as keyof TicketFilter] = value as any;
+        }
+      });
+      
+      const emsStatus = getEmsStatusForTab(tabValue);
+      if (emsStatus) {
+        exportFilters.emsStatus = emsStatus;
+      }
+      
+      await TicketExportService.exportToExcel(exportFilters);
+      setNotification({ message: 'Tickets exported successfully', type: 'success' });
+    } catch (error) {
+      console.error('Export failed:', error);
+      setNotification({ message: 'Failed to export tickets to Excel', type: 'error' });
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const canCreateTicket = ['ADMIN', 'RCC', 'DATA_COLLECTOR', 'CATH_LAB_USER'].includes(user?.role || '');
@@ -361,6 +417,27 @@ const TicketsPage: React.FC = () => {
             {notification?.message}
           </Alert>
         </Snackbar>
+
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 16,
+            right: 16,
+            zIndex: 1000,
+          }}
+        >
+          <Tooltip title="Export to Excel" placement="left">
+            <Fab
+              color="secondary"
+              aria-label="export to excel"
+              onClick={handleExportToExcel}
+              disabled={exportLoading || loading}
+              sx={{ width: 56, height: 56 }}
+            >
+              {exportLoading ? <CircularProgress size={24} color="inherit" /> : <FileDownloadIcon />}
+            </Fab>
+          </Tooltip>
+        </Box>
       </Box>
     </>
   );

@@ -679,7 +679,25 @@ const StemiPortalPage: React.FC = () => {
   const handleExportToExcel = async () => {
     try {
       setExportLoading(true);
-      await StemiExportService.exportToExcel();
+      const { rccActivated, limit, offset, ...backendFilters } = unifiedFilters;
+      
+      const exportFilters: StemiFilterParams = {};
+      
+      Object.entries(backendFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          exportFilters[key as keyof StemiFilterParams] = value as any;  
+        }
+      });
+      
+      if (rccActivated !== undefined && rccActivated !== null && rccActivated !== '') {
+        if (rccActivated === true || rccActivated === 'true') {
+          exportFilters.rccActivated = true;
+        } else if (rccActivated === false || rccActivated === 'false') {
+          exportFilters.rccActivated = false;
+        }
+      }
+      
+      await StemiExportService.exportToExcel(exportFilters);
     } catch (error) {
       console.error('Export failed:', error);
       setError('Failed to export STEMI cases to Excel');

@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, Res, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Response } from 'express';
 import { TicketsService } from './tickets.service';
+import { TicketExportService } from './services/ticket-export.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto, UpdateTicketStatusDto, AssignTicketDto } from './dto/update-ticket.dto';
 import { UpdateEMSStatusDto } from './dto/update-ems-status.dto';
@@ -8,6 +10,7 @@ import { TicketFilterDto } from './dto/ticket-filter.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { Public } from '../../auth/decorators/public.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Tickets')
@@ -15,7 +18,10 @@ import { UserRole } from '@prisma/client';
 @Controller('tickets')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TicketsController {
-  constructor(private readonly ticketsService: TicketsService) {}
+  constructor(
+    private readonly ticketsService: TicketsService,
+    private readonly ticketExportService: TicketExportService,
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR, UserRole.CATH_LAB_USER)
@@ -39,6 +45,7 @@ export class TicketsController {
     @Query('search') search?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: string,
+    @Query('emsStatus') emsStatus?: string,
     @Request() req?: any
   ) {
     const pageNum = page ? parseInt(page) : 1;
@@ -58,6 +65,7 @@ export class TicketsController {
     if (search) filters.search = search;
     if (sortBy) filters.sortBy = sortBy;
     if (sortOrder) filters.sortOrder = sortOrder;
+    if (emsStatus) filters.emsStatus = emsStatus;
     
     return this.ticketsService.findAll(
       pageNum,
@@ -104,6 +112,20 @@ export class TicketsController {
       startDate,
       endDate
     );
+  }
+
+  @Get('export')
+  @Public()
+  async exportToExcel(@Query() filters: TicketFilterDto, @Res() res: Response) {
+    try {
+      const exportResult = await this.ticketExportService.exportTicketsToExcel(filters);
+      
+      res.setHeader('Content-Type', exportResult.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
+      res.send(exportResult.buffer);
+    } catch (error) {
+      throw new BadRequestException('Failed to export tickets');
+    }
   }
 
   @Get(':id/recommended-ambulances')

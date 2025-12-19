@@ -298,7 +298,19 @@ const StrokePortalPage: React.FC = () => {
   const handleExportToExcel = async () => {
     try {
       setExportLoading(true);
-      await StrokeExportService.exportToExcel();
+      const exportFilters: StrokeCaseFilters = {};
+      
+      Object.entries(appliedFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          exportFilters[key as keyof StrokeCaseFilters] = value as any;
+        }
+      });
+      
+      if (searchTerm && searchTerm.trim()) {
+        exportFilters.search = searchTerm.trim();
+      }
+      
+      await StrokeExportService.exportToExcel(exportFilters);
     } catch (error) {
       console.error('Export failed:', error);
       setError('Failed to export stroke cases to Excel');

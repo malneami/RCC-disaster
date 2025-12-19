@@ -49,4 +49,8 @@ export class TicketFilterDto {
   @IsOptional()
   @IsEnum(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc';
+
+  @IsOptional()
+  @IsString()
+  emsStatus?: string; 
 }

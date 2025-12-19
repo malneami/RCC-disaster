@@ -52,6 +52,7 @@ const TraumaPortalPage: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
+  const [currentFilters, setCurrentFilters] = useState<any>({});
 
   // Define portal steps
   const portalSteps: PortalStep[] = [
@@ -207,7 +208,42 @@ const TraumaPortalPage: React.FC = () => {
   const handleExportToExcel = async () => {
     try {
       setExportLoading(true);
-      await TraumaExportService.exportToExcel();
+      const exportFilters: any = {};
+      
+      if (currentFilters.hospitalId) {
+        exportFilters.originHospitalId = currentFilters.hospitalId;
+      } else {
+        Object.entries(currentFilters).forEach(([key, value]) => {
+          if (key === 'hospitalId' || key === 'dateFrom' || key === 'dateTo' || 
+              key === 'criticalCase' || key === 'transferCase' || key === 'search') {
+            return;
+          }
+          
+          if (value !== undefined && value !== null && value !== '') {
+            exportFilters[key] = value;
+          }
+        });
+      }
+      
+      if (currentFilters.criticalCase !== null && currentFilters.criticalCase !== '') {
+        exportFilters.criticalCase = currentFilters.criticalCase === true || currentFilters.criticalCase === 'true';
+      }
+      if (currentFilters.transferCase !== null && currentFilters.transferCase !== '') {
+        exportFilters.transferCase = currentFilters.transferCase === true || currentFilters.transferCase === 'true';
+      }
+      
+      if (currentFilters.dateFrom) {
+        exportFilters.startDate = currentFilters.dateFrom;
+      }
+      if (currentFilters.dateTo) {
+        exportFilters.endDate = currentFilters.dateTo;
+      }
+      
+      if (currentFilters.search && currentFilters.search.trim()) {
+        exportFilters.search = currentFilters.search.trim();
+      }
+      
+      await TraumaExportService.exportToExcel(exportFilters);
     } catch (error) {
       console.error('Export failed:', error);
       setError('Failed to export trauma cases to Excel');
@@ -347,6 +383,7 @@ const TraumaPortalPage: React.FC = () => {
               onAddCaseNote={handleAddCaseNote}
               isAdmin={isAdmin}
               onViewModeChange={setViewMode}
+              onFiltersChange={setCurrentFilters}
             />
           ) : (
             <TraumaCasesCards
@@ -364,6 +401,7 @@ const TraumaPortalPage: React.FC = () => {
               }}
               isAdmin={isAdmin}
               onViewModeChange={setViewMode}
+              onFiltersChange={setCurrentFilters}
             />
           )}
         </TabPanel>

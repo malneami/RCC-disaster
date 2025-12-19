@@ -1,30 +1,30 @@
 import axios from 'axios';
-import { StemiFilterParams } from './stemiService';
+import { TicketFilter } from '../../../services/ticketService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 
-export class StemiExportService {
-  static async exportToExcel(filters?: StemiFilterParams): Promise<void> {
+export class TicketExportService {
+  static async exportToExcel(filters?: TicketFilter & { emsStatus?: string }): Promise<void> {
     try {
       const queryParams = new URLSearchParams();
 
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
-          if (key === 'limit' || key === 'offset') {
+          if (key === 'limit' || key === 'offset' || key === 'page') {
             return;
           }
           
-          if (key === 'rccActivated') {
-            if (value !== undefined && value !== null && value !== '') {
-              queryParams.append(key, value === true || value === 'true' ? 'true' : 'false');
-            }
-          } else if (value !== undefined && value !== null && value !== '') {
+          if (key === 'sortBy' || key === 'sortOrder') {
+            return;
+          }
+          
+          if (value !== undefined && value !== null && value !== '') {
             queryParams.append(key, value.toString());
           }
         });
       }
 
-      const exportUrl = `${API_BASE_URL}/stemi-cases/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const exportUrl = `${API_BASE_URL}/tickets/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       
       const response = await axios.get(exportUrl, {
         responseType: 'blob',
@@ -33,14 +33,12 @@ export class StemiExportService {
         },
       });
 
-      // Create blob link to download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       
-      // Extract filename from response headers or use default
       const contentDisposition = response.headers['content-disposition'];
-      let filename = 'stemi-cases-export.xlsx';
+      let filename = 'tickets-export.xlsx';
       
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+)"/);
@@ -55,8 +53,7 @@ export class StemiExportService {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Export failed:', error);
-      throw new Error('Failed to export STEMI cases to Excel');
+      throw new Error('Failed to export tickets to Excel');
     }
   }
 }

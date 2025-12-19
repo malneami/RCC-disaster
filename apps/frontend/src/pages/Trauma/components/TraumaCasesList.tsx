@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -64,6 +64,7 @@ interface TraumaCasesListProps {
   onAddCaseNote?: (case_: TraumaCase) => void;
   isAdmin: boolean;
   onViewModeChange?: (mode: 'table' | 'cards') => void;
+  onFiltersChange?: (filters: FilterOptions) => void;
 }
 
 interface FilterOptions {
@@ -91,6 +92,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   onAddCaseNote,
   isAdmin,
   onViewModeChange,
+  onFiltersChange,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -120,6 +122,12 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     dateTo: '',
     hospitalId: '',
   });
+
+  useEffect(() => {
+    if (onFiltersChange) {
+      onFiltersChange(filters);
+    }
+  }, [filters, onFiltersChange]);
 
   // Filter and sort cases
   const filteredAndSortedCases = useMemo(() => {

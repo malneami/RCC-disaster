@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
 import { TicketsGateway } from './tickets.gateway';
+import { TicketExportService } from './services/ticket-export.service';
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../../auth/auth.module';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
@@ -23,7 +24,7 @@ import { EmsAssignmentsModule } from '../ems-assignments/ems-assignments.module'
     }),
   ],
   controllers: [TicketsController],
-  providers: [TicketsService, TicketsGateway, WsJwtAuthGuard],
+  providers: [TicketsService, TicketsGateway, TicketExportService, WsJwtAuthGuard],
   exports: [TicketsService, TicketsGateway],
 })
 export class TicketsModule {}

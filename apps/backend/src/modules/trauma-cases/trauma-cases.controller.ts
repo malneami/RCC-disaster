@@ -18,6 +18,7 @@ import { Response } from 'express';
 import { TraumaCasesService } from './trauma-cases.service';
 import { CreateTraumaCaseDto } from './dto/create-trauma-case.dto';
 import { UpdateTraumaCaseDto } from './dto/update-trauma-case.dto';
+import { TraumaFilterDto } from './dto/trauma-filter.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Public } from '../../auth/decorators/public.decorator';
 import { TraumaModeOfArrival, TraumaMechanismOfInjury } from '@prisma/client';
@@ -83,9 +84,10 @@ export class TraumaCasesController {
 
   @Get('export')
   @Public()
-  async exportToExcel(@Res() res: Response) {
+  async exportToExcel(@Query() filters: TraumaFilterDto, @Res() res: Response) {
     try {
-      const exportResult = await this.traumaExportService.exportTraumaCasesToExcel();
+      const exportResult = await this.traumaExportService.exportTraumaCasesToExcel(filters);
+      
       res.setHeader('Content-Type', exportResult.mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
       res.send(exportResult.buffer);

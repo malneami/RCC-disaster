@@ -243,18 +243,50 @@ export class TicketsService {
         if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
         if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
       }
+      
+      if (filters.emsStatus && filters.emsStatus !== '') {
+        if (filters.emsStatus === 'ASSIGNED') {
+          where.emsAssignments = {
+            some: {
+              status: {
+                in: [AssignmentStatus.EMS_CONTACT, AssignmentStatus.EMS_ARRIVAL],
+              },
+            },
+          };
+        } else {
+          where.emsAssignments = {
+            some: {
+              status: filters.emsStatus as AssignmentStatus,
+            },
+          };
+        }
+      }
+      
       if (filters.search) {
-        where.OR = [
-          { ticketNumber: { contains: filters.search, mode: 'insensitive' } },
-          { patient: { 
-            OR: [
-              { firstName: { contains: filters.search, mode: 'insensitive' } },
-              { lastName: { contains: filters.search, mode: 'insensitive' } },
-              { mrn: { contains: filters.search, mode: 'insensitive' } },
-              { nationalId: { contains: filters.search, mode: 'insensitive' } },
-            ]
-          }},
-        ];
+        const searchCondition = {
+          OR: [
+            { ticketNumber: { contains: filters.search, mode: 'insensitive' } },
+            { patient: { 
+              OR: [
+                { firstName: { contains: filters.search, mode: 'insensitive' } },
+                { lastName: { contains: filters.search, mode: 'insensitive' } },
+                { mrn: { contains: filters.search, mode: 'insensitive' } },
+                { nationalId: { contains: filters.search, mode: 'insensitive' } },
+              ]
+            }},
+            { chiefComplaint: { contains: filters.search, mode: 'insensitive' } },
+          ],
+        };
+        
+        const hasOtherFilters = Object.keys(where).filter(k => k !== 'deletedAt' && k !== 'emsAssignments' && k !== 'OR').length > 0;
+        if (hasOtherFilters || where.emsAssignments) {
+          if (!where.AND) {
+            where.AND = [];
+          }
+          where.AND.push(searchCondition);
+        } else {
+          where.OR = searchCondition.OR;
+        }
       }
     }
 

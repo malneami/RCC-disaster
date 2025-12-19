@@ -1,15 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { TraumaFilterDto } from '../dto/trauma-filter.dto';
 import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class TraumaExportService {
   constructor(private prisma: PrismaService) {}
 
-  async exportTraumaCasesToExcel() {
+  async exportTraumaCasesToExcel(filters: TraumaFilterDto = {}) {
     try {
-      // Fetch all trauma cases with related data
+      const where = this.buildWhereClause(filters);
+
       const traumaCases = await this.prisma.traumaCase.findMany({
+        where,
         select: {
           id: true,
           ticketId: true,
@@ -359,8 +362,9 @@ export class TraumaExportService {
 
       // Add header row with styling
       const headerRow = worksheet.addRow(headers);
+      headerRow.height = 40; 
       headerRow.eachCell((cell, colNumber) => {
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 13 };
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -379,21 +383,22 @@ export class TraumaExportService {
         };
       });
 
-      // Set column widths
       const columnWidths = [
-        15, 35, 8, 12, 25, 50, 50, 20, 18, 18, 15, 15, 12, 12, 12, 25,
-        60, 60, 60, 60, 60, 60, 15, 12, 12, 15, 18, 15, 10, 25, 25, 18,
-        18, 25, 25, 50, 50, 50, 50, 50, 50, 30, 30, 40
+        20, 40, 12, 15, 30, 60, 60, 25, 22, 22, 20, 20, 15, 15, 15, 30,
+        70, 70, 70, 70, 70, 70, 20, 15, 15, 20, 22, 20, 15, 30, 30, 22,
+        22, 30, 30, 60, 60, 60, 60, 60, 60, 35, 35, 45
       ];
       
       worksheet.columns.forEach((column, index) => {
-        column.width = columnWidths[index] || 15;
+        column.width = columnWidths[index] || 20;
       });
 
       // Add data rows
       allData.forEach((rowData) => {
         const row = worksheet.addRow(Object.values(rowData));
+        row.height = 30; 
         row.eachCell((cell) => {
+          cell.font = { size: 12 }; 
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -428,6 +433,85 @@ export class TraumaExportService {
       console.error('Error exporting trauma cases to Excel:', error);
       throw new Error('Failed to export trauma cases to Excel');
     }
+  }
+
+  private buildWhereClause(filters: TraumaFilterDto): any {
+    const where: any = {
+      deletedAt: null,
+    };
+
+    const stringFilters: (keyof TraumaFilterDto)[] = [
+      'patientId',
+      'originHospitalId',
+      'destinationHospitalId',
+      'modeOfArrival',
+      'mechanismOfInjury',
+    ];
+
+    stringFilters.forEach((key) => {
+      const value = filters[key];
+      if (value !== undefined && value !== null && value !== '') {
+        where[key] = value;
+      }
+    });
+
+    const booleanFilters: (keyof TraumaFilterDto)[] = [
+      'criticalCase',
+      'transferCase',
+    ];
+
+    booleanFilters.forEach((key) => {
+      const value = filters[key];
+      if (value !== undefined && value !== null) {
+        where[key] = value;
+      }
+    });
+
+    const { startDate, endDate } = filters;
+    if (startDate || endDate) {
+      where.arrivalDateTime = {};
+      if (startDate && startDate !== '') {
+        where.arrivalDateTime.gte = new Date(startDate);
+      }
+      if (endDate && endDate !== '') {
+        const to = new Date(endDate);
+        to.setHours(23, 59, 59, 999);
+        where.arrivalDateTime.lte = to;
+      }
+    }
+
+    if (filters.search && filters.search.trim()) {
+      const search = filters.search.trim();
+      const searchCondition = {
+        OR: [
+          {
+            patient: {
+              OR: [
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { nationalId: { contains: search, mode: 'insensitive' } },
+                { mrn: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          },
+          {
+            chiefComplaint: { contains: search, mode: 'insensitive' },
+          },
+        ],
+      };
+
+      const hasOtherFilters = Object.keys(where).filter(k => k !== 'deletedAt').length > 0;
+      if (hasOtherFilters) {
+        if (!where.AND) {
+          where.AND = [];
+        }
+        where.AND.push(searchCondition);
+      } else {
+        where.OR = searchCondition.OR;
+      }
+    }
+
+    return where;
   }
 
   private formatDate(date: Date | null): string {

@@ -82,6 +82,7 @@ export interface TicketFilter {
   search?: string;
   sortBy?: 'createdAt' | 'updatedAt' | 'priority' | 'status';
   sortOrder?: 'asc' | 'desc';
+  emsStatus?: string; 
 }
 
 export interface Ticket {

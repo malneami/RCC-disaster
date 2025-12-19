@@ -1,11 +1,28 @@
 import axios from 'axios';
+import { TraumaCaseFilters } from '../../../services/traumaService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 
 export class TraumaExportService {
-  static async exportToExcel(): Promise<void> {
+  static async exportToExcel(filters?: TraumaCaseFilters): Promise<void> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/trauma-cases/export`, {
+      const queryParams = new URLSearchParams();
+      
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (key === 'criticalCase' || key === 'transferCase') {
+            if (value !== undefined && value !== null && value !== '') {
+              queryParams.append(key, value === true || value === 'true' ? 'true' : 'false');
+            }
+          } else if (value !== undefined && value !== null && value !== '') {
+            queryParams.append(key, value.toString());
+          }
+        });
+      }
+
+      const exportUrl = `${API_BASE_URL}/trauma-cases/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const response = await axios.get(exportUrl, {
         responseType: 'blob',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

@@ -11,10 +11,12 @@ import {
   Query,
   ParseIntPipe,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { StrokeCasesService } from './stroke-cases.service';
-// import { StrokeExportService } from './services/stroke-export.service';
+import { StrokeExportService } from './services/stroke-export.service';
+import { StrokeFilterDto } from './dto/stroke-filter.dto';
 import { CreateStrokeCaseDto } from './dto/create-stroke-case.dto';
 import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
 import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
@@ -28,7 +30,7 @@ import { UserRole } from '@prisma/client';
 export class StrokeCasesController {
   constructor(
     private readonly strokeCasesService: StrokeCasesService,
-    // private readonly strokeExportService: StrokeExportService
+    private readonly strokeExportService: StrokeExportService,
   ) {}
 
   @Post()
@@ -134,20 +136,19 @@ export class StrokeCasesController {
   }
 
 
-  // @Get('export')
-  // @Public()
-  // async exportStrokeCases(@Res() res: Response) {
-  //   try {
-  //     const exportResult = await this.strokeExportService.exportStrokeCasesToExcel();
+  @Get('export')
+  @Public()
+  async exportToExcel(@Query() filters: StrokeFilterDto, @Res() res: Response) {
+    try {
+      const exportResult = await this.strokeExportService.exportStrokeCasesToExcel(filters);
       
-  //     res.setHeader('Content-Type', exportResult.mimeType);
-  //     res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
-  //     res.send(exportResult.buffer);
-  //   } catch (error) {
-  //     console.error('Error exporting stroke cases:', error);
-  //     res.status(500).json({ error: 'Failed to export stroke cases' });
-  //   }
-  // }
+      res.setHeader('Content-Type', exportResult.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
+      res.send(exportResult.buffer);
+    } catch (error) {
+      throw new BadRequestException('Failed to export stroke cases');
+    }
+  }
 
   @Get('kpi-summary')
   @Public()

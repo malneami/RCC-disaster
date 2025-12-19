@@ -100,9 +100,9 @@ export class StemiCasesController {
 
   @Get('export')
   @Public()
-  async exportToExcel(@Res() res: Response) {
+  async exportToExcel(@Query() filters: StemiFilterDto, @Res() res: Response) {
     try {
-      const exportResult = await this.stemiExportService.exportStemiCasesToExcel();
+      const exportResult = await this.stemiExportService.exportStemiCasesToExcel(filters);
       
       res.setHeader('Content-Type', exportResult.mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
