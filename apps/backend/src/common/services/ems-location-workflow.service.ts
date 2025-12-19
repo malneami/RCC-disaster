@@ -30,7 +30,7 @@ export class EmsLocationWorkflowService {
     try {
       this.logger.log(`Fetching GPS location for IMEI: ${imei}`);
       
-      const response = await axios.post('http://gps3.tawasolmap.com/new_api/', {
+      const response = await axios.post('https://gps3.tawasolmap.com/new_api/', {
         api_key: "7798AA377F99763506758557AC7741A1",
         service: "objects",
         imeis: imei

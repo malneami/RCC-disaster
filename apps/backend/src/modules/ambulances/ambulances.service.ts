@@ -86,7 +86,7 @@ export class AmbulancesService {
   async findAllGPS(filters: AmbulanceFilters = {}): Promise<any> {
     try {
       // Fetch from external GPS API
-      const response = await axios.post<GPSApiResponse>('http://gps3.tawasolmap.com/new_api/', {
+      const response = await axios.post<GPSApiResponse>('https://gps3.tawasolmap.com/new_api/', {
         api_key: "7798AA377F99763506758557AC7741A1",
         service: "objects",
         imeis: "*"

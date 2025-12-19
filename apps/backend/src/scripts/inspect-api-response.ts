@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const GPS_API_URL = 'http://gps3.tawasolmap.com/new_api/';
+const GPS_API_URL = 'https://gps3.tawasolmap.com/new_api/';
 const GPS_API_KEY = '7798AA377F99763506758557AC7741A1';
 
 async function inspectAPIResponse() {
