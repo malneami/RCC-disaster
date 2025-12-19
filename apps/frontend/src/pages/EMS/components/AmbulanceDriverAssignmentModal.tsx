@@ -53,11 +53,11 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
   // Filter ambulances to include available ones and the currently assigned one
   const ambulances = React.useMemo(() => {
     if (!allAmbulances) return [];
-    
-    const availableAmbulances = allAmbulances.filter(ambulance => 
+
+    const availableAmbulances = allAmbulances.filter(ambulance =>
       ambulance.status === 'AVAILABLE' || ambulance.id === assignment?.ambulanceId
     );
-    
+
     return availableAmbulances;
   }, [allAmbulances, assignment?.ambulanceId]);
 
@@ -133,7 +133,8 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
       onClose();
     } catch (err) {
       console.error('Error updating assignment:', err);
-      setError('Failed to update assignment. Please try again.');
+      const errorMessage = (err as any).response?.data?.message || 'Failed to update assignment. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -167,7 +168,7 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
           )}
         </Typography>
       </DialogTitle>
-      
+
       <DialogContent>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -213,10 +214,10 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
                           {option.callSign}
                         </Typography>
                         {option.id === assignment?.ambulanceId && (
-                          <Chip 
-                            label="Currently Assigned" 
-                            size="small" 
-                            color="primary" 
+                          <Chip
+                            label="Currently Assigned"
+                            size="small"
+                            color="primary"
                             variant="outlined"
                           />
                         )}
@@ -268,8 +269,11 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
                   }}
                 />
               )}
+              getOptionDisabled={(option) =>
+                !!option.activeAssignment && option.id !== assignment?.driverId
+              }
               renderOption={(props, option) => (
-                <Box component="li" {...props}>
+                <Box component="li" {...props} sx={{ opacity: option.activeAssignment && option.id !== assignment?.driverId ? 0.7 : 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                     <FontAwesomeIcon icon={faUserMd} size="sm" />
                     <Box sx={{ flexGrow: 1 }}>
@@ -278,10 +282,18 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
                           {option.firstName} {option.lastName}
                         </Typography>
                         {option.id === assignment?.driverId && (
-                          <Chip 
-                            label="Currently Assigned" 
-                            size="small" 
-                            color="primary" 
+                          <Chip
+                            label="Currently Assigned"
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        )}
+                        {option.activeAssignment && option.id !== assignment?.driverId && (
+                          <Chip
+                            label={`Assigned (#${option.activeAssignment.ticket.ticketNumber})`}
+                            size="small"
+                            color="warning"
                             variant="outlined"
                           />
                         )}
@@ -330,21 +342,21 @@ const AmbulanceDriverAssignmentModal: React.FC<AmbulanceDriverAssignmentModalPro
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>
-        <Button 
-          onClick={handleClose} 
+        <Button
+          onClick={handleClose}
           disabled={loading}
           variant="outlined"
         >
           Cancel
         </Button>
-        <Button 
-          onClick={handleSubmit} 
+        <Button
+          onClick={handleSubmit}
           variant="contained"
           disabled={loading || !formData.ambulanceId || !formData.driverId}
           startIcon={loading ? <CircularProgress size={16} /> : null}
         >
-          {loading 
-            ? (assignment?.ambulanceId && assignment?.driverId ? 'Reassigning...' : 'Assigning...') 
+          {loading
+            ? (assignment?.ambulanceId && assignment?.driverId ? 'Reassigning...' : 'Assigning...')
             : (assignment?.ambulanceId && assignment?.driverId ? 'Reassign Crew' : 'Assign Ambulance & Driver')
           }
         </Button>

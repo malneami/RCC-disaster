@@ -10,6 +10,13 @@ export interface EMSDriver {
   phoneNumber: string;
   status: 'ACTIVE' | 'INACTIVE';
   hospitalId?: string;
+  activeAssignment?: {
+    id: string;
+    status: string;
+    ticket: {
+      ticketNumber: string;
+    };
+  } | null;
 }
 
 export const useEMSDrivers = () => {

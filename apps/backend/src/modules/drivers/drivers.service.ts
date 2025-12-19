@@ -90,6 +90,23 @@ export class DriversService {
           take: limit,
           include: {
             hospital: true,
+            emsAssignmentDriver: {
+              where: {
+                status: {
+                  in: ['EMS_CONTACT', 'EN_ROUTE', 'EMS_ARRIVAL', 'DEPARTED'],
+                },
+                deletedAt: null,
+              },
+              select: {
+                id: true,
+                status: true,
+                ticket: {
+                  select: {
+                    ticketNumber: true,
+                  },
+                },
+              },
+            },
           },
           orderBy: {
             createdAt: 'desc',
@@ -99,7 +116,15 @@ export class DriversService {
       ]);
 
       // Remove sensitive data
-      const driversWithoutSecrets = drivers.map(({ passwordHash, refreshToken, ...driver }) => driver);
+      const driversWithoutSecrets = drivers.map(
+        ({ passwordHash, refreshToken, emsAssignmentDriver, ...driver }) => ({
+          ...driver,
+          activeAssignment:
+            emsAssignmentDriver && emsAssignmentDriver.length > 0
+              ? emsAssignmentDriver[0]
+              : null,
+        }),
+      );
 
       return {
         data: driversWithoutSecrets,

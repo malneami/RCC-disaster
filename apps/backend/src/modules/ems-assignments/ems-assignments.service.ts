@@ -1089,10 +1089,17 @@ export class EmsAssignmentsService {
           status: { in: ['EMS_CONTACT', 'EN_ROUTE', 'EMS_ARRIVAL', 'DEPARTED'] },
           deletedAt: null,
         },
+        include: {
+          ticket: {
+            select: { ticketNumber: true },
+          },
+        },
       });
 
       if (activeAssignment) {
-        throw new BadRequestException(`Driver ${driver.firstName} ${driver.lastName} already has an active assignment`);
+        throw new BadRequestException(
+          `Driver ${driver.firstName} ${driver.lastName} already has an active assignment (Ticket #${activeAssignment.ticket.ticketNumber})`,
+        );
       }
     }
   }
