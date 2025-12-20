@@ -22,7 +22,7 @@ export class EmsDashboardService {
       recentAssignments,
       upcomingSchedules,
     ] = await Promise.all([
-      this.prisma.ambulance.count({ where: { isActive: true } }),
+      this.prisma.ambulance.count({ where: { deletedAt: null } }),
       this.prisma.ambulance.count({ where: { status: 'IN_USE', isActive: true } }),
       this.prisma.ambulance.count({ where: { status: 'AVAILABLE', isActive: true } }),
       this.prisma.eMSAssignment.count({
