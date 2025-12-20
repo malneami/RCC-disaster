@@ -10,6 +10,8 @@ model Patient {
   middleName      String?        @map("middle_name")
   dateOfBirth     DateTime?      @map("date_of_birth") // Will be removed after migration
   age             Int?           // Age in years
+  ageMonths       Int?           @map("age_months") // Age in months (for precise age when manually entered)
+  ageDays         Int?           @map("age_days") // Age in days (for precise age when manually entered)
   gender          PatientGender
   maritalStatus   MaritalStatus? @map("marital_status")
   
