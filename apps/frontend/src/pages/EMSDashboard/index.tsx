@@ -40,10 +40,7 @@ const EMSDashboardPage: React.FC = () => {
     refetch();
   };
 
-  const handleSettings = () => {
-    // Navigate to profile or admin settings
-    navigate('/profile');
-  };
+
 
   const handleQuickAction = (action: string) => {
     console.log(`Quick action: ${action}`);
@@ -83,7 +80,7 @@ const EMSDashboardPage: React.FC = () => {
       <Box sx={{ p: 3 }}>
         <EMSDashboardHeader
           onRefresh={handleRefresh}
-          onSettings={handleSettings}
+
           lastUpdated={lastUpdated}
         />
 

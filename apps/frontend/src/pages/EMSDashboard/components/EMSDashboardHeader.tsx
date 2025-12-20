@@ -1,17 +1,15 @@
 import React from 'react';
 import { Box, Typography, Chip, IconButton, Tooltip } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAmbulance, faSync, faCog } from '@fortawesome/free-solid-svg-icons';
+import { faAmbulance, faSync } from '@fortawesome/free-solid-svg-icons';
 
 interface EMSDashboardHeaderProps {
   onRefresh?: () => void;
-  onSettings?: () => void;
   lastUpdated?: Date;
 }
 
 const EMSDashboardHeader: React.FC<EMSDashboardHeaderProps> = ({
   onRefresh,
-  onSettings,
   lastUpdated,
 }) => {
   return (
@@ -28,7 +26,7 @@ const EMSDashboardHeader: React.FC<EMSDashboardHeaderProps> = ({
             </Typography>
           </Box>
         </Box>
-        
+
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {lastUpdated && (
             <Chip
@@ -38,16 +36,10 @@ const EMSDashboardHeader: React.FC<EMSDashboardHeaderProps> = ({
               color="primary"
             />
           )}
-          
+
           <Tooltip title="Refresh Data">
             <IconButton onClick={onRefresh} color="primary">
               <FontAwesomeIcon icon={faSync} />
-            </IconButton>
-          </Tooltip>
-          
-          <Tooltip title="Dashboard Settings">
-            <IconButton onClick={onSettings} color="primary">
-              <FontAwesomeIcon icon={faCog} />
             </IconButton>
           </Tooltip>
         </Box>
