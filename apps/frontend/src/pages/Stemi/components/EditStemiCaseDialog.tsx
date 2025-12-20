@@ -92,11 +92,14 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
 
   const [interventionsAndTreatments, setInterventionsAndTreatments] = useState<InterventionsAndTreatments>({
     eligibleForPrimaryPci: false,
+    pciType: undefined,
     pciLocation: '',
     doorOutTime: '',
     balloonInflationTime: '',
     thrombolyticGiven: false,
     thrombolyticAdminTime: '',
+    fibrinolyticAbsoluteContraindications: '',
+    fibrinolyticRelativeContraindications: '',
   });
 
   const [clinicalAssessment, setClinicalAssessment] = useState<ClinicalAssessment>({
@@ -152,11 +155,14 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
 
     setInterventionsAndTreatments({
       eligibleForPrimaryPci: false,
+      pciType: undefined,
       pciLocation: '',
       doorOutTime: '',
       balloonInflationTime: '',
       thrombolyticGiven: false,
       thrombolyticAdminTime: '',
+      fibrinolyticAbsoluteContraindications: '',
+      fibrinolyticRelativeContraindications: '',
     });
 
     setClinicalAssessment({
@@ -200,7 +206,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
       setError(null);
       setSuccess(null);
       setLoading(false);
-      
+
       // Convert STEMI case data to form structure (exactly like creation form)
       setPatientInfo({
         firstName: stemiCase.patient?.firstName || '',
@@ -223,6 +229,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
       setAdmissionDetails({
         admissionTime: stemiCase.pathwayStarted ? StemiDatetimeService.formatForLocal(stemiCase.pathwayStarted) : '',
         modeOfArrival: stemiCase.modeOfArrival || '' as any,
+        transferRequestDateTime: stemiCase.transferRequestDateTime ? StemiDatetimeService.formatForLocal(stemiCase.transferRequestDateTime) : undefined,
+        transferArrivalDateTime: stemiCase.transferArrivalDateTime ? StemiDatetimeService.formatForLocal(stemiCase.transferArrivalDateTime) : undefined,
       });
 
       setCriticalTimestamps({
@@ -238,6 +246,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         thrombolyticGiven: stemiCase.thrombolyticGiven || false,
         thrombolyticAdminTime: stemiCase.thrombolyticAdminTime ? StemiDatetimeService.formatForLocal(stemiCase.thrombolyticAdminTime) : '',
         pciType: stemiCase.pciType || undefined,
+        fibrinolyticAbsoluteContraindications: stemiCase.fibrinolyticAbsoluteContraindications || undefined,
+        fibrinolyticRelativeContraindications: stemiCase.fibrinolyticRelativeContraindications || undefined,
       });
 
       setClinicalAssessment({
@@ -255,9 +265,9 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         selectedTreatment: stemiCase.selectedTreatment || undefined,
         ecgResult: stemiCase.ecgResult || undefined,
         ecgFindings: stemiCase.ecgFindings || '',
-        isTroponinPositive: false, // This field doesn't exist in the schema
-        troponinValue: undefined, // This field doesn't exist in the schema
-        additionalNotes: '', // This field doesn't exist in the schema
+        isTroponinPositive: (stemiCase as any).isTroponinPositive || false,
+        troponinValue: (stemiCase as any).troponinValue || undefined,
+        additionalNotes: (stemiCase as any).additionalNotes || '',
       });
     }
   }, [stemiCase?.id, open]);
@@ -265,7 +275,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
   const handleNext = () => {
     const errors = validateStep(activeStep);
     setValidationErrors(errors);
-    
+
     // Only proceed if there are no validation errors
     if (Object.keys(errors).length === 0 && activeStep < steps.length - 1) {
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -305,6 +315,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           thrombolyticGiven: interventionsAndTreatments.thrombolyticGiven,
           thrombolyticAdminTime: interventionsAndTreatments.thrombolyticAdminTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.thrombolyticAdminTime) : undefined,
           pciType: interventionsAndTreatments.pciType || undefined,
+          fibrinolyticAbsoluteContraindications: interventionsAndTreatments.fibrinolyticAbsoluteContraindications || undefined,
+          fibrinolyticRelativeContraindications: interventionsAndTreatments.fibrinolyticRelativeContraindications || undefined,
         },
         clinicalAssessment: {
           heartScore: clinicalAssessment.heartScore || undefined,
@@ -319,6 +331,9 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         selectedTreatment: additionalData.selectedTreatment,
         ecgResult: additionalData.ecgResult,
         ecgFindings: additionalData.ecgFindings || undefined,
+        isTroponinPositive: additionalData.isTroponinPositive,
+        troponinValue: additionalData.troponinValue,
+        additionalNotes: additionalData.additionalNotes || undefined,
       };
 
       // Always include patient info in the update payload
@@ -327,7 +342,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
       await onSubmit(stemiCase.id, submitData);
       setSuccess('Case updated successfully!');
       setError(null);
-      
+
       // Clear form and close dialog after a short delay to show success message
       setTimeout(() => {
         resetForm();
@@ -351,7 +366,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
 
   const validateStep = (step: number): Record<string, string> => {
     const errors: Record<string, string> = {};
-    
+
     switch (step) {
       case 0: // Patient Information
         if (!patientInfo.firstName) {
@@ -394,7 +409,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         // Review step
         break;
     }
-    
+
     return errors;
   };
 
@@ -466,12 +481,12 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
             <span>Edit STEMI Case - {stemiCase.patient?.firstName} {stemiCase.patient?.lastName}</span>
             {isAdmin && (
               <Box sx={{ ml: 'auto' }}>
-                <Box sx={{ 
-                  px: 1, 
-                  py: 0.5, 
-                  bgcolor: 'primary.main', 
-                  color: 'white', 
-                  borderRadius: 1, 
+                <Box sx={{
+                  px: 1,
+                  py: 0.5,
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  borderRadius: 1,
                   fontSize: '0.75rem',
                   fontWeight: 'bold'
                 }}>
@@ -481,8 +496,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
             )}
           </Box>
           <Box sx={{ mt: 1 }}>
-            <Box sx={{ 
-              fontSize: '0.875rem', 
+            <Box sx={{
+              fontSize: '0.875rem',
               color: 'text.secondary',
               fontWeight: 'medium'
             }}>

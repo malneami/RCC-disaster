@@ -140,11 +140,14 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
 
   const [interventionsAndTreatments, setInterventionsAndTreatments] = useState<InterventionsAndTreatments>({
     eligibleForPrimaryPci: false,
+    pciType: undefined,
     pciLocation: '',
     doorOutTime: '',
     balloonInflationTime: '',
     thrombolyticGiven: false,
     thrombolyticAdminTime: '',
+    fibrinolyticAbsoluteContraindications: '',
+    fibrinolyticRelativeContraindications: '',
   });
 
   const [clinicalAssessment, setClinicalAssessment] = useState<ClinicalAssessment>({
@@ -457,9 +460,13 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         },
         interventionsAndTreatments: {
           ...interventionsAndTreatments,
+          pciType: interventionsAndTreatments.pciType || undefined,
+          pciLocation: interventionsAndTreatments.pciLocation || undefined,
           doorOutTime: interventionsAndTreatments.doorOutTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.doorOutTime) : undefined,
           balloonInflationTime: interventionsAndTreatments.balloonInflationTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.balloonInflationTime) : undefined,
           thrombolyticAdminTime: interventionsAndTreatments.thrombolyticAdminTime ? StemiDatetimeService.formatForUTC(interventionsAndTreatments.thrombolyticAdminTime) : undefined,
+          fibrinolyticAbsoluteContraindications: interventionsAndTreatments.fibrinolyticAbsoluteContraindications || undefined,
+          fibrinolyticRelativeContraindications: interventionsAndTreatments.fibrinolyticRelativeContraindications || undefined,
         },
         clinicalAssessment: {
           ...clinicalAssessment,
@@ -469,10 +476,13 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         selectedTreatment: additionalData.selectedTreatment,
         ecgResult: additionalData.ecgResult,
         ecgFindings: additionalData.ecgFindings || undefined,
+        isTroponinPositive: additionalData.isTroponinPositive,
+        troponinValue: additionalData.troponinValue,
+        additionalNotes: additionalData.additionalNotes || undefined,
       };
 
       await onSubmit(formData);
-      
+
       // Reset form
       setActiveStep(0);
       setPatientInfo({
@@ -501,11 +511,14 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
       });
       setInterventionsAndTreatments({
         eligibleForPrimaryPci: false,
+        pciType: undefined,
         pciLocation: '',
         doorOutTime: '',
         balloonInflationTime: '',
         thrombolyticGiven: false,
         thrombolyticAdminTime: '',
+        fibrinolyticAbsoluteContraindications: '',
+        fibrinolyticRelativeContraindications: '',
       });
       setClinicalAssessment({
         heartScore: undefined,

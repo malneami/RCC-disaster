@@ -85,7 +85,16 @@ export class StemiCasesController {
   @Get()
   @Public()
   async findAll(@Query() filters: StemiFilterDto) {
-    return await this.stemiCasesService.getStemiCases(filters);
+    try {
+      console.log('[StemiCasesController] findAll called with filters:', JSON.stringify(filters));
+      const result = await this.stemiCasesService.getStemiCases(filters);
+      console.log('[StemiCasesController] findAll returning', result?.cases?.length, 'cases');
+      return result;
+    } catch (error: any) {
+      console.error('[StemiCasesController] findAll ERROR:', error.message);
+      console.error('[StemiCasesController] findAll ERROR stack:', error.stack);
+      throw error;
+    }
   }
 
   @Get('kpis')

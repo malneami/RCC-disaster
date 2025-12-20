@@ -1400,6 +1400,11 @@ model StemiCase {
   doorToNeedleMinutes             Int?        @map("door_to_needle_minutes")
   doorToBalloonMinutes            Int?        @map("door_to_balloon_minutes")
   
+  // Additional Clinical Fields
+  troponinValue                   Float?      @map("troponin_value")
+  isTroponinPositive              Boolean?    @map("is_troponin_positive")
+  additionalNotes                 String?     @map("additional_notes")
+  
   // KPI Achievement Flags
   metKpi1                         Boolean?    @map("met_kpi_1") // Door to ECG ≤10min
   metKpi2                         Boolean?    @map("met_kpi_2") // Door to Balloon ≤90min (Direct) / ≤120min (Transfer)

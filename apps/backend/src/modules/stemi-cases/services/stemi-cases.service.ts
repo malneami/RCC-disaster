@@ -143,10 +143,17 @@ export class StemiCasesService {
           pathwayStarted: admissionTime ? new Date(admissionTime) : new Date(),
           modeOfArrival: modeOfArrival,
           caseType: caseType,
+          transferRequestDateTime: createStemiCaseDto.transferRequestDateTime ? new Date(createStemiCaseDto.transferRequestDateTime) : null,
+          transferArrivalDateTime: createStemiCaseDto.transferArrivalDateTime ? new Date(createStemiCaseDto.transferArrivalDateTime) : null,
           
           // ECG Results
           ecgResult: stemiData.ecgResult,
           ecgFindings: stemiData.ecgFindings,
+
+          // Additional Clinical Fields
+          troponinValue: stemiData.troponinValue,
+          isTroponinPositive: stemiData.isTroponinPositive,
+          additionalNotes: stemiData.additionalNotes,
           
           // Critical Timestamps
           triageTime: criticalTimestamps.triageTime ? new Date(criticalTimestamps.triageTime) : null,
@@ -353,6 +360,25 @@ export class StemiCasesService {
       }
       if (patientInfo?.destinationHospitalId !== undefined && patientInfo?.destinationHospitalId !== null && patientInfo?.destinationHospitalId !== '') {
         updateData.destinationHospitalId = patientInfo.destinationHospitalId;
+      }
+
+      // Add transfer dates if provided (check for existence)
+      if (updateStemiCaseDto.transferRequestDateTime !== undefined) {
+        updateData.transferRequestDateTime = updateStemiCaseDto.transferRequestDateTime ? new Date(updateStemiCaseDto.transferRequestDateTime) : null;
+      }
+      if (updateStemiCaseDto.transferArrivalDateTime !== undefined) {
+        updateData.transferArrivalDateTime = updateStemiCaseDto.transferArrivalDateTime ? new Date(updateStemiCaseDto.transferArrivalDateTime) : null;
+      }
+
+      // Add additional clinical fields
+      if (stemiData.troponinValue !== undefined) {
+        updateData.troponinValue = stemiData.troponinValue;
+      }
+      if (stemiData.isTroponinPositive !== undefined) {
+        updateData.isTroponinPositive = stemiData.isTroponinPositive;
+      }
+      if (stemiData.additionalNotes !== undefined) {
+        updateData.additionalNotes = stemiData.additionalNotes;
       }
 
       // Update STEMI case
