@@ -96,10 +96,18 @@ const DriverManagement: React.FC = () => {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
+      // Normalize form data - convert empty strings to null for optional fields
+      const normalizedData = {
+        ...formData,
+        hospitalId: formData.hospitalId && formData.hospitalId.trim() !== '' 
+          ? formData.hospitalId 
+          : null,
+      };
+      
       if (editingDriver) {
-        await updateDriver({ id: editingDriver.id, data: formData });
+        await updateDriver({ id: editingDriver.id, data: normalizedData });
       } else {
-        await createDriver(formData);
+        await createDriver(normalizedData);
       }
       handleCloseDialog();
     } catch (error) {

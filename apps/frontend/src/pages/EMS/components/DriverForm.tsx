@@ -118,7 +118,6 @@ const DriverForm: React.FC<DriverFormProps> = ({
                   <TextField
                     {...params}
                     label="Hospital"
-                    required
                     variant="outlined"
                   />
                 )}

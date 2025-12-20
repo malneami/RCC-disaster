@@ -37,7 +37,9 @@ export class DriversService {
           passwordHash: hashedPassword,
           role: 'EMS',
           status: createDriverDto.status || 'ACTIVE',
-          hospitalId: createDriverDto.hospitalId,
+          hospitalId: createDriverDto.hospitalId && createDriverDto.hospitalId.trim() !== '' 
+            ? createDriverDto.hospitalId 
+            : null,
           isEmailVerified: false,
         },
         include: {
@@ -207,9 +209,19 @@ export class DriversService {
         }
       }
 
+      // Normalize update data - convert empty strings to null for optional fields
+      const normalizedData = {
+        ...updateDriverDto,
+        hospitalId: updateDriverDto.hospitalId !== undefined 
+          ? (updateDriverDto.hospitalId && updateDriverDto.hospitalId.trim() !== '' 
+              ? updateDriverDto.hospitalId 
+              : null)
+          : undefined,
+      };
+      
       const updatedDriver = await this.prisma.user.update({
         where: { id },
-        data: updateDriverDto,
+        data: normalizedData,
         include: {
           hospital: true,
         },
