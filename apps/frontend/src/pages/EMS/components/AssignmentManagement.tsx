@@ -7,7 +7,7 @@ import {
   Tab,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
+import {
   faPlus,
   faClock,
   faCheck,
@@ -70,7 +70,7 @@ const AssignmentManagement: React.FC = () => {
 
   const { ambulances } = useAmbulances();
   const { drivers } = useEMSDrivers();
-  
+
   const [tickets, setTickets] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
@@ -118,7 +118,7 @@ const AssignmentManagement: React.FC = () => {
         const d = date instanceof Date ? date : new Date(date);
         return isNaN(d.getTime()) ? '' : d.toISOString();
       };
-      
+
       setFormData({
         ticketId: assignment.ticketId,
         ambulanceId: assignment.ambulanceId || '',
@@ -175,27 +175,34 @@ const AssignmentManagement: React.FC = () => {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      const assignmentData = {
-        ...formData,
-        assignedAt: new Date(formData.assignedAt).toISOString(),
-        emsContactTime: formData.emsContactTime && formData.emsContactTime.trim() !== ''
-          ? new Date(formData.emsContactTime).toISOString()
-          : undefined,
-        journeyStartTime: formData.journeyStartTime && formData.journeyStartTime.trim() !== ''
-          ? new Date(formData.journeyStartTime).toISOString()
-          : undefined,
-        actualArrivalTime: formData.actualArrivalTime && formData.actualArrivalTime.trim() !== ''
-          ? new Date(formData.actualArrivalTime).toISOString()
-          : undefined,
-        journeyEndTime: formData.journeyEndTime && formData.journeyEndTime.trim() !== ''
-          ? new Date(formData.journeyEndTime).toISOString()
-          : undefined,
-        status: formData.status as 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED',
-      };
 
       if (editingAssignment) {
-        await updateAssignment({ id: editingAssignment.id, data: assignmentData });
-        
+        // For updates: only send fields allowed by UpdateEmsAssignmentDto
+        const updateData = {
+          ambulanceId: formData.ambulanceId && formData.ambulanceId.trim() !== ''
+            ? formData.ambulanceId
+            : undefined,
+          driverId: formData.driverId && formData.driverId.trim() !== ''
+            ? formData.driverId
+            : undefined,
+          status: formData.status as 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED',
+          emsContactTime: formData.emsContactTime && formData.emsContactTime.trim() !== ''
+            ? new Date(formData.emsContactTime).toISOString()
+            : undefined,
+          journeyStartTime: formData.journeyStartTime && formData.journeyStartTime.trim() !== ''
+            ? new Date(formData.journeyStartTime).toISOString()
+            : undefined,
+          actualArrivalTime: formData.actualArrivalTime && formData.actualArrivalTime.trim() !== ''
+            ? new Date(formData.actualArrivalTime).toISOString()
+            : undefined,
+          journeyEndTime: formData.journeyEndTime && formData.journeyEndTime.trim() !== ''
+            ? new Date(formData.journeyEndTime).toISOString()
+            : undefined,
+          notes: formData.notes,
+        };
+
+        await updateAssignment({ id: editingAssignment.id, data: updateData });
+
         // Sync ticket status when EMS assignment status changes
         if (formData.ticketId && formData.status) {
           try {
@@ -210,8 +217,27 @@ const AssignmentManagement: React.FC = () => {
           }
         }
       } else {
-        await createAssignment(assignmentData);
-        
+        // For creation: include all fields including ticketId and assignedAt
+        const createData = {
+          ...formData,
+          assignedAt: new Date(formData.assignedAt).toISOString(),
+          emsContactTime: formData.emsContactTime && formData.emsContactTime.trim() !== ''
+            ? new Date(formData.emsContactTime).toISOString()
+            : undefined,
+          journeyStartTime: formData.journeyStartTime && formData.journeyStartTime.trim() !== ''
+            ? new Date(formData.journeyStartTime).toISOString()
+            : undefined,
+          actualArrivalTime: formData.actualArrivalTime && formData.actualArrivalTime.trim() !== ''
+            ? new Date(formData.actualArrivalTime).toISOString()
+            : undefined,
+          journeyEndTime: formData.journeyEndTime && formData.journeyEndTime.trim() !== ''
+            ? new Date(formData.journeyEndTime).toISOString()
+            : undefined,
+          status: formData.status as 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED',
+        };
+
+        await createAssignment(createData);
+
         // Sync ticket status for new assignment
         if (formData.ticketId && formData.status) {
           try {
@@ -283,12 +309,12 @@ const AssignmentManagement: React.FC = () => {
     const status = getInferredStatus(a);
     return status === 'EMS_CONTACT';
   }) || [];
-  
+
   const activeAssignments = assignments?.filter(a => {
     const status = getInferredStatus(a);
     return ['EMS_ARRIVAL', 'DEPARTED'].includes(status);
   }) || [];
-  
+
   const completedAssignments = assignments?.filter(a => {
     const status = getInferredStatus(a);
     return status === 'ARRIVED';
@@ -321,7 +347,7 @@ const AssignmentManagement: React.FC = () => {
             }
           ]}
         />
-        
+
         <EmptyState
           icon={<FontAwesomeIcon icon={faAmbulance} size="3x" />}
           title="No EMS Assignments Yet"
@@ -329,7 +355,7 @@ const AssignmentManagement: React.FC = () => {
           actionLabel="Manual Assignment"
           onAction={() => handleOpenDialog()}
         />
-        
+
         <AssignmentForm
           open={openDialog}
           editingAssignment={editingAssignment}
@@ -365,16 +391,16 @@ const AssignmentManagement: React.FC = () => {
       <Card sx={{ mt: 2 }}>
         <CardContent>
           <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
-            <Tab 
-              label={`Contacted (${assignedAssignments.length})`} 
+            <Tab
+              label={`Contacted (${assignedAssignments.length})`}
               icon={<FontAwesomeIcon icon={faClock} />}
             />
-            <Tab 
-              label={`En Route (${activeAssignments.length})`} 
+            <Tab
+              label={`En Route (${activeAssignments.length})`}
               icon={<FontAwesomeIcon icon={faMapMarkerAlt} />}
             />
-            <Tab 
-              label={`Arrived (${completedAssignments.length})`} 
+            <Tab
+              label={`Arrived (${completedAssignments.length})`}
               icon={<FontAwesomeIcon icon={faCheck} />}
             />
           </Tabs>

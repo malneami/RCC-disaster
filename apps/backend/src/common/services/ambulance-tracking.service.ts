@@ -151,6 +151,19 @@ export class AmbulanceTrackingService {
       return { isValid: false, reason: 'Zero coordinates detected' };
     }
 
+    // Check for future timestamps (allow small buffer for clock skew)
+    const MAX_FUTURE_TOLERANCE_SECONDS = 60; // 1 minute tolerance for clock skew
+    const now = new Date();
+    const maxAllowedTime = new Date(now.getTime() + (MAX_FUTURE_TOLERANCE_SECONDS * 1000));
+
+    if (update.timestamp > maxAllowedTime) {
+      const futureSeconds = (update.timestamp.getTime() - now.getTime()) / 1000;
+      return { 
+        isValid: false, 
+        reason: `Timestamp is ${futureSeconds.toFixed(0)}s in the future (max tolerance: ${MAX_FUTURE_TOLERANCE_SECONDS}s)` 
+      };
+    }
+
     // Check for erratic movement (if previous location exists)
     if (previousLocation) {
       const distance = this.calculateDistance(
