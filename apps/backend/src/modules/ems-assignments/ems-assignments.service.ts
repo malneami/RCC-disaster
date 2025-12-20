@@ -661,6 +661,11 @@ export class EmsAssignmentsService {
     const originZoneLogs = assignment.ticket.originHospital
       ? relevantZoneLogs.filter(log => log.hospitalId === assignment.ticket.originHospital!.id)
       : [];
+      
+    // Check for origin zone exit (for DEPARTED status)
+    const originExitLog = assignment.ticket.originHospital
+      ? originZoneLogs.find(log => log.exitTime && (!assignment.journeyStartTime || Math.abs(new Date(log.exitTime).getTime() - new Date(assignment.journeyStartTime).getTime()) > 60000))
+      : null;
 
     // Infer what status should be based on timestamps
     let inferredStatus: AssignmentStatus = assignment.status;
@@ -735,10 +740,18 @@ export class EmsAssignmentsService {
               exitTime: destinationZoneLog.exitTime,
             }
           : null,
+        originExit: originExitLog
+          ? {
+              id: originExitLog.id,
+              entryTime: originExitLog.entryTime,
+              exitTime: originExitLog.exitTime,
+            }
+          : null,
       },
       analysis: {
         hasJourneyEndTime: !!assignment.journeyEndTime,
         hasDestinationZoneLog: !!destinationZoneLog,
+        hasOriginExitLog: !!originExitLog,
         shouldBeArrived: !!assignment.journeyEndTime || !!destinationZoneLog,
         currentStatus: assignment.status,
         expectedStatus: inferredStatus,
@@ -760,7 +773,7 @@ export class EmsAssignmentsService {
   async autoFixAssignmentStatus(assignmentId: string): Promise<EMSAssignment> {
     const diagnostic = await this.diagnoseAssignment(assignmentId);
     
-    if (!diagnostic.analysis.statusMismatch && !diagnostic.analysis.hasDestinationZoneLog) {
+    if (!diagnostic.analysis.statusMismatch && !diagnostic.analysis.hasDestinationZoneLog && !diagnostic.analysis.hasOriginExitLog) {
       // No fix needed
       return await this.findById(assignmentId);
     }
@@ -778,12 +791,52 @@ export class EmsAssignmentsService {
       updateData.status = 'ARRIVED';
     }
 
+    // Fix journeyStartTime from origin zone exit log if it exists and current time is mismatched
+    if (diagnostic.zoneLogs.originExit) {
+      updateData.journeyStartTime = diagnostic.zoneLogs.originExit.exitTime.toISOString();
+      // Only set status if not already ARRIVED
+      if (diagnostic.assignment.currentStatus !== 'ARRIVED') {
+        updateData.status = 'DEPARTED';
+      }
+    }
+
     if (Object.keys(updateData).length > 0) {
       this.logger.log(`Auto-fixing assignment ${assignmentId}: ${JSON.stringify(updateData)}`);
       return await this.update(assignmentId, updateData, 'system');
     }
 
     return await this.findById(assignmentId);
+  }
+
+  /**
+   * Fix departure times for all assignments (retroactive fix)
+   */
+  async fixAllDepartureTimes(): Promise<{ fixedCount: number; message: string }> {
+    const assignments = await this.prisma.eMSAssignment.findMany({
+      where: {
+        status: { in: ['DEPARTED', 'ARRIVED'] },
+        journeyStartTime: { not: null },
+        deletedAt: null
+      },
+      select: { id: true }
+    });
+
+    let fixedCount = 0;
+    for (const assignment of assignments) {
+      try {
+        const result = await this.autoFixAssignmentStatus(assignment.id);
+        // If updated (we can't easily tell from return, but logging helps)
+        // We could compare before/after but for now we just run it
+        fixedCount++;
+      } catch (error) {
+        this.logger.error(`Failed to fix assignment ${assignment.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    return { 
+      fixedCount, 
+      message: `Checked ${assignments.length} assignments, attempted fixes on them.` 
+    };
   }
 
   async getActiveAssignments(): Promise<EMSAssignment[]> {

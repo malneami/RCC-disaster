@@ -96,6 +96,14 @@ export class EmsAssignmentsController {
     return this.emsAssignmentsService.autoFixAssignmentStatus(id);
   }
 
+  @Post('fix-all-departures')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Retroactively fix departure times for all assignments based on zone logs' })
+  @ApiResponse({ status: 200, description: 'Departure times fixed successfully' })
+  async fixAllDepartures() {
+    return this.emsAssignmentsService.fixAllDepartureTimes();
+  }
+
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
   @ApiOperation({ summary: 'Update EMS assignment' })

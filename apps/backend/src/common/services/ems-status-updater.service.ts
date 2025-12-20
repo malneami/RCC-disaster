@@ -18,6 +18,7 @@ export interface StatusDetermination {
     movingTowardDestination: boolean;
     confidence: number;
   };
+  timestamp?: Date;
 }
 
 @Injectable()
@@ -164,7 +165,7 @@ export class EMSStatusUpdaterService {
               ? { actualArrivalTime: new Date() }
               : {}),
             ...(determination.suggestedStatus === 'DEPARTED' && !assignment.journeyStartTime
-              ? { journeyStartTime: new Date() }
+              ? { journeyStartTime: determination.timestamp || new Date() }
               : {}),
             ...(determination.suggestedStatus === 'EMS_ARRIVAL' && !assignment.journeyEndTime
               ? { journeyEndTime: new Date() }
@@ -353,7 +354,8 @@ export class EMSStatusUpdaterService {
         suggestedStatus: 'DEPARTED',
         confidence: 0.95,
         reason: 'Recently exited origin hospital zone',
-        zoneInfo
+        zoneInfo,
+        timestamp: recentOriginExit.exitTime
       };
     }
 

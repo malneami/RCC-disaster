@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, useMap, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { Box, Paper, Typography, CircularProgress, Alert, Button } from '@mui/material';
 import { emsService } from '../../../pages/EMS/services/emsService';
@@ -77,8 +77,7 @@ const AmbulanceRouteVisualization: React.FC<AmbulanceRouteVisualizationProps> = 
     }
   }, [ambulanceId, startTime, endTime]);
 
-  // Convert route points to Leaflet lat/lng format
-  const routePath = route.map(point => [point.latitude, point.longitude] as [number, number]);
+
 
   // Calculate total distance and duration
   const totalDistance = route.reduce((sum, point) => sum + (point.distanceFromPrevious || 0), 0);
@@ -296,8 +295,8 @@ const AmbulanceRouteVisualization: React.FC<AmbulanceRouteVisualizationProps> = 
         {/* Fit bounds to route */}
         <RouteBoundsFitter route={route} />
 
-        {/* Route polyline */}
-        {routePath.length > 1 && (
+        {/* Route polyline - Hiding connection as requested to reduce clutter */}
+        {/* {routePath.length > 1 && (
           <Polyline
             positions={routePath}
             pathOptions={{
@@ -306,7 +305,7 @@ const AmbulanceRouteVisualization: React.FC<AmbulanceRouteVisualizationProps> = 
               opacity: 0.7,
             }}
           />
-        )}
+        )} */}
 
         {/* Start point marker */}
         {startPoint && (
@@ -356,9 +355,9 @@ const AmbulanceRouteVisualization: React.FC<AmbulanceRouteVisualizationProps> = 
           </Marker>
         )}
 
-        {/* Waypoint markers (every 10th point for performance) */}
+        {/* Waypoint markers (every 2nd point for better history visibility as requested) */}
         {route
-          .filter((_, index) => index % 10 === 0 && index !== 0 && index !== route.length - 1)
+          .filter((_, index) => index % 2 === 0 && index !== 0 && index !== route.length - 1)
           .map((point, index) => (
             <Marker
               key={`waypoint-${index}`}

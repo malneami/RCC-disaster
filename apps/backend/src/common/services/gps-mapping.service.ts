@@ -67,8 +67,8 @@ export class GPSMappingService {
       speed: parseFloat(gpsObject.speed) || 0,
       direction: gpsObject.angle ? parseFloat(gpsObject.angle) : undefined,
       altitude: gpsObject.altitude ? parseFloat(gpsObject.altitude) : undefined,
-      timestamp: gpsObject.dt_tracker,
-      lastUpdate: gpsObject.dt_tracker,
+      timestamp: gpsObject.dt_server || gpsObject.dt_tracker || undefined,
+      lastUpdate: undefined,
     };
   }
 

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Box, Alert, CircularProgress, Typography, IconButton } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRoute, faChevronUp, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { MapContainer, TileLayer, useMap, Circle, Marker, Polyline, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, Circle, Marker, Tooltip } from 'react-leaflet';
 import L, { LatLngBounds, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { format } from 'date-fns';
@@ -89,7 +89,7 @@ const RouteHistoryLegend: React.FC<{
           }}
         >
           <FontAwesomeIcon icon={faRoute} size="sm" color="#ea4335" />
-          
+
           {!isExpanded ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#202124' }}>
@@ -104,18 +104,18 @@ const RouteHistoryLegend: React.FC<{
               Route History
             </Typography>
           )}
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
             <IconButton size="small" sx={{ p: 0.25 }}>
-              <FontAwesomeIcon 
-                icon={isExpanded ? faChevronDown : faChevronUp} 
-                size="xs" 
-                color="#5f6368" 
+              <FontAwesomeIcon
+                icon={isExpanded ? faChevronDown : faChevronUp}
+                size="xs"
+                color="#5f6368"
               />
             </IconButton>
             {onClear && (
-              <IconButton 
-                size="small" 
+              <IconButton
+                size="small"
                 onClick={(e) => { e.stopPropagation(); onClear(); }}
                 sx={{ p: 0.25 }}
               >
@@ -131,7 +131,7 @@ const RouteHistoryLegend: React.FC<{
             <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#202124', mb: 1 }}>
               {routeAmbulanceCallSign}
             </Typography>
-            
+
             {legendItems.map((item) => (
               <Box
                 key={item.label}
@@ -155,7 +155,7 @@ const RouteHistoryLegend: React.FC<{
                 </Typography>
               </Box>
             ))}
-            
+
             <Typography sx={{ fontSize: '11px', color: '#5f6368', mt: 1, pt: 1, borderTop: '1px solid #e8eaed' }}>
               {routePointsCount} points total
             </Typography>
@@ -307,7 +307,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
     console.log('=== ROUTE LOADED ===');
     console.log('Route loaded for', callSign, 'with', route.length, 'points');
     console.log('Full route data:', route);
-    
+
     if (route.length > 0) {
       console.log('Route bounds check:');
       const lats = route.map(p => p.latitude);
@@ -317,10 +317,10 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
       console.log('First 3 points:', route.slice(0, 3));
       console.log('Last 3 points:', route.slice(-3));
       console.log('First position for Leaflet:', [route[0].latitude, route[0].longitude]);
-      
+
       // Check for invalid coordinates
-      const invalidPoints = route.filter(p => 
-        p.latitude === 0 || p.longitude === 0 || 
+      const invalidPoints = route.filter(p =>
+        p.latitude === 0 || p.longitude === 0 ||
         isNaN(p.latitude) || isNaN(p.longitude) ||
         p.latitude < 16 || p.latitude > 32 ||
         p.longitude < 34 || p.longitude > 55
@@ -331,7 +331,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
     } else {
       console.error('WARNING: Route has 0 points!');
     }
-    
+
     setRouteHistory(route);
     setRouteAmbulanceCallSign(callSign);
     console.log('Route state updated');
@@ -346,10 +346,10 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
   const createRoutePointIcon = (index: number, total: number, isGapPoint: boolean = false) => {
     const isStart = index === 0;
     const isEnd = index === total - 1;
-    
+
     let color = '#e53935'; // Red for route points
     let size = 8;
-    
+
     if (isStart) {
       color = '#4caf50'; // Green for start
       size = 14;
@@ -401,7 +401,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
       .replace(' Central', '')
       .replace(' Medical City', '')
       .replace(' Medical Center', '');
-    
+
     // Truncate if still too long
     if (shortName.length > 16) {
       shortName = shortName.substring(0, 14) + '...';
@@ -608,8 +608,8 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
 
         {/* Render ambulance markers - hide others when showing route history */}
         {ambulances ? ambulances
-          .filter(ambulance => 
-            routeHistory.length === 0 || 
+          .filter(ambulance =>
+            routeHistory.length === 0 ||
             ambulance.callSign === routeAmbulanceCallSign
           )
           .map((ambulance) => (
@@ -622,8 +622,8 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
             />
           )) : null}
 
-        {/* Render route history polylines - split at gaps to avoid false connections */}
-        {routeHistory.length > 1 ? (() => {
+        {/* Render route history polylines - DISABLED as requested to reduce clutter */}
+        {/* {routeHistory.length > 1 ? (() => {
           console.log('=== RENDERING ROUTE POLYLINES ===');
           console.log('Route history length:', routeHistory.length);
           
@@ -669,20 +669,20 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
             }
             return null;
           });
-        })() : null}
+        })() : null} */}
 
         {/* Render route history points as red dots */}
         {routeHistory.map((point, index) => {
-          // Show every 5th point for performance, plus start, end, and gap points
+          // Show every 2nd point for better visibility, plus start, end, and gap points
           const isStart = index === 0;
           const isEnd = index === routeHistory.length - 1;
           const isGapPoint = point.hasGapBefore;
-          const showPoint = isStart || isEnd || isGapPoint || index % 5 === 0;
-          
+          const showPoint = isStart || isEnd || isGapPoint || index % 2 === 0;
+
           if (showPoint && (isStart || isEnd)) {
             console.log(`Rendering ${isStart ? 'START' : 'END'} marker at [${point.latitude}, ${point.longitude}]`);
           }
-          
+
           if (!showPoint) return null;
 
           return (
@@ -701,7 +701,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
                   </Typography>
                   {isGapPoint && point.gapMinutes && (
                     <Typography variant="caption" display="block" color="warning.main">
-                      {point.gapMinutes >= 60 
+                      {point.gapMinutes >= 60
                         ? `${Math.round(point.gapMinutes / 60)}h ${point.gapMinutes % 60}m gap`
                         : `${point.gapMinutes}m gap`}
                     </Typography>

@@ -275,9 +275,33 @@ export class EmsLocationWorkflowService {
             }
             break;
           case 'DEPARTED':
-            // Only set if not already manually set
             if (!assignment.journeyStartTime) {
-              updateData.journeyStartTime = now;
+              // Try to find the actual zone exit time to avoid lag
+              let departureTime = now;
+              
+              try {
+                if (assignment.ambulanceId) {
+                  const lastZoneLog = await this.prisma.ambulanceZoneLog.findFirst({
+                    where: {
+                      ambulanceId: assignment.ambulanceId,
+                      hospitalId: assignment.ticket.originHospital.id,
+                      exitTime: { not: null } // Find completed logs
+                    },
+                    orderBy: { exitTime: 'desc' }
+                  });
+
+                  // If we found a recent exit log (within last 15 mins), use its exit time
+                  if (lastZoneLog && lastZoneLog.exitTime && 
+                      (now.getTime() - lastZoneLog.exitTime.getTime() < 15 * 60 * 1000)) {
+                    this.logger.log(`Using actual zone exit time for departure: ${lastZoneLog.exitTime.toISOString()} (vs now: ${now.toISOString()})`);
+                    departureTime = lastZoneLog.exitTime;
+                  }
+                }
+              } catch (err: any) {
+                this.logger.warn(`Failed to lookup zone log for departure time: ${err.message}`);
+              }
+
+              updateData.journeyStartTime = departureTime;
             }
             break;
           case 'ARRIVED':

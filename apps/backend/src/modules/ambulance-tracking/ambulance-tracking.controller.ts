@@ -254,7 +254,10 @@ export class AmbulanceTrackingController {
   ) {
     this.logger.log(`Getting route for ambulance ${ambulanceId}`);
     const start = startTime ? new Date(startTime) : new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const end = endTime ? new Date(endTime) : new Date();
+    // Add 4-hour buffer to account for timezone discrepancies (e.g. server UTC vs Saudi/Egypt local time)
+    // This ensures we capture recent logs that might appear to be in the "future" relative to the requested end time
+    const endRaw = endTime ? new Date(endTime) : new Date();
+    const end = new Date(endRaw.getTime() + 4 * 60 * 60 * 1000);
     const limitNum = limit ? parseInt(limit) : 1000; // Default: 1000 points
     
     const result = await this.ambulanceTrackingService.getAmbulanceRoute(ambulanceId, {
