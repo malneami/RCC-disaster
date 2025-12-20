@@ -61,9 +61,9 @@ export class DashboardService {
         startOfDay = new Date(filters.startDate + 'T00:00:00.000Z');
         endOfDay = new Date(filters.endDate + 'T23:59:59.999Z');
       } else {
-        // Default to today if no date filters provided
-        startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+        // Default to "All Time" (from Jan 1, 2024) if no date filters provided
+        startOfDay = new Date('2024-01-01T00:00:00.000Z');
+        endOfDay = new Date();
       }
 
       // Get all metrics in parallel for better performance
@@ -73,8 +73,8 @@ export class DashboardService {
         completedToday,
         delayedTransfers,
       ] = await Promise.all([
-        this.getActiveTransfers(filters?.hospitalId),
-        this.getUrgentPathwayCases(filters?.hospitalId),
+        this.getActiveTransfers(startOfDay, endOfDay, filters?.hospitalId),
+        this.getUrgentPathwayCases(startOfDay, endOfDay, filters?.hospitalId),
         this.getCompletedToday(startOfDay, endOfDay, filters?.hospitalId),
         this.getDelayedTransfers(startOfDay, endOfDay, filters?.hospitalId),
       ]);
@@ -101,21 +101,39 @@ export class DashboardService {
     }
   }
 
-  private async getActiveTransfers(hospitalId?: string): Promise<number> {
+  private async getActiveTransfers(startOfDay: Date, endOfDay: Date, hospitalId?: string): Promise<number> {
     try {
-      // Count open tickets that are currently active
+      // Count tickets that were active during the date range
       const whereClause: any = {
         status: {
           in: ['PENDING', 'ASSIGNED', 'IN_TRANSPORT'],
         },
+        OR: [
+          {
+            createdAt: {
+              gte: startOfDay,
+              lt: endOfDay,
+            },
+          },
+          {
+            updatedAt: {
+              gte: startOfDay,
+              lt: endOfDay,
+            },
+          },
+        ],
         deletedAt: null,
       };
 
       // Add hospital filter if provided
       if (hospitalId) {
-        whereClause.OR = [
-          { originHospitalId: hospitalId },
-          { destinationHospitalId: hospitalId },
+        whereClause.AND = [
+          {
+            OR: [
+              { originHospitalId: hospitalId },
+              { destinationHospitalId: hospitalId },
+            ],
+          },
         ];
       }
 
@@ -123,7 +141,7 @@ export class DashboardService {
         where: whereClause,
       });
 
-      this.logger.debug(`Active transfers count (from tickets): ${count}`);
+      this.logger.debug(`Active transfers count (from tickets) for date range: ${count}`);
       return count;
     } catch (error) {
       this.logger.error('Error counting active transfers:', error);
@@ -131,27 +149,59 @@ export class DashboardService {
     }
   }
 
-  private async getUrgentPathwayCases(hospitalId?: string): Promise<number> {
+  private async getUrgentPathwayCases(startOfDay: Date, endOfDay: Date, hospitalId?: string): Promise<number> {
     try {
-      // Build where clauses for both queries
+      // Build where clauses for both queries with date filtering
       const ticketWhereClause: any = {
         priority: 'CRITICAL',
         status: {
           in: ['PENDING', 'ASSIGNED', 'IN_TRANSPORT'],
         },
+        OR: [
+          {
+            createdAt: {
+              gte: startOfDay,
+              lt: endOfDay,
+            },
+          },
+          {
+            updatedAt: {
+              gte: startOfDay,
+              lt: endOfDay,
+            },
+          },
+        ],
         deletedAt: null,
       };
 
       const criticalCaseWhereClause: any = {
         status: 'ACTIVE',
+        OR: [
+          {
+            createdAt: {
+              gte: startOfDay,
+              lt: endOfDay,
+            },
+          },
+          {
+            updatedAt: {
+              gte: startOfDay,
+              lt: endOfDay,
+            },
+          },
+        ],
         deletedAt: null,
       };
 
       // Add hospital filter if provided
       if (hospitalId) {
-        ticketWhereClause.OR = [
-          { originHospitalId: hospitalId },
-          { destinationHospitalId: hospitalId },
+        ticketWhereClause.AND = [
+          {
+            OR: [
+              { originHospitalId: hospitalId },
+              { destinationHospitalId: hospitalId },
+            ],
+          },
         ];
         criticalCaseWhereClause.hospitalId = hospitalId;
       }
@@ -169,7 +219,7 @@ export class DashboardService {
       ]);
 
       const total = urgentTickets + criticalCases;
-      this.logger.debug(`Urgent pathway cases: Tickets=${urgentTickets}, Critical=${criticalCases}, Total=${total}`);
+      this.logger.debug(`Urgent pathway cases for date range: Tickets=${urgentTickets}, Critical=${criticalCases}, Total=${total}`);
       return total;
     } catch (error) {
       this.logger.error('Error counting urgent pathway cases:', error);
@@ -270,10 +320,11 @@ export class DashboardService {
         endOfDay = new Date(filters.endDate + 'T23:59:59.999Z');
         lastWeek = new Date(startOfDay.getTime() - 7 * 24 * 60 * 60 * 1000);
       } else {
-        // Default to today if no date filters provided
-        startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-        lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        // Default to "All Time" (from Jan 1, 2024) if no date filters provided
+        startOfDay = new Date('2024-01-01T00:00:00.000Z');
+        endOfDay = new Date();
+        // Set "last week" to start of day as well to capture full range for "active/recent" counts when viewing all time
+        lastWeek = new Date('2024-01-01T00:00:00.000Z');
       }
 
       // Get pathway performance data in parallel
