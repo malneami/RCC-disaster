@@ -149,7 +149,7 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
 
             // Infer status from timestamps if not explicitly set
             let inferredStatus = isRetroactive ? derivedStatus : 'EMS_CONTACT';
-            
+
             // If timestamps are being set, ensure status matches
             if (isRetroactive && selectedLog) {
                 if (derivedStatus === 'ARRIVED' && selectedSequence) {
@@ -160,7 +160,7 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
                     inferredStatus = 'EMS_ARRIVAL';
                 }
             }
-            
+
             const payload: any = {
                 ticketId,
                 ambulanceId: selectedAmbulanceId,
@@ -230,7 +230,15 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
                     if (log.hospitalId !== ticket.originHospital?.id) return false;
                     // Filter by EMS contact time if available
                     if (contactTime) {
-                        return new Date(log.entryTime) >= new Date(contactTime);
+                        const logExit = log.exitTime ? new Date(log.exitTime) : null;
+                        const contactDate = new Date(contactTime);
+
+                        // If it finished BEFORE the contact time, exclude it
+                        if (logExit && logExit < contactDate) {
+                            return false;
+                        }
+                        // Keep active (exitTime=null) and overlapping (exitTime >= contactTime)
+                        return true;
                     }
                     return true;
                 })
@@ -249,7 +257,15 @@ const CrewAssignmentModal: React.FC<EnhancedCrewAssignmentModalProps> = ({
                     if (log.hospitalId !== ticket.destinationHospital?.id) return false;
                     // Filter by EMS contact time if available
                     if (contactTime) {
-                        return new Date(log.entryTime) >= new Date(contactTime);
+                        const logExit = log.exitTime ? new Date(log.exitTime) : null;
+                        const contactDate = new Date(contactTime);
+
+                        // If it finished BEFORE the contact time, exclude it
+                        if (logExit && logExit < contactDate) {
+                            return false;
+                        }
+                        // Keep active (exitTime=null) and overlapping (exitTime >= contactTime)
+                        return true;
                     }
                     return true;
                 })
