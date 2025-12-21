@@ -55,6 +55,14 @@ export const usePatientData = () => {
 
   const handlePatientCreated = (newPatient: Patient) => {
     setPatients(prev => [newPatient, ...prev]);
+    // Update total count if no filters or search are active
+    // Otherwise, reload data to get accurate count
+    if (Object.keys(filters).length === 0 && !searchQuery.trim()) {
+      setTotalPatients(prev => prev + 1);
+    } else {
+      // Reload to get accurate count with filters/search
+      loadPatients();
+    }
   };
 
   const handlePatientUpdated = (updatedPatient: Patient) => {

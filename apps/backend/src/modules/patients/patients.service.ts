@@ -548,12 +548,25 @@ export class PatientsService {
     }
   }
 
+  /**
+   * Normalize National ID for display/export
+   * Removes the UUID suffix from "00000000000000-XXXXXX" format
+   */
+  private normalizeNationalId(nationalId: string | null | undefined): string {
+    if (!nationalId) return '';
+    // If it starts with "00000000000000-", normalize it back to "00000000000000"
+    if (nationalId.startsWith('00000000000000-')) {
+      return '00000000000000';
+    }
+    return nationalId;
+  }
+
   private generateJsonExport(patient: any) {
     const data = {
       patient: {
         id: patient.id,
         mrn: patient.mrn,
-        nationalId: patient.nationalId,
+        nationalId: this.normalizeNationalId(patient.nationalId),
         firstName: patient.firstName,
         lastName: patient.lastName,
         middleName: patient.middleName,
@@ -621,7 +634,7 @@ export class PatientsService {
       ['Field', 'Value'],
       ['ID', patient.id],
       ['MRN', patient.mrn || ''],
-      ['National ID', patient.nationalId || ''],
+      ['National ID', this.normalizeNationalId(patient.nationalId)],
       ['First Name', patient.firstName],
       ['Last Name', patient.lastName],
       ['Middle Name', patient.middleName || ''],
@@ -784,7 +797,7 @@ export class PatientsService {
         .font('Helvetica')
         .text(`Name: ${patient.firstName} ${patient.middleName || ''} ${patient.lastName}`)
         .text(`MRN: ${patient.mrn || 'N/A'}`)
-        .text(`National ID: ${patient.nationalId || 'N/A'}`)
+        .text(`National ID: ${this.normalizeNationalId(patient.nationalId) || 'N/A'}`)
         .text(`Age: ${this.formatAgeForDisplay(patient)}`);
       
       // Only show date of birth if it exists
