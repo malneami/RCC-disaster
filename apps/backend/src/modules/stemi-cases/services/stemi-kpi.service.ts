@@ -311,12 +311,12 @@ export class StemiKpiService {
           withinTarget: kpi2DirectCases,
           validCases: validDirectCases.length,
           compliantCases: kpi2DirectCases,
-          percentage: validDirectCases.length > 0 ? 
-                     Math.round((kpi2DirectCases / validDirectCases.length) * 100 * 10) / 10 : 0,
-          status: validDirectCases.length > 0 && 
-                  (kpi2DirectCases / validDirectCases.length) >= 0.9 ? 'GREEN' : 
-                  validDirectCases.length > 0 && 
-                  (kpi2DirectCases / validDirectCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: directPciCases.length > 0 ? 
+                     Math.round((kpi2DirectCases / directPciCases.length) * 100 * 10) / 10 : 0,
+          status: directPciCases.length > 0 && 
+                  (kpi2DirectCases / directPciCases.length) >= 0.9 ? 'GREEN' : 
+                  directPciCases.length > 0 && 
+                  (kpi2DirectCases / directPciCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi2Transfer: (() => {
@@ -329,12 +329,12 @@ export class StemiKpiService {
           withinTarget: kpi2TransferCases,
           validCases: validTransferCases.length,
           compliantCases: kpi2TransferCases,
-          percentage: validTransferCases.length > 0 ? 
-                     Math.round((kpi2TransferCases / validTransferCases.length) * 100 * 10) / 10 : 0,
-          status: validTransferCases.length > 0 && 
-                  (kpi2TransferCases / validTransferCases.length) >= 0.9 ? 'GREEN' : 
-                  validTransferCases.length > 0 && 
-                  (kpi2TransferCases / validTransferCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: transferPciCases.length > 0 ? 
+                     Math.round((kpi2TransferCases / transferPciCases.length) * 100 * 10) / 10 : 0,
+          status: transferPciCases.length > 0 && 
+                  (kpi2TransferCases / transferPciCases.length) >= 0.9 ? 'GREEN' : 
+                  transferPciCases.length > 0 && 
+                  (kpi2TransferCases / transferPciCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi3: (() => {
@@ -347,12 +347,12 @@ export class StemiKpiService {
           withinTarget: kpi3Cases,
           validCases: validD2nCases.length,
           compliantCases: kpi3Cases,
-          percentage: validD2nCases.length > 0 ? 
-                     Math.round((kpi3Cases / validD2nCases.length) * 100 * 10) / 10 : 0,
-          status: validD2nCases.length > 0 && 
-                  (kpi3Cases / validD2nCases.length) >= 0.9 ? 'GREEN' : 
-                  validD2nCases.length > 0 && 
-                  (kpi3Cases / validD2nCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: thrombolyticTransferCases.length > 0 ? 
+                     Math.round((kpi3Cases / thrombolyticTransferCases.length) * 100 * 10) / 10 : 0,
+          status: thrombolyticTransferCases.length > 0 && 
+                  (kpi3Cases / thrombolyticTransferCases.length) >= 0.9 ? 'GREEN' : 
+                  thrombolyticTransferCases.length > 0 && 
+                  (kpi3Cases / thrombolyticTransferCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi4: (() => {
@@ -365,12 +365,12 @@ export class StemiKpiService {
           withinTarget: kpi4Cases,
           validCases: validRccCases.length,
           compliantCases: kpi4Cases,
-          percentage: validRccCases.length > 0 ? 
-                     Math.round((kpi4Cases / validRccCases.length) * 100 * 10) / 10 : 0,
-          status: validRccCases.length > 0 && 
-                  (kpi4Cases / validRccCases.length) >= 0.9 ? 'GREEN' : 
-                  validRccCases.length > 0 && 
-                  (kpi4Cases / validRccCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: rccEligibleCases.length > 0 ? 
+                     Math.round((kpi4Cases / rccEligibleCases.length) * 100 * 10) / 10 : 0,
+          status: rccEligibleCases.length > 0 && 
+                  (kpi4Cases / rccEligibleCases.length) >= 0.9 ? 'GREEN' : 
+                  rccEligibleCases.length > 0 && 
+                  (kpi4Cases / rccEligibleCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi5: (() => {
@@ -389,12 +389,12 @@ export class StemiKpiService {
           withinTarget: kpi5Cases,
           validCases: validDidoCases.length,
           compliantCases: kpi5Cases,
-          percentage: validDidoCases.length > 0 ? 
-                     Math.round((kpi5Cases / validDidoCases.length) * 100 * 10) / 10 : 0,
-          status: validDidoCases.length > 0 && 
-                  (kpi5Cases / validDidoCases.length) >= 0.9 ? 'GREEN' : 
-                  validDidoCases.length > 0 && 
-                  (kpi5Cases / validDidoCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: didoEligibleCases.length > 0 ? 
+                     Math.round((kpi5Cases / didoEligibleCases.length) * 100 * 10) / 10 : 0,
+          status: didoEligibleCases.length > 0 && 
+                  (kpi5Cases / didoEligibleCases.length) >= 0.9 ? 'GREEN' : 
+                  didoEligibleCases.length > 0 && 
+                  (kpi5Cases / didoEligibleCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi6: {
