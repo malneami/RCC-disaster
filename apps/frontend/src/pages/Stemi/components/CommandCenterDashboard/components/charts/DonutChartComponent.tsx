@@ -20,7 +20,7 @@ interface DonutChartComponentProps {
   outerRadius?: number;
 }
 
-const DonutChartComponent: React.FC<DonutChartComponentProps> = ({
+const  DonutChartComponent: React.FC<DonutChartComponentProps> = ({
   data,
   title,
   colors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#607d8b', '#f44336'],
@@ -111,29 +111,34 @@ const DonutChartComponent: React.FC<DonutChartComponentProps> = ({
         gap: '16px',
         marginTop: '12px',
       }}>
-        {payload.map((entry: any, index: number) => (
-          <div key={`legend-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ 
-              width: '12px', 
-              height: '12px', 
-              borderRadius: '3px',
-              backgroundColor: entry.color,
-            }} />
-            <span style={{ 
-              color: '#ffffff', 
-              fontSize: '13px',
-              fontWeight: 500,
-            }}>
-              {entry.value}
-            </span>
-            <span style={{ 
-              color: 'rgba(255,255,255,0.5)', 
-              fontSize: '12px',
-            }}>
-              ({chartData[index]?.value || 0})
-            </span>
-          </div>
-        ))}
+        {payload.map((entry: any, index: number) => {
+          const matchedData = chartData.find(item => item.name === entry.value);
+          const value = matchedData?.value || entry.payload?.value || 0;
+          
+          return (
+            <div key={`legend-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ 
+                width: '12px', 
+                height: '12px', 
+                borderRadius: '3px',
+                backgroundColor: entry.color,
+              }} />
+              <span style={{ 
+                color: '#ffffff', 
+                fontSize: '13px',
+                fontWeight: 500,
+              }}>
+                {entry.value}
+              </span>
+              <span style={{ 
+                color: 'rgba(255,255,255,0.5)', 
+                fontSize: '12px',
+              }}>
+                ({value})
+              </span>
+            </div>
+          );
+        })}
       </div>
     );
   };
