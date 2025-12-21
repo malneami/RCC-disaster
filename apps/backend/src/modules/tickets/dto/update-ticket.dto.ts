@@ -6,6 +6,10 @@ import { VitalsDto, DiagnosticsDto, RequiredResourcesDto } from './create-ticket
 export class UpdateTicketDto {
   @IsOptional()
   @IsUUID()
+  originHospitalId?: string;
+
+  @IsOptional()
+  @IsUUID()
   destinationHospitalId?: string;
 
   @IsOptional()

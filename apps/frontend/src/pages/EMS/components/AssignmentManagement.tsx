@@ -25,6 +25,7 @@ import AssignmentGrid from './AssignmentGrid';
 import GenericPageHeader from '../../../components/Common/GenericPageHeader';
 import EmptyState from '../../../components/Common/EmptyState';
 import { ticketService } from '../../../services/ticketService';
+import { hospitalService } from '../../../services/hospitalService';
 import { emsTicketSyncService } from '../../../services/emsTicketSyncService';
 import { useState, useEffect } from 'react';
 
@@ -72,9 +73,10 @@ const AssignmentManagement: React.FC = () => {
   const { drivers } = useEMSDrivers();
 
   const [tickets, setTickets] = useState<any[]>([]);
+  const [hospitals, setHospitals] = useState<Array<{ id: string; name: string }>>([]);
   const [loadingData, setLoadingData] = useState(false);
 
-  // Load tickets data
+  // Load tickets and hospitals data
   useEffect(() => {
     const loadData = async () => {
       setLoadingData(true);
@@ -82,8 +84,12 @@ const AssignmentManagement: React.FC = () => {
         // Load tickets
         const ticketsResponse = await ticketService.getTickets(1, 100, { status: 'PENDING' });
         setTickets(ticketsResponse.data);
+
+        // Load hospitals
+        const hospitalsResponse = await hospitalService.getAllHospitals();
+        setHospitals(hospitalsResponse.map(h => ({ id: h.id, name: h.name })));
       } catch (error) {
-        console.error('Error loading tickets:', error);
+        console.error('Error loading data:', error);
       } finally {
         setLoadingData(false);
       }
@@ -107,6 +113,8 @@ const AssignmentManagement: React.FC = () => {
     actualArrivalTime: '',
     journeyEndTime: '',
     notes: '',
+    originHospitalId: '',
+    destinationHospitalId: '',
   });
 
   const handleOpenDialog = (assignment?: EMSAssignment) => {
@@ -130,6 +138,8 @@ const AssignmentManagement: React.FC = () => {
         actualArrivalTime: toISOString(assignment.actualArrivalTime),
         journeyEndTime: toISOString(assignment.journeyEndTime),
         notes: assignment.notes || '',
+        originHospitalId: assignment.ticket?.originHospital?.id || '',
+        destinationHospitalId: assignment.ticket?.destinationHospital?.id || '',
       });
     } else {
       setEditingAssignment(null);
@@ -144,6 +154,8 @@ const AssignmentManagement: React.FC = () => {
         actualArrivalTime: '',
         journeyEndTime: '',
         notes: '',
+        originHospitalId: '',
+        destinationHospitalId: '',
       });
     }
     setOpenDialog(true);
@@ -167,6 +179,8 @@ const AssignmentManagement: React.FC = () => {
       actualArrivalTime: assignment.actualArrivalTime ? assignment.actualArrivalTime.toString() : '',
       journeyEndTime: assignment.journeyEndTime ? assignment.journeyEndTime.toString() : '',
       notes: assignment.notes || '',
+      originHospitalId: assignment.ticket?.originHospital?.id || '',
+      destinationHospitalId: assignment.ticket?.destinationHospital?.id || '',
     });
     setOpenDialog(true);
   };
@@ -199,6 +213,13 @@ const AssignmentManagement: React.FC = () => {
             ? new Date(formData.journeyEndTime).toISOString()
             : undefined,
           notes: formData.notes,
+          // Include hospital IDs if they were changed
+          ...(formData.originHospitalId && formData.originHospitalId.trim() !== '' && {
+            originHospitalId: formData.originHospitalId,
+          }),
+          ...(formData.destinationHospitalId && formData.destinationHospitalId.trim() !== '' && {
+            destinationHospitalId: formData.destinationHospitalId,
+          }),
         };
 
         await updateAssignment({ id: editingAssignment.id, data: updateData });
@@ -366,6 +387,7 @@ const AssignmentManagement: React.FC = () => {
           tickets={tickets}
           ambulances={ambulances}
           drivers={drivers}
+          hospitals={hospitals}
           loading={isSubmitting}
           loadingData={loadingData}
         />
@@ -462,6 +484,7 @@ const AssignmentManagement: React.FC = () => {
         tickets={tickets}
         ambulances={ambulances}
         drivers={drivers}
+        hospitals={hospitals}
         loading={isSubmitting}
         loadingData={loadingData}
       />

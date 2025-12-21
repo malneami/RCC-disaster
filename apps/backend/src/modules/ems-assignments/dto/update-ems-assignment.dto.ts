@@ -3,6 +3,16 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AssignmentStatus } from '@prisma/client';
 
 export class UpdateEmsAssignmentDto {
+  @ApiPropertyOptional({ description: 'Origin Hospital ID', example: 'hospital-uuid' })
+  @IsOptional()
+  @IsUUID()
+  originHospitalId?: string;
+
+  @ApiPropertyOptional({ description: 'Destination Hospital ID', example: 'hospital-uuid' })
+  @IsOptional()
+  @IsUUID()
+  destinationHospitalId?: string;
+
   @ApiPropertyOptional({ description: 'Ambulance ID to assign', example: 'ambulance-uuid' })
   @IsOptional()
   @IsUUID()

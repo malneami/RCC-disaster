@@ -480,7 +480,7 @@ export class TicketsService {
       throw new ForbiddenException('Only assigned EMS can update this ticket');
     }
 
-    const { assignedToId, requiredResources, destinationHospitalId, ...updateData } = updateTicketDto;
+    const { assignedToId, requiredResources, originHospitalId, destinationHospitalId, ...updateData } = updateTicketDto;
     
     // Convert DateTime fields from strings to Date objects
     const processedUpdateData = {
@@ -493,6 +493,9 @@ export class TicketsService {
       where: { id },
       data: {
         ...processedUpdateData,
+        // Include hospital IDs if provided
+        ...(originHospitalId && { originHospitalId }),
+        ...(destinationHospitalId && { destinationHospitalId }),
         vitals: updateTicketDto.vitals ? JSON.stringify(updateTicketDto.vitals) : undefined,
         diagnostics: updateTicketDto.diagnostics ? JSON.stringify(updateTicketDto.diagnostics) : undefined,
         requiredResources: requiredResources ? JSON.stringify(requiredResources) : undefined,

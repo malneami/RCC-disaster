@@ -32,6 +32,8 @@ interface AssignmentFormProps {
     actualArrivalTime: string;
     journeyEndTime: string;
     notes: string;
+    originHospitalId?: string;
+    destinationHospitalId?: string;
   };
   onClose: () => void;
   onSubmit: () => void;
@@ -39,6 +41,7 @@ interface AssignmentFormProps {
   tickets: Array<{ id: string; ticketNumber: string; patient: { firstName: string; lastName: string } }>;
   ambulances: Array<{ id: string; callSign: string; plateNumber: string }>;
   drivers: Array<{ id: string; firstName: string; lastName: string }>;
+  hospitals?: Array<{ id: string; name: string }>;
   loading?: boolean;
   loadingData?: boolean;
 }
@@ -53,6 +56,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
   tickets,
   ambulances,
   drivers,
+  hospitals = [],
   loading = false,
   loadingData = false,
 }) => {
@@ -142,6 +146,45 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
             />
           </Grid>
 
+          {/* Hospital Information Section - Only show when editing */}
+          {editingAssignment && (
+            <>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main', fontWeight: 600 }}>
+                  Hospital Information
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <SearchableSelect
+                  label="Origin Hospital"
+                  value={formData.originHospitalId || null}
+                  options={hospitals?.map((hospital) => ({
+                    id: hospital.id,
+                    label: hospital.name,
+                  })) || []}
+                  onChange={(value) => onFormDataChange('originHospitalId', value || '')}
+                  placeholder="Search for origin hospital..."
+                  loading={loadingData}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <SearchableSelect
+                  label="Destination Hospital"
+                  value={formData.destinationHospitalId || null}
+                  options={hospitals?.map((hospital) => ({
+                    id: hospital.id,
+                    label: hospital.name,
+                  })) || []}
+                  onChange={(value) => onFormDataChange('destinationHospitalId', value || '')}
+                  placeholder="Search for destination hospital..."
+                  loading={loadingData}
+                />
+              </Grid>
+            </>
+          )}
+
           {/* Journey Timeline Section */}
           <Grid item xs={12}>
             <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main', fontWeight: 600 }}>
@@ -184,7 +227,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
               helperText="When EMS arrived at destination"
             />
           </Grid>
-          
+
           <Grid item xs={12}>
             <TextField
               fullWidth
@@ -199,8 +242,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>Cancel</Button>
-        <Button 
-          onClick={onSubmit} 
+        <Button
+          onClick={onSubmit}
           variant="contained"
           disabled={loading}
           startIcon={loading ? <CircularProgress size={16} /> : null}

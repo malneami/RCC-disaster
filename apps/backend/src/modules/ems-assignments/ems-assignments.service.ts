@@ -541,6 +541,22 @@ export class EmsAssignmentsService {
       );
     }
 
+    // Sync hospital changes to the ticket (bidirectional sync)
+    if (updateAssignmentDto.originHospitalId || updateAssignmentDto.destinationHospitalId) {
+      await this.prisma.ticket.update({
+        where: { id: assignment.ticketId },
+        data: {
+          ...(updateAssignmentDto.originHospitalId && { originHospitalId: updateAssignmentDto.originHospitalId }),
+          ...(updateAssignmentDto.destinationHospitalId && { destinationHospitalId: updateAssignmentDto.destinationHospitalId }),
+        },
+      });
+      this.logger.log(
+        `Synced hospital changes to ticket ${assignment.ticketId}: ` +
+        `origin=${updateAssignmentDto.originHospitalId || 'unchanged'}, ` +
+        `destination=${updateAssignmentDto.destinationHospitalId || 'unchanged'}`
+      );
+    }
+
     // Start location monitoring if ambulance is assigned and assignment is active
     if (updateAssignmentDto.ambulanceId && assignment.status !== 'ARRIVED' && assignment.status !== 'CANCELLED') {
       try {

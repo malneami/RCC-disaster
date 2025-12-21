@@ -51,6 +51,7 @@ export interface CreateTicketData {
 }
 
 export interface UpdateTicketData {
+  originHospitalId?: string;
   destinationHospitalId?: string;
   priority?: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
   pathway?: string;

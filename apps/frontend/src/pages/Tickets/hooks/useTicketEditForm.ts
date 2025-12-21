@@ -25,6 +25,7 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
       };
 
       setFormData({
+        originHospitalId: ticket.originHospitalId || '',
         destinationHospitalId: ticket.destinationHospitalId || '',
         priority: ticket.priority,
         pathway: ticket.pathway,

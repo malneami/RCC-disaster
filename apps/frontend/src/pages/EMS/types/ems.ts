@@ -251,6 +251,8 @@ export interface CreateEMSAssignmentDto {
 }
 
 export interface UpdateEMSAssignmentDto {
+  originHospitalId?: string;
+  destinationHospitalId?: string;
   ambulanceId?: string;
   driverId?: string;
   status?: 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';

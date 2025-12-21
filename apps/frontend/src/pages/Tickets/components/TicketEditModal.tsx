@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Box,
@@ -12,8 +12,10 @@ import {
   FormControlLabel,
   Checkbox,
   FormGroup,
+  Autocomplete,
 } from '@mui/material';
 import { Ticket, UpdateTicketData } from '../../../services/ticketService';
+import { hospitalService } from '../../../services/hospitalService';
 import MultiStepDialog from '../../../components/Common/MultiStepDialog';
 import { useTicketEditForm } from '../hooks/useTicketEditForm';
 import { formatForDateTimeLocal } from '@/helpers';
@@ -37,48 +39,71 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({
     onSubmit,
   });
 
+  // Load hospitals for selection
+  const [hospitals, setHospitals] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingHospitals, setLoadingHospitals] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      const loadHospitals = async () => {
+        setLoadingHospitals(true);
+        try {
+          const hospitalsData = await hospitalService.getAllHospitals();
+          setHospitals(hospitalsData.map(h => ({ id: h.id, name: h.name })));
+        } catch (err) {
+          console.error('Error loading hospitals:', err);
+        } finally {
+          setLoadingHospitals(false);
+        }
+      };
+      loadHospitals();
+    }
+  }, [open]);
+
   // Helper function to create steps configuration
   const createStepsConfig = (
     formData: Partial<UpdateTicketData>,
     onDataChange: (data: Partial<UpdateTicketData>) => void
   ) => [
-    {
-      label: 'Basic Information',
-      content: (
-        <BasicInfoStep
-          formData={formData}
-          onDataChange={onDataChange}
-        />
-      ),
-    },
-    {
-      label: 'Medical Information',
-      content: (
-        <MedicalInfoStep
-          formData={formData}
-          onDataChange={onDataChange}
-        />
-      ),
-    },
-    {
-      label: 'Transport Details',
-      content: (
-        <TransportInfoStep
-          formData={formData}
-          onDataChange={onDataChange}
-        />
-      ),
-    },
-    {
-      label: 'Review',
-      content: (
-        <ReviewStep
-          formData={formData}
-          ticket={ticket}
-        />
-      ),
-    },
-  ];
+      {
+        label: 'Basic Information',
+        content: (
+          <BasicInfoStep
+            formData={formData}
+            onDataChange={onDataChange}
+            hospitals={hospitals}
+            loadingHospitals={loadingHospitals}
+          />
+        ),
+      },
+      {
+        label: 'Medical Information',
+        content: (
+          <MedicalInfoStep
+            formData={formData}
+            onDataChange={onDataChange}
+          />
+        ),
+      },
+      {
+        label: 'Transport Details',
+        content: (
+          <TransportInfoStep
+            formData={formData}
+            onDataChange={onDataChange}
+          />
+        ),
+      },
+      {
+        label: 'Review',
+        content: (
+          <ReviewStep
+            formData={formData}
+            ticket={ticket}
+          />
+        ),
+      },
+    ];
 
   const steps = createStepsConfig(formData, handleDataChange);
 
@@ -94,7 +119,7 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({
         maxWidth="lg"
         fullWidth
       />
-      
+
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>
           {error}
@@ -108,7 +133,9 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({
 const BasicInfoStep: React.FC<{
   formData: Partial<UpdateTicketData>;
   onDataChange: (data: Partial<UpdateTicketData>) => void;
-}> = ({ formData, onDataChange }) => {
+  hospitals?: Array<{ id: string; name: string }>;
+  loadingHospitals?: boolean;
+}> = ({ formData, onDataChange, hospitals = [], loadingHospitals = false }) => {
   const handleInputChange = (field: string, value: any) => {
     onDataChange({ [field]: value });
   };
@@ -123,6 +150,34 @@ const BasicInfoStep: React.FC<{
       </Typography>
 
       <Grid container spacing={3}>
+        {/* Origin Hospital */}
+        <Grid item xs={12} md={6}>
+          <Autocomplete
+            options={hospitals}
+            getOptionLabel={(option) => option.name}
+            value={hospitals.find(h => h.id === formData.originHospitalId) || null}
+            onChange={(_, newValue) => handleInputChange('originHospitalId', newValue?.id || '')}
+            loading={loadingHospitals}
+            renderInput={(params) => (
+              <TextField {...params} label="Origin Hospital" placeholder="Select origin hospital" />
+            )}
+          />
+        </Grid>
+
+        {/* Destination Hospital */}
+        <Grid item xs={12} md={6}>
+          <Autocomplete
+            options={hospitals}
+            getOptionLabel={(option) => option.name}
+            value={hospitals.find(h => h.id === formData.destinationHospitalId) || null}
+            onChange={(_, newValue) => handleInputChange('destinationHospitalId', newValue?.id || '')}
+            loading={loadingHospitals}
+            renderInput={(params) => (
+              <TextField {...params} label="Destination Hospital" placeholder="Select destination hospital" />
+            )}
+          />
+        </Grid>
+
         {/* Priority */}
         <Grid item xs={12} md={6}>
           <FormControl fullWidth>
@@ -287,7 +342,7 @@ const MedicalInfoStep: React.FC<{
             label="Life Saving"
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={4}>
           <FormControlLabel
             control={
@@ -299,7 +354,7 @@ const MedicalInfoStep: React.FC<{
             label="Requires Blood"
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={4}>
           <FormControlLabel
             control={
@@ -364,7 +419,7 @@ const TransportInfoStep: React.FC<{
   const handleInputChange = (field: string, value: any) => {
     onDataChange({ [field]: value });
   };
-  
+
   return (
     <Box sx={{ py: 2 }}>
       <Typography variant="h6" gutterBottom>
