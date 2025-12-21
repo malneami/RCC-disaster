@@ -46,6 +46,7 @@ const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70
 const TEXT_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z0-9\s\u00C0-\u017F.,;:!?'"()\-_/]+$/;
 const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
 const PHONE_REGEX = /^\+?\d{7,15}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const patientInfoSchema = yup.object({
   firstName: yup
@@ -92,8 +93,11 @@ const patientInfoSchema = yup.object({
   email: yup
     .string()
     .nullable()
-    .email('Please enter a valid email address')
-    .transform((value) => (value ? value.trim() : '')),
+    .transform((value) => (value ? value.trim() : ''))
+    .test('valid-email', 'Please enter a valid email address', (value) => {
+      if (!value) return true;
+      return EMAIL_REGEX.test(value);
+    }),
 });
 
 const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({

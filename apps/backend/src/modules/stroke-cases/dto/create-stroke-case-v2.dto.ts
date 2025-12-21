@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsNumber, ValidateNested, IsBoolean, IsDateString, IsArray, IsEmail } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsNumber, ValidateNested, IsBoolean, IsDateString, IsArray, IsEmail, ValidateIf } from 'class-validator';
 import { Type } from 'class-transformer';
 import { 
   StrokeType, 
@@ -47,6 +47,7 @@ export class PatientInfoV2Dto {
   phoneNumber?: string;
 
   @IsOptional()
+  @ValidateIf((o) => o.email !== undefined && o.email !== null && o.email !== '')
   @IsEmail({}, { message: 'Please provide a valid email address' })
   email?: string;
 }
