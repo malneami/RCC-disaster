@@ -122,11 +122,11 @@ export class StemiKpiService {
     startOfWeek.setHours(0, 0, 0, 0);
 
     const casesThisMonth = allCases.filter(c => 
-      c.createdAt && new Date(c.createdAt) >= startOfMonth
+      c.pathwayStarted && new Date(c.pathwayStarted) >= startOfMonth
     ).length;
 
     const casesThisWeek = allCases.filter(c => 
-      c.createdAt && new Date(c.createdAt) >= startOfWeek
+      c.pathwayStarted && new Date(c.pathwayStarted) >= startOfWeek
     ).length;
 
     // Calculate door-to-balloon times
