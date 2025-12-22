@@ -22,12 +22,14 @@ interface VitalsAssessmentStepProps {
   data: VitalsAssessmentFormData;
   onChange: (data: Partial<VitalsAssessmentFormData>) => void;
   errors: Record<string, string>;
+  validationErrors?: Record<string, string>;
 }
 
 const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
   data,
   onChange,
   errors,
+  validationErrors = {},
 }) => {
   const handleVitalSignsChange = (field: keyof VitalsAssessmentFormData['vitalSigns']) => (
     event: React.ChangeEvent<HTMLInputElement>
@@ -71,8 +73,8 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
           type="number"
           value={data.vitalSigns.temperature || ''}
           onChange={handleVitalSignsChange('temperature')}
-          error={!!errors.temperature}
-          helperText={errors.temperature || 'Normal range: 36.1-37.2°C'}
+          error={!!errors.temperature || !!validationErrors['vitalsAssessment.vitalSigns.temperature']}
+          helperText={errors.temperature || validationErrors['vitalsAssessment.vitalSigns.temperature'] || 'Normal range: 36.1-37.2°C'}
           inputProps={{ min: 30, max: 45, step: 0.1 }}
         />
       </Grid>
@@ -84,8 +86,8 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
           type="number"
           value={data.vitalSigns.heartRate || ''}
           onChange={handleVitalSignsChange('heartRate')}
-          error={!!errors.heartRate}
-          helperText={errors.heartRate || 'Normal range: 60-100 BPM'}
+          error={!!errors.heartRate || !!validationErrors['vitalsAssessment.vitalSigns.heartRate']}
+          helperText={errors.heartRate || validationErrors['vitalsAssessment.vitalSigns.heartRate'] || 'Normal range: 60-100 BPM'}
           inputProps={{ min: 30, max: 300 }}
         />
       </Grid>
@@ -97,8 +99,8 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
           type="number"
           value={data.vitalSigns.oxygenSaturation || ''}
           onChange={handleVitalSignsChange('oxygenSaturation')}
-          error={!!errors.oxygenSaturation}
-          helperText={errors.oxygenSaturation || 'Normal range: 95-100%'}
+          error={!!errors.oxygenSaturation || !!validationErrors['vitalsAssessment.vitalSigns.oxygenSaturation']}
+          helperText={errors.oxygenSaturation || validationErrors['vitalsAssessment.vitalSigns.oxygenSaturation'] || 'Normal range: 95-100%'}
           inputProps={{ min: 0, max: 100 }}
         />
       </Grid>
@@ -110,8 +112,8 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
           type="number"
           value={data.respiratoryRate || ''}
           onChange={handleDirectChange('respiratoryRate')}
-          error={!!errors.respiratoryRate}
-          helperText={errors.respiratoryRate || 'Normal range: 12-20 breaths/min'}
+          error={!!errors.respiratoryRate || !!validationErrors['vitalsAssessment.respiratoryRate']}
+          helperText={errors.respiratoryRate || validationErrors['vitalsAssessment.respiratoryRate'] || 'Normal range: 12-20 breaths/min'}
           inputProps={{ min: 5, max: 60 }}
         />
       </Grid>
@@ -123,7 +125,7 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
       </Grid>
       
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth error={!!errors.glasgowComaScale}>
+        <FormControl fullWidth error={!!errors.glasgowComaScale || !!validationErrors['vitalsAssessment.glasgowComaScale']}>
           <InputLabel>Glasgow Coma Scale</InputLabel>
           <Select
             value={data.glasgowComaScale || ''}
@@ -136,9 +138,9 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
               </MenuItem>
             ))}
           </Select>
-          {errors.glasgowComaScale && (
+          {(errors.glasgowComaScale || validationErrors['vitalsAssessment.glasgowComaScale']) && (
             <div style={{ color: 'red', fontSize: '0.75rem', marginTop: '4px' }}>
-              {errors.glasgowComaScale}
+              {errors.glasgowComaScale || validationErrors['vitalsAssessment.glasgowComaScale']}
             </div>
           )}
           <div style={{ fontSize: '0.75rem', marginTop: '4px', color: 'rgba(0, 0, 0, 0.6)' }}>
@@ -154,8 +156,8 @@ const VitalsAssessmentStep: React.FC<VitalsAssessmentStepProps> = ({
           type="number"
           value={data.systolicBloodPressure || ''}
           onChange={handleDirectChange('systolicBloodPressure')}
-          error={!!errors.systolicBloodPressure}
-          helperText={errors.systolicBloodPressure || 'Systolic pressure only'}
+          error={!!errors.systolicBloodPressure || !!validationErrors['vitalsAssessment.systolicBloodPressure']}
+          helperText={errors.systolicBloodPressure || validationErrors['vitalsAssessment.systolicBloodPressure'] || 'Systolic pressure only'}
           inputProps={{ min: 50, max: 300 }}
         />
       </Grid>

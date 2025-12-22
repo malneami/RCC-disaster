@@ -28,12 +28,14 @@ interface InjuryAssessmentStepProps {
   data: InjuryAssessmentFormData;
   onChange: (data: Partial<InjuryAssessmentFormData>) => void;
   errors: Record<string, string>;
+  validationErrors?: Record<string, string>;
 }
 
 const InjuryAssessmentStep: React.FC<InjuryAssessmentStepProps> = ({
   data,
   onChange,
   errors,
+  validationErrors = {},
 }) => {
   const handleChange = (field: keyof InjuryAssessmentFormData) => (
     event: any
@@ -91,7 +93,7 @@ const InjuryAssessmentStep: React.FC<InjuryAssessmentStepProps> = ({
             <Select
               value={data[key]}
               onChange={handleChange(key)}
-              error={!!errors[key]}
+              error={!!errors[key] || !!validationErrors[`injuryAssessment.${key}`]}
               label={`${label} Injury`}
             >
               {options.map((option) => (
@@ -110,9 +112,9 @@ const InjuryAssessmentStep: React.FC<InjuryAssessmentStepProps> = ({
                 </MenuItem>
               ))}
             </Select>
-            {errors[key] && (
+            {(errors[key] || validationErrors[`injuryAssessment.${key}`]) && (
               <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                {errors[key]}
+                {errors[key] || validationErrors[`injuryAssessment.${key}`]}
               </Typography>
             )}
           </FormControl>
