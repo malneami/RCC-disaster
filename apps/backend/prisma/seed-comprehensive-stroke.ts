@@ -103,7 +103,7 @@ export async function seedComprehensiveStrokeCases() {
         
         // Stroke Classification
         strokeType: getRandomItem(['ISCHEMIC', 'HEMORRHAGIC', 'TIA']),
-        strokeSubtype: getRandomItem(['Large vessel occlusion', 'Small vessel disease', 'Cardioembolic', 'Cryptogenic', 'Other']),
+        strokeSubtype: getRandomItem(['Large vessel occlusion', 'Small vessel disease', 'Cardioembolic', 'Other']),
         
         // Patient Arrival & Timing (Step 1)
         modeOfArrival: getRandomItem(['AMBULANCE_RED_CRESCENT', 'PRIVATE_CAR', 'TRANSFERRED_FROM_ANOTHER_HOSPITAL']),

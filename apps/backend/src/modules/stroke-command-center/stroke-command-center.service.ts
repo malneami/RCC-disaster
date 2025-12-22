@@ -24,7 +24,7 @@ export class StrokeCommandCenterService {
     const { hospitalId, startDate, endDate } = filters;
     
     // Build where clause for filtering
-    const whereClause: any = {};
+    const whereClause: any = {deletedAt: null};
     
     // Apply hospital filter
     if (hospitalId && hospitalId !== 'all') {
@@ -70,11 +70,13 @@ export class StrokeCommandCenterService {
         dischargeDate: true,
         dischargeDestination: true,
         timeOfSwallowingScreening: true,
-        followUpCallCompleted: true,
+        // @ts-ignore - threeMonthFollowupComplete will be available after running 'prisma generate'
+        threeMonthFollowupComplete: true,
         // Add the actual timing data for proper KPI calculations
         doorToPhysicianMinutes: true,
         doorToCtScanMinutes: true,
         doorToNeedleMinutes: true,
+        doorToMechanicalThrombectomyMinutes: true,
         // Keep the stored KPI flags for backward compatibility
         metKpi1: true,
         metKpi2: true,
@@ -281,10 +283,7 @@ export class StrokeCommandCenterService {
       case_.strokeType === 'ISCHEMIC' && 
       case_.candidateForIVThrombolysis === 'YES'
     );
-    
-    console.log(`📊 Step 1 - Eligible candidates: ${eligibleCandidates.length}`);
-    console.log('Eligible cases:', eligibleCandidates.map(c => ({ id: c.id, thrombolysisGiven: c.ivThrombolysisGiven })));
-    
+        
     // STEP 2: Count how many eligible candidates actually received thrombolysis within 4.5 hours
     const treatedCases = eligibleCandidates.filter(case_ => {
       if (!case_ || case_.ivThrombolysisGiven !== 'YES') {
@@ -349,8 +348,8 @@ export class StrokeCommandCenterService {
       ? (strokeUnitMet / cases.length) * 100 
       : 0;
 
-    // Follow-up outcomes performance - use KPI11 from stroke portal dashboard  
-    const followUpMet = cases.filter(c => c.metKpi11).length;
+    // Follow-up outcomes performance - use threeMonthFollowupComplete from outcome form
+    const followUpMet = cases.filter(c => c.threeMonthFollowupComplete === true).length;
     const followUpSuccessRate = cases.length > 0 
       ? (followUpMet / cases.length) * 100 
       : 0;
@@ -376,7 +375,6 @@ export class StrokeCommandCenterService {
       'Ischemic': 0,
       'Hemorrhagic': 0,
       'TIA': 0,
-      'Cryptogenic': 0,
       'Other': 0,
     };
 
@@ -390,9 +388,6 @@ export class StrokeCommandCenterService {
           break;
         case 'TIA':
           strokeTypes['TIA']++;
-          break;
-        case 'CRYPTOGENIC':
-          strokeTypes['Cryptogenic']++;
           break;
         default:
           strokeTypes['Other']++;
@@ -410,17 +405,19 @@ export class StrokeCommandCenterService {
   }
 
   private calculatePerformanceTrend(cases: any[]): PerformanceTrendDataDto {
-    // Daily performance (last 7 days) - calculate actual performance per day
+    // Daily performance (last 7 days) - calculate actual performance per day based on admission time
     const dailyData = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dayStart = new Date(date.setHours(0, 0, 0, 0));
-      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
       
       const dayCases = cases.filter(c => {
-        if (!c.timeOfTriage) return false;
-        const caseDate = new Date(c.timeOfTriage);
+        if (!c.dateOfAdmission) return false;
+        const caseDate = new Date(c.dateOfAdmission);
         return caseDate >= dayStart && caseDate <= dayEnd;
       });
       
@@ -433,18 +430,20 @@ export class StrokeCommandCenterService {
       });
     }
 
-    // Weekly performance (last 4 weeks) - calculate actual performance per week
+    // Weekly performance (last 4 weeks) - calculate actual performance per week based on admission time
     const weeklyData = [];
     for (let i = 3; i >= 0; i--) {
       const weekStart = new Date();
       weekStart.setDate(weekStart.getDate() - (i + 1) * 7);
+      weekStart.setHours(0, 0, 0, 0);
       const weekEnd = new Date();
       weekEnd.setDate(weekEnd.getDate() - i * 7);
+      weekEnd.setHours(23, 59, 59, 999);
       
       const weekCases = cases.filter(c => {
-        if (!c.timeOfTriage) return false;
-        const caseDate = new Date(c.timeOfTriage);
-        return caseDate >= weekStart && caseDate < weekEnd;
+        if (!c.dateOfAdmission) return false;
+        const caseDate = new Date(c.dateOfAdmission);
+        return caseDate >= weekStart && caseDate <= weekEnd;
       });
       
       const kpi1Met = weekCases.filter(c => c.metKpi1).length;
@@ -456,18 +455,20 @@ export class StrokeCommandCenterService {
       });
     }
 
-    // Monthly performance (last 6 months) - calculate actual performance per month
+    // Monthly performance (last 6 months) - calculate actual performance per month based on admission time
     const monthlyData = [];
     for (let i = 5; i >= 0; i--) {
       const monthStart = new Date();
       monthStart.setMonth(monthStart.getMonth() - i);
       monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
       const monthEnd = new Date(monthStart);
       monthEnd.setMonth(monthEnd.getMonth() + 1);
+      monthEnd.setHours(0, 0, 0, -1); // Last moment of the month
       
       const monthCases = cases.filter(c => {
-        if (!c.timeOfTriage) return false;
-        const caseDate = new Date(c.timeOfTriage);
+        if (!c.dateOfAdmission) return false;
+        const caseDate = new Date(c.dateOfAdmission);
         return caseDate >= monthStart && caseDate < monthEnd;
       });
       
@@ -508,11 +509,20 @@ export class StrokeCommandCenterService {
       c.doorToNeedleMinutes !== null && 
       c.doorToNeedleMinutes !== undefined
     );
+    const thrombectomyCases = cases.filter(c => 
+      c.doorToMechanicalThrombectomyMinutes !== null && 
+      c.doorToMechanicalThrombectomyMinutes !== undefined
+    );
     const kpi3Met = doorToNeedleCases.filter(c => c.doorToNeedleMinutes <= 60).length;
     const kpi3Total = doorToNeedleCases.length;
 
     // Keep other KPIs as they were (using stored flags for now)
     const kpi4Met = cases.filter(c => c.metKpi4).length;
+    const kpi4Total = thrombectomyCases.length;
+    console.log('kpi4Met', kpi4Met);
+    console.log('kpi4Total', kpi4Total);
+    console.log('kpi4Percentage', kpi4Total > 0 ? (kpi4Met / kpi4Total) * 100 : 0);
+    console.log('kpi4Cases', thrombectomyCases);
     const kpi5Met = cases.filter(c => c.metKpi5).length;
     const kpi6Met = cases.filter(c => c.metKpi6).length;
     const kpi10Met = cases.filter(c => c.metKpi10).length;
@@ -521,7 +531,7 @@ export class StrokeCommandCenterService {
     const kpi1Percentage = kpi1Total > 0 ? (kpi1Met / kpi1Total) * 100 : 0;
     const kpi2Percentage = kpi2Total > 0 ? (kpi2Met / kpi2Total) * 100 : 0;
     const kpi3Percentage = kpi3Total > 0 ? (kpi3Met / kpi3Total) * 100 : 0;
-    const kpi4Percentage = totalCases > 0 ? (kpi4Met / totalCases) * 100 : 0;
+    const kpi4Percentage = totalCases > 0 ? (kpi4Met / kpi4Total) * 100 : 0;
     const kpi5Percentage = totalCases > 0 ? (kpi5Met / totalCases) * 100 : 0;
     const kpi6Percentage = totalCases > 0 ? (kpi6Met / totalCases) * 100 : 0;
     const kpi10Percentage = totalCases > 0 ? (kpi10Met / totalCases) * 100 : 0;
@@ -572,7 +582,7 @@ export class StrokeCommandCenterService {
         percentage: Math.round(kpi4Percentage * 10) / 10,
         status: this.getKpiStatus(kpi4Percentage, 80),
         trend: 'stable',
-        validCases: totalCases,
+        validCases: kpi4Total,
         compliantCases: kpi4Met,
       }
     ];
@@ -735,7 +745,7 @@ export class StrokeCommandCenterService {
       const kpi5Met = hospitalCaseList.filter((c: any) => c.metKpi5).length;
       const kpi6Met = hospitalCaseList.filter((c: any) => c.metKpi6).length;
       const kpi10Met = hospitalCaseList.filter((c: any) => c.metKpi10).length;
-      const kpi11Met = hospitalCaseList.filter((c: any) => c.metKpi11).length;
+      const kpi11Met = hospitalCaseList.filter((c: any) => c.threeMonthFollowupComplete === true).length;
 
       const physicianPct = hospitalCaseCount > 0 ? (kpi1Met / hospitalCaseCount) * 100 : 0;
       const ctPct = hospitalCaseCount > 0 ? (kpi2Met / hospitalCaseCount) * 100 : 0;

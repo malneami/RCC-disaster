@@ -249,7 +249,7 @@ export class StemiKpiService {
     // Calculate follow-up completion rate
     const followUpCompletedCases = allCases.filter(c => c.followUpCallCompleted === true).length;
     const followUpRate = totalCases > 0 ? (followUpCompletedCases / totalCases) * 100 : 0;
-
+    const validECGCases = allCases.filter(c => this.calculateDoorToEcgTime(c.triageTime, c.firstEcgTime) > 0).length;
     return {
       totalCases,
       casesThisMonth,
@@ -259,13 +259,13 @@ export class StemiKpiService {
       kpi1: {
         name: 'Door to ECG ≤10min',
         target: '≤10 minutes',
-        totalCases,
+        totalCases: validECGCases,
         withinTarget: kpi1Cases,
         validCases: allCases.filter(c => this.calculateDoorToEcgTime(c.triageTime, c.firstEcgTime) > 0).length,
         compliantCases: kpi1Cases,
-        percentage: totalCases > 0 ? Math.round((kpi1Cases / totalCases) * 100 * 10) / 10 : 0,
-        status: totalCases > 0 && (kpi1Cases / totalCases) >= 0.9 ? 'GREEN' : 
-                totalCases > 0 && (kpi1Cases / totalCases) >= 0.75 ? 'YELLOW' : 'RED',
+        percentage: validECGCases > 0 ? Math.round((kpi1Cases / validECGCases) * 100 * 10) / 10 : 0,
+        status: validECGCases > 0 && (kpi1Cases / validECGCases) >= 0.9 ? 'GREEN' : 
+                validECGCases > 0 && (kpi1Cases / validECGCases) >= 0.75 ? 'YELLOW' : 'RED',
       },
       kpi2: (() => {
         // Calculate valid cases: PCI-eligible cases with positive door-to-balloon time (both direct and transfer)
@@ -289,7 +289,7 @@ export class StemiKpiService {
         return {
           name: 'Door to Balloon (Combined)',
           target: '≤90min (Direct) / ≤120min (Transfer)',
-          totalCases,
+          totalCases: validKpi2Cases.length,
           withinTarget: kpi2Cases,
           validCases: validKpi2Cases.length,
           compliantCases: compliantKpi2Cases,
@@ -307,16 +307,16 @@ export class StemiKpiService {
         return {
           name: 'Door to Balloon (Direct)',
           target: '≤90 minutes',
-          totalCases: directPciCases.length,
+          totalCases: validDirectCases.length,
           withinTarget: kpi2DirectCases,
           validCases: validDirectCases.length,
           compliantCases: kpi2DirectCases,
-          percentage: directPciCases.length > 0 ? 
-                     Math.round((kpi2DirectCases / directPciCases.length) * 100 * 10) / 10 : 0,
-          status: directPciCases.length > 0 && 
-                  (kpi2DirectCases / directPciCases.length) >= 0.9 ? 'GREEN' : 
-                  directPciCases.length > 0 && 
-                  (kpi2DirectCases / directPciCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: validDirectCases.length > 0 ? 
+                     Math.round((kpi2DirectCases / validDirectCases.length) * 100 * 10) / 10 : 0,
+          status: validDirectCases.length > 0 && 
+                  (kpi2DirectCases / validDirectCases.length) >= 0.9 ? 'GREEN' : 
+                  validDirectCases.length > 0 && 
+                  (kpi2DirectCases / validDirectCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi2Transfer: (() => {
@@ -325,16 +325,16 @@ export class StemiKpiService {
         return {
           name: 'Door to Balloon (Transfer)',
           target: '≤120 minutes',
-          totalCases: transferPciCases.length,
+          totalCases: validTransferCases.length,
           withinTarget: kpi2TransferCases,
           validCases: validTransferCases.length,
           compliantCases: kpi2TransferCases,
-          percentage: transferPciCases.length > 0 ? 
-                     Math.round((kpi2TransferCases / transferPciCases.length) * 100 * 10) / 10 : 0,
-          status: transferPciCases.length > 0 && 
-                  (kpi2TransferCases / transferPciCases.length) >= 0.9 ? 'GREEN' : 
-                  transferPciCases.length > 0 && 
-                  (kpi2TransferCases / transferPciCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: validTransferCases.length > 0 ? 
+                     Math.round((kpi2TransferCases / validTransferCases.length) * 100 * 10) / 10 : 0,
+          status: validTransferCases.length > 0 && 
+                  (kpi2TransferCases / validTransferCases.length) >= 0.9 ? 'GREEN' : 
+                  validTransferCases.length > 0 && 
+                  (kpi2TransferCases / validTransferCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi3: (() => {
@@ -343,16 +343,16 @@ export class StemiKpiService {
         return {
           name: 'Door to Needle ≤30min (Transfer Cases Only)',
           target: '≤30 minutes',
-          totalCases: thrombolyticTransferCases.length,
+          totalCases: validD2nCases.length,
           withinTarget: kpi3Cases,
           validCases: validD2nCases.length,
           compliantCases: kpi3Cases,
-          percentage: thrombolyticTransferCases.length > 0 ? 
-                     Math.round((kpi3Cases / thrombolyticTransferCases.length) * 100 * 10) / 10 : 0,
-          status: thrombolyticTransferCases.length > 0 && 
-                  (kpi3Cases / thrombolyticTransferCases.length) >= 0.9 ? 'GREEN' : 
-                  thrombolyticTransferCases.length > 0 && 
-                  (kpi3Cases / thrombolyticTransferCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: validD2nCases.length > 0 ? 
+                     Math.round((kpi3Cases / validD2nCases.length) * 100 * 10) / 10 : 0,
+          status: validD2nCases.length > 0 && 
+                  (kpi3Cases / validD2nCases.length) >= 0.9 ? 'GREEN' : 
+                  validD2nCases.length > 0 && 
+                  (kpi3Cases / validD2nCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi4: (() => {
@@ -361,16 +361,16 @@ export class StemiKpiService {
         return {
           name: 'RCC Activation ≤15min',
           target: '≤15 minutes',
-          totalCases: rccEligibleCases.length,
+          totalCases: validRccCases.length,
           withinTarget: kpi4Cases,
           validCases: validRccCases.length,
           compliantCases: kpi4Cases,
-          percentage: rccEligibleCases.length > 0 ? 
-                     Math.round((kpi4Cases / rccEligibleCases.length) * 100 * 10) / 10 : 0,
-          status: rccEligibleCases.length > 0 && 
-                  (kpi4Cases / rccEligibleCases.length) >= 0.9 ? 'GREEN' : 
-                  rccEligibleCases.length > 0 && 
-                  (kpi4Cases / rccEligibleCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: validRccCases.length > 0 ? 
+                     Math.round((kpi4Cases / validRccCases.length) * 100 * 10) / 10 : 0,
+          status: validRccCases.length > 0 && 
+                  (kpi4Cases / validRccCases.length) >= 0.9 ? 'GREEN' : 
+                  validRccCases.length > 0 && 
+                  (kpi4Cases / validRccCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi5: (() => {
@@ -385,16 +385,16 @@ export class StemiKpiService {
         return {
           name: 'Door In Door Out ≤30min (Transfer Cases Only)',
           target: '≤30 minutes',
-          totalCases: didoEligibleCases.length,
+          totalCases: validDidoCases.length,
           withinTarget: kpi5Cases,
           validCases: validDidoCases.length,
           compliantCases: kpi5Cases,
-          percentage: didoEligibleCases.length > 0 ? 
-                     Math.round((kpi5Cases / didoEligibleCases.length) * 100 * 10) / 10 : 0,
-          status: didoEligibleCases.length > 0 && 
-                  (kpi5Cases / didoEligibleCases.length) >= 0.9 ? 'GREEN' : 
-                  didoEligibleCases.length > 0 && 
-                  (kpi5Cases / didoEligibleCases.length) >= 0.75 ? 'YELLOW' : 'RED',
+          percentage: validDidoCases.length > 0 ? 
+                     Math.round((kpi5Cases / validDidoCases.length) * 100 * 10) / 10 : 0,
+          status: validDidoCases.length > 0 && 
+                  (kpi5Cases / validDidoCases.length) >= 0.9 ? 'GREEN' : 
+                  validDidoCases.length > 0 && 
+                  (kpi5Cases / validDidoCases.length) >= 0.75 ? 'YELLOW' : 'RED',
         };
       })(),
       kpi6: {

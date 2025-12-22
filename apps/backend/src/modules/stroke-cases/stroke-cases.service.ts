@@ -947,9 +947,9 @@ export class StrokeCasesService {
     const kpi1Met = doorToPhysicianCases.filter(c => c.doorToPhysicianMinutes <= 15).length;
     const kpi1Total = doorToPhysicianCases.length;
 
-    // KPI 2: Door to CT Scan ≤ 20 minutes (based on registrationToCtMinutes)
-    const doorToCtCases = cases.filter(c => c.registrationToCtMinutes !== null && c.registrationToCtMinutes !== undefined);
-    const kpi2Met = doorToCtCases.filter(c => c.registrationToCtMinutes <= 20).length;
+    // KPI 2: Door to CT Scan ≤ 20 minutes (based on doorToCtScanMinutes)
+    const doorToCtCases = cases.filter(c => c.doorToCtScanMinutes !== null && c.doorToCtScanMinutes !== undefined);
+    const kpi2Met = doorToCtCases.filter(c => c.doorToCtScanMinutes <= 20).length;
     const kpi2Total = doorToCtCases.length;
 
     // KPI 3: Door to Needle ≤ 60 minutes (should be based on doorToNeedleMinutes for ischemic thrombolysis candidates)
@@ -975,25 +975,25 @@ export class StrokeCasesService {
     const kpi6Met = cases.filter(c => c.admittedToStrokeUnit === true).length;
     const kpi6Total = totalCases;
 
-    // KPI 7: Transfer time ≤20min (no CT) / ≤40min (with CT)
-    const transferCasesWithTiming = cases.filter(c => 
-      c.transferToAnotherHospital === true && 
-      c.transferActivationToDepartureMinutes !== null && 
-      c.transferActivationToDepartureMinutes !== undefined
-    );
-    const kpi7Met = transferCasesWithTiming.filter(c => {
-      const minutes = c.transferActivationToDepartureMinutes;
-      const hasCt = c.timeOfCtScanStart !== null && c.timeOfCtScanStart !== undefined;
-      return (!hasCt && minutes <= 20) || (hasCt && minutes <= 40);
-    }).length;
-    const kpi7Total = transferCasesWithTiming.length;
+    // // KPI 7: Transfer time ≤20min (no CT) / ≤40min (with CT)
+    // const transferCasesWithTiming = cases.filter(c => 
+    //   c.transferToAnotherHospital === true && 
+    //   c.transferActivationToDepartureMinutes !== null && 
+    //   c.transferActivationToDepartureMinutes !== undefined
+    // );
+    // const kpi7Met = transferCasesWithTiming.filter(c => {
+    //   const minutes = c.transferActivationToDepartureMinutes;
+    //   const hasCt = c.timeOfCtScanStart !== null && c.timeOfCtScanStart !== undefined;
+    //   return (!hasCt && minutes <= 20) || (hasCt && minutes <= 40);
+    // }).length;
+    // const kpi7Total = transferCasesWithTiming.length;
 
     // KPI 8: Registration to mechanical thrombectomy ≤120min
     const thrombectomyCases = cases.filter(c => 
-      c.registrationToMechanicalThrombectomyMinutes !== null && 
-      c.registrationToMechanicalThrombectomyMinutes !== undefined
+      c.doorToMechanicalThrombectomyMinutes !== null && 
+      c.doorToMechanicalThrombectomyMinutes !== undefined
     );
-    const kpi8Met = thrombectomyCases.filter(c => c.registrationToMechanicalThrombectomyMinutes <= 120).length;
+    const kpi8Met = thrombectomyCases.filter(c => c.doorToMechanicalThrombectomyMinutes <= 120).length;
     const kpi8Total = thrombectomyCases.length;
 
     // KPI 9: SRCA call to arrival ≤60min
@@ -1008,8 +1008,8 @@ export class StrokeCasesService {
     const kpi10Met = cases.filter(c => c.swallowingScreeningWithin4Hours === true).length;
     const kpi10Total = totalCases;
 
-    // KPI 11: 3-month follow-up ≥80%
-    const kpi11Met = cases.filter(c => c.followUpCallCompleted === true).length;
+    // KPI 11: 3-month follow-up ≥80% - use threeMonthFollowupComplete from outcome form
+    const kpi11Met = cases.filter(c => (c as any).threeMonthFollowupComplete === true).length;
     const kpi11Total = totalCases;
 
     const avgDoorToPhysician = this.calculateAverage(cases.map(c => c.doorToPhysicianMinutes).filter(v => v !== null && v !== undefined));
@@ -1047,7 +1047,7 @@ export class StrokeCasesService {
         kpi4: { met: kpi4Met, total: kpi4Total, percentage: kpi4Total > 0 ? (kpi4Met / kpi4Total) * 100 : 0 },
         kpi5: { met: kpi5Met, total: kpi5Total, percentage: kpi5Total > 0 ? (kpi5Met / kpi5Total) * 100 : 0 },
         kpi6: { met: kpi6Met, total: kpi6Total, percentage: kpi6Total > 0 ? (kpi6Met / kpi6Total) * 100 : 0 },
-        kpi7: { met: kpi7Met, total: kpi7Total, percentage: kpi7Total > 0 ? (kpi7Met / kpi7Total) * 100 : 0 },
+        // kpi7: { met: kpi7Met, total: kpi7Total, percentage: kpi7Total > 0 ? (kpi7Met / kpi7Total) * 100 : 0 },
         kpi8: { met: kpi8Met, total: kpi8Total, percentage: kpi8Total > 0 ? (kpi8Met / kpi8Total) * 100 : 0 },
         kpi9: { met: kpi9Met, total: kpi9Total, percentage: kpi9Total > 0 ? (kpi9Met / kpi9Total) * 100 : 0 },
         kpi10: { met: kpi10Met, total: kpi10Total, percentage: kpi10Total > 0 ? (kpi10Met / kpi10Total) * 100 : 0 },
@@ -1273,20 +1273,25 @@ export class StrokeCasesService {
       whereClause.originHospitalId = filters.hospitalId;
     }
     
-    // Add date filters
+    // Add date filters - use dateOfAdmission for clinical accuracy (matches KPI calculation basis)
     if (filters.startDate || filters.endDate) {
-      whereClause.createdAt = {};
+      whereClause.dateOfAdmission = {};
       if (filters.startDate) {
-        whereClause.createdAt.gte = new Date(filters.startDate);
+        const start = new Date(filters.startDate);
+        start.setHours(0, 0, 0, 0);
+        whereClause.dateOfAdmission.gte = start;
       }
       if (filters.endDate) {
-        whereClause.createdAt.lte = new Date(filters.endDate);
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        whereClause.dateOfAdmission.lte = end;
       }
     } else if (filters.timeframe) {
       const days = parseInt(filters.timeframe);
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      whereClause.createdAt = {
+      startDate.setHours(0, 0, 0, 0);
+      whereClause.dateOfAdmission = {
         gte: startDate,
       };
     }
@@ -1313,6 +1318,7 @@ export class StrokeCasesService {
         doorToPhysicianMinutes: true,
         doorToCtScanMinutes: true,
         doorToNeedleMinutes: true,
+        doorToMechanicalThrombectomyMinutes: true,
         registrationToCtMinutes: true,
         registrationToThrombolysisMinutes: true,
         registrationToMechanicalThrombectomyMinutes: true,
@@ -1322,6 +1328,8 @@ export class StrokeCasesService {
         admittedToStrokeUnit: true,
         swallowingScreeningWithin4Hours: true,
         followUpCallCompleted: true,
+        // @ts-ignore - threeMonthFollowupComplete will be available after running 'prisma generate'
+        threeMonthFollowupComplete: true,
         timeOfCtScanStart: true,
         ivThrombolysisGiven: true,
         modifiedRankinScaleAt90Days: true,

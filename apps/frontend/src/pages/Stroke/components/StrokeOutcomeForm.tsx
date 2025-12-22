@@ -16,6 +16,8 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -34,6 +36,7 @@ interface StrokeOutcomeFormData {
   closureReport?: string;
   functionalStatus?: string;
   mortality?: string;
+  threeMonthFollowupComplete?: boolean;
   outcomeFormCompletionDate?: string;
 }
 
@@ -75,6 +78,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
       closureReport: '',
       functionalStatus: '',
       mortality: '',
+      threeMonthFollowupComplete: false,
       outcomeFormCompletionDate: '',
     },
   });
@@ -129,6 +133,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
         closureReport: data.closureReport || '',
         functionalStatus: data.functionalStatus || '',
         mortality: data.mortality || '',
+        threeMonthFollowupComplete: data.threeMonthFollowupComplete || false,
         outcomeFormCompletionDate: data.outcomeFormCompletionDate || '',
       });
       setCompletionDate(data.outcomeFormCompletionDate || null);
@@ -146,6 +151,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
           closureReport: strokeCaseData.closureReport || '',
           functionalStatus: strokeCaseData.functionalStatus || '',
           mortality: strokeCaseData.mortality || '',
+          threeMonthFollowupComplete: strokeCaseData.threeMonthFollowupComplete || false,
           outcomeFormCompletionDate: strokeCaseData.outcomeFormCompletionDate || '',
         });
         setCompletionDate(strokeCaseData.outcomeFormCompletionDate || null);
@@ -420,6 +426,24 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
                         <MenuItem value={6}>6 - Dead</MenuItem>
                       </Select>
                     </FormControl>
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="threeMonthFollowupComplete"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={field.value || false}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                        />
+                      }
+                      label="3-Month Follow-up Complete"
+                    />
                   )}
                 />
               </Grid>

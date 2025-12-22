@@ -403,19 +403,19 @@ export class DashboardService {
       const metrics: PathwayMetric[] = [
         {
           label: 'Door to Physician Target: ≤15 min',
-          value: strokeKpiData.averageTimings?.doorToPhysician ? `${strokeKpiData.averageTimings.doorToPhysician.toFixed(1)} min avg` : 'No data',
+          value: strokeKpiData.kpiPerformance?.kpi1?.percentage ? `${strokeKpiData.kpiPerformance.kpi1.percentage.toFixed(1)}% achieved` : 'No data',
           progress: strokeKpiData.kpiPerformance?.kpi1?.percentage || 0,
           color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi1?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Door to CT Scan Target: ≤20 min',
-          value: strokeKpiData.averageTimings?.doorToCtScan ? `${strokeKpiData.averageTimings.doorToCtScan.toFixed(1)} min avg` : 'No data',
+          value: strokeKpiData.kpiPerformance?.kpi2?.percentage ? `${strokeKpiData.kpiPerformance.kpi2.percentage.toFixed(1)}% achieved` : 'No data',
           progress: strokeKpiData.kpiPerformance?.kpi2?.percentage || 0,
           color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi2?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Door to Needle Target: ≤60 min',
-          value: strokeKpiData.averageTimings?.doorToNeedle ? `${strokeKpiData.averageTimings.doorToNeedle.toFixed(1)} min avg` : 'No data',
+          value: strokeKpiData.kpiPerformance?.kpi3?.percentage ? `${strokeKpiData.kpiPerformance.kpi3.percentage.toFixed(1)}% achieved` : 'No data',
           progress: strokeKpiData.kpiPerformance?.kpi3?.percentage || 0,
           color: this.getKpiColor(strokeKpiData.kpiPerformance?.kpi3?.percentage, 90, false), // Higher percentage is better
         },
@@ -469,31 +469,31 @@ export class DashboardService {
       const metrics: PathwayMetric[] = [
         {
           label: 'First ECG Target: ≤10 min',
-          value: stemiKpiData.kpi1?.percentage ? `${stemiKpiData.kpi1.percentage}% achieved` : 'No data',
+          value: stemiKpiData.kpi1?.percentage ? `${stemiKpiData.kpi1.percentage.toFixed(1)}% achieved` : 'No data',
           progress: stemiKpiData.kpi1?.percentage || 0,
           color: this.getKpiColor(stemiKpiData.kpi1?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Door to Needle Target: ≤30 min',
-          value: stemiKpiData.averageDoorToNeedleTime ? `${stemiKpiData.averageDoorToNeedleTime} min avg` : 'No data',
+          value: stemiKpiData.kpi3?.percentage ? `${stemiKpiData.kpi3.percentage.toFixed(1)}% achieved` : 'No data',
           progress: stemiKpiData.kpi3?.percentage || 0,
           color: this.getKpiColor(stemiKpiData.kpi3?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Door In Door Out Target: ≤30 min',
-          value: stemiKpiData.kpi5?.percentage ? `${stemiKpiData.kpi5.percentage}% achieved` : 'No data',
+          value: stemiKpiData.kpi5?.percentage ? `${stemiKpiData.kpi5.percentage.toFixed(1)}% achieved` : 'No data',
           progress: stemiKpiData.kpi5?.percentage || 0,
           color: this.getKpiColor(stemiKpiData.kpi5?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'RCC Activation Target: ≤15 min',
-          value: stemiKpiData.kpi4?.percentage ? `${stemiKpiData.kpi4.percentage}% achieved` : 'No data',
+          value: stemiKpiData.kpi4?.percentage ? `${stemiKpiData.kpi4.percentage.toFixed(1)}% achieved` : 'No data',
           progress: stemiKpiData.kpi4?.percentage || 0,
           color: this.getKpiColor(stemiKpiData.kpi4?.percentage, 90, false), // Higher percentage is better
         },
         {
           label: 'Door-to-Balloon Target: ≤90 min',
-          value: stemiKpiData.averageDoorToBalloonTime ? `${stemiKpiData.averageDoorToBalloonTime} min avg` : 'No data',
+          value: stemiKpiData.kpi2?.percentage ? `${stemiKpiData.kpi2.percentage.toFixed(1)}% achieved` : 'No data',
           progress: stemiKpiData.kpi2?.percentage || 0,
           color: this.getKpiColor(stemiKpiData.kpi2?.percentage, 90, false), // Higher percentage is better
         }

@@ -46,6 +46,10 @@ export class StrokeOutcomeFormDto {
 
   @IsOptional()
   @IsBoolean()
+  threeMonthFollowupComplete?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   outcomeFormCompleted?: boolean;
 
   @IsOptional()
@@ -102,6 +106,10 @@ export class UpdateStrokeOutcomeFormDto {
   @IsOptional()
   @IsString()
   mortality?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  threeMonthFollowupComplete?: boolean;
 
   @IsOptional()
   @IsBoolean()

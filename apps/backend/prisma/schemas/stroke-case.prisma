@@ -139,6 +139,7 @@ model StrokeCase {
   closureReport                   String?     @map("closure_report")
   functionalStatus                String?     @map("functional_status") // INDEPENDENT, ASSISTANCE_REQUIRED, DEPENDENT, etc.
   mortality                       String?     @map("mortality") // ALIVE, DEAD, UNKNOWN
+  threeMonthFollowupComplete      Boolean     @default(false) @map("three_month_followup_complete")
   outcomeFormCompleted            Boolean     @default(false) @map("outcome_form_completed")
   outcomeFormCompletionDate       DateTime?   @map("outcome_form_completion_date")
   outcomePercentageCompleteness   Int         @default(0) @map("outcome_percentage_completeness") // 0-100

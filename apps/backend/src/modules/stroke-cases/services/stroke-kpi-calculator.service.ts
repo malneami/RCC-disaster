@@ -87,9 +87,9 @@ export class StrokeKPICalculatorService {
     // KPI 6: Direct stroke unit admission ≥80%
     calculations.metKpi6 = this.calculateDirectStrokeUnitAdmission(strokeCase);
 
-    // KPI 7: Transfer time ≤20min (no CT), ≤40min (with CT)
-    calculations.transferActivationToDepartureMinutes = this.calculateTransferTime(strokeCase);
-    calculations.metKpi7 = this.calculateTransferTimeKPI(strokeCase, calculations.transferActivationToDepartureMinutes);
+    // // KPI 7: Transfer time ≤20min (no CT), ≤40min (with CT)
+    // calculations.transferActivationToDepartureMinutes = this.calculateTransferTime(strokeCase);
+    // calculations.metKpi7 = this.calculateTransferTimeKPI(strokeCase, calculations.transferActivationToDepartureMinutes);
 
     // KPI 8: Registration to mechanical thrombectomy puncture ≤120min
     calculations.registrationToMechanicalThrombectomyMinutes = this.calculateRegistrationToMechanicalThrombectomyMinutes(strokeCase);
@@ -262,26 +262,26 @@ export class StrokeKPICalculatorService {
   /**
    * KPI 7: Calculate transfer time and check against target
    */
-  private calculateTransferTime(strokeCase: StrokeCase): number | undefined {
-    if (!strokeCase.timeOfTransferActivation || !strokeCase.timeOfTransferDeparture) {
-      return undefined;
-    }
+  // private calculateTransferTime(strokeCase: StrokeCase): number | undefined {
+  //   if (!strokeCase.timeOfTransferActivation || !strokeCase.timeOfTransferDeparture) {
+  //     return undefined;
+  //   }
 
-    const activationTime = new Date(strokeCase.timeOfTransferActivation);
-    const departureTime = new Date(strokeCase.timeOfTransferDeparture);
+  //   const activationTime = new Date(strokeCase.timeOfTransferActivation);
+  //   const departureTime = new Date(strokeCase.timeOfTransferDeparture);
     
-    return Math.round((departureTime.getTime() - activationTime.getTime()) / (1000 * 60));
-  }
+  //   return Math.round((departureTime.getTime() - activationTime.getTime()) / (1000 * 60));
+  // }
 
-  private calculateTransferTimeKPI(strokeCase: StrokeCase, transferMinutes?: number): boolean {
-    if (!strokeCase.transferToAnotherHospital || transferMinutes === undefined) {
-      return true; // Not applicable
-    }
+  // private calculateTransferTimeKPI(strokeCase: StrokeCase, transferMinutes?: number): boolean {
+  //   if (!strokeCase.transferToAnotherHospital || transferMinutes === undefined) {
+  //     return true; // Not applicable
+  //   }
 
-    // Target: ≤20min (no CT), ≤40min (with CT)
-    const targetMinutes = strokeCase.facilityHasCt ? 40 : 20;
-    return transferMinutes <= targetMinutes;
-  }
+  //   // Target: ≤20min (no CT), ≤40min (with CT)
+  //   const targetMinutes = strokeCase.facilityHasCt ? 40 : 20;
+  //   return transferMinutes <= targetMinutes;
+  // }
 
   /**
    * KPI 8: Calculate registration to mechanical thrombectomy puncture time in minutes
@@ -326,8 +326,14 @@ export class StrokeKPICalculatorService {
 
   /**
    * KPI 11: Check if 3-month follow-up was completed with mRS
+   * Uses threeMonthFollowupComplete checkbox from outcome form
    */
   private calculateFollowUpKPI(strokeCase: StrokeCase): boolean {
+    // Use the threeMonthFollowupComplete checkbox if available, otherwise fall back to legacy check
+    if ((strokeCase as any).threeMonthFollowupComplete !== undefined) {
+      return !!(strokeCase as any).threeMonthFollowupComplete;
+    }
+    // Legacy fallback: check followUpContactAttempted and modifiedRankinScaleAt90Days
     return !!(strokeCase.followUpContactAttempted && strokeCase.modifiedRankinScaleAt90Days !== undefined);
   }
 

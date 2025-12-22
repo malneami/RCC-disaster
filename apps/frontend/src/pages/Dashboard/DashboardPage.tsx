@@ -53,13 +53,14 @@ const DashboardPage: React.FC = () => {
   const { hospitals } = useHospitals();
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
   const [pathwayMetrics, setPathwayMetrics] = useState<PathwayPerformanceMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Initial load
+  const [manualLoading, setManualLoading] = useState(false); // Loading for manual actions only
   const [error, setError] = useState<string | null>(null);
   
-  // Filter states (not functional yet)
+  // Filter states - start with null dates to return all data initially
   const [selectedHospital, setSelectedHospital] = useState<string>('all');
-  const [startDate, setStartDate] = useState<string>(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   // Create filters object
   const getFilters = (): DashboardFilters => ({
@@ -68,10 +69,16 @@ const DashboardPage: React.FC = () => {
     endDate: endDate || undefined,
   });
 
+  // Track if this is a manual filter change
+  const isManualFilterChangeRef = React.useRef(false);
+
   // Fetch dashboard data
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (isManual: boolean = false) => {
     try {
-      setLoading(true);
+      // Only show loading state for manual actions (filter changes, manual refresh)
+      if (isManual) {
+        setManualLoading(true);
+      }
       setError(null);
       
       const filters = getFilters();
@@ -87,17 +94,53 @@ const DashboardPage: React.FC = () => {
       console.error('Error fetching dashboard data:', err);
       setError('Failed to load dashboard data');
     } finally {
-      setLoading(false);
+      if (isManual) {
+        setManualLoading(false);
+      }
+      setLoading(false); // Initial load only
     }
   }, [selectedHospital, startDate, endDate]);
 
+  // Initial load
   useEffect(() => {
-    fetchDashboardData();
-    
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
+    fetchDashboardData(false);
+  }, []); // Only run on mount
+
+  // Handle filter changes - fetch immediately if manual change
+  useEffect(() => {
+    if (isManualFilterChangeRef.current) {
+      isManualFilterChangeRef.current = false;
+      fetchDashboardData(true); // Manual filter change, show loading
+    }
+  }, [selectedHospital, startDate, endDate, fetchDashboardData]);
+
+  // Auto-refresh every 30 seconds (without loading state)
+  // Use current filter values directly to preserve user's filter selections
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only auto-refresh if not currently manually loading
+      if (!manualLoading) {
+        // Use current filter values directly, not the memoized function
+        const currentFilters = {
+          hospitalId: selectedHospital !== 'all' ? selectedHospital : undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+        };
+        
+        Promise.all([
+          dashboardService.getDashboardMetrics(currentFilters),
+          dashboardService.getPathwayPerformanceMetrics(currentFilters),
+        ]).then(([metricsData, pathwayData]) => {
+          setDashboardMetrics(metricsData);
+          setPathwayMetrics(pathwayData);
+        }).catch((err) => {
+          console.error('Error auto-refreshing dashboard data:', err);
+          // Don't show error for auto-refresh failures
+        });
+      }
+    }, 30000);
     return () => clearInterval(interval);
-  }, [fetchDashboardData]);
+  }, [selectedHospital, startDate, endDate, manualLoading]); // Depend on filter values, not the function
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -157,28 +200,28 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // Refresh handler
+  // Refresh handler - manual action, show loading
   const handleRefresh = () => {
-    fetchDashboardData();
+    fetchDashboardData(true); // Manual refresh, show loading
   };
 
-  // Filter handlers
+  // Filter handlers - manual actions, mark as manual and trigger fetch via useEffect
   const handleHospitalChange = (hospitalId: string) => {
+    isManualFilterChangeRef.current = true;
     setSelectedHospital(hospitalId);
-    // Data will be refetched on next auto-refresh or manual refresh
   };
 
   const handleDateRangeChange = (newStartDate: string, newEndDate: string) => {
+    isManualFilterChangeRef.current = true;
     setStartDate(newStartDate);
     setEndDate(newEndDate);
-    // Data will be refetched on next auto-refresh or manual refresh
   };
 
   const clearFilters = () => {
+    isManualFilterChangeRef.current = true;
     setSelectedHospital('all');
     setStartDate('');
     setEndDate('');
-    // Data will be refetched on next auto-refresh or manual refresh
   };
 
 
@@ -437,7 +480,7 @@ const DashboardPage: React.FC = () => {
           </Box>
         )}
 
-        {loading && (
+        {(loading || manualLoading) && (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
             <CircularProgress sx={{ mr: 2, color: '#2196f3' }} />
             <Typography sx={{ color: '#ffffff' }}>Loading dashboard data...</Typography>
@@ -455,7 +498,7 @@ const DashboardPage: React.FC = () => {
           </Box>
         )}
 
-        {!loading && !error && (
+        {!loading && !manualLoading && !error && (
           <Box id="dashboard-content">
             <Grid container spacing={3}>
           {/* Main KPI Cards */}

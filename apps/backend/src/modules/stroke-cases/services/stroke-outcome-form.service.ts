@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { StrokeOutcomeFormDto, UpdateStrokeOutcomeFormDto } from '../dto/stroke-outcome-form.dto';
+import { StrokeKPICalculatorService } from './stroke-kpi-calculator.service';
 
 @Injectable()
 export class StrokeOutcomeFormService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly kpiCalculatorService: StrokeKPICalculatorService,
+  ) {}
 
   /**
    * Update stroke case with outcome form data
@@ -39,6 +43,18 @@ export class StrokeOutcomeFormService {
       ? new Date(outcomeFormDto.outcomeFormCompletionDate)
       : (shouldSetCompletionDate ? new Date() : existingCaseCheck?.outcomeFormCompletionDate);
 
+    // Get the full stroke case for KPI calculation
+    const existingCase = await this.prisma.strokeCase.findUnique({
+      where: { id: strokeCaseId },
+      include: {
+        patient: true,
+      },
+    });
+
+    if (!existingCase) {
+      throw new NotFoundException('Stroke case not found');
+    }
+
     // Prepare update data
     const updateData = {
       ...outcomeFormDto,
@@ -60,7 +76,30 @@ export class StrokeOutcomeFormService {
       },
     });
 
-    return updatedCase;
+    // Recalculate KPIs since threeMonthFollowupComplete affects KPI 11
+    try {
+      const kpiCalculations = this.kpiCalculatorService.calculateKPIs(updatedCase);
+      await this.prisma.strokeCase.update({
+        where: { id: strokeCaseId },
+        data: kpiCalculations,
+      });
+    } catch (kpiError) {
+      console.error('KPI recalculation failed after outcome form update:', kpiError);
+      // Continue without failing the outcome form update
+    }
+
+    // Fetch updated case with recalculated KPIs
+    const finalCase = await this.prisma.strokeCase.findUnique({
+      where: { id: strokeCaseId },
+      include: {
+        patient: true,
+        originHospital: true,
+        destinationHospital: true,
+        createdBy: true,
+      },
+    });
+
+    return finalCase || updatedCase;
   }
 
   /**
@@ -101,6 +140,8 @@ export class StrokeOutcomeFormService {
         closureReport: true,
         functionalStatus: true,
         mortality: true,
+        // @ts-ignore - threeMonthFollowupComplete will be available after running 'prisma generate'
+        threeMonthFollowupComplete: true,
         outcomeFormCompleted: true,
         outcomeFormCompletionDate: true,
         outcomePercentageCompleteness: true,
@@ -137,10 +178,15 @@ export class StrokeOutcomeFormService {
       'closureReport',
       'functionalStatus',
       'mortality',
+      'threeMonthFollowupComplete',
     ];
 
     const completedFields = outcomeFields.filter(field => {
       const value = strokeCase[field];
+      // For boolean fields, any value (true or false) counts as complete
+      if (typeof value === 'boolean') {
+        return true;
+      }
       return value !== null && value !== undefined && value !== '';
     });
 

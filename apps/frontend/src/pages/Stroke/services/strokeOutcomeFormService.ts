@@ -47,6 +47,7 @@ export interface StrokeOutcomeFormResponse {
   complications?: string;
   followUpCallCompleted?: boolean;
   followUpCallDate?: string;
+  threeMonthFollowupComplete?: boolean;
   createdAt: string;
   updatedAt: string;
 }

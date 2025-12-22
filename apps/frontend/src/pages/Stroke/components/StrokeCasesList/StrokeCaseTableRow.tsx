@@ -66,7 +66,7 @@ const calculateKpiStatus = (case_: StrokeCase) => {
 
   // Door to Thrombolysis Order (no specific KPI target, but we can show the time)
   if (case_.doorToThrombolysisOrderMinutes !== null && case_.doorToThrombolysisOrderMinutes !== undefined) {
-    kpis.doorToThrombolysisOrder = true; // Always met if time is recorded (informational only)
+    kpis.doorToThrombolysisOrder = case_.doorToThrombolysisOrderMinutes <= 60; 
   }
 
   // KPI 4: Registration to IV Thrombolysis ≤60min

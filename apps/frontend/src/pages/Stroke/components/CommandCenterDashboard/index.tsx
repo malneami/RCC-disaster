@@ -15,9 +15,6 @@ import AdmissionFollowupCharts from './components/AdmissionFollowupCharts';
 import StrokeTypeDistribution from './components/StrokeTypeDistribution';
 import PerformanceTrendChart from './components/PerformanceTrendChart';
 import StrokeTrafficLightSystem from './components/StrokeTrafficLightSystem';
-import HospitalPerformanceTable, {
-  HospitalPerformanceData,
-} from './components/HospitalPerformanceTable';
 import HospitalPerformanceHeatmap from './components/HospitalPerformanceHeatmap';
 import { useStrokeCommandCenterData } from './hooks/useStrokeCommandCenterData';
 import { useFullscreen } from '../../../../contexts/FullscreenContext';
@@ -28,8 +25,8 @@ const StrokeCommandCenterDashboard: React.FC = () => {
   const [language] = useState<'en' | 'ar'>('en');
   const [filters, setFilters] = useState<StrokeCommandCenterFilters>({
     hospitalId: 'all',
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: '',
+    endDate: '',
   });
 
   const { data, loading, error, refreshData, hospitals } = useStrokeCommandCenterData(filters);
@@ -183,15 +180,6 @@ const StrokeCommandCenterDashboard: React.FC = () => {
             </Grid>
           </Grid>
         </Box>
-
-        {/* Hospital Performance Table */}
-        {data?.hospitalPerformance && (
-          <Box mt={3}>
-            <HospitalPerformanceTable
-              data={data.hospitalPerformance as HospitalPerformanceData[]}
-            />
-          </Box>
-        )}
 
         {/* Hospital Performance Heatmap */}
         {data?.hospitalPerformanceHeatmap && (
