@@ -10,6 +10,7 @@ import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ActivityType, UserStatus } from '@prisma/client';
 
 @Injectable()
@@ -216,6 +217,38 @@ export class AuthService {
     await this.usersService.resetPassword(user.id, hashedPassword);
 
     this.logger.log(`User ${user.email} reset password successfully`);
+  }
+
+  async getUserProfile(userId: string) {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const { passwordHash, refreshToken, ...userWithoutSecrets } = user;
+    return userWithoutSecrets;
+  }
+
+  async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Convert UpdateProfileDto to UpdateUserDto format
+    const updateData = {
+      firstName: updateProfileDto.firstName,
+      lastName: updateProfileDto.lastName,
+      phoneNumber: updateProfileDto.phoneNumber,
+    };
+
+    const result = await this.usersService.updateUser(userId, updateData);
+    
+    this.logger.log(`User ${userId} updated profile successfully`);
+    
+    return result;
   }
 
   private async handleFailedLogin(userId: string) {

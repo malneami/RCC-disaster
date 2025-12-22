@@ -7,12 +7,12 @@ export interface AuthUser {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNumber?: string;
   role: string;
   hospitalId?: string;
   hospital?: {
     id: string;
     name: string;
-    code: string;
   };
 }
 
@@ -76,6 +76,18 @@ class AuthService {
       `${API_BASE_URL}/auth/profile`
     );
     return response.data;
+  }
+
+  async updateProfile(updateData: {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+  }): Promise<AuthUser> {
+    const response: AxiosResponse<{ user: AuthUser }> = await axios.put(
+      `${API_BASE_URL}/auth/profile`,
+      updateData
+    );
+    return response.data.user;
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {

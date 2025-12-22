@@ -30,6 +30,7 @@ import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Authentication')
@@ -94,7 +95,20 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   async getProfile(@Request() req: AuthenticatedRequest) {
-    return req.user;
+    return this.authService.getUserProfile(req.user.id);
+  }
+
+  @Put('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  async updateProfile(
+    @Body() updateProfileDto: UpdateProfileDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.authService.updateProfile(req.user.id, updateProfileDto);
   }
 
   @Put('change-password')

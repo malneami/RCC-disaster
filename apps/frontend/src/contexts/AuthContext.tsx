@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<boolean>;
+  updateUser: (userData: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +47,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
+      // Save login time for profile display
+      localStorage.setItem('lastLoginTime', new Date().toISOString());
       
       authService.setToken(response.accessToken);
       setUser(response.user);
@@ -58,6 +61,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authService.logout();
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('lastLoginTime');
     setUser(null);
   };
 
@@ -82,8 +86,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUser = (userData: AuthUser) => {
+    setUser(userData);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshToken }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshToken, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
