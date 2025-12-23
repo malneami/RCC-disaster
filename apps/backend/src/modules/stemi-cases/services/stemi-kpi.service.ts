@@ -63,21 +63,28 @@ export class StemiKpiService {
   }
 
   async getKpiSummary(hospitalId?: string, startDate?: string, endDate?: string): Promise<any> {
-    const where: any = {};
+    const where: any = {
+      deletedAt: null, 
+    };
 
     if (hospitalId) {
-      where.originHospitalId = hospitalId;
+      // Include cases where hospital is either origin or destination
+      where.OR = [
+        { originHospitalId: hospitalId },
+        { destinationHospitalId: hospitalId },
+      ];
     }
 
     if (startDate || endDate) {
-      where.createdAt = {};
+      // Use pathwayStarted (date of admission) instead of createdAt for clinical accuracy
+      where.pathwayStarted = {};
       if (startDate) {
-        // Set start date to beginning of day (00:00:00) in UTC to include all cases created on that day
-        where.createdAt.gte = new Date(startDate + 'T00:00:00.000Z');
+        // Set start date to beginning of day (00:00:00) in UTC to include all cases on that day
+        where.pathwayStarted.gte = new Date(startDate + 'T00:00:00.000Z');
       }
       if (endDate) {
-        // Set end date to end of day (23:59:59.999) in UTC to include all cases created on that day
-        where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
+        // Set end date to end of day (23:59:59.999) in UTC to include all cases on that day
+        where.pathwayStarted.lte = new Date(endDate + 'T23:59:59.999Z');
       }
     }
 
@@ -121,13 +128,16 @@ export class StemiKpiService {
     startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const casesThisMonth = allCases.filter(c => 
-      c.pathwayStarted && new Date(c.pathwayStarted) >= startOfMonth
-    ).length;
+    // Use pathwayStarted (date of admission) for consistency with date filters
+    const casesThisMonth = allCases.filter(c => {
+      if (!c.pathwayStarted) return false;
+      return new Date(c.pathwayStarted) >= startOfMonth;
+    }).length;
 
-    const casesThisWeek = allCases.filter(c => 
-      c.pathwayStarted && new Date(c.pathwayStarted) >= startOfWeek
-    ).length;
+    const casesThisWeek = allCases.filter(c => {
+      if (!c.pathwayStarted) return false;
+      return new Date(c.pathwayStarted) >= startOfWeek;
+    }).length;
 
     // Calculate door-to-balloon times
     const doorToBalloonTimes = allCases

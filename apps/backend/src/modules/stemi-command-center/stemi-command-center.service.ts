@@ -89,11 +89,18 @@ export class StemiCommandCenterService {
 
     // Build where clause for filtering
     const whereClause: any = {
-      createdAt: {
-        gte: start,
-        lte: end,
-      },
+      deletedAt: null, 
     };
+
+    if (startDate || endDate) {
+      whereClause.pathwayStarted = {};
+      if (startDate) {
+        whereClause.pathwayStarted.gte = start;
+      }
+      if (endDate) {
+        whereClause.pathwayStarted.lte = end;
+      }
+    }
 
     if (hospitalId && hospitalId !== 'all') {
       whereClause.OR = [
@@ -125,6 +132,8 @@ export class StemiCommandCenterService {
         ticketId: true,
         createdAt: true,
         updatedAt: true,
+        originHospitalId: true,
+        destinationHospitalId: true,
         ticket: {
           select: {
             emsContactTime: true,
@@ -483,16 +492,36 @@ export class StemiCommandCenterService {
   }
 
   private async calculateHospitalPerformance(cases: any[], hospitalId?: string): Promise<HospitalPerformanceDto[]> {
+    let filteredCases = cases;
+    if (hospitalId && hospitalId !== 'all') {
+      filteredCases = cases.filter(c => 
+        c.originHospitalId === hospitalId || c.destinationHospitalId === hospitalId
+      );
+    }
+    
     // Group cases by hospital
-    const hospitalGroups = cases.reduce((acc, case_) => {
-      const hospitalId = case_.originHospitalId;
-      if (!acc[hospitalId]) {
-        acc[hospitalId] = {
-          hospital: case_.originHospital,
-          cases: [],
-        };
+    const hospitalGroups = filteredCases.reduce((acc, case_) => {
+      if (case_.originHospitalId && case_.originHospital) {
+        if (!acc[case_.originHospitalId]) {
+          acc[case_.originHospitalId] = {
+            hospital: case_.originHospital,
+            cases: [],
+          };
+        }
+        acc[case_.originHospitalId].cases.push(case_);
       }
-      acc[hospitalId].cases.push(case_);
+      
+      if (case_.destinationHospitalId && case_.destinationHospital && 
+          case_.destinationHospitalId !== case_.originHospitalId) {
+        if (!acc[case_.destinationHospitalId]) {
+          acc[case_.destinationHospitalId] = {
+            hospital: case_.destinationHospital,
+            cases: [],
+          };
+        }
+        acc[case_.destinationHospitalId].cases.push(case_);
+      }
+      
       return acc;
     }, {});
 
@@ -719,9 +748,15 @@ export class StemiCommandCenterService {
     startDate?: string;
     endDate?: string;
   }): Promise<HospitalPerformanceHeatmapDto[]> {
-    // Get all hospitals that have STEMI cases
+    const hospitalWhereClause: any = {};
+    
+    if (filters.hospitalId && filters.hospitalId !== 'all') {
+      hospitalWhereClause.id = filters.hospitalId;
+    }
+
     const hospitals = await this.prisma.hospital.findMany({
       where: {
+        ...hospitalWhereClause,
         stemiOriginCases: {
           some: {}
         }
@@ -736,15 +771,17 @@ export class StemiCommandCenterService {
       // Get hospital-specific cases for accurate KPI calculations
       const whereClause: any = {
         originHospitalId: hospital.id,
+        deletedAt: null,
       };
       
-      if (filters.startDate && filters.endDate) {
-        whereClause.createdAt = {
-          // Set start date to beginning of day (00:00:00) in UTC to include all cases created on that day
-          gte: new Date(filters.startDate + 'T00:00:00.000Z'),
-          // Set end date to end of day (23:59:59.999) in UTC to include all cases created on that day
-          lte: new Date(filters.endDate + 'T23:59:59.999Z')
-        };
+      if (filters.startDate || filters.endDate) {
+        whereClause.pathwayStarted = {};
+        if (filters.startDate) {
+          whereClause.pathwayStarted.gte = new Date(filters.startDate + 'T00:00:00.000Z');
+        }
+        if (filters.endDate) {
+          whereClause.pathwayStarted.lte = new Date(filters.endDate + 'T23:59:59.999Z');
+        }
       }
 
       const cases = await this.prisma.stemiCase.findMany({
@@ -909,14 +946,18 @@ export class StemiCommandCenterService {
 
   private getRecentCases(cases: any[]): RecentCaseDto[] {
     return cases
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort((a, b) => {
+        const aTime = a.pathwayStarted ? new Date(a.pathwayStarted).getTime() : 0;
+        const bTime = b.pathwayStarted ? new Date(b.pathwayStarted).getTime() : 0;
+        return bTime - aTime;
+      })
       .slice(0, 10)
       .map(case_ => ({
         id: case_.id,
         patientName: `${case_.patient?.firstName || ''} ${case_.patient?.lastName || ''}`.trim() || 'Unknown Patient',
         hospital: case_.originHospital?.name || 'Unknown Hospital',
         status: case_.currentStatus?.replace(/_/g, ' ') || 'Unknown',
-        timestamp: new Date(case_.createdAt).toLocaleString(),
+        timestamp: case_.pathwayStarted ? new Date(case_.pathwayStarted).toLocaleString() : 'Unknown',
       }));
   }
 }

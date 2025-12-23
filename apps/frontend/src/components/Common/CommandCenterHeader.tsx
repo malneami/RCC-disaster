@@ -211,7 +211,10 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
               <Button
                 variant="outlined"
                 size="small"
-                onClick={() => filters.onDateRangeChange('', '')}
+                onClick={() => {
+                  filters.onHospitalChange('all');
+                  filters.onDateRangeChange('', '');
+                }}
                 sx={{
                   color: '#ffffff',
                   borderColor: '#555',

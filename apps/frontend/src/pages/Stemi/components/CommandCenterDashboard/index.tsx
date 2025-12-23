@@ -25,8 +25,8 @@ const CommandCenterDashboard: React.FC = () => {
   const [language] = useState<'en' | 'ar'>('en');
   const [filters, setFilters] = useState<CommandCenterFilters>({
     hospitalId: 'all',
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: '',
+    endDate: '',
   });
 
   const { data, loading, error, refreshData, hospitals } = useCommandCenterData(filters);
