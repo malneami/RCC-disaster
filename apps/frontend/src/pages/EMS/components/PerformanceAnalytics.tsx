@@ -35,6 +35,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 
 const PerformanceAnalytics: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [activeCategory, setActiveCategory] = useState<'overall' | 'stroke' | 'stemi' | 'trauma'>('overall');
   const { data: performanceData, isLoading, error } = useEMSPerformance(selectedPeriod);
   const [tabValue, setTabValue] = useState(0);
 
@@ -60,13 +61,20 @@ const PerformanceAnalytics: React.FC = () => {
     }
   );
 
+  // Determine which stats to show based on active category
+  const activeStats = performanceData?.breakdown?.[activeCategory] || performanceData?.summary;
+
   const kpis = {
-    avgResponseTime: performanceData?.summary?.avgResponseTime || 0,
-    avgCasePreparationTime: performanceData?.summary?.avgCasePreparationTime || 0,
-    avgAssignmentDuration: performanceData?.summary?.avgAssignmentDuration || 0,
-    avgTotalTransferTime: performanceData?.summary?.avgTotalTransferTime || 0,
-    onTimeArrivals: performanceData?.summary?.onTimeArrivals || 0,
-    totalAssignments: performanceData?.summary?.totalAssignments || 0,
+    avgResponseTime: activeStats?.avgResponseTime || 0,
+    avgCasePreparationTime: activeStats?.avgCasePreparationTime || 0,
+    avgAssignmentDuration: activeStats?.avgAssignmentDuration || 0,
+    avgTotalTransferTime: activeStats?.avgTotalTransferTime || 0,
+    onTimeArrivals: activeStats?.onTimeArrivals || 0,
+    totalAssignments: activeStats?.totalAssignments || 0,
+  };
+
+  const handleCategoryChange = (_: React.SyntheticEvent, newValue: 'overall' | 'stroke' | 'stemi' | 'trauma') => {
+    setActiveCategory(newValue);
   };
 
   if (isLoading) return <Box>Loading...</Box>;
@@ -80,7 +88,26 @@ const PerformanceAnalytics: React.FC = () => {
         actions={[]}
       />
 
-      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        {/* Category Tabs */}
+        <Tabs
+          value={activeCategory}
+          onChange={handleCategoryChange}
+          textColor="primary"
+          indicatorColor="primary"
+          sx={{
+            '& .MuiTab-root': { minWidth: 100, fontWeight: 600 },
+            bgcolor: 'background.paper',
+            borderRadius: 1,
+            boxShadow: 1
+          }}
+        >
+          <Tab label="Overall" value="overall" />
+          <Tab label="Stroke" value="stroke" />
+          <Tab label="STEMI" value="stemi" />
+          <Tab label="Trauma" value="trauma" />
+        </Tabs>
+
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Time Period</InputLabel>
           <Select

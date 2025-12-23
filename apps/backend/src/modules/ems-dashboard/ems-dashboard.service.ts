@@ -298,103 +298,121 @@ export class EmsDashboardService {
       
       this.logger.log(`Performance Report: Found ${allAssignments.length} total assignments, ${assignments.length} completed (ARRIVED) in date range ${validStartDate.toISOString()} to ${validEndDate.toISOString()}`);
 
-      // Calculate Operational Metrics
-      let totalResponseTime = 0;
-      let totalCPT = 0;
-      let cptCount = 0; // CPT only for STEMI/Stroke cases
-      let totalAssignmentDuration = 0;
-      let totalTransferTime = 0;
-      let onTimeCount = 0;
-      let totalCompleted = assignments.length;
-      let totalDistance = 0;
-
-      assignments.forEach(a => {
-        // Determine case type for this assignment
-        const isStemiCase = a.ticket?.emergencyType === 'STEMI' || (a.ticket?.stemiCases && a.ticket.stemiCases.length > 0);
-        const isStrokeCase = a.ticket?.emergencyType === 'STROKE' || (a.ticket?.strokeCases && a.ticket.strokeCases.length > 0);
-        const isCriticalCase = isStemiCase || isStrokeCase;
-
-        // 1. EMS Response Time: Contact -> Arrival at Origin
-        // assignedAt (Dispatch/Contact) -> actualArrivalTime (Arrival at Origin)
-        if (a.assignedAt && a.actualArrivalTime) {
-            const responseTime = (new Date(a.actualArrivalTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
-            totalResponseTime += responseTime;
-        }
-
-        // 2. Case Preparation Time (CPT): Arrival -> Departure (door-out)
-        // Calculate CPT for all assignments (time spent at origin hospital preparing the case)
-        // This represents the time from EMS arrival at origin to departure with patient
-        if (a.journeyStartTime && a.actualArrivalTime) {
-             const cpt = (new Date(a.journeyStartTime).getTime() - new Date(a.actualArrivalTime).getTime()) / (1000 * 60);
-             // Only count positive values (journeyStartTime should be after actualArrivalTime)
-             if (cpt > 0) {
-               totalCPT += cpt;
-               cptCount++;
-             } else if (cpt < 0) {
-               // Log warning if timestamps are out of order
-               this.logger.warn(`Assignment ${a.id}: journeyStartTime (${a.journeyStartTime}) is before actualArrivalTime (${a.actualArrivalTime})`);
-             }
-        } else {
-          // Log when timestamps are missing for debugging
-          if (!a.actualArrivalTime) {
-            this.logger.debug(`Assignment ${a.id}: Missing actualArrivalTime for CPT calculation`);
-          }
-          if (!a.journeyStartTime) {
-            this.logger.debug(`Assignment ${a.id}: Missing journeyStartTime for CPT calculation`);
-          }
-        }
-
-        // 3. Assignment Duration: Door-out -> Arrival at Receiving.
-        // journeyStartTime (Depart) -> journeyEndTime (Arrive Dest).
-        if (a.journeyEndTime && a.journeyStartTime) {
-            const duration = (new Date(a.journeyEndTime).getTime() - new Date(a.journeyStartTime).getTime()) / (1000 * 60);
-            totalAssignmentDuration += duration;
-        }
-
-         // 4. Total Transfer Time: Contact -> Dest Arrival.
-         // assignedAt -> journeyEndTime.
-         if (a.journeyEndTime && a.assignedAt) {
-             const transferTime = (new Date(a.journeyEndTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
-             totalTransferTime += transferTime;
-         }
-
-         // 5. On-Time Arrival Rate: Based on total transfer time meeting target
-         // Per spec: ≤75 min for STEMI, ≤90 min for Stroke, default 75 min for others
-         if (a.journeyEndTime && a.assignedAt) {
-             const totalTime = (new Date(a.journeyEndTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
-             let targetTime = 75; // Default target
-             if (isStrokeCase) {
-               targetTime = 90; // 90 min for Stroke cases
-             } else if (isStemiCase) {
-               targetTime = 75; // 75 min for STEMI cases
-             }
-             if (totalTime <= targetTime) onTimeCount++;
-         }
-
-         if (a.distanceKm) {
-             totalDistance += a.distanceKm;
-         }
+      // Initialize metric accumulators for each type
+      const createMetrics = () => ({
+        totalResponseTime: 0,
+        totalCPT: 0,
+        cptCount: 0,
+        totalAssignmentDuration: 0,
+        totalTransferTime: 0,
+        onTimeCount: 0,
+        totalCompleted: 0,
+        totalAssignments: 0,
+        totalDistance: 0
       });
 
-      const avgResponseTime = totalCompleted > 0 ? totalResponseTime / totalCompleted : 0;
-      // CPT is calculated for all assignments that have both timestamps
-      const avgCPT = cptCount > 0 ? totalCPT / cptCount : 0;
-      
-      // Log diagnostic info if CPT is 0
-      if (avgCPT === 0 && totalCompleted > 0) {
-        this.logger.warn(`Case Preparation Time is 0.0 min. Total completed assignments: ${totalCompleted}, Assignments with both timestamps: ${cptCount}`);
-      }
-      const avgAssignmentDuration = totalCompleted > 0 ? totalAssignmentDuration / totalCompleted : 0;
-      const avgTransferTime = totalCompleted > 0 ? totalTransferTime / totalCompleted : 0;
-      const onTimeRate = totalCompleted > 0 ? Math.round((onTimeCount / totalCompleted) * 100) : 0;
+      const metrics = {
+        overall: createMetrics(),
+        stroke: createMetrics(),
+        stemi: createMetrics(),
+        trauma: createMetrics(),
+      };
 
+      // Helper to update metrics for a specific type
+      const updateMetrics = (type: 'overall' | 'stroke' | 'stemi' | 'trauma', a: any, isTargetType: boolean) => {
+        if (type !== 'overall' && !isTargetType) return;
+        
+        const m = metrics[type];
+        m.totalAssignments++;
 
-      // Count active drivers: only those assigned to tickets with status "EN_ROUTE"
+        if (a.status === 'ARRIVED') {
+            m.totalCompleted++;
+
+            // 1. EMS Response Time
+            if (a.assignedAt && a.actualArrivalTime) {
+                const responseTime = (new Date(a.actualArrivalTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
+                m.totalResponseTime += responseTime;
+            }
+
+            // 2. Case Preparation Time (CPT)
+            if (a.journeyStartTime && a.actualArrivalTime) {
+                const cpt = (new Date(a.journeyStartTime).getTime() - new Date(a.actualArrivalTime).getTime()) / (1000 * 60);
+                if (cpt > 0) {
+                    m.totalCPT += cpt;
+                    m.cptCount++;
+                }
+            }
+
+            // 3. Assignment Duration
+            if (a.journeyEndTime && a.journeyStartTime) {
+                const duration = (new Date(a.journeyEndTime).getTime() - new Date(a.journeyStartTime).getTime()) / (1000 * 60);
+                m.totalAssignmentDuration += duration;
+            }
+
+            // 4. Total Transfer Time
+            if (a.journeyEndTime && a.assignedAt) {
+                const transferTime = (new Date(a.journeyEndTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
+                m.totalTransferTime += transferTime;
+            }
+
+            // 5. On-Time Arrival Rate
+            if (a.journeyEndTime && a.assignedAt) {
+                const totalTime = (new Date(a.journeyEndTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
+                let targetTime = 75; // Default target
+                if (metrics.stroke && type === 'stroke') targetTime = 90;
+                else if (metrics.stemi && type === 'stemi') targetTime = 75;
+                // For trauma, use default or specific if defined later
+                
+                if (totalTime <= targetTime) m.onTimeCount++;
+            }
+
+            if (a.distanceKm) {
+                m.totalDistance += a.distanceKm;
+            }
+        }
+      };
+
+      allAssignments.forEach(a => {
+        // Determine case type
+        const isStemiCase = a.ticket?.emergencyType === 'STEMI' || (a.ticket?.stemiCases && a.ticket.stemiCases.length > 0);
+        const isStrokeCase = a.ticket?.emergencyType === 'STROKE' || (a.ticket?.strokeCases && a.ticket.strokeCases.length > 0);
+        const isTraumaCase = a.ticket?.emergencyType === 'TRAUMA'; // Assuming 'TRAUMA' is the enum value
+
+        // Update Overall
+        updateMetrics('overall', a, true);
+
+        // Update Specific Types
+        updateMetrics('stemi', a, isStemiCase);
+        updateMetrics('stroke', a, isStrokeCase);
+        updateMetrics('trauma', a, isTraumaCase);
+      });
+
+      // Helper to calculate final averages
+      const calculateFinalStats = (m: any) => ({
+          totalAssignments: m.totalAssignments,
+          completedAssignments: m.totalCompleted,
+          avgResponseTime: parseFloat((m.totalCompleted > 0 ? m.totalResponseTime / m.totalCompleted : 0).toFixed(1)),
+          avgCasePreparationTime: parseFloat((m.cptCount > 0 ? m.totalCPT / m.cptCount : 0).toFixed(1)),
+          avgAssignmentDuration: parseFloat((m.totalCompleted > 0 ? m.totalAssignmentDuration / m.totalCompleted : 0).toFixed(1)),
+          avgTotalTransferTime: parseFloat((m.totalCompleted > 0 ? m.totalTransferTime / m.totalCompleted : 0).toFixed(1)),
+          onTimeArrivals: m.totalCompleted > 0 ? Math.round((m.onTimeCount / m.totalCompleted) * 100) : 0,
+          totalDistance: parseFloat(m.totalDistance.toFixed(1)),
+      });
+
+      // Calculate operational metrics for all categories
+      const overallStats = calculateFinalStats(metrics.overall);
+      const stemiStats = calculateFinalStats(metrics.stemi);
+      const strokeStats = calculateFinalStats(metrics.stroke);
+      const traumaStats = calculateFinalStats(metrics.trauma);
+
+      this.logger.log(`Performance Report Generated. Total: ${overallStats.totalAssignments}, Stroke: ${strokeStats.totalAssignments}, STEMI: ${stemiStats.totalAssignments}`);
+
+      // Count active drivers (unchanged logic)
       const enRouteAssignments = allAssignments.filter(a => a.status === 'EN_ROUTE');
       const uniqueDrivers = new Set(enRouteAssignments.map(a => a.driverId).filter(id => id));
       const activeDriversCount = uniqueDrivers.size;
 
-      // Fetch Fleet Data for "Snapshot" metrics (Readiness)
+      // Fleet Data (unchanged logic)
       const allAmbulances = await this.prisma.ambulance.findMany();
       const totalFleet = allAmbulances.length;
       const operationalFleet = allAmbulances.filter(a => a.status === 'AVAILABLE' || a.status === 'IN_USE').length;
@@ -403,36 +421,29 @@ export class EmsDashboardService {
 
       const vehicleReadiness = totalFleet > 0 ? (operationalFleet / totalFleet) * 100 : 0;
       
-      // Driver Utilization: Total Assignment Time / (Active Drivers * Period Length in Hours)
-      // This is an approximation.
       const periodHours = (validEndDate.getTime() - validStartDate.getTime()) / (1000 * 60 * 60);
-      const totalDriverHours = activeDriversCount * (periodHours > 0 ? periodHours : 24); // Avoid div by 0
-      // utilizing totalAssignmentDuration (minutes) / 60
-      const driverUtilization = totalDriverHours > 0 ? ((totalAssignmentDuration / 60) / totalDriverHours) * 100 : 0;
+      const totalDriverHours = activeDriversCount * (periodHours > 0 ? periodHours : 24);
+      const driverUtilization = totalDriverHours > 0 ? ((metrics.overall.totalAssignmentDuration / 60) / totalDriverHours) * 100 : 0;
 
 
       return {
-        summary: {
-          totalAssignments: allAssignments.length, // Show ALL assignments, not just completed
-          completedAssignments: totalCompleted, // Completed assignments for reference
-          avgResponseTime: parseFloat(avgResponseTime.toFixed(1)),
-          avgCasePreparationTime: parseFloat(avgCPT.toFixed(1)),
-          avgAssignmentDuration: parseFloat(avgAssignmentDuration.toFixed(1)),
-          avgTotalTransferTime: parseFloat(avgTransferTime.toFixed(1)),
-          onTimeArrivals: onTimeRate,
-          totalDistance: parseFloat(totalDistance.toFixed(1)),
+        summary: overallStats, // Backward compatibility
+        breakdown: {
+            overall: overallStats,
+            stemi: stemiStats,
+            stroke: strokeStats,
+            trauma: traumaStats,
         },
         fleet: {
             activeDrivers: activeDriversCount,
             totalAmbulances: totalFleet,
             availableAmbulances,
             inUseAmbulances,
-            // Availability percentage: Available / Total (target ≥85%)
             availabilityPercentage: totalFleet > 0 ? parseFloat(((availableAmbulances / totalFleet) * 100).toFixed(1)) : 0,
             vehicleReadiness: parseFloat(vehicleReadiness.toFixed(1)),
             driverUtilization: parseFloat(driverUtilization.toFixed(1))
         },
-        metrics: [], // We don't need detailed per-day metrics for the KPI cards right now
+        metrics: [], 
         period: {
           startDate: validStartDate.toISOString(),
           endDate: validEndDate.toISOString(),
