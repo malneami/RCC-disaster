@@ -170,7 +170,11 @@ export class StrokeCommandCenterService {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    const casesThisMonth = cases.filter(c => new Date(c.createdAt) >= startOfMonth).length;
+
+    const casesThisMonth = cases.filter(c => {
+      if (!c.dateOfAdmission) return false;
+      return new Date(c.dateOfAdmission) >= startOfMonth;
+    }).length;
     
     // Calculate coverage rate (percentage of cases with complete KPI data)
     // Use KPI1 and KPI2 as indicators of complete data
@@ -663,8 +667,8 @@ export class StrokeCommandCenterService {
     // Get all hospitals with stroke service
     const hospitals = await this.prisma.hospital.findMany({
       where: {
-        hasStrokeService: true,
-        deletedAt: null,
+      hasStrokeService: true,
+      deletedAt: null,
       },
       select: {
         id: true,
@@ -789,8 +793,8 @@ export class StrokeCommandCenterService {
     // Get all hospitals with stroke service
     const hospitals = await this.prisma.hospital.findMany({
       where: {
-        hasStrokeService: true,
-        deletedAt: null,
+      hasStrokeService: true,
+      deletedAt: null,
       },
       select: {
         id: true,
@@ -799,7 +803,7 @@ export class StrokeCommandCenterService {
     });
 
     console.log(`[Heatmap] Found ${hospitals.length} hospitals with stroke service`);
-
+    
     const heatmapData: StrokeHospitalPerformanceHeatmapDto[] = [];
 
     for (const hospital of hospitals) {
@@ -822,6 +826,8 @@ export class StrokeCommandCenterService {
           whereClause.dateOfAdmission.lte = new Date(filters.endDate + 'T23:59:59.999Z');
         }
       }
+      
+      whereClause.deletedAt = null;
 
       const cases = await this.prisma.strokeCase.findMany({
         where: whereClause,
