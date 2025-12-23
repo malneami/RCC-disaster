@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { CreatePatientData, Patient } from '../../../../services/patientService';
 import NationalIdInput from '../../../../components/Common/NationalIdInput';
-import { calculateAge, formatAge, calculateAgeInYears, parseAgeText } from '../../../../utils/ageCalculator';
+import { calculateAge, calculateDoBFromAge, formatDateToLocalInput } from '../../../../utils/ageCalculator';
 
 interface PersonalInfoStepProps {
   formData: CreatePatientData;
@@ -24,81 +24,57 @@ interface PersonalInfoStepProps {
   isEditing?: boolean; // Add this prop to indicate if we're editing
 }
 
-const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({ 
-  formData, 
-  onDataChange, 
+const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
+  formData,
+  onDataChange,
   onFieldBlur,
   validationErrors = {},
   touched = {},
-  onPatientSelected 
+  onPatientSelected
 }) => {
-  // Track if age was manually edited (to show text input instead of formatted string)
-  const [ageManuallyEdited, setAgeManuallyEdited] = React.useState(false);
-  // Store the age text input (e.g., "5 years", "3 months", "2 years, 3 months, 5 days")
-  const [ageTextInput, setAgeTextInput] = React.useState<string>('');
+  // State to track age parts for display/editing
+  // These are derived from formData but kept in state to allow independent editing before DoB calculation
+  const [ageParts, setAgeParts] = React.useState({
+    years: '',
+    months: '',
+    days: ''
+  });
 
-  // Helper function to format age from stored values
-  const formatAgeFromStoredValues = (): string => {
-    const parts: string[] = [];
-    
-    if (formData.age !== undefined && formData.age !== null && formData.age > 0) {
-      parts.push(`${formData.age} ${formData.age === 1 ? 'year' : 'years'}`);
-    }
-    if (formData.ageMonths !== undefined && formData.ageMonths > 0) {
-      parts.push(`${formData.ageMonths} ${formData.ageMonths === 1 ? 'month' : 'months'}`);
-    }
-    if (formData.ageDays !== undefined && formData.ageDays > 0) {
-      parts.push(`${formData.ageDays} ${formData.ageDays === 1 ? 'day' : 'days'}`);
-    }
-    
-    return parts.join(', ');
-  };
-
-  // Initialize age text input when form data changes (for editing)
+  // Effect to update age parts when formData changes (e.g. DoB selected or patient loaded)
   React.useEffect(() => {
-    if (formData.dateOfBirth && formData.dateOfBirth.trim() !== '' && !ageManuallyEdited) {
-      // If DOB exists and not manually edited, clear text input (will show formatted from DOB)
-      setAgeTextInput('');
-      return;
-    }
-    
-    // If no DOB, check if we have stored age data (age, ageMonths, ageDays)
-    if (!formData.dateOfBirth || formData.dateOfBirth.trim() === '') {
-      const hasAgeData = (formData.age !== undefined && formData.age !== null) || 
-                         (formData.ageMonths !== undefined && formData.ageMonths > 0) ||
-                         (formData.ageDays !== undefined && formData.ageDays > 0);
-      
-      if (hasAgeData) {
-        const formattedAge = formatAgeFromStoredValues();
-        // Only update if the formatted age changed and user hasn't manually edited
-        // This prevents overwriting user input while they're typing
-        if (formattedAge && (!ageTextInput || ageTextInput.trim() === '' || !ageManuallyEdited)) {
-          setAgeTextInput(formattedAge);
-          setAgeManuallyEdited(true); // Mark as manually edited so it shows as text input
-        }
-      } else if (!ageTextInput || ageTextInput.trim() === '') {
-        // If no age data at all, clear the input
-        setAgeTextInput('');
-      }
+    // If we have a DoB, calculate age parts from it
+    if (formData.dateOfBirth) {
+      const ageDetails = calculateAge(formData.dateOfBirth);
+      setAgeParts({
+        years: ageDetails.years.toString(),
+        months: ageDetails.months.toString(),
+        days: ageDetails.days.toString()
+      });
+    } else {
+      // If no DoB, check if we have explicit age parts in formData
+      // This might happen if we just cleared DoB or if data came from somewhere else without DoB
+      setAgeParts({
+        years: formData.age !== undefined ? formData.age.toString() : '',
+        months: formData.ageMonths !== undefined ? formData.ageMonths.toString() : '',
+        days: formData.ageDays !== undefined ? formData.ageDays.toString() : ''
+      });
     }
   }, [formData.dateOfBirth, formData.age, formData.ageMonths, formData.ageDays]);
 
   const handleChange = (field: keyof CreatePatientData, value: any) => {
-    // Handle dateOfBirth changes (including clearing it)
+    // Handle dateOfBirth changes
     if (field === 'dateOfBirth') {
       if (value && value.trim() !== '') {
         // Date of birth is being set
         try {
-          const calculatedAge = calculateAgeInYears(value);
-          setAgeManuallyEdited(false); // Reset flag when DOB changes
-          setAgeTextInput(''); // Clear text input when DOB changes
-          // Always set age to calculated value (even if 0 for very young babies)
-          // Clear ageMonths and ageDays when DOB is provided (age will be calculated from DOB)
-          onDataChange({ 
+          // Calculate age details to update the form data
+          const ageDetails = calculateAge(value);
+
+          onDataChange({
             [field]: value,
-            age: calculatedAge >= 0 ? calculatedAge : 0,
-            ageMonths: undefined,
-            ageDays: undefined
+            age: ageDetails.years,
+            ageMonths: ageDetails.months,
+            ageDays: ageDetails.days
           });
           return;
         } catch (error) {
@@ -108,104 +84,63 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
         }
       } else {
         // Date of birth is being cleared
-        setAgeManuallyEdited(true);
-        // Format age from stored values (age, ageMonths, ageDays)
-        const formattedAge = formatAgeFromStoredValues();
-        if (formattedAge) {
-          setAgeTextInput(formattedAge);
-        } else {
-          // If no stored age data, clear the input
-          setAgeTextInput('');
-        }
-        onDataChange({ 
-          [field]: value || undefined, // Convert empty string to undefined
+        // Also clear age fields
+        onDataChange({
+          [field]: value || undefined,
+          age: undefined,
+          ageMonths: undefined,
+          ageDays: undefined
         });
         return;
       }
     }
-    
-    // If age is manually edited, mark it as manually edited
-    if (field === 'age') {
-      setAgeManuallyEdited(true);
-    }
-    
+
     onDataChange({ [field]: value });
   };
 
-  // Handle age text input change
-  const handleAgeTextChange = (text: string) => {
-    setAgeTextInput(text);
-    setAgeManuallyEdited(true);
-    
-    // Parse the text and extract years, months, and days for storage
-    if (text.trim() === '') {
-      onDataChange({ age: undefined, ageMonths: undefined, ageDays: undefined });
+  // Handle changes to specific age parts (Years, Months, Days)
+  const handleAgePartChange = (part: 'years' | 'months' | 'days', value: string) => {
+    // Only allow non-negative numbers
+    if (value && (isNaN(parseInt(value)) || parseInt(value) < 0)) {
       return;
     }
-    
-    const parsed = parseAgeText(text);
-    if (parsed.isValid) {
-      // Store years, months, and days separately
-      // Allow age to be 0 if only months/days are provided
-      const hasMonthsOrDays = parsed.months > 0 || parsed.days > 0;
-      const ageValue = parsed.years > 0 ? parsed.years : (hasMonthsOrDays ? 0 : undefined);
-      onDataChange({ 
-        age: ageValue,
-        ageMonths: parsed.months > 0 ? parsed.months : undefined,
-        ageDays: parsed.days > 0 ? parsed.days : undefined
+
+    const newAgeParts = { ...ageParts, [part]: value };
+    setAgeParts(newAgeParts);
+
+    const years = parseInt(newAgeParts.years) || 0;
+    const months = parseInt(newAgeParts.months) || 0;
+    const days = parseInt(newAgeParts.days) || 0;
+
+    // Any input triggers calculation
+    if (years > 0 || months > 0 || days > 0 || value === '0') {
+      const dob = calculateDoBFromAge(years, months, days);
+      // Use local date formatting to avoid timezone offset issues
+      const dobString = formatDateToLocalInput(dob);
+
+      onDataChange({
+        dateOfBirth: dobString,
+        age: years,
+        ageMonths: months,
+        ageDays: days
       });
-    } else {
-      // If parsing fails, still try to store as number if it's just a number
-      const simpleNumber = parseInt(text);
-      if (!isNaN(simpleNumber)) {
-        onDataChange({ age: simpleNumber, ageMonths: undefined, ageDays: undefined });
-      }
+    } else if (newAgeParts.years === '' && newAgeParts.months === '' && newAgeParts.days === '') {
+      // If all cleared, clear DoB
+      onDataChange({
+        dateOfBirth: undefined,
+        age: undefined,
+        ageMonths: undefined,
+        ageDays: undefined
+      });
     }
-  };
-
-  // Get age display value
-  const getAgeDisplayValue = (): string => {
-    // If date of birth exists and not manually edited, show formatted age
-    if (formData.dateOfBirth && formData.dateOfBirth.trim() !== '' && !ageManuallyEdited) {
-      try {
-        const ageDetails = calculateAge(formData.dateOfBirth);
-        return formatAge(ageDetails);
-      } catch (error) {
-        return ageTextInput || formatAgeFromStoredValues() || '';
-      }
-    }
-    
-    // If manually edited, show the text input
-    if (ageManuallyEdited) {
-      return ageTextInput;
-    }
-    
-    // If no DOB and not manually edited, format from stored values
-    const formattedFromStored = formatAgeFromStoredValues();
-    if (formattedFromStored) {
-      return formattedFromStored;
-    }
-    
-    // Fallback to age as years
-    return formData.age !== undefined && formData.age !== null 
-      ? `${formData.age} years` 
-      : '';
-  };
-
-  // Check if age field should show as text (formatted) or text input
-  const shouldShowFormattedAge = (): boolean => {
-    return !ageManuallyEdited && !!formData.dateOfBirth;
   };
 
   const handlePatientSelect = (patient: Patient) => {
     // Auto-fill form with selected patient data
-    const dateOfBirth = patient.dateOfBirth 
-      ? new Date(patient.dateOfBirth).toISOString().split('T')[0] 
+    const dateOfBirth = patient.dateOfBirth
+      ? new Date(patient.dateOfBirth).toISOString().split('T')[0]
       : '';
-    
-    // Reset age manually edited flag when selecting patient
-    setAgeManuallyEdited(false);
-    
+
     onDataChange({
       firstName: patient.firstName,
       lastName: patient.lastName,
@@ -243,10 +178,11 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
       privacyLevel: patient.privacyLevel,
       consentGiven: patient.consentGiven,
     });
-    
+
     // Notify parent component that a patient was selected for editing
     onPatientSelected?.(patient);
   };
+
 
 
   return (
@@ -255,7 +191,7 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
         Personal Information
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Please provide the patient's basic personal information. The system will automatically check for existing patients using the National ID 
+        Please provide the patient's basic personal information. The system will automatically check for existing patients using the National ID
         and prevent duplicate patient creation across all hospitals.
       </Typography>
 
@@ -299,76 +235,6 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
           />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Date of Birth"
-            type="date"
-            value={formData.dateOfBirth || ''}
-            onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-            onBlur={() => onFieldBlur?.('dateOfBirth')}
-            error={touched.dateOfBirth && !!validationErrors.dateOfBirth}
-            helperText={touched.dateOfBirth && validationErrors.dateOfBirth ? validationErrors.dateOfBirth : 'Optional - Age will be calculated automatically if provided'}
-            InputLabelProps={{
-              shrink: true,
-            }}
-            inputProps={{
-              max: new Date().toISOString().split('T')[0], // Prevent future dates
-            }}
-            FormHelperTextProps={{
-              sx: { color: touched.dateOfBirth && validationErrors.dateOfBirth ? 'error.main' : 'text.secondary' }
-            }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          {shouldShowFormattedAge() ? (
-            <TextField
-              fullWidth
-              label="Age"
-              value={getAgeDisplayValue()}
-              onFocus={() => {
-                // Switch to text input when user focuses on the field
-                setAgeManuallyEdited(true);
-                setAgeTextInput(getAgeDisplayValue());
-              }}
-              onChange={(e) => {
-                // When user starts typing, switch to text input
-                handleAgeTextChange(e.target.value);
-              }}
-              onBlur={() => onFieldBlur?.('age')}
-              required
-              error={touched.age && !!validationErrors.age}
-              helperText={touched.age && validationErrors.age ? validationErrors.age : 'Calculated from date of birth. Click to edit manually (e.g., "5 years", "3 months, 5 days", or "15 days")'}
-              placeholder="Click to enter age manually"
-              FormHelperTextProps={{
-                sx: { color: touched.age && validationErrors.age ? 'error.main' : 'text.secondary' }
-              }}
-              sx={{
-                '& .MuiInputBase-input': {
-                  cursor: 'text',
-                },
-              }}
-            />
-          ) : (
-            <TextField
-              fullWidth
-              label="Age"
-              type="text"
-              value={getAgeDisplayValue()}
-              onChange={(e) => {
-                handleAgeTextChange(e.target.value);
-              }}
-              onBlur={() => onFieldBlur?.('age')}
-              required
-              error={touched.age && !!validationErrors.age}
-              helperText={touched.age && validationErrors.age ? validationErrors.age : 'Enter age (e.g., "25 years", "3 months, 5 days", or "15 days")'}
-              placeholder="e.g., 25 years, 3 months, 10 days, 2 months, 5 days, or 15 days"
-              FormHelperTextProps={{
-                sx: { color: touched.age && validationErrors.age ? 'error.main' : 'text.secondary' }
-              }}
-            />
-          )}
-        </Grid>
-        <Grid item xs={12} sm={6}>
           <FormControl fullWidth required>
             <InputLabel>Gender</InputLabel>
             <Select
@@ -382,6 +248,70 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
             </Select>
           </FormControl>
         </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Date of Birth"
+            type="date"
+            value={formData.dateOfBirth || ''}
+            onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+            onBlur={() => onFieldBlur?.('dateOfBirth')}
+            error={touched.dateOfBirth && !!validationErrors.dateOfBirth}
+            helperText={touched.dateOfBirth && validationErrors.dateOfBirth ? validationErrors.dateOfBirth : 'Optional - Age is calculated automatically'}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            inputProps={{
+              max: new Date().toISOString().split('T')[0], // Prevent future dates
+            }}
+            FormHelperTextProps={{
+              sx: { color: touched.dateOfBirth && validationErrors.dateOfBirth ? 'error.main' : 'text.secondary' }
+            }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Grid container spacing={2}>
+            <Grid item xs={4}>
+              <TextField
+                fullWidth
+                label="Days"
+                value={ageParts.days}
+                onChange={(e) => handleAgePartChange('days', e.target.value)}
+                onBlur={() => onFieldBlur?.('ageDays')}
+                type="number"
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                fullWidth
+                label="Months"
+                value={ageParts.months}
+                onChange={(e) => handleAgePartChange('months', e.target.value)}
+                onBlur={() => onFieldBlur?.('ageMonths')}
+                type="number"
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                fullWidth
+                label="Years"
+                value={ageParts.years}
+                onChange={(e) => handleAgePartChange('years', e.target.value)}
+                onBlur={() => onFieldBlur?.('age')}
+                type="number"
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="caption" color="text.secondary">
+                Enter age to calculate Date of Birth automatically
+              </Typography>
+            </Grid>
+          </Grid>
+        </Grid>
+
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth>
             <InputLabel>Marital Status</InputLabel>
@@ -420,6 +350,11 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
           />
         </Grid>
       </Grid>
+      <Box sx={{ mt: 3, p: 2, bgcolor: 'info.soft', borderRadius: 1, border: '1px solid', borderColor: 'info.main' }}>
+        <Typography variant="body2" color="info.main">
+          <strong>Note:</strong> The Date of Birth is the primary source of truth. Entering age (Years, Months, Days) will calculate the Date of Birth based on today's date.
+        </Typography>
+      </Box>
     </Box>
   );
 };

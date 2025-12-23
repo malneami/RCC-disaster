@@ -178,3 +178,36 @@ export const formatAgeForDisplay = (
   // If no age data at all, return N/A
   return 'N/A';
 };
+
+/**
+ * Calculate Date of Birth from age (years, months, days)
+ * Calculates back from today's date
+ */
+export const calculateDoBFromAge = (years: number, months: number, days: number): Date => {
+  const today = new Date();
+  
+  // Clone today to avoid mutating it
+  const dob = new Date(today);
+  
+  // Subtract years
+  dob.setFullYear(dob.getFullYear() - (years || 0));
+  
+  // Subtract months
+  dob.setMonth(dob.getMonth() - (months || 0));
+  
+  // Subtract days
+  dob.setDate(dob.getDate() - (days || 0));
+  
+  return dob;
+};
+
+/**
+ * Format date to YYYY-MM-DD string using local time
+ * This avoids off-by-one errors that can happen with toISOString() due to timezone offsets
+ */
+export const formatDateToLocalInput = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
