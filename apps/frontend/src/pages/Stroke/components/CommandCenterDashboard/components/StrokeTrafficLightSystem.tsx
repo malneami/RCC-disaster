@@ -90,7 +90,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
       <Grid container spacing={3}>
         {strokeKPIs.map((kpi, index) => {
           const isTargetMet = kpi.status === 'GREEN';
-          const performancePercentage = kpi.percentage;
+          const performancePercentage = kpi.percentage ?? 0;
 
           const status = getComplianceStatus(performancePercentage);
 
@@ -109,7 +109,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
                     {kpi.validCases !== undefined && kpi.compliantCases !== undefined ? (
                       <>
                         <Typography variant="body2">
-                          {language === 'ar' ? 'الامتثال:' : 'Compliance:'} {kpi.compliantCases}/{kpi.validCases} {language === 'ar' ? 'حالة' : 'cases'} ({kpi.percentage.toFixed(1)}%)
+                          {language === 'ar' ? 'الامتثال:' : 'Compliance:'} {kpi.compliantCases}/{kpi.validCases} {language === 'ar' ? 'حالة' : 'cases'} ({(kpi.percentage ?? 0).toFixed(1)}%)
                         </Typography>
                         <Typography variant="body2">
                           {language === 'ar' ? 'الحالة:' : 'Status:'} {status.label}
@@ -117,7 +117,7 @@ const StrokeTrafficLightSystem: React.FC<TrafficLightSystemProps> = ({
                       </>
                     ) : (
                       <Typography variant="body2">
-                        {language === 'ar' ? 'النسبة المئوية:' : 'Percentage:'} {kpi.percentage.toFixed(1)}%
+                        {language === 'ar' ? 'النسبة المئوية:' : 'Percentage:'} {(kpi.percentage ?? 0).toFixed(1)}%
                       </Typography>
                     )}
                     <Typography variant="caption" sx={{ color: '#999' }}>
