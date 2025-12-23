@@ -19,6 +19,7 @@ import NationalIdInput from '../../../../components/Common/NationalIdInput';
 import PortalPatientEdit from '../../../../components/Common/PortalPatientEdit';
 import HospitalSelect from '../../../../components/Common/HospitalSelect';
 import { Patient } from '../../../../services/patientService';
+import { calculateAge, calculateDoBFromAge, formatDateToLocalInput } from '../../../../utils/ageCalculator';
 
 interface PatientInformationStepProps {
   formData: CreateStrokeCaseData;
@@ -43,6 +44,13 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [editPatientDialogOpen, setEditPatientDialogOpen] = useState(false);
 
+  // State for age parts
+  const [ageParts, setAgeParts] = useState({
+    years: '',
+    months: '',
+    days: ''
+  });
+
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
@@ -60,15 +68,89 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
     fetchHospitals();
   }, []);
 
+  // Update age parts when formData.patientInfo.dateOfBirth or age changes
+  useEffect(() => {
+    if (formData.patientInfo?.dateOfBirth) {
+      const ageDetails = calculateAge(formData.patientInfo.dateOfBirth);
+      setAgeParts({
+        years: ageDetails.years.toString(),
+        months: ageDetails.months.toString(),
+        days: ageDetails.days.toString()
+      });
+    } else if (formData.patientInfo?.age !== undefined) {
+      setAgeParts(prev => ({
+        ...prev,
+        years: formData.patientInfo?.age?.toString() || '',
+      }));
+    }
+  }, [formData.patientInfo?.dateOfBirth, formData.patientInfo?.age]);
+
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const date = event.target.value;
+
+    // Create new patient info with date
+    const newPatientInfo = {
+      ...formData.patientInfo,
+      dateOfBirth: date
+    };
+
+    // Update age if date exists
+    if (date) {
+      const ageDetails = calculateAge(date);
+      newPatientInfo.age = ageDetails.years;
+    } else {
+      newPatientInfo.age = undefined;
+    }
+
+    updateFormData('patientInfo', newPatientInfo);
+  };
+
+  const handleAgePartChange = (part: 'years' | 'months' | 'days', value: string) => {
+    if (value && (isNaN(parseInt(value)) || parseInt(value) < 0)) {
+      return;
+    }
+
+    const newAgeParts = { ...ageParts, [part]: value };
+    setAgeParts(newAgeParts);
+
+    const years = parseInt(newAgeParts.years) || 0;
+    const months = parseInt(newAgeParts.months) || 0;
+    const days = parseInt(newAgeParts.days) || 0;
+
+    let newPatientInfo = { ...formData.patientInfo };
+
+    if (years > 0 || months > 0 || days > 0 || value === '0') {
+      const dob = calculateDoBFromAge(years, months, days);
+      const dobString = formatDateToLocalInput(dob);
+
+      newPatientInfo = {
+        ...newPatientInfo,
+        dateOfBirth: dobString,
+        age: years,
+      };
+    } else if (newAgeParts.years === '' && newAgeParts.months === '' && newAgeParts.days === '') {
+      newPatientInfo = {
+        ...newPatientInfo,
+        dateOfBirth: undefined,
+        age: undefined,
+      };
+    }
+
+    updateFormData('patientInfo', newPatientInfo);
+  };
+
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
-    
+
+    const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : undefined;
+
     updateFormData('patientId', patient.id);
     updateFormData('patientInfo', {
       firstName: patient.firstName,
       lastName: patient.lastName,
       nationalId: patient.nationalId,
       mrn: patient.mrn,
+      dateOfBirth: dob,
       age: patient.age || undefined,
       gender: patient.gender,
       phoneNumber: patient.phoneNumber || '',
@@ -78,12 +160,15 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
 
   const handlePatientUpdate = (updatedPatient: Patient) => {
     setSelectedPatient(updatedPatient);
-    
+
+    const dob = updatedPatient.dateOfBirth ? new Date(updatedPatient.dateOfBirth).toISOString().split('T')[0] : undefined;
+
     updateFormData('patientInfo', {
       firstName: updatedPatient.firstName,
       lastName: updatedPatient.lastName,
       nationalId: updatedPatient.nationalId,
       mrn: updatedPatient.mrn,
+      dateOfBirth: dob,
       age: updatedPatient.age || undefined,
       gender: updatedPatient.gender,
       phoneNumber: updatedPatient.phoneNumber || '',
@@ -115,13 +200,13 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
       {/* Selected Patient Display */}
       {selectedPatient && (
         <Grid item xs={12}>
-          <Box sx={{ 
-            p: 2, 
-            border: '2px solid', 
-            borderColor: 'success.main', 
-            borderRadius: 2, 
-            bgcolor: 'success.light', 
-            color: 'success.contrastText' 
+          <Box sx={{
+            p: 2,
+            border: '2px solid',
+            borderColor: 'success.main',
+            borderRadius: 2,
+            bgcolor: 'success.light',
+            color: 'success.contrastText'
           }}>
             <Typography variant="h6" gutterBottom>
               ✅ Existing Patient Selected: {selectedPatient.firstName} {selectedPatient.lastName}
@@ -132,15 +217,15 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
           </Box>
         </Grid>
       )}
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
           label="Patient Name"
           value={formData.patientInfo?.firstName || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            firstName: e.target.value 
+          onChange={(e) => updateFormData('patientInfo', {
+            ...formData.patientInfo,
+            firstName: e.target.value
           })}
           required
           error={!!validationErrors['patientInfo.firstName']}
@@ -152,9 +237,9 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
           fullWidth
           label="Patient Last Name"
           value={formData.patientInfo?.lastName || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            lastName: e.target.value 
+          onChange={(e) => updateFormData('patientInfo', {
+            ...formData.patientInfo,
+            lastName: e.target.value
           })}
           required
           error={!!validationErrors['patientInfo.lastName']}
@@ -164,9 +249,9 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
       <Grid item xs={12} sm={6}>
         <NationalIdInput
           value={formData.patientInfo?.nationalId || ''}
-          onChange={(value) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            nationalId: value 
+          onChange={(value) => updateFormData('patientInfo', {
+            ...formData.patientInfo,
+            nationalId: value
           })}
           onPatientSelect={handlePatientSelect}
           label="National ID"
@@ -181,36 +266,78 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
           fullWidth
           label="Medical Record Number (MRN)"
           value={formData.patientInfo?.mrn || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            mrn: e.target.value 
+          onChange={(e) => updateFormData('patientInfo', {
+            ...formData.patientInfo,
+            mrn: e.target.value
           })}
         />
       </Grid>
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
-          label="Age"
-          type="number"
-          inputProps={{ min: 0, max: 150 }}
-          value={formData.patientInfo?.age || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            age: parseInt(e.target.value) || undefined 
-          })}
-          required
-          error={!!validationErrors['patientInfo.age']}
-          helperText={validationErrors['patientInfo.age']}
+          label="Date of Birth"
+          type="date"
+          value={formData.patientInfo?.dateOfBirth || ''}
+          onChange={handleDateChange}
+          InputLabelProps={{ shrink: true }}
+          inputProps={{ max: new Date().toISOString().split('T')[0] }}
+          error={!!validationErrors['patientInfo.dateOfBirth']}
+          helperText={validationErrors['patientInfo.dateOfBirth'] || 'Age calculated automatically'}
         />
       </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <Grid container spacing={2}>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Days"
+              value={ageParts.days}
+              onChange={(e) => handleAgePartChange('days', e.target.value)}
+              type="number"
+              inputProps={{ min: 0 }}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Months"
+              value={ageParts.months}
+              onChange={(e) => handleAgePartChange('months', e.target.value)}
+              type="number"
+              inputProps={{ min: 0 }}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Years"
+              value={ageParts.years}
+              onChange={(e) => handleAgePartChange('years', e.target.value)}
+              type="number"
+              inputProps={{ min: 0, max: 150 }}
+              error={!!validationErrors['patientInfo.age']}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            {validationErrors['patientInfo.age'] && (
+              <Typography variant="caption" color="error">
+                {validationErrors['patientInfo.age']}
+              </Typography>
+            )}
+          </Grid>
+        </Grid>
+      </Grid>
+
       <Grid item xs={12} sm={6}>
         <FormControl fullWidth required error={!!validationErrors['patientInfo.gender']}>
           <InputLabel>Gender</InputLabel>
           <Select
             value={formData.patientInfo?.gender || ''}
-            onChange={(e) => updateFormData('patientInfo', { 
-              ...formData.patientInfo, 
-              gender: e.target.value 
+            onChange={(e) => updateFormData('patientInfo', {
+              ...formData.patientInfo,
+              gender: e.target.value
             })}
             label="Gender"
           >
@@ -229,9 +356,9 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
           fullWidth
           label="Phone Number"
           value={formData.patientInfo?.phoneNumber || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            phoneNumber: e.target.value 
+          onChange={(e) => updateFormData('patientInfo', {
+            ...formData.patientInfo,
+            phoneNumber: e.target.value
           })}
           error={!!validationErrors['patientInfo.phoneNumber']}
           helperText={validationErrors['patientInfo.phoneNumber']}
@@ -242,9 +369,9 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
           fullWidth
           label="Email"
           value={formData.patientInfo?.email || ''}
-          onChange={(e) => updateFormData('patientInfo', { 
-            ...formData.patientInfo, 
-            email: e.target.value 
+          onChange={(e) => updateFormData('patientInfo', {
+            ...formData.patientInfo,
+            email: e.target.value
           })}
           error={!!validationErrors['patientInfo.email']}
           helperText={validationErrors['patientInfo.email']}
@@ -261,7 +388,7 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
           Hospital Information
         </Typography>
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <HospitalSelect
           label="Origin Hospital"

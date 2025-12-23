@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -15,6 +15,7 @@ import HospitalSelect from '../../../../components/Common/HospitalSelect';
 import StemiDestinationHospitalSelect from '../../../../components/Common/StemiDestinationHospitalSelect';
 import NationalIdInput from '../../../../components/Common/NationalIdInput';
 import { Hospital } from '../../../../services/hospitalService';
+import { calculateAge, calculateDoBFromAge, formatDateToLocalInput } from '../../../../utils/ageCalculator';
 
 interface PatientInfoStepProps {
   data: PatientInfo;
@@ -31,21 +32,89 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
   onOriginHospitalSelect,
   destinationRequired = false,
 }) => {
+  // State for age parts
+  const [ageParts, setAgeParts] = useState({
+    years: '',
+    months: '',
+    days: ''
+  });
+
+  // Update age parts when data.dateOfBirth or data.age changes
+  useEffect(() => {
+    if (data.dateOfBirth) {
+      const ageDetails = calculateAge(data.dateOfBirth);
+      setAgeParts({
+        years: ageDetails.years.toString(),
+        months: ageDetails.months.toString(),
+        days: ageDetails.days.toString()
+      });
+    } else if (data.age !== undefined) {
+      setAgeParts(prev => ({
+        ...prev,
+        years: data.age?.toString() || '',
+      }));
+    }
+  }, [data.dateOfBirth, data.age]);
+
   const handleChange = (field: keyof PatientInfo) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
   ) => {
     onChange({ ...data, [field]: event.target.value });
   };
 
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const date = event.target.value;
+    const newData = { ...data, dateOfBirth: date };
+
+    if (date) {
+      const ageDetails = calculateAge(date);
+      newData.age = ageDetails.years;
+    } else {
+      newData.age = undefined;
+    }
+
+    onChange(newData);
+  };
+
+  const handleAgePartChange = (part: 'years' | 'months' | 'days', value: string) => {
+    if (value && (isNaN(parseInt(value)) || parseInt(value) < 0)) {
+      return;
+    }
+
+    const newAgeParts = { ...ageParts, [part]: value };
+    setAgeParts(newAgeParts);
+
+    const years = parseInt(newAgeParts.years) || 0;
+    const months = parseInt(newAgeParts.months) || 0;
+    const days = parseInt(newAgeParts.days) || 0;
+
+    if (years > 0 || months > 0 || days > 0 || value === '0') {
+      const dob = calculateDoBFromAge(years, months, days);
+      const dobString = formatDateToLocalInput(dob);
+
+      onChange({
+        ...data,
+        dateOfBirth: dobString,
+        age: years,
+      });
+    } else if (newAgeParts.years === '' && newAgeParts.months === '' && newAgeParts.days === '') {
+      onChange({
+        ...data,
+        dateOfBirth: undefined,
+        age: undefined,
+      });
+    }
+  };
+
   const handleHospitalChange = (field: 'originHospitalId' | 'destinationHospitalId') => (
     hospitalId: string
   ) => {
     const newData = { ...data, [field]: hospitalId };
-    
+
     // Automatically determine case type based on hospital selection
     const originHospitalId = field === 'originHospitalId' ? hospitalId : data.originHospitalId;
     const destinationHospitalId = field === 'destinationHospitalId' ? hospitalId : data.destinationHospitalId;
-    
+
     // If origin and destination are different (and destination is not empty), it's a TRANSFER
     // If they're the same or destination is empty, it's DIRECT
     if (originHospitalId && destinationHospitalId && originHospitalId !== destinationHospitalId) {
@@ -53,7 +122,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
     } else {
       newData.caseType = 'DIRECT';
     }
-    
+
     onChange(newData);
   };
 
@@ -108,11 +177,15 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             value={data.nationalId}
             onChange={(value) => onChange({ ...data, nationalId: value })}
             onPatientSelect={(patient) => {
+              // Format DoB if it exists
+              const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : undefined;
+
               onChange({
                 ...data,
                 firstName: patient.firstName,
                 lastName: patient.lastName,
                 nationalId: patient.nationalId || '',
+                dateOfBirth: dob,
                 age: patient.age || undefined,
                 gender: patient.gender as 'MALE' | 'FEMALE',
                 phoneNumber: patient.phoneNumber || '',
@@ -129,20 +202,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             error={!!validationErrors['patientInfo.nationalId']}
             helperText={validationErrors['patientInfo.nationalId']}
             portalType="stemi"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Age"
-            type="number"
-            value={data.age || ''}
-            onChange={(e) => onChange({ ...data, age: parseInt(e.target.value) || undefined })}
-            inputProps={{ min: 0, max: 150 }}
-            required
-            error={!!validationErrors['patientInfo.age']}
-            helperText={validationErrors['patientInfo.age']}
           />
         </Grid>
 
@@ -164,6 +223,63 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
               </Typography>
             )}
           </FormControl>
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Date of Birth"
+            type="date"
+            value={data.dateOfBirth || ''}
+            onChange={handleDateChange}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ max: new Date().toISOString().split('T')[0] }}
+            error={!!validationErrors['patientInfo.dateOfBirth']}
+            helperText={validationErrors['patientInfo.dateOfBirth'] || 'Age calculated automatically'}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <Grid container spacing={2}>
+            <Grid item xs={4}>
+              <TextField
+                fullWidth
+                label="Days"
+                value={ageParts.days}
+                onChange={(e) => handleAgePartChange('days', e.target.value)}
+                type="number"
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                fullWidth
+                label="Months"
+                value={ageParts.months}
+                onChange={(e) => handleAgePartChange('months', e.target.value)}
+                type="number"
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                fullWidth
+                label="Years"
+                value={ageParts.years}
+                onChange={(e) => handleAgePartChange('years', e.target.value)}
+                type="number"
+                inputProps={{ min: 0, max: 150 }}
+                error={!!validationErrors['patientInfo.age']}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              {validationErrors['patientInfo.age'] && (
+                <Typography variant="caption" color="error">
+                  {validationErrors['patientInfo.age']}
+                </Typography>
+              )}
+            </Grid>
+          </Grid>
         </Grid>
 
         <Grid item xs={12} sm={6}>

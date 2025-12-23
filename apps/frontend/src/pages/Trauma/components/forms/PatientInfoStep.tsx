@@ -1,8 +1,3 @@
-/**
- * Patient Information Step Component
- * First step of the trauma case creation form
- */
-
 import React, { useState, useEffect } from 'react';
 import {
   Grid,
@@ -22,6 +17,7 @@ import NationalIdInput from '../../../../components/Common/NationalIdInput';
 import HospitalSelect from '../../../../components/Common/HospitalSelect';
 import { Patient } from '../../../../services/patientService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
+import { calculateAge, calculateDoBFromAge, formatDateToLocalInput } from '../../../../utils/ageCalculator';
 
 interface PatientInfoStepProps {
   data: PatientInfoFormData;
@@ -45,6 +41,13 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
 
+  // State for age parts
+  const [ageParts, setAgeParts] = useState({
+    years: '',
+    months: '',
+    days: ''
+  });
+
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
@@ -61,17 +64,87 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
     fetchHospitals();
   }, []);
 
+  // Update age parts when data.dateOfBirth or data.age changes
+  useEffect(() => {
+    if (data.dateOfBirth) {
+      const ageDetails = calculateAge(data.dateOfBirth);
+      setAgeParts({
+        years: ageDetails.years.toString(),
+        months: ageDetails.months.toString(),
+        days: ageDetails.days.toString()
+      });
+    } else if (data.age !== undefined) {
+      // If only age (years) is available
+      setAgeParts(prev => ({
+        ...prev,
+        years: data.age?.toString() || '',
+        // Keep existing months/days if match roughly, or reset? 
+        // For simplicity, if DoB is missing but Age is present, we might just show years.
+        // But better to respect user input if they just typed it.
+      }));
+    }
+  }, [data.dateOfBirth, data.age]);
+
   const handleChange = (field: keyof PatientInfoFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
   ) => {
     onChange({ [field]: event.target.value });
   };
 
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const date = event.target.value;
+    const newData: Partial<PatientInfoFormData> = { dateOfBirth: date };
+
+    if (date) {
+      const ageDetails = calculateAge(date);
+      newData.age = ageDetails.years;
+      // We don't store months/days in Trauma types currently, but UI state updates via useEffect
+    } else {
+      newData.age = undefined;
+    }
+
+    onChange(newData);
+  };
+
+  const handleAgePartChange = (part: 'years' | 'months' | 'days', value: string) => {
+    // Only allow non-negative numbers
+    if (value && (isNaN(parseInt(value)) || parseInt(value) < 0)) {
+      return;
+    }
+
+    const newAgeParts = { ...ageParts, [part]: value };
+    setAgeParts(newAgeParts);
+
+    const years = parseInt(newAgeParts.years) || 0;
+    const months = parseInt(newAgeParts.months) || 0;
+    const days = parseInt(newAgeParts.days) || 0;
+
+    // Any input triggers calculation
+    if (years > 0 || months > 0 || days > 0 || value === '0') {
+      const dob = calculateDoBFromAge(years, months, days);
+      const dobString = formatDateToLocalInput(dob);
+
+      onChange({
+        dateOfBirth: dobString,
+        age: years,
+      });
+    } else if (newAgeParts.years === '' && newAgeParts.months === '' && newAgeParts.days === '') {
+      onChange({
+        dateOfBirth: undefined,
+        age: undefined,
+      });
+    }
+  };
+
   const handlePatientSelect = (patient: Patient) => {
+    // Format DoB if it exists
+    const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : undefined;
+
     onChange({
       firstName: patient.firstName,
       lastName: patient.lastName,
       nationalId: patient.nationalId || '',
+      dateOfBirth: dob,
       age: patient.age || undefined,
       gender: patient.gender as 'MALE' | 'FEMALE',
       phoneNumber: patient.phoneNumber || '',
@@ -91,7 +164,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
         <h3>Patient Information</h3>
         <p>Enter the patient's basic demographic information.</p>
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -104,7 +177,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -117,7 +190,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <NationalIdInput
           value={data.nationalId}
@@ -130,22 +203,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           portalType="trauma"
         />
       </Grid>
-      
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Age"
-          type="number"
-          value={data.age || ''}
-          onChange={(e) => onChange({ age: parseInt(e.target.value) || undefined })}
-          inputProps={{ min: 0, max: 150 }}
-          error={!!errors.age || !!validationErrors['patientInfo.age']}
-          helperText={errors.age || validationErrors['patientInfo.age']}
-          required
-          disabled={!isAdmin}
-        />
-      </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <FormControl fullWidth required error={!!errors.gender || !!validationErrors['patientInfo.gender']}>
           <InputLabel>Gender</InputLabel>
@@ -168,7 +226,68 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           )}
         </FormControl>
       </Grid>
-      
+
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Date of Birth"
+          type="date"
+          value={data.dateOfBirth || ''}
+          onChange={handleDateChange}
+          InputLabelProps={{ shrink: true }}
+          inputProps={{ max: new Date().toISOString().split('T')[0] }}
+          error={!!errors.dateOfBirth || !!validationErrors['patientInfo.dateOfBirth']}
+          helperText={errors.dateOfBirth || validationErrors['patientInfo.dateOfBirth'] || 'Age calculated automatically'}
+          disabled={!isAdmin}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <Grid container spacing={2}>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Days"
+              value={ageParts.days}
+              onChange={(e) => handleAgePartChange('days', e.target.value)}
+              type="number"
+              inputProps={{ min: 0 }}
+              disabled={!isAdmin}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Months"
+              value={ageParts.months}
+              onChange={(e) => handleAgePartChange('months', e.target.value)}
+              type="number"
+              inputProps={{ min: 0 }}
+              disabled={!isAdmin}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Years"
+              value={ageParts.years}
+              onChange={(e) => handleAgePartChange('years', e.target.value)}
+              type="number"
+              inputProps={{ min: 0, max: 150 }}
+              error={!!errors.age || !!validationErrors['patientInfo.age']}
+              disabled={!isAdmin}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            {(errors.age || validationErrors['patientInfo.age']) && (
+              <Typography variant="caption" color="error">
+                {errors.age || validationErrors['patientInfo.age']}
+              </Typography>
+            )}
+          </Grid>
+        </Grid>
+      </Grid>
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -180,7 +299,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -193,7 +312,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12}>
         <TextField
           fullWidth
@@ -207,7 +326,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -219,7 +338,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -231,7 +350,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12}>
         <TextField
           fullWidth
@@ -245,7 +364,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -257,7 +376,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           disabled={!isAdmin}
         />
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -352,4 +471,3 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
 };
 
 export default PatientInfoStep;
-

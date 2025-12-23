@@ -113,7 +113,13 @@ export class StrokeCasesService {
           createdById: validUserId,
         };
         
-        // Handle age field (preferred over dateOfBirth)
+        // Handle age and dateOfBirth fields
+        if (createStrokeCaseDto.patientInfo.dateOfBirth) {
+            patientData.dateOfBirth = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
+        } else {
+            patientData.dateOfBirth = new Date('1900-01-01');
+        }
+
         if (createStrokeCaseDto.patientInfo.age !== undefined && createStrokeCaseDto.patientInfo.age !== null) {
           patientData.age = createStrokeCaseDto.patientInfo.age;
         } else if (createStrokeCaseDto.patientInfo.dateOfBirth) {
@@ -126,11 +132,9 @@ export class StrokeCasesService {
             age--;
           }
           patientData.age = age;
-          patientData.dateOfBirth = birthDate;
         } else {
           // Default values if neither provided
-          patientData.age = 0; // Default age
-          patientData.dateOfBirth = new Date('1900-01-01'); // Default date
+          patientData.age = 0; 
         }
         
         if (createStrokeCaseDto.patientInfo.gender) {
@@ -790,6 +794,9 @@ export class StrokeCasesService {
         }
         if (patientInfo.email !== undefined) {
           patientUpdateData.email = patientInfo.email ? patientInfo.email.trim() : null;
+        }
+        if (patientInfo.dateOfBirth !== undefined) {
+          patientUpdateData.dateOfBirth = patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth) : null;
         }
 
         // Only update nationalId if it's different from the current value

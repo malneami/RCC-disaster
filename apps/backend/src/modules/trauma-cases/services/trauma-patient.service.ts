@@ -95,7 +95,14 @@ export class TraumaPatientService {
         createdById: userId,
       };
       
-      // Handle age field (preferred over dateOfBirth)
+      // Handle age and dateOfBirth fields
+      if (patientInfo.dateOfBirth) {
+        patientData.dateOfBirth = new Date(patientInfo.dateOfBirth);
+      } else {
+        // Default only if not provided
+        patientData.dateOfBirth = new Date('1900-01-01');
+      }
+
       if (patientInfo.age !== undefined && patientInfo.age !== null) {
         patientData.age = patientInfo.age;
       } else if (patientInfo.dateOfBirth) {
@@ -108,11 +115,9 @@ export class TraumaPatientService {
           age--;
         }
         patientData.age = age;
-        patientData.dateOfBirth = birthDate;
       } else {
         // Default values if neither provided
-        patientData.age = 0; // Default age
-        patientData.dateOfBirth = new Date('1900-01-01'); // Default date
+        patientData.age = 0; 
       }
       
       if (patientInfo.gender) {
