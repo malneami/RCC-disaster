@@ -1626,6 +1626,14 @@ export class TraumaExportService {
   }
 
   private addDataValidation(worksheet: ExcelJS.Worksheet): void {
+    // Create a hidden worksheet for validation values
+    const workbook = worksheet.workbook;
+    let valuesSheet = workbook.getWorksheet('Values');
+    if (!valuesSheet) {
+      valuesSheet = workbook.addWorksheet('Values');
+    }
+    valuesSheet.state = 'hidden';
+
     // Define injury severity options for each body region (using specification format)
     const injuryOptions = {
       headNeck: [
@@ -1756,24 +1764,36 @@ export class TraumaExportService {
       ]
     };
 
-    // Add data validation for injury severity columns (Q, R, S, T, U, V)
+    // Helper to write options to the hidden sheet and return the range formula
+    const writeOptions = (colIndex: number, options: string[]): string => {
+      const colLetter = valuesSheet.getColumn(colIndex).letter;
+      options.forEach((option, idx) => {
+        valuesSheet.getCell(idx + 1, colIndex).value = option;
+      });
+      return `Values!$${colLetter}$1:$${colLetter}$${options.length}`;
+    };
+
+    // Mapping for injury columns in the exported sheet
     const injuryColumns = [
-      { col: 17, options: injuryOptions.headNeck }, // Q - Head and Neck
-      { col: 18, options: injuryOptions.face },     // R - Face
-      { col: 19, options: injuryOptions.chest },    // S - Chest
-      { col: 20, options: injuryOptions.abdomen },  // T - Abdomen
-      { col: 21, options: injuryOptions.extremities }, // U - Extremities
-      { col: 22, options: injuryOptions.external }  // V - External
+      { col: 17, options: injuryOptions.headNeck, updateValuesCol: 1 }, // Q - Head and Neck
+      { col: 18, options: injuryOptions.face, updateValuesCol: 2 },     // R - Face
+      { col: 19, options: injuryOptions.chest, updateValuesCol: 3 },    // S - Chest
+      { col: 20, options: injuryOptions.abdomen, updateValuesCol: 4 },  // T - Abdomen
+      { col: 21, options: injuryOptions.extremities, updateValuesCol: 5 }, // U - Extremities
+      { col: 22, options: injuryOptions.external, updateValuesCol: 6 }  // V - External
     ];
 
-    injuryColumns.forEach(({ col, options }) => {
+    injuryColumns.forEach(({ col, options, updateValuesCol }) => {
+      // Write options to hidden sheet and get the reference
+      const formula = writeOptions(updateValuesCol, options);
+
       // Apply validation to all data rows (skip header row)
       for (let row = 2; row <= 1000; row++) { // Allow up to 1000 rows
         const cellAddress = `${worksheet.getColumn(col).letter}${row}`;
         worksheet.getCell(cellAddress).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [options.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+          formulae: [formula],
           showErrorMessage: true,
           errorTitle: 'Invalid Selection',
           error: 'Please select a valid injury severity from the dropdown list.',
@@ -1804,13 +1824,18 @@ export class TraumaExportService {
       'Death in ED'
     ];
 
+    // Write these options to the hidden sheet as well (columns 7, 8, 9)
+    const modeOfArrivalFormula = writeOptions(7, modeOfArrivalOptions);
+    const mechanismFormula = writeOptions(8, mechanismOptions);
+    const dispositionFormula = writeOptions(9, dispositionOptions);
+
     // Mode of Arrival (column E)
     for (let row = 2; row <= 1000; row++) {
       const cellAddress = `E${row}`;
       worksheet.getCell(cellAddress).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [modeOfArrivalOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+        formulae: [modeOfArrivalFormula],
         showErrorMessage: true,
         errorTitle: 'Invalid Selection',
         error: 'Please select a valid mode of arrival.',
@@ -1826,7 +1851,7 @@ export class TraumaExportService {
       worksheet.getCell(cellAddress).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [mechanismOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+        formulae: [mechanismFormula],
         showErrorMessage: true,
         errorTitle: 'Invalid Selection',
         error: 'Please select a valid mechanism of trauma.',
@@ -1842,7 +1867,7 @@ export class TraumaExportService {
       worksheet.getCell(cellAddress).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [dispositionOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+        formulae: [dispositionFormula],
         showErrorMessage: true,
         errorTitle: 'Invalid Selection',
         error: 'Please select a valid ED disposition.',
