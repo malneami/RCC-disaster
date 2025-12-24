@@ -120,6 +120,9 @@ export class StrokeExportService {
         });
       });
 
+      // Add data validation (dropdowns) for categorical fields
+      this.addDataValidation(worksheet);
+
       const excelBuffer = await workbook.xlsx.writeBuffer();
 
       const timestamp = new Date().toISOString().split('T')[0];
@@ -134,6 +137,123 @@ export class StrokeExportService {
     } catch (error) {
       console.error('Error exporting stroke cases to Excel:', error);
       throw new Error('Failed to export stroke cases to Excel');
+    }
+  }
+
+  private addDataValidation(worksheet: ExcelJS.Worksheet): void {
+    // Create a hidden worksheet for validation values
+    const workbook = worksheet.workbook;
+    let valuesSheet = workbook.getWorksheet('Values');
+    if (!valuesSheet) {
+      valuesSheet = workbook.addWorksheet('Values');
+    }
+    valuesSheet.state = 'hidden';
+
+    // Define options for categorical fields
+    const strokeTypeOptions = [
+      'Ischemic',
+      'Hemorrhagic',
+      'TIA',
+      'Unknown'
+    ];
+
+    const statusOptions = [
+      'New Case',
+      'Active',
+      'Completed',
+      'Cancelled'
+    ];
+
+    const modeOfArrivalOptions = [
+      'AMBULANCE',
+      'Private Vehicle',
+      'Walk-In',
+      'Helicopter',
+      'Transfer'
+    ];
+
+    const genderOptions = [
+      'Male',
+      'Female'
+    ];
+
+    // Helper to write options to the hidden sheet and return the range formula
+    const writeOptions = (colIndex: number, options: string[]): string => {
+      const colLetter = valuesSheet.getColumn(colIndex).letter;
+      options.forEach((option, idx) => {
+        valuesSheet.getCell(idx + 1, colIndex).value = option;
+      });
+      return `Values!$${colLetter}$1:$${colLetter}$${options.length}`;
+    };
+
+    // Write options to the hidden sheet
+    const strokeTypeFormula = writeOptions(1, strokeTypeOptions);     // Column A
+    const statusFormula = writeOptions(2, statusOptions);             // Column B
+    const modeOfArrivalFormula = writeOptions(3, modeOfArrivalOptions); // Column C
+    const genderFormula = writeOptions(4, genderOptions);             // Column D
+
+    // Stroke Type (Column H - 8th column)
+    for (let row = 2; row <= 1000; row++) {
+      const cellAddress = `H${row}`;
+      worksheet.getCell(cellAddress).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [strokeTypeFormula],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a valid stroke type.',
+        showInputMessage: true,
+        promptTitle: 'Select Stroke Type',
+        prompt: 'Choose the stroke type from the dropdown list.'
+      };
+    }
+
+    // Status (Column I - 9th column)
+    for (let row = 2; row <= 1000; row++) {
+      const cellAddress = `I${row}`;
+      worksheet.getCell(cellAddress).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [statusFormula],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a valid status.',
+        showInputMessage: true,
+        promptTitle: 'Select Status',
+        prompt: 'Choose the status from the dropdown list.'
+      };
+    }
+
+    // Mode of Arrival (Column J - 10th column)
+    for (let row = 2; row <= 1000; row++) {
+      const cellAddress = `J${row}`;
+      worksheet.getCell(cellAddress).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [modeOfArrivalFormula],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a valid mode of arrival.',
+        showInputMessage: true,
+        promptTitle: 'Select Mode of Arrival',
+        prompt: 'Choose the mode of arrival from the dropdown list.'
+      };
+    }
+
+    // Gender (Column G - 7th column)
+    for (let row = 2; row <= 1000; row++) {
+      const cellAddress = `G${row}`;
+      worksheet.getCell(cellAddress).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [genderFormula],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a valid gender.',
+        showInputMessage: true,
+        promptTitle: 'Select Gender',
+        prompt: 'Choose the gender from the dropdown list.'
+      };
     }
   }
 
