@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { seedHospitals } from './seed-hospitals';
 import { seedUsers } from './seed-users';
+import { seedBeds } from './seed-beds';
 import { seedCriticalCases } from './seed-critical-cases-simple';
 import { seedComprehensiveCases } from './seed-comprehensive-cases';
 import { seedStrokeKpiTest } from './seed-stroke-kpi';
@@ -34,6 +35,9 @@ async function main() {
   } else {
     console.log('🏥 Hospitals already exist, skipping hospital seeding');
   }
+  
+  console.log('🛏️  Running bed migration (converting aggregated counts to individual beds)...');
+  await seedBeds();
   
   if (existingUsers === 0) {
     console.log('👥 No users found, seeding users...');

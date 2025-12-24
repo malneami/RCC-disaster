@@ -88,6 +88,12 @@ model User {
   // Registration Request Relations
   reviewedRegistrationRequests UserRegistrationRequest[] @relation("RegistrationRequestReviewer")
   
+  // Bed Management Relations
+  bedRequestRequester BedRequest[] @relation("BedRequestRequester")
+  bedRequestApprover BedRequest[] @relation("BedRequestApprover")
+  bedRequestAssigner BedRequest[] @relation("BedRequestAssigner")
+  bedStatusChanger BedStatusHistory[] @relation("BedStatusChanger")
+  
   @@map("users")
   @@index([email])
   @@index([role])

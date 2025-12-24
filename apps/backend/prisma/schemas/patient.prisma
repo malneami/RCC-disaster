@@ -75,6 +75,8 @@ model Patient {
   tickets         Ticket[]
   medicalRecords  MedicalRecord[]
   accessLogs      PatientAccessLog[]
+  beds            Bed[]
+  bedRequests     BedRequest[]
   
   // Stroke Relations
   strokeCases     StrokeCase[]

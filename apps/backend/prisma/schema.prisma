@@ -336,6 +336,45 @@ enum ModifiedRankinScale {
   UNKNOWN
 }
 
+// Bed Management enums
+enum BedType {
+  ICU
+  PICU
+  NICU
+  ED
+  MALE_WARD
+  FEMALE_WARD
+  PEDIATRIC_WARD
+  STANDARD_WARD
+  STROKE_UNIT
+  CCU
+  OTHER
+}
+
+enum BedStatus {
+  OCCUPIED
+  VACANT
+  CLEANING
+  BLOCKED
+  RESERVED
+}
+
+enum BedRequestStatus {
+  PENDING
+  APPROVED
+  ASSIGNED
+  ARRIVED
+  DISCHARGED
+  CANCELLED
+}
+
+enum BedRequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  EMERGENCY
+}
 
 // ems-enums.prisma
 // EMS-specific enums for Emergency Medical Services
@@ -544,6 +583,12 @@ model User {
   // Registration Request Relations
   reviewedRegistrationRequests UserRegistrationRequest[] @relation("RegistrationRequestReviewer")
   
+  // Bed Management Relations
+  bedRequestRequester BedRequest[] @relation("BedRequestRequester")
+  bedRequestApprover BedRequest[] @relation("BedRequestApprover")
+  bedRequestAssigner BedRequest[] @relation("BedRequestAssigner")
+  bedStatusChanger BedStatusHistory[] @relation("BedStatusChanger")
+  
   @@map("users")
   @@index([email])
   @@index([role])
@@ -596,24 +641,31 @@ model Hospital {
   longitude         Float?
   
   // Bed Capacity - ICU
+  // @deprecated Use Bed model with BedType.ICU instead. This field is kept for backward compatibility.
+  // Aggregated counts should be computed from Bed records via service layer.
   icuBeds           Int           @default(0) @map("icu_beds")
   icuBedsAvailable  Int           @default(0) @map("icu_beds_available")
   
   // Bed Capacity - PICU
+  // @deprecated Use Bed model with BedType.PICU instead. This field is kept for backward compatibility.
   picuBeds          Int           @default(0) @map("picu_beds")
   picuBedsAvailable Int           @default(0) @map("picu_beds_available")
   
   // Bed Capacity - Male/Female
+  // @deprecated Use Bed model with BedType.MALE_WARD instead. This field is kept for backward compatibility.
   maleBeds          Int           @default(0) @map("male_beds")
   maleBedsAvailable Int           @default(0) @map("male_beds_available")
+  // @deprecated Use Bed model with BedType.FEMALE_WARD instead. This field is kept for backward compatibility.
   femaleBeds        Int           @default(0) @map("female_beds")
   femaleBedsAvailable Int        @default(0) @map("female_beds_available")
   
   // Bed Capacity - Pediatric
+  // @deprecated Use Bed model with BedType.PEDIATRIC_WARD instead. This field is kept for backward compatibility.
   pediatricBeds     Int           @default(0) @map("pediatric_beds")
   pediatricBedsAvailable Int      @default(0) @map("pediatric_beds_available")
   
   // Bed Capacity - Standard
+  // @deprecated Use Bed model with BedType.STANDARD_WARD instead. This field is kept for backward compatibility.
   standardBeds     Int           @default(0) @map("standard_beds")
   standardBedsAvailable Int      @default(0) @map("standard_beds_available")
   
@@ -636,6 +688,7 @@ model Hospital {
   emergencyDeptStatus String      @default("available") @map("emergency_dept_status")
   
   // NICU
+  // @deprecated Use Bed model with BedType.NICU instead. This field is kept for backward compatibility.
   nicuBeds          Int           @default(0) @map("nicu_beds")
   nicuBedsAvailable Int           @default(0) @map("nicu_beds_available")
   
@@ -645,6 +698,7 @@ model Hospital {
   hasCardiologyCenter Boolean     @default(false) @map("has_cardiology_center")
   
   // Stroke-specific capabilities
+  // @deprecated Use Bed model with BedType.STROKE_UNIT instead. This field is kept for backward compatibility.
   strokeUnitBeds    Int           @default(0) @map("stroke_unit_beds")
   strokeUnitBedsAvailable Int     @default(0) @map("stroke_unit_beds_available")
   hasThrombolysis   Boolean       @default(false) @map("has_thrombolysis")
@@ -690,6 +744,11 @@ model Hospital {
   
   // Ambulance Relations
   zoneLogs                 AmbulanceZoneLog[]
+  
+  // Bed Management Relations
+  units                    Unit[]
+  beds                     Bed[]
+  bedRequests              BedRequest[]
   
   @@map("hospitals")
   @@index([status])
@@ -776,6 +835,8 @@ model Patient {
   tickets         Ticket[]
   medicalRecords  MedicalRecord[]
   accessLogs      PatientAccessLog[]
+  beds            Bed[]
+  bedRequests     BedRequest[]
   
   // Stroke Relations
   strokeCases     StrokeCase[]
@@ -2547,3 +2608,134 @@ model Reply {
   @@index([createdAt])
   @@index([deletedAt])
 }
+
+// unit.prisma
+model Unit {
+  id          String    @id @default(uuid())
+  hospitalId  String    @map("hospital_id")
+  name        String    // e.g., "ICU Unit", "PICU Unit"
+  bedType     BedType   @map("bed_type")
+  description String?
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  
+  // Relations
+  hospital    Hospital  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  beds        Bed[]
+  bedRequests BedRequest[]
+  
+  @@map("units")
+  @@index([hospitalId])
+  @@index([bedType])
+  @@index([isActive])
+  @@unique([hospitalId, bedType])
+}
+
+
+
+// bed.prisma
+model Bed {
+  id                  String            @id @default(uuid())
+  unitId              String            @map("unit_id")
+  hospitalId          String            @map("hospital_id")
+  bedNumber           String            // e.g., "ICU-01", "PICU-02"
+  status              BedStatus         @default(VACANT)
+  location            String?           
+  notes               String?
+  isOperational       Boolean           @default(true) @map("is_operational")
+  currentPatientId    String?           @map("current_patient_id")
+  currentBedRequestId String?           @unique @map("current_bed_request_id")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  deletedAt           DateTime?         @map("deleted_at")
+  
+  // Relations
+  unit                Unit              @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  hospital            Hospital          @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  currentPatient      Patient?          @relation(fields: [currentPatientId], references: [id], onDelete: SetNull)
+  currentBedRequest   BedRequest?       @relation("CurrentBedRequest", fields: [currentBedRequestId], references: [id], onDelete: SetNull)
+  bedStatusHistory    BedStatusHistory[]
+  assignedBedRequests BedRequest[]      @relation("AssignedBed")
+  
+  @@map("beds")
+  @@index([unitId])
+  @@index([hospitalId])
+  @@index([status])
+  @@index([bedNumber])
+  @@index([currentPatientId])
+  @@unique([unitId, bedNumber])
+}
+
+
+
+// bed-request.prisma
+model BedRequest {
+  id              String              @id @default(uuid())
+  requestNumber   String              @unique @map("request_number") // e.g., "BR-20240101-001"
+  hospitalId      String              @map("hospital_id")
+  unitId          String              @map("unit_id")
+  patientId       String              @map("patient_id")
+  requestedById   String              @map("requested_by_id")
+  priority        BedRequestPriority  @default(MEDIUM)
+  status          BedRequestStatus    @default(PENDING)
+  requestedAt     DateTime            @default(now()) @map("requested_at")
+  approvedAt      DateTime?           @map("approved_at")
+  approvedById    String?             @map("approved_by_id")
+  assignedAt      DateTime?           @map("assigned_at")
+  assignedById    String?            @map("assigned_by_id")
+  assignedBedId   String?            @unique @map("assigned_bed_id")
+  arrivedAt       DateTime?          @map("arrived_at")
+  dischargedAt    DateTime?          @map("discharged_at")
+  notes           String?
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  deletedAt       DateTime?          @map("deleted_at")
+  
+  // Relations
+  hospital        Hospital            @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  unit            Unit                @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  patient         Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  requestedBy     User                @relation("BedRequestRequester", fields: [requestedById], references: [id])
+  approvedBy      User?               @relation("BedRequestApprover", fields: [approvedById], references: [id])
+  assignedBy      User?               @relation("BedRequestAssigner", fields: [assignedById], references: [id])
+  assignedBed     Bed?                @relation("AssignedBed", fields: [assignedBedId], references: [id], onDelete: SetNull)
+  currentBedFor   Bed?                @relation("CurrentBedRequest")
+  
+  @@map("bed_requests")
+  @@index([hospitalId])
+  @@index([unitId])
+  @@index([patientId])
+  @@index([status])
+  @@index([priority])
+  @@index([requestedAt])
+  @@index([requestNumber])
+}
+
+
+
+// bed-status-history.prisma
+model BedStatusHistory {
+  id            String      @id @default(uuid())
+  bedId         String      @map("bed_id")
+  previousStatus BedStatus? @map("previous_status")
+  newStatus     BedStatus   @map("new_status")
+  changedById   String      @map("changed_by_id")
+  changedAt     DateTime    @default(now()) @map("changed_at")
+  reason        String?
+  notes         String?
+  
+  // Relations
+  bed           Bed         @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  changedBy     User        @relation("BedStatusChanger", fields: [changedById], references: [id])
+  
+  @@map("bed_status_history")
+  @@index([bedId])
+  @@index([changedAt])
+  @@index([changedById])
+  @@index([newStatus])
+  @@index([bedId, changedAt])
+}
+
+

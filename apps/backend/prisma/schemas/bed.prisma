@@ -1,0 +1,31 @@
+model Bed {
+  id                  String            @id @default(uuid())
+  unitId              String            @map("unit_id")
+  hospitalId          String            @map("hospital_id")
+  bedNumber           String            // e.g., "ICU-01", "PICU-02"
+  status              BedStatus         @default(VACANT)
+  location            String?           
+  notes               String?
+  isOperational       Boolean           @default(true) @map("is_operational")
+  currentPatientId    String?           @map("current_patient_id")
+  currentBedRequestId String?           @unique @map("current_bed_request_id")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  deletedAt           DateTime?         @map("deleted_at")
+  
+  // Relations
+  unit                Unit              @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  hospital            Hospital          @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  currentPatient      Patient?          @relation(fields: [currentPatientId], references: [id], onDelete: SetNull)
+  currentBedRequest   BedRequest?       @relation("CurrentBedRequest", fields: [currentBedRequestId], references: [id], onDelete: SetNull)
+  bedStatusHistory    BedStatusHistory[]
+  assignedBedRequests BedRequest[]      @relation("AssignedBed")
+  
+  @@map("beds")
+  @@index([unitId])
+  @@index([hospitalId])
+  @@index([status])
+  @@index([bedNumber])
+  @@index([currentPatientId])
+  @@unique([unitId, bedNumber])
+}

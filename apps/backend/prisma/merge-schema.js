@@ -37,7 +37,11 @@ const SCHEMA_ORDER = [
   'stroke-assessment-score.prisma',
   'stroke-rehabilitation.prisma',
   // Notification system
-  'notifications.prisma'
+  'notifications.prisma',
+  'unit.prisma',
+  'bed.prisma',
+  'bed-request.prisma',
+  'bed-status-history.prisma'
 ];
 
 // Prisma header

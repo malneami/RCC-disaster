@@ -1,0 +1,41 @@
+model BedRequest {
+  id              String              @id @default(uuid())
+  requestNumber   String              @unique @map("request_number") // e.g., "BR-20240101-001"
+  hospitalId      String              @map("hospital_id")
+  unitId          String              @map("unit_id")
+  patientId       String              @map("patient_id")
+  requestedById   String              @map("requested_by_id")
+  priority        BedRequestPriority  @default(MEDIUM)
+  status          BedRequestStatus    @default(PENDING)
+  requestedAt     DateTime            @default(now()) @map("requested_at")
+  approvedAt      DateTime?           @map("approved_at")
+  approvedById    String?             @map("approved_by_id")
+  assignedAt      DateTime?           @map("assigned_at")
+  assignedById    String?            @map("assigned_by_id")
+  assignedBedId   String?            @unique @map("assigned_bed_id")
+  arrivedAt       DateTime?          @map("arrived_at")
+  dischargedAt    DateTime?          @map("discharged_at")
+  notes           String?
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  deletedAt       DateTime?          @map("deleted_at")
+  
+  // Relations
+  hospital        Hospital            @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  unit            Unit                @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  patient         Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  requestedBy     User                @relation("BedRequestRequester", fields: [requestedById], references: [id])
+  approvedBy      User?               @relation("BedRequestApprover", fields: [approvedById], references: [id])
+  assignedBy      User?               @relation("BedRequestAssigner", fields: [assignedById], references: [id])
+  assignedBed     Bed?                @relation("AssignedBed", fields: [assignedBedId], references: [id], onDelete: SetNull)
+  currentBedFor   Bed?                @relation("CurrentBedRequest")
+  
+  @@map("bed_requests")
+  @@index([hospitalId])
+  @@index([unitId])
+  @@index([patientId])
+  @@index([status])
+  @@index([priority])
+  @@index([requestedAt])
+  @@index([requestNumber])
+}

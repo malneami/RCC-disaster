@@ -7,24 +7,31 @@ model Hospital {
   longitude         Float?
   
   // Bed Capacity - ICU
+  // @deprecated Use Bed model with BedType.ICU instead. This field is kept for backward compatibility.
+  // Aggregated counts should be computed from Bed records via service layer.
   icuBeds           Int           @default(0) @map("icu_beds")
   icuBedsAvailable  Int           @default(0) @map("icu_beds_available")
   
   // Bed Capacity - PICU
+  // @deprecated Use Bed model with BedType.PICU instead. This field is kept for backward compatibility.
   picuBeds          Int           @default(0) @map("picu_beds")
   picuBedsAvailable Int           @default(0) @map("picu_beds_available")
   
   // Bed Capacity - Male/Female
+  // @deprecated Use Bed model with BedType.MALE_WARD instead. This field is kept for backward compatibility.
   maleBeds          Int           @default(0) @map("male_beds")
   maleBedsAvailable Int           @default(0) @map("male_beds_available")
+  // @deprecated Use Bed model with BedType.FEMALE_WARD instead. This field is kept for backward compatibility.
   femaleBeds        Int           @default(0) @map("female_beds")
   femaleBedsAvailable Int        @default(0) @map("female_beds_available")
   
   // Bed Capacity - Pediatric
+  // @deprecated Use Bed model with BedType.PEDIATRIC_WARD instead. This field is kept for backward compatibility.
   pediatricBeds     Int           @default(0) @map("pediatric_beds")
   pediatricBedsAvailable Int      @default(0) @map("pediatric_beds_available")
   
   // Bed Capacity - Standard
+  // @deprecated Use Bed model with BedType.STANDARD_WARD instead. This field is kept for backward compatibility.
   standardBeds     Int           @default(0) @map("standard_beds")
   standardBedsAvailable Int      @default(0) @map("standard_beds_available")
   
@@ -47,6 +54,7 @@ model Hospital {
   emergencyDeptStatus String      @default("available") @map("emergency_dept_status")
   
   // NICU
+  // @deprecated Use Bed model with BedType.NICU instead. This field is kept for backward compatibility.
   nicuBeds          Int           @default(0) @map("nicu_beds")
   nicuBedsAvailable Int           @default(0) @map("nicu_beds_available")
   
@@ -56,6 +64,7 @@ model Hospital {
   hasCardiologyCenter Boolean     @default(false) @map("has_cardiology_center")
   
   // Stroke-specific capabilities
+  // @deprecated Use Bed model with BedType.STROKE_UNIT instead. This field is kept for backward compatibility.
   strokeUnitBeds    Int           @default(0) @map("stroke_unit_beds")
   strokeUnitBedsAvailable Int     @default(0) @map("stroke_unit_beds_available")
   hasThrombolysis   Boolean       @default(false) @map("has_thrombolysis")
@@ -101,6 +110,11 @@ model Hospital {
   
   // Ambulance Relations
   zoneLogs                 AmbulanceZoneLog[]
+  
+  // Bed Management Relations
+  units                    Unit[]
+  beds                     Bed[]
+  bedRequests              BedRequest[]
   
   @@map("hospitals")
   @@index([status])

@@ -323,3 +323,43 @@ enum ModifiedRankinScale {
   SCORE_6_DEAD
   UNKNOWN
 }
+
+// Bed Management enums
+enum BedType {
+  ICU
+  PICU
+  NICU
+  ED
+  MALE_WARD
+  FEMALE_WARD
+  PEDIATRIC_WARD
+  STANDARD_WARD
+  STROKE_UNIT
+  CCU
+  OTHER
+}
+
+enum BedStatus {
+  OCCUPIED
+  VACANT
+  CLEANING
+  BLOCKED
+  RESERVED
+}
+
+enum BedRequestStatus {
+  PENDING
+  APPROVED
+  ASSIGNED
+  ARRIVED
+  DISCHARGED
+  CANCELLED
+}
+
+enum BedRequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  EMERGENCY
+}
