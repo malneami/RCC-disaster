@@ -721,6 +721,14 @@ export class StemiExportService {
   }
 
   private addDataValidation(worksheet: ExcelJS.Worksheet): void {
+    // Create a hidden worksheet for validation values
+    const workbook = worksheet.workbook;
+    let valuesSheet = workbook.getWorksheet('Values');
+    if (!valuesSheet) {
+      valuesSheet = workbook.addWorksheet('Values');
+    }
+    valuesSheet.state = 'hidden';
+
     // Define options for categorical fields
     const modeOfArrivalOptions = [
       'By Ambulance',
@@ -739,13 +747,27 @@ export class StemiExportService {
       '3'
     ];
 
+    // Helper to write options to the hidden sheet and return the range formula
+    const writeOptions = (colIndex: number, options: string[]): string => {
+      const colLetter = valuesSheet.getColumn(colIndex).letter;
+      options.forEach((option, idx) => {
+        valuesSheet.getCell(idx + 1, colIndex).value = option;
+      });
+      return `Values!$${colLetter}$1:$${colLetter}$${options.length}`;
+    };
+
+    // Write options to the hidden sheet
+    const modeOfArrivalFormula = writeOptions(1, modeOfArrivalOptions); // Column A
+    const yesNoFormula = writeOptions(2, yesNoOptions);               // Column B
+    const validityFormula = writeOptions(3, validityOptions);         // Column C
+
     // Mode of Arrival (column E)
     for (let row = 2; row <= 1000; row++) {
       const cellAddress = `E${row}`;
       worksheet.getCell(cellAddress).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [modeOfArrivalOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+        formulae: [modeOfArrivalFormula],
         showErrorMessage: true,
         errorTitle: 'Invalid Selection',
         error: 'Please select a valid mode of arrival.',
@@ -763,7 +785,7 @@ export class StemiExportService {
         worksheet.getCell(cellAddress).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [yesNoOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+          formulae: [yesNoFormula],
           showErrorMessage: true,
           errorTitle: 'Invalid Selection',
           error: 'Please select Yes or No.',
@@ -782,7 +804,7 @@ export class StemiExportService {
         worksheet.getCell(cellAddress).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [validityOptions.map(option => `"${option.replace(/"/g, '""')}"`).join(',')],
+          formulae: [validityFormula],
           showErrorMessage: true,
           errorTitle: 'Invalid Selection',
           error: 'Please select a valid option.',
