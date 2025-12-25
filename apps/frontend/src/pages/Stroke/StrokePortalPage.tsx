@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab, Tooltip } from '@mui/material';
-import { Add, Assessment, Timeline, Dashboard, FileDownload } from '@mui/icons-material';
+import { Box, Tabs, Tab, CircularProgress, Fab, Tooltip, Alert } from '@mui/material';
+import { Add, Assessment, Dashboard, FileDownload, Timeline } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import StrokeCasesList from './components/StrokeCasesList';
@@ -11,7 +11,6 @@ import StrokeCaseDetailsDialog from './components/StrokeCaseDetailsDialog';
 import EditStrokeCaseDialog from './components/EditStrokeCaseDialog';
 import StrokeOutcomeForm from './components/StrokeOutcomeForm';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
-import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import FloatingScrollbar from '../../components/Common/FloatingScrollbar';
 import { StrokeService, StrokeCase, StrokeKPISummary, StrokeCaseFilters } from '../../services/strokeService';
 import { StrokeExportService } from './services/strokeExportService';
@@ -53,11 +52,10 @@ const StrokePortalPage: React.FC = () => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [outcomeFormDialogOpen, setOutcomeFormDialogOpen] = useState(false);
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
-  const [exportLoading, setExportLoading] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<StrokeCaseFilters>({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [appliedFilters, setAppliedFilters] = useState<StrokeCaseFilters>({});
+  const [exportLoading, setExportLoading] = useState(false);
   const [hospitals, setHospitals] = useState<Array<{ id: string; name: string }>>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -65,7 +63,6 @@ const StrokePortalPage: React.FC = () => {
   const portalSteps: PortalStep[] = [
     { label: 'Cases', description: 'View and manage stroke cases', icon: <Assessment /> },
     { label: 'KPI Dashboard', description: 'Monitor performance metrics', icon: <Dashboard /> },
-    { label: 'Timeline View', description: 'Track case progression', icon: <Timeline /> },
   ];
 
   useEffect(() => {
@@ -86,94 +83,7 @@ const StrokePortalPage: React.FC = () => {
     loadHospitals();
   }, []);
 
-  const convertStrokeCasesToTimelineEvents = (cases: StrokeCase[]): TimelineEvent[] => {
-    const events: TimelineEvent[] = [];
-    
-    cases.forEach(case_ => {
-      // Patient arrival
-      if (case_.createdAt) {
-        events.push({
-          id: `${case_.id}-arrival`,
-          timestamp: case_.createdAt,
-          title: `Patient Arrival - ${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-          description: `Patient arrived at ${case_.originHospital?.name || 'hospital'} with ${case_.strokeType.toLowerCase()} stroke`,
-          type: 'arrival',
-          status: 'completed',
-          user: {
-            name: case_.createdBy?.firstName ? `${case_.createdBy.firstName} ${case_.createdBy.lastName}` : 'System',
-            role: 'Data Collector',
-          },
-          hospital: case_.originHospital ? {
-            name: case_.originHospital.name,
-            id: case_.originHospital.id,
-          } : undefined,
-          details: {
-            strokeType: case_.strokeType,
-            currentStatus: case_.currentStatus,
-            presentingSymptoms: case_.presentingSymptoms,
-            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-            patientNationalId: case_.patient?.nationalId || 'N/A',
-          },
-        });
-      }
 
-      // Assessment
-      if (case_.nihssBaseline) {
-        events.push({
-          id: `${case_.id}-assessment`,
-          timestamp: case_.createdAt,
-          title: `NIHSS Assessment - Score: ${case_.nihssBaseline}`,
-          description: `Initial neurological assessment completed`,
-          type: 'assessment',
-          status: 'completed',
-          details: {
-            nihssScore: case_.nihssBaseline,
-            strokeSeverity: case_.strokeSeverity,
-            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-            patientNationalId: case_.patient?.nationalId || 'N/A',
-          },
-        });
-      }
-
-      // Treatment
-      if (case_.selectedTreatment) {
-        events.push({
-          id: `${case_.id}-treatment`,
-          timestamp: case_.createdAt,
-          title: `Treatment Initiated - ${case_.selectedTreatment}`,
-          description: `Stroke treatment protocol initiated`,
-          type: 'treatment',
-          status: case_.currentStatus === 'DISCHARGED' ? 'completed' : 'in-progress',
-          details: {
-            treatment: case_.selectedTreatment,
-            doorToNeedleMinutes: case_.doorToNeedleMinutes,
-            doorToCtScanMinutes: case_.doorToCtScanMinutes,
-            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-            patientNationalId: case_.patient?.nationalId || 'N/A',
-          },
-        });
-      }
-
-      // Discharge/Transfer
-      if (case_.currentStatus === 'DISCHARGED') {
-        events.push({
-          id: `${case_.id}-discharge`,
-          timestamp: case_.updatedAt || case_.createdAt,
-          title: `Case Discharged`,
-          description: `Patient discharged`,
-          type: 'discharge',
-          status: 'completed',
-          details: {
-            finalStatus: case_.currentStatus,
-            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-            patientNationalId: case_.patient?.nationalId || 'N/A',
-          },
-        });
-      }
-    });
-
-    return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  };
 
   const loadData = async () => {
     try {
@@ -200,10 +110,8 @@ const StrokePortalPage: React.FC = () => {
       setStrokeCases(casesResponse.cases);
       setTotalCases(casesResponse.total);
       setKpiSummary(kpiData);
-      
-      // Convert stroke cases to timeline events
-      const events = convertStrokeCasesToTimelineEvents(casesResponse.cases);
-      setTimelineEvents(events);
+
+
     } catch (err) {
       setError('Failed to load stroke portal data');
       console.error('Error loading stroke portal data:', err);
@@ -299,17 +207,17 @@ const StrokePortalPage: React.FC = () => {
     try {
       setExportLoading(true);
       const exportFilters: StrokeCaseFilters = {};
-      
+
       Object.entries(appliedFilters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           exportFilters[key as keyof StrokeCaseFilters] = value as any;
         }
       });
-      
+
       if (searchTerm && searchTerm.trim()) {
         exportFilters.search = searchTerm.trim();
       }
-      
+
       await StrokeExportService.exportToExcel(exportFilters);
     } catch (error) {
       console.error('Export failed:', error);
@@ -357,21 +265,21 @@ const StrokePortalPage: React.FC = () => {
     },
     {
       title: 'Avg Registration to CT',
-      value: kpiSummary?.averageTimings.registrationToCt ? 
+      value: kpiSummary?.averageTimings.registrationToCt ?
         `${Math.round(kpiSummary.averageTimings.registrationToCt)} min` : 'N/A',
       icon: <Timeline />,
       color: '#ed6c02',
     },
     {
       title: 'KPI 1 Performance',
-      value: kpiSummary?.kpiPerformance.kpi1.percentage ? 
+      value: kpiSummary?.kpiPerformance.kpi1.percentage ?
         `${Math.round(kpiSummary.kpiPerformance.kpi1.percentage)}%` : 'N/A',
       icon: <Dashboard />,
       color: '#2e7d32',
     },
     {
       title: 'Success Rate',
-      value: kpiSummary?.outcomes.successRate ? 
+      value: kpiSummary?.outcomes.successRate ?
         `${Math.round(kpiSummary.outcomes.successRate)}%` : 'N/A',
       icon: <Assessment />,
       color: '#d32f2f',
@@ -383,7 +291,7 @@ const StrokePortalPage: React.FC = () => {
       <Helmet>
         <title>Stroke Portal - RCC Healthcare Platform</title>
       </Helmet>
-      
+
       <PortalSkeleton
         title="Stroke Portal"
         subtitle="Comprehensive stroke care coordination and time-sensitive protocols"
@@ -394,41 +302,41 @@ const StrokePortalPage: React.FC = () => {
         headerActions={headerActions}
         kpiCards={kpiCards}
       >
+        {error && (
+          <Box sx={{ p: 3, pb: 0 }}>
+            <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          </Box>
+        )}
+
         {/* Main Content Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
             aria-label="stroke portal tabs"
             sx={{ minHeight: 48 }}
           >
-            <Tab 
-              label="Cases" 
-              sx={{ 
-                fontSize: '1rem', 
+            <Tab
+              label="Cases"
+              sx={{
+                fontSize: '1rem',
                 fontWeight: activeTab === 0 ? 'bold' : 'normal',
                 py: 2,
                 px: 3
-              }} 
+              }}
             />
-            <Tab 
-              label="KPI Dashboard" 
-              sx={{ 
-                fontSize: '1rem', 
+            <Tab
+              label="KPI Dashboard"
+              sx={{
+                fontSize: '1rem',
                 fontWeight: activeTab === 1 ? 'bold' : 'normal',
                 py: 2,
                 px: 3
-              }} 
+              }}
             />
-            <Tab 
-              label="Timeline View" 
-              sx={{ 
-                fontSize: '1rem', 
-                fontWeight: activeTab === 2 ? 'bold' : 'normal',
-                py: 2,
-                px: 3
-              }} 
-            />
+
           </Tabs>
         </Box>
 
@@ -493,20 +401,7 @@ const StrokePortalPage: React.FC = () => {
           <StrokeKPIDashboard kpiSummary={kpiSummary} />
         </TabPanel>
 
-        <TabPanel value={activeTab} index={2}>
-          <TimelineView
-            events={timelineEvents}
-            portalType="stroke"
-            title="Stroke Cases Timeline"
-            showSearch={true}
-            onSearch={(query, filter) => {
-              // TODO: Implement timeline search functionality
-              console.log('Timeline search:', query, filter);
-            }}
-            loading={loading}
-            error={error || undefined}
-          />
-        </TabPanel>
+
 
         {/* Create Case Dialog */}
         <CreateStrokeCaseDialog

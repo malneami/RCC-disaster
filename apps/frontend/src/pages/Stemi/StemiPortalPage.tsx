@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Box, Tabs, Tab, CircularProgress, LinearProgress, Fab, Button, Tooltip, TablePagination, Paper, Typography, TextField, InputAdornment, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { Add as AddIcon, Assessment, Timeline, Dashboard, Warning, Schedule, FileDownload, Search as SearchIcon, FilterList as FilterIcon, ViewModule as CardsIcon, TableChart as TableIcon } from '@mui/icons-material';
+import { Add as AddIcon, Assessment, Dashboard, Warning, Schedule, FileDownload, Search as SearchIcon, FilterList as FilterIcon, ViewModule as CardsIcon, TableChart as TableIcon, Timeline } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import StemiCasesList from './components/StemiCasesList';
@@ -11,7 +11,7 @@ import EditStemiCaseDialog from './components/EditStemiCaseDialog';
 import ViewStemiCaseDialog from './components/ViewStemiCaseDialog';
 import LiveFilterDialog from './components/LiveFilterDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
-import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
+
 import FloatingScrollbar from '../../components/Common/FloatingScrollbar';
 import { StemiService, StemiCase, StemiKpiResponse, StemiFilterParams } from './services/stemiService';
 import { StemiExportService } from './services/stemiExportService';
@@ -62,11 +62,11 @@ const StemiPortalPage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
-  const [hospitals, setHospitals] = useState<Array<{id: string, name: string}>>([]);
+  const [hospitals, setHospitals] = useState<Array<{ id: string, name: string }>>([]);
   const [totalCases, setTotalCases] = useState(0);
   const requestRef = useRef(0);
   const kpiRequestRef = useRef(0);
-  
+
   // Unified filters state for both views
   const [unifiedFilters, setUnifiedFilters] = useState<StemiFilterParams>({
     search: '',
@@ -88,7 +88,6 @@ const StemiPortalPage: React.FC = () => {
   const portalSteps: PortalStep[] = [
     { label: 'Cases', description: 'View and manage STEMI cases', icon: <Assessment /> },
     { label: 'KPI Dashboard', description: 'Monitor performance metrics', icon: <Dashboard /> },
-    { label: 'Timeline View', description: 'Track case progression', icon: <Timeline /> },
   ];
 
   useEffect(() => {
@@ -127,255 +126,7 @@ const StemiPortalPage: React.FC = () => {
     loadHospitals();
   }, []);
 
-  const convertStemiCasesToTimelineEvents = (cases: StemiCase[]): TimelineEvent[] => {
-    const events: TimelineEvent[] = [];
-    
-    cases.forEach(case_ => {
-      // Patient arrival
-      if (case_.createdAt) {
-        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
-        const nationalId = case_.patient?.nationalId || 'N/A';
-        
-        events.push({
-          id: `${case_.id}-arrival`,
-          timestamp: case_.createdAt,
-          title: `Patient Arrival - ${patientName}`,
-          description: `Patient ${patientName} (ID: ${nationalId}) arrived at ${case_.originHospital?.name || 'hospital'} via ${getModeOfArrivalLabel(case_.modeOfArrival)}`,
-          type: 'arrival',
-          status: 'completed',
-          user: {
-            name: 'System',
-            role: 'Data Collector',
-          },
-          hospital: case_.originHospital ? {
-            name: case_.originHospital.name,
-            id: case_.originHospital.id,
-          } : undefined,
-          details: {
-            modeOfArrival: case_.modeOfArrival,
-            patientId: case_.patientId,
-            patientName: patientName,
-            patientNationalId: nationalId,
-            ticketId: case_.ticketId,
-            currentStatus: case_.currentStatus,
-          },
-        });
-      }
 
-      // ECG Assessment
-      if (case_.firstEcgTime) {
-        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
-        const nationalId = case_.patient?.nationalId || 'N/A';
-        
-        events.push({
-          id: `${case_.id}-ecg`,
-          timestamp: case_.firstEcgTime,
-          title: `ECG Assessment - ${patientName}`,
-          description: `ECG completed for ${patientName} (ID: ${nationalId}) - ${getEcgResultLabel(case_.ecgResult)}${case_.ecgFindings ? `: ${case_.ecgFindings}` : ''}`,
-          type: 'assessment',
-          status: 'completed',
-          user: {
-            name: 'Medical Staff',
-            role: 'EMS',
-          },
-          hospital: case_.originHospital ? {
-            name: case_.originHospital.name,
-            id: case_.originHospital.id,
-          } : undefined,
-          details: {
-            ecgResult: case_.ecgResult,
-            ecgFindings: case_.ecgFindings,
-            patientId: case_.patientId,
-            patientName: patientName,
-            patientNationalId: nationalId,
-            currentStatus: case_.currentStatus,
-          },
-        });
-      }
-
-      // RCC Activation
-      if (case_.rccActivated) {
-        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
-        const nationalId = case_.patient?.nationalId || 'N/A';
-        
-        events.push({
-          id: `${case_.id}-rcc-activation`,
-          timestamp: case_.pathwayStarted || case_.createdAt,
-          title: `RCC Activated - ${patientName}`,
-          description: `Regional Cardiac Center activated for ${patientName} (ID: ${nationalId}) transfer to ${case_.destinationHospital?.name || 'destination hospital'}`,
-          type: 'treatment',
-          status: 'completed',
-          user: {
-            name: 'RCC Coordinator',
-            role: 'RCC',
-          },
-          hospital: case_.destinationHospital ? {
-            name: case_.destinationHospital.name,
-            id: case_.destinationHospital.id,
-          } : undefined,
-          details: {
-            rccUnit: case_.rccUnit,
-            destinationHospital: case_.destinationHospital?.name,
-            patientId: case_.patientId,
-            patientName: patientName,
-            patientNationalId: nationalId,
-            currentStatus: case_.currentStatus,
-          },
-        });
-      }
-
-      // Treatment Selection
-      if (case_.selectedTreatment) {
-        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
-        const nationalId = case_.patient?.nationalId || 'N/A';
-        
-        events.push({
-          id: `${case_.id}-treatment`,
-          timestamp: case_.pathwayStarted || case_.createdAt,
-          title: `Treatment Selected - ${patientName}`,
-          description: `${getTreatmentLabel(case_.selectedTreatment)} pathway initiated for ${patientName} (ID: ${nationalId})`,
-          type: 'treatment',
-          status: 'completed',
-          user: {
-            name: 'Cardiologist',
-            role: 'CATH_LAB_USER',
-          },
-          hospital: case_.destinationHospital ? {
-            name: case_.destinationHospital.name,
-            id: case_.destinationHospital.id,
-          } : undefined,
-          details: {
-            selectedTreatment: case_.selectedTreatment,
-            pciLocation: case_.pciLocation,
-            eligibleForPrimaryPci: case_.eligibleForPrimaryPci,
-            patientId: case_.patientId,
-            patientName: patientName,
-            patientNationalId: nationalId,
-            currentStatus: case_.currentStatus,
-          },
-        });
-      }
-
-      // Door Out Time (Transfer)
-      if (case_.doorOutTime) {
-        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
-        const nationalId = case_.patient?.nationalId || 'N/A';
-        
-        events.push({
-          id: `${case_.id}-transfer`,
-          timestamp: case_.doorOutTime,
-          title: `Patient Transfer - ${patientName}`,
-          description: `${patientName} (ID: ${nationalId}) transferred from ${case_.originHospital?.name} to ${case_.destinationHospital?.name || 'destination hospital'}`,
-          type: 'treatment',
-          status: 'completed',
-          user: {
-            name: 'Transfer Team',
-            role: 'EMS',
-          },
-          hospital: case_.originHospital ? {
-            name: case_.originHospital.name,
-            id: case_.originHospital.id,
-          } : undefined,
-          details: {
-            doorOutTime: case_.doorOutTime,
-            originHospital: case_.originHospital?.name,
-            destinationHospital: case_.destinationHospital?.name,
-            patientId: case_.patientId,
-            patientName: patientName,
-            patientNationalId: nationalId,
-            currentStatus: case_.currentStatus,
-          },
-        });
-      }
-
-      // Pathway Completion
-      if (case_.pathwayCompleted) {
-        const patientName = case_.patient ? `${case_.patient.firstName} ${case_.patient.lastName}` : 'Unknown Patient';
-        const nationalId = case_.patient?.nationalId || 'N/A';
-        
-        events.push({
-          id: `${case_.id}-completion`,
-          timestamp: case_.pathwayCompleted,
-          title: `Treatment Completed - ${patientName}`,
-          description: `STEMI treatment pathway successfully completed for ${patientName} (ID: ${nationalId})`,
-          type: 'treatment',
-          status: 'completed',
-          user: {
-            name: 'Medical Team',
-            role: 'CATH_LAB_USER',
-          },
-          hospital: case_.destinationHospital ? {
-            name: case_.destinationHospital.name,
-            id: case_.destinationHospital.id,
-          } : undefined,
-          details: {
-            pathwayCompleted: case_.pathwayCompleted,
-            currentStatus: case_.currentStatus,
-            patientId: case_.patientId,
-            patientName: patientName,
-            patientNationalId: nationalId,
-          },
-        });
-      }
-    });
-
-    return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  };
-
-  const getModeOfArrivalLabel = (mode?: string) => {
-    switch (mode) {
-      case 'AMBULANCE_RED_CRESCENT':
-      case 'AMBULANCE':
-        return 'Ambulance';
-      case 'PRIVATE_CAR':
-      case 'PRIVATE_VEHICLE':
-        return 'Private Vehicle';
-      case 'TRANSFERRED_FROM_ANOTHER_HOSPITAL':
-      case 'TRANSFERRED_FROM_HOSPITAL':
-        return 'Hospital Transfer';
-      case 'AIR_TRANSPORT':
-        return 'Air Transport';
-      case 'WALK_IN':
-        return 'Walk-in';
-      case 'POLICE':
-        return 'Police Transport';
-      case 'OTHER':
-        return 'Other';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const getEcgResultLabel = (result?: string) => {
-    switch (result) {
-      case 'STEMI_ANTERIOR': return 'STEMI Anterior';
-      case 'STEMI_INFERIOR': return 'STEMI Inferior';
-      case 'STEMI_LATERAL': return 'STEMI Lateral';
-      case 'STEMI_POSTERIOR': return 'STEMI Posterior';
-      case 'NSTEMI_CHANGES': return 'NSTEMI Changes';
-      case 'UNSTABLE_PATTERN': return 'Unstable Pattern';
-      case 'NORMAL': return 'Normal';
-      case 'PENDING': return 'Pending';
-      case 'TECHNICAL_ISSUE': return 'Technical Issue';
-      default: return 'Unknown';
-    }
-  };
-
-  const getTreatmentLabel = (treatment?: string) => {
-    switch (treatment) {
-      case 'PRIMARY_PCI': return 'Primary PCI';
-      case 'RESCUE_PCI': return 'Rescue PCI';
-      case 'FIBRINOLYSIS': return 'Fibrinolysis';
-      case 'TRANSFER_FOR_PRIMARY_PCI': return 'Transfer for Primary PCI';
-      case 'MEDICAL_MANAGEMENT': return 'Medical Management';
-      default: return 'Unknown';
-    }
-  };
-
-  const timelineEvents = useMemo(
-    () => convertStemiCasesToTimelineEvents(stemiCases),
-    [stemiCases]
-  );
 
   // Filter fields configuration
   const filterFields = useMemo(() => [
@@ -495,11 +246,11 @@ const StemiPortalPage: React.FC = () => {
 
     // Prepare pagination params, excluding rccActivated for client-side filtering
     const { rccActivated, ...backendFilters } = unifiedFilters;
-    
+
     // Convert rccActivated to string for comparison (filter dialog sends strings)
-    const rccActivatedStr = (rccActivated === true || rccActivated === 'true') ? 'true' : 
-                           (rccActivated === false || rccActivated === 'false') ? 'false' : undefined;
-    
+    const rccActivatedStr = (rccActivated === true || rccActivated === 'true') ? 'true' :
+      (rccActivated === false || rccActivated === 'false') ? 'false' : undefined;
+
     // When RCC filter is active, fetch all data for proper client-side filtering
     // Otherwise use normal pagination
     const needsClientSideRccFilter = rccActivatedStr === 'true' || rccActivatedStr === 'false';
@@ -651,27 +402,27 @@ const StemiPortalPage: React.FC = () => {
 
   const handleOutcomeFormUpdate = (caseId: string, updatedData: any) => {
     // Update the specific case in the local state
-    setStemiCases(prev => prev.map(c => 
-      c.id === caseId 
-        ? { 
-            ...c, 
-            // Update outcome form related fields
-            cathLabActivationTime: updatedData.cathLabActivationTime,
-            cathLabArrivalTime: updatedData.cathLabArrivalTime,
-            pciProcedureStartTime: updatedData.pciProcedureStartTime,
-            pciProcedureCompleteTime: updatedData.pciProcedureCompleteTime,
-            postPciComplications: updatedData.postPciComplications,
-            dischargeStatus: updatedData.dischargeStatus,
-            dischargeMedications: updatedData.dischargeMedications,
-            followUpAppointmentDate: updatedData.followUpAppointmentDate,
-            followUpAppointmentProvider: updatedData.followUpAppointmentProvider,
-            outcomeFormCompleted: updatedData.outcomeFormCompleted,
-            outcomeFormCompletionDate: updatedData.outcomeFormCompletionDate,
-            outcomePercentageCompleteness: updatedData.outcomePercentageCompleteness,
-          }
+    setStemiCases(prev => prev.map(c =>
+      c.id === caseId
+        ? {
+          ...c,
+          // Update outcome form related fields
+          cathLabActivationTime: updatedData.cathLabActivationTime,
+          cathLabArrivalTime: updatedData.cathLabArrivalTime,
+          pciProcedureStartTime: updatedData.pciProcedureStartTime,
+          pciProcedureCompleteTime: updatedData.pciProcedureCompleteTime,
+          postPciComplications: updatedData.postPciComplications,
+          dischargeStatus: updatedData.dischargeStatus,
+          dischargeMedications: updatedData.dischargeMedications,
+          followUpAppointmentDate: updatedData.followUpAppointmentDate,
+          followUpAppointmentProvider: updatedData.followUpAppointmentProvider,
+          outcomeFormCompleted: updatedData.outcomeFormCompleted,
+          outcomeFormCompletionDate: updatedData.outcomeFormCompletionDate,
+          outcomePercentageCompleteness: updatedData.outcomePercentageCompleteness,
+        }
         : c
     ));
-    
+
     // Refresh KPIs to reflect any changes
     loadData();
   };
@@ -680,15 +431,15 @@ const StemiPortalPage: React.FC = () => {
     try {
       setExportLoading(true);
       const { rccActivated, limit, offset, ...backendFilters } = unifiedFilters;
-      
+
       const exportFilters: StemiFilterParams = {};
-      
+
       Object.entries(backendFilters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
-          exportFilters[key as keyof StemiFilterParams] = value as any;  
+          exportFilters[key as keyof StemiFilterParams] = value as any;
         }
       });
-      
+
       if (rccActivated !== undefined && rccActivated !== null && rccActivated !== '') {
         if (rccActivated === true || rccActivated === 'true') {
           exportFilters.rccActivated = true;
@@ -696,7 +447,7 @@ const StemiPortalPage: React.FC = () => {
           exportFilters.rccActivated = false;
         }
       }
-      
+
       await StemiExportService.exportToExcel(exportFilters);
     } catch (error) {
       console.error('Export failed:', error);
@@ -861,7 +612,7 @@ const StemiPortalPage: React.FC = () => {
       <Helmet>
         <title>STEMI Portal - RCC Healthcare Platform</title>
       </Helmet>
-      
+
       <PortalSkeleton
         title="STEMI Portal"
         subtitle="Comprehensive STEMI care coordination and emergency protocols"
@@ -874,39 +625,31 @@ const StemiPortalPage: React.FC = () => {
       >
         {/* Main Content Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
             aria-label="stemi portal tabs"
             sx={{ minHeight: 48 }}
           >
-            <Tab 
-              label="Cases" 
-              sx={{ 
-                fontSize: '1rem', 
+            <Tab
+              label="Cases"
+              sx={{
+                fontSize: '1rem',
                 fontWeight: activeTab === 0 ? 'bold' : 'normal',
                 py: 2,
                 px: 3
-              }} 
+              }}
             />
-            <Tab 
-              label="KPI Dashboard" 
-              sx={{ 
-                fontSize: '1rem', 
+            <Tab
+              label="KPI Dashboard"
+              sx={{
+                fontSize: '1rem',
                 fontWeight: activeTab === 1 ? 'bold' : 'normal',
                 py: 2,
                 px: 3
-              }} 
+              }}
             />
-            <Tab 
-              label="Timeline View" 
-              sx={{ 
-                fontSize: '1rem', 
-                fontWeight: activeTab === 2 ? 'bold' : 'normal',
-                py: 2,
-                px: 3
-              }} 
-            />
+
           </Tabs>
         </Box>
 
@@ -1023,20 +766,14 @@ const StemiPortalPage: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
-          <StemiKPIDashboard 
-            kpiSummary={kpiSummary} 
+          <StemiKPIDashboard
+            kpiSummary={kpiSummary}
             filters={kpiFilters}
             onFilterChange={handleKpiFilterChange}
           />
         </TabPanel>
 
-        <TabPanel value={activeTab} index={2}>
-          <TimelineView
-            events={timelineEvents}
-            title="STEMI Cases Timeline"
-            portalType="stemi"
-          />
-        </TabPanel>
+
       </PortalSkeleton>
 
       {/* Floating Action Buttons */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Tabs, Tab, CircularProgress, Fab, Button, Tooltip } from '@mui/material';
-import { Add, Assessment, Timeline, Dashboard, Warning, TransferWithinAStation, Schedule, FileDownload } from '@mui/icons-material';
+import { Add, Assessment, Dashboard, Warning, TransferWithinAStation, Schedule, FileDownload } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import TraumaCasesList from './components/TraumaCasesList';
@@ -10,7 +10,6 @@ import CreateTraumaCaseDialog from './components/CreateTraumaCaseDialog';
 import ViewTraumaCaseDialog from './components/ViewTraumaCaseDialog';
 import EditTraumaCaseDialog from './components/EditTraumaCaseDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
-import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { TraumaService, TraumaCase } from '../../services/traumaService';
 import { TraumaKPIsResponse } from './types/traumaTypes';
 import { useAuth } from '../../contexts/AuthContext';
@@ -50,7 +49,7 @@ const TraumaPortalPage: React.FC = () => {
   const [selectedCase, setSelectedCase] = useState<TraumaCase | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+
   const [exportLoading, setExportLoading] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<any>({});
 
@@ -58,83 +57,13 @@ const TraumaPortalPage: React.FC = () => {
   const portalSteps: PortalStep[] = [
     { label: 'Cases', description: 'View and manage trauma cases', icon: <Assessment /> },
     { label: 'KPI Dashboard', description: 'Monitor performance metrics', icon: <Dashboard /> },
-    { label: 'Timeline View', description: 'Track case progression', icon: <Timeline /> },
   ];
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const convertTraumaCasesToTimelineEvents = (cases: TraumaCase[]): TimelineEvent[] => {
-    const events: TimelineEvent[] = [];
-    
-    cases.forEach(case_ => {
-      // Patient arrival
-      if (case_.createdAt) {
-        events.push({
-          id: `${case_.id}-arrival`,
-          timestamp: case_.createdAt,
-          title: `Patient Arrival - ${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-          description: `Patient arrived at ${case_.originHospital?.name || 'hospital'} via ${TraumaService.getModeOfArrivalLabel(case_.modeOfArrival)}`,
-          type: 'arrival',
-          status: 'completed',
-          user: {
-            name: case_.createdBy?.firstName ? `${case_.createdBy.firstName} ${case_.createdBy.lastName}` : 'System',
-            role: 'Data Collector',
-          },
-          hospital: case_.originHospital ? {
-            name: case_.originHospital.name,
-            id: case_.originHospital.id,
-          } : undefined,
-          details: {
-            modeOfArrival: case_.modeOfArrival,
-            mechanismOfInjury: case_.mechanismOfInjury,
-            chiefComplaint: case_.chiefComplaint,
-            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-            patientNationalId: case_.patient?.nationalId || 'N/A',
-          },
-        });
-      }
 
-      // Assessment
-      if (case_.glasgowComaScale) {
-        events.push({
-          id: `${case_.id}-assessment`,
-          timestamp: case_.createdAt,
-          title: `Glasgow Coma Scale Assessment - Score: ${case_.glasgowComaScale}`,
-          description: `Initial neurological assessment completed`,
-          type: 'assessment',
-          status: 'completed',
-          details: {
-            glasgowComaScale: case_.glasgowComaScale,
-            criticalCase: case_.criticalCase,
-            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-            patientNationalId: case_.patient?.nationalId || 'N/A',
-          },
-        });
-      }
-
-      // Treatment/Disposition
-      if (case_.edDisposition) {
-        events.push({
-          id: `${case_.id}-disposition`,
-          timestamp: case_.updatedAt,
-          title: `Disposition - ${TraumaService.getDispositionLabel(case_.edDisposition)}`,
-          description: `Patient disposition determined`,
-          type: 'treatment',
-          status: 'completed',
-          details: {
-            disposition: case_.edDisposition,
-            transferCase: case_.transferCase,
-            patientName: `${case_.patient?.firstName || 'Unknown'} ${case_.patient?.lastName || 'Patient'}`,
-            patientNationalId: case_.patient?.nationalId || 'N/A',
-          },
-        });
-      }
-    });
-
-    return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  };
 
   const loadData = async () => {
     try {
@@ -148,7 +77,7 @@ const TraumaPortalPage: React.FC = () => {
 
       setTraumaCases(casesData.cases);
       setKpiSummary(kpiData);
-      setTimelineEvents(convertTraumaCasesToTimelineEvents(casesData.cases));
+
     } catch (err) {
       console.error('Error loading trauma portal data:', err);
       setError('Failed to load trauma portal data');
@@ -209,40 +138,40 @@ const TraumaPortalPage: React.FC = () => {
     try {
       setExportLoading(true);
       const exportFilters: any = {};
-      
+
       if (currentFilters.hospitalId) {
         exportFilters.originHospitalId = currentFilters.hospitalId;
       } else {
         Object.entries(currentFilters).forEach(([key, value]) => {
-          if (key === 'hospitalId' || key === 'dateFrom' || key === 'dateTo' || 
-              key === 'criticalCase' || key === 'transferCase' || key === 'search') {
+          if (key === 'hospitalId' || key === 'dateFrom' || key === 'dateTo' ||
+            key === 'criticalCase' || key === 'transferCase' || key === 'search') {
             return;
           }
-          
+
           if (value !== undefined && value !== null && value !== '') {
             exportFilters[key] = value;
           }
         });
       }
-      
+
       if (currentFilters.criticalCase !== null && currentFilters.criticalCase !== '') {
         exportFilters.criticalCase = currentFilters.criticalCase === true || currentFilters.criticalCase === 'true';
       }
       if (currentFilters.transferCase !== null && currentFilters.transferCase !== '') {
         exportFilters.transferCase = currentFilters.transferCase === true || currentFilters.transferCase === 'true';
       }
-      
+
       if (currentFilters.dateFrom) {
         exportFilters.startDate = currentFilters.dateFrom;
       }
       if (currentFilters.dateTo) {
         exportFilters.endDate = currentFilters.dateTo;
       }
-      
+
       if (currentFilters.search && currentFilters.search.trim()) {
         exportFilters.search = currentFilters.search.trim();
       }
-      
+
       await TraumaExportService.exportToExcel(exportFilters);
     } catch (error) {
       console.error('Export failed:', error);
@@ -324,7 +253,7 @@ const TraumaPortalPage: React.FC = () => {
       <Helmet>
         <title>Trauma Portal - RCC Healthcare Platform</title>
       </Helmet>
-      
+
       <PortalSkeleton
         title="Trauma Portal"
         subtitle="Comprehensive trauma care coordination and emergency protocols"
@@ -337,39 +266,31 @@ const TraumaPortalPage: React.FC = () => {
       >
         {/* Main Content Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
             aria-label="trauma portal tabs"
             sx={{ minHeight: 48 }}
           >
-            <Tab 
-              label="Cases" 
-              sx={{ 
-                fontSize: '1rem', 
+            <Tab
+              label="Cases"
+              sx={{
+                fontSize: '1rem',
                 fontWeight: activeTab === 0 ? 'bold' : 'normal',
                 py: 2,
                 px: 3
-              }} 
+              }}
             />
-            <Tab 
-              label="KPI Dashboard" 
-              sx={{ 
-                fontSize: '1rem', 
+            <Tab
+              label="KPI Dashboard"
+              sx={{
+                fontSize: '1rem',
                 fontWeight: activeTab === 1 ? 'bold' : 'normal',
                 py: 2,
                 px: 3
-              }} 
+              }}
             />
-            <Tab 
-              label="Timeline View" 
-              sx={{ 
-                fontSize: '1rem', 
-                fontWeight: activeTab === 2 ? 'bold' : 'normal',
-                py: 2,
-                px: 3
-              }} 
-            />
+
           </Tabs>
         </Box>
 
@@ -410,13 +331,7 @@ const TraumaPortalPage: React.FC = () => {
           <TraumaKPIDashboard kpiSummary={kpiSummary} />
         </TabPanel>
 
-        <TabPanel value={activeTab} index={2}>
-          <TimelineView
-            events={timelineEvents}
-            title="Trauma Cases Timeline"
-            portalType="trauma"
-          />
-        </TabPanel>
+
 
         {/* Floating Action Button */}
         {/* Floating Action Buttons */}
