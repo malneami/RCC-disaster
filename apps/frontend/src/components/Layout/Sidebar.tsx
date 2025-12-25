@@ -27,6 +27,7 @@ import {
   faBell,
   faChartLine,
   faVideo,
+  faBed,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -91,7 +92,13 @@ const Sidebar: React.FC = () => {
       text: 'Hospitals',
       icon: <FontAwesomeIcon icon={faHospital} />,
       path: '/hospitals',
-      roles: ['ADMIN', 'RCC', 'HOSPITAL_USER'],
+      roles: ['ADMIN', 'RCC', 'HOSPITAL_USER', 'ED_NURSE', 'UNIT_NURSE', 'BED_COORDINATOR'],
+    },
+    {
+      text: 'Beds',
+      icon: <FontAwesomeIcon icon={faBed} />,
+      path: '/beds',
+      roles: ['ADMIN', 'RCC'],
     },
     {
       text: 'Notification Center',
@@ -181,9 +188,16 @@ const Sidebar: React.FC = () => {
   };
 
   const handleNavigation = (path: string) => {
-    // Special handling for HOSPITAL_USER - redirect to their assigned hospital
-    if (user?.role === 'HOSPITAL_USER' && path === '/hospitals') {
-      navigate('/my-hospital');
+    // Special handling for hospital-specific roles - redirect to their assigned hospital
+    const hospitalSpecificRoles = ['HOSPITAL_USER', 'ED_NURSE', 'UNIT_NURSE', 'BED_COORDINATOR'];
+    if (user?.role && hospitalSpecificRoles.includes(user.role) && path === '/hospitals') {
+      // If user has a hospitalId, redirect directly to their hospital dashboard
+      if (user.hospitalId) {
+        navigate(`/hospitals/${user.hospitalId}`);
+      } else {
+        // Fallback to my-hospital route which will handle the redirect
+        navigate('/my-hospital');
+      }
     } else {
       navigate(path);
     }

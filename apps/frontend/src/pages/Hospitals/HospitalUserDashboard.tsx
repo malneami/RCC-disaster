@@ -22,7 +22,8 @@ const HospitalUserDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.role !== 'HOSPITAL_USER') {
+    const hospitalSpecificRoles = ['HOSPITAL_USER', 'ED_NURSE', 'UNIT_NURSE', 'BED_COORDINATOR'];
+    if (!user?.role || !hospitalSpecificRoles.includes(user.role)) {
       navigate('/hospitals');
       return;
     }

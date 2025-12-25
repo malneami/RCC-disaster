@@ -40,6 +40,7 @@ import { TimelineEventsModule } from './modules/timeline-events/timeline-events.
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RepliesModule } from './modules/replies/replies.module';
 import { VideoCallsModule } from './modules/video-calls/video-calls.module';
+import { BedsModule } from './modules/beds/beds.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { VideoCallsModule } from './modules/video-calls/video-calls.module';
     StemiCommandCenterModule,
     StrokeCommandCenterModule,
     DashboardModule,
+    BedsModule,
   ],
   providers: [
     {

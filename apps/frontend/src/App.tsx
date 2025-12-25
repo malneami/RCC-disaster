@@ -25,6 +25,7 @@ import AdminPage from './pages/Admin/AdminPage';
 import ProfilePage from './pages/Profile/ProfilePage';
 import NotificationCenterPage from './pages/NotificationCenter/NotificationCenterPage';
 import HospitalUserDashboard from './pages/Hospitals/HospitalUserDashboard';
+import BedsPage from './pages/Beds/BedsPage';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import VideoCallPage from './pages/VideoCall/VideoCallPage';
@@ -63,13 +64,21 @@ function App() {
               <Route path="/hospitals" element={<HospitalsPage />} />
               <Route path="/hospitals/:hospitalId" element={<HospitalDashboardPage />} />
               <Route path="/my-hospital" element={
-                <ProtectedRoute allowedRoles={['HOSPITAL_USER']}>
+                <ProtectedRoute allowedRoles={['HOSPITAL_USER', 'ED_NURSE', 'UNIT_NURSE', 'BED_COORDINATOR']}>
                   <HospitalUserDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/ems-dashboard" element={<EMSDashboardPage />} />
               <Route path="/notifications" element={<NotificationCenterPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route
+                path="/beds"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'RCC']}>
+                    <BedsPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Portal Routes */}
               <Route

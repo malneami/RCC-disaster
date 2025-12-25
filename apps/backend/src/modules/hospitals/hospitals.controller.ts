@@ -80,7 +80,7 @@ export class HospitalsController {
   }
 
   @Get('my-hospital')
-  @Roles(UserRole.HOSPITAL_USER)
+  @Roles(UserRole.HOSPITAL_USER, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR)
   @ApiOperation({ summary: 'Get the hospital assigned to the current user' })
   @ApiResponse({ status: 200, description: 'Hospital found' })
   @ApiResponse({ status: 404, description: 'No hospital assigned to user' })
@@ -95,7 +95,7 @@ export class HospitalsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.EMS, UserRole.HOSPITAL_USER)
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.EMS, UserRole.HOSPITAL_USER, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR)
   @ApiOperation({ summary: 'Get hospital by ID' })
   @ApiParam({ name: 'id', description: 'Hospital ID' })
   @ApiResponse({ status: 200, description: 'Hospital found' })
@@ -104,8 +104,9 @@ export class HospitalsController {
   async findById(@Param('id') id: string, @Request() req: any) {
     const user = req.user;
     
-    // Check if HOSPITAL_USER can only access their assigned hospital
-    if (user.role === UserRole.HOSPITAL_USER && user.hospitalId !== id) {
+    // Check if hospital-specific roles can only access their assigned hospital
+    const hospitalSpecificRoles = [UserRole.HOSPITAL_USER, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR];
+    if (hospitalSpecificRoles.includes(user.role) && user.hospitalId !== id) {
       throw new ForbiddenException('Access denied. You can only access your assigned hospital.');
     }
     

@@ -14,6 +14,9 @@ enum UserRole {
   ADMIN
   RCC
   EMS
+  ED_NURSE
+  UNIT_NURSE
+  BED_COORDINATOR
   DATA_COLLECTOR
   CATH_LAB_USER
   HOSPITAL_USER
@@ -1530,6 +1533,7 @@ model StemiCase {
   troponinValue                   Float?      @map("troponin_value")
   isTroponinPositive              Boolean?    @map("is_troponin_positive")
   additionalNotes                 String?     @map("additional_notes")
+
   // KPI Achievement Flags
   metKpi1                         Boolean?    @map("met_kpi_1") // Door to ECG ≤10min
   metKpi2                         Boolean?    @map("met_kpi_2") // Door to Balloon ≤90min (Direct) / ≤120min (Transfer)
@@ -2636,8 +2640,6 @@ model Unit {
   @@unique([hospitalId, bedType])
 }
 
-
-
 // bed.prisma
 model Bed {
   id                  String            @id @default(uuid())
@@ -2670,8 +2672,6 @@ model Bed {
   @@index([currentPatientId])
   @@unique([unitId, bedNumber])
 }
-
-
 
 // bed-request.prisma
 model BedRequest {
@@ -2716,8 +2716,6 @@ model BedRequest {
   @@index([requestNumber])
 }
 
-
-
 // bed-status-history.prisma
 model BedStatusHistory {
   id            String      @id @default(uuid())
@@ -2740,5 +2738,3 @@ model BedStatusHistory {
   @@index([newStatus])
   @@index([bedId, changedAt])
 }
-
-

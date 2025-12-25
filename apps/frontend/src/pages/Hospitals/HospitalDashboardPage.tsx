@@ -30,6 +30,7 @@ import { hospitalService, Hospital, CriticalCase, HospitalTicket } from '../../s
 import RelatedTicketsManager from './components/RelatedTicketsManager';
 import HospitalCriticalCaseTracker from './components/HospitalCriticalCaseTracker';
 import HospitalCoordinatesEditor from './components/HospitalCoordinatesEditor';
+import HospitalBedsTab from './components/HospitalBedsTab';
 import { UnifiedTicket } from './types/tickets';
 
 const HospitalDashboardPage: React.FC = () => {
@@ -371,6 +372,7 @@ const HospitalDashboardPage: React.FC = () => {
             <Tab label="Critical Cases" />
             <Tab label="Related Tickets" />
             <Tab label="Hospital Details" />
+            <Tab label="Hospital Beds" />
           </Tabs>
 
           {/* Critical Cases Tab */}
@@ -491,6 +493,12 @@ const HospitalDashboardPage: React.FC = () => {
                   </Grid>
                 </Grid>
               </Grid>
+            </Box>
+          )}
+
+          {tabValue === 3 && (
+            <Box sx={{ p: 3 }}>
+              <HospitalBedsTab hospitalId={hospitalId!} />
             </Box>
           )}
         </Paper>
