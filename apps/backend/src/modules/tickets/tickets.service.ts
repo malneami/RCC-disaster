@@ -19,7 +19,7 @@ export class TicketsService {
     private ticketsGateway: TicketsGateway,
     private emsAssignmentsService: EmsAssignmentsService,
     private accessLogService: AccessLogService,
-  ) {}
+  ) { }
 
   // Priority calculation algorithm
   private calculatePriority(
@@ -29,7 +29,7 @@ export class TicketsService {
     vitals?: any
   ): string {
     if (isEmergency) return 'EMERGENCY';
-    
+
     // Check critical vitals
     if (vitals) {
       if (vitals.heartRate > 120 || vitals.heartRate < 50) return 'CRITICAL';
@@ -93,13 +93,13 @@ export class TicketsService {
 
     // Create ticket with audit trail
     const { requiredResources, triageTime, symptomOnsetTime, ...ticketData } = createTicketDto;
-    
+
     // Convert datetime strings to Date objects if provided
     const processedData = {
       ...ticketData,
       emsContactTime: ticketData.emsContactTime ? new Date(ticketData.emsContactTime) : undefined,
     };
-    
+
     const ticket = await this.prisma.ticket.create({
       data: {
         ...processedData,
@@ -162,57 +162,57 @@ export class TicketsService {
       this.ticketsGateway.emitEmergencyTicket(ticket);
     }
 
-    
-      try {
-        const emsAssignment = await this.emsAssignmentsService.create({
-          ticketId: ticket.id,
-          assignedAt: new Date().toISOString(),
-          status: AssignmentStatus.EMS_CONTACT,
-          emsContactTime: createTicketDto.emsContactTime,
-          notes: `Auto-created for ticket ${ticket.ticketNumber} - ambulance and driver to be assigned manually`,
-        }, userId);
 
-        this.logger.log(`Auto-created EMS assignment ${emsAssignment.id} for ticket ${ticket.ticketNumber} (no ambulance/driver assigned)`);
-        
-        // Create activity log for EMS assignment
-        await this.prisma.activity.create({
-          data: {
-            type: ActivityType.TICKET_ASSIGNED,
-            description: `EMS assignment auto-created for ticket ${ticket.ticketNumber} (ambulance and driver to be assigned manually)`,
-            userId,
-            ticketId: ticket.id,
-            metadata: JSON.stringify({
-              assignmentId: emsAssignment.id,
-              autoAssigned: true,
-              manualAssignmentRequired: true,
-            }),
-          },
-        });
-      } catch (error) {
-        this.logger.error(`Failed to auto-create EMS assignment for ticket ${ticket.ticketNumber}:`, error);
-        
-        // Create activity log for error
-        await this.prisma.activity.create({
-          data: {
-            type: ActivityType.TICKET_CREATED,
-            description: `Ticket ${ticket.ticketNumber} created but EMS auto-assignment failed`,
-            userId,
-            ticketId: ticket.id,
-            metadata: JSON.stringify({
-              transportMode: 'AMBULANCE_RED_CRESCENT',
-              autoAssignmentError: true,
-              error: error instanceof Error ? error.message : String(error),
-            }),
-          },
-        });
-      }
+    try {
+      const emsAssignment = await this.emsAssignmentsService.create({
+        ticketId: ticket.id,
+        assignedAt: new Date().toISOString(),
+        status: AssignmentStatus.EMS_CONTACT,
+        emsContactTime: createTicketDto.emsContactTime,
+        notes: `Auto-created for ticket ${ticket.ticketNumber} - ambulance and driver to be assigned manually`,
+      }, userId);
+
+      this.logger.log(`Auto-created EMS assignment ${emsAssignment.id} for ticket ${ticket.ticketNumber} (no ambulance/driver assigned)`);
+
+      // Create activity log for EMS assignment
+      await this.prisma.activity.create({
+        data: {
+          type: ActivityType.TICKET_ASSIGNED,
+          description: `EMS assignment auto-created for ticket ${ticket.ticketNumber} (ambulance and driver to be assigned manually)`,
+          userId,
+          ticketId: ticket.id,
+          metadata: JSON.stringify({
+            assignmentId: emsAssignment.id,
+            autoAssigned: true,
+            manualAssignmentRequired: true,
+          }),
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to auto-create EMS assignment for ticket ${ticket.ticketNumber}:`, error);
+
+      // Create activity log for error
+      await this.prisma.activity.create({
+        data: {
+          type: ActivityType.TICKET_CREATED,
+          description: `Ticket ${ticket.ticketNumber} created but EMS auto-assignment failed`,
+          userId,
+          ticketId: ticket.id,
+          metadata: JSON.stringify({
+            transportMode: 'AMBULANCE_RED_CRESCENT',
+            autoAssignmentError: true,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        },
+      });
+    }
 
     return ticket;
   }
 
   private buildOrderBy(sortBy?: string, sortOrder?: string): any[] {
     const order = sortOrder === 'asc' ? 'asc' : 'desc';
-    
+
     if (sortBy === 'priority') {
       return [{ priority: order }, { createdAt: 'desc' }];
     } else if (sortBy === 'status') {
@@ -271,7 +271,7 @@ export class TicketsService {
           where.createdAt.lte = endDate;
         }
       }
-      
+
       if (filters.emsStatus && filters.emsStatus !== '') {
         if (filters.emsStatus === 'ASSIGNED') {
           where.emsAssignments = {
@@ -289,23 +289,25 @@ export class TicketsService {
           };
         }
       }
-      
+
       if (filters.search) {
         const searchCondition = {
           OR: [
             { ticketNumber: { contains: filters.search, mode: 'insensitive' } },
-            { patient: { 
-              OR: [
-                { firstName: { contains: filters.search, mode: 'insensitive' } },
-                { lastName: { contains: filters.search, mode: 'insensitive' } },
-                { mrn: { contains: filters.search, mode: 'insensitive' } },
-                { nationalId: { contains: filters.search, mode: 'insensitive' } },
-              ]
-            }},
+            {
+              patient: {
+                OR: [
+                  { firstName: { contains: filters.search, mode: 'insensitive' } },
+                  { lastName: { contains: filters.search, mode: 'insensitive' } },
+                  { mrn: { contains: filters.search, mode: 'insensitive' } },
+                  { nationalId: { contains: filters.search, mode: 'insensitive' } },
+                ]
+              }
+            },
             { chiefComplaint: { contains: filters.search, mode: 'insensitive' } },
           ],
         };
-        
+
         const hasOtherFilters = Object.keys(where).filter(k => k !== 'deletedAt' && k !== 'emsAssignments' && k !== 'OR').length > 0;
         if (hasOtherFilters || where.emsAssignments) {
           if (!where.AND) {
@@ -483,36 +485,36 @@ export class TicketsService {
           orderBy: { createdAt: 'desc' },
         },
         emsAssignments: {
-              include: {
-                ambulance: {
-                  select: {
-                    id: true,
-                    status: true,
-                    callSign: true,
-                  },
-                },
-                driver: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                    phoneNumber: true,
-                  },
-                },
-                createdByUser: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                  },
-                },
-              },
-              orderBy: {
-                assignedAt: 'desc',
+          include: {
+            ambulance: {
+              select: {
+                id: true,
+                status: true,
+                callSign: true,
               },
             },
+            driver: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+            createdByUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: {
+            assignedAt: 'desc',
+          },
+        },
       },
     });
 
@@ -526,21 +528,21 @@ export class TicketsService {
   // Update ticket with status transition validation
   async update(id: string, updateTicketDto: UpdateTicketDto, userId: string, userRole: UserRole) {
     const ticket = await this.findById(id);
-    
+
     // Validate user permissions for updates
     if (userRole === UserRole.EMS && ticket.assignedToId !== userId) {
       throw new ForbiddenException('Only assigned EMS can update this ticket');
     }
 
     const { assignedToId, requiredResources, originHospitalId, destinationHospitalId, ...updateData } = updateTicketDto;
-    
+
     // Convert DateTime fields from strings to Date objects
     const processedUpdateData = {
       ...updateData,
       emsContactTime: updateData.emsContactTime ? new Date(updateData.emsContactTime) : undefined,
       actualArrival: updateData.actualArrival ? new Date(updateData.actualArrival) : undefined,
     };
-    
+
     const updatedTicket = await this.prisma.ticket.update({
       where: { id },
       data: {
@@ -757,9 +759,9 @@ export class TicketsService {
 
   // Update EMS assignment status with immediate ticket status synchronization
   async updateEMSStatus(
-    id: string, 
-    emsStatus: AssignmentStatus, 
-    userId: string, 
+    id: string,
+    emsStatus: AssignmentStatus,
+    userId: string,
     userRole: UserRole,
     notes?: string
   ) {
@@ -901,16 +903,16 @@ export class TicketsService {
     const [total, pending, assigned, inTransport, completed, cancelled] = await Promise.all([
       this.prisma.ticket.count({ where }),
       // Pending: Status is PENDING (waiting for assignment)
-      this.prisma.ticket.count({ 
-        where: { 
-          ...where, 
+      this.prisma.ticket.count({
+        where: {
+          ...where,
           status: 'PENDING'
-        } 
+        }
       }),
       // Assigned: Contacted only (Assigned/Contacted)
-      this.prisma.ticket.count({ 
-        where: { 
-          ...where, 
+      this.prisma.ticket.count({
+        where: {
+          ...where,
           emsAssignments: {
             some: {
               status: {
@@ -918,12 +920,12 @@ export class TicketsService {
               }
             }
           }
-        } 
+        }
       }),
       // In Transport: En Route (Active Mission - En Route, Arrival, Pickup, Departed)
-      this.prisma.ticket.count({ 
-        where: { 
-          ...where, 
+      this.prisma.ticket.count({
+        where: {
+          ...where,
           emsAssignments: {
             some: {
               status: {
@@ -931,17 +933,17 @@ export class TicketsService {
               }
             }
           }
-        } 
+        }
       }),
       // Completed: Arrived or Ticket Completed
-      this.prisma.ticket.count({ 
-        where: { 
-          ...where, 
+      this.prisma.ticket.count({
+        where: {
+          ...where,
           OR: [
             { status: 'COMPLETED' },
             { emsAssignments: { some: { status: 'ARRIVED' } } }
           ]
-        } 
+        }
       }),
       this.prisma.ticket.count({ where: { ...where, status: TicketStatus.CANCELLED } }),
     ]);
@@ -1009,7 +1011,7 @@ export class TicketsService {
     startDate?: string,
     endDate?: string
   ) {
-    
+
     // Build base where clause
     let where: any = { deletedAt: null };
 
@@ -1041,7 +1043,7 @@ export class TicketsService {
     // Calculate date ranges based on period
     const now = new Date();
     let dateRange: { start: Date; end: Date };
-    
+
     if (startDate || endDate) {
       // Use provided date range
       dateRange = {
@@ -1094,7 +1096,7 @@ export class TicketsService {
 
     // Generate chart data based on period
     const chartData = this.generateChartDataFromTickets(tickets, period, dateRange);
-    
+
 
     // Calculate metrics
     const totalCases = tickets.length;
@@ -1116,14 +1118,14 @@ export class TicketsService {
     });
 
     const previousTotalCases = previousTickets.length;
-    const previousChange = previousTotalCases > 0 
-      ? Math.round(((totalCases - previousTotalCases) / previousTotalCases) * 100) 
+    const previousChange = previousTotalCases > 0
+      ? Math.round(((totalCases - previousTotalCases) / previousTotalCases) * 100)
       : 0;
 
     // Calculate average (simplified - could be more sophisticated)
     const averageCases = Math.floor((totalCases + previousTotalCases) / 2);
-    const averageChange = averageCases > 0 
-      ? Math.round(((totalCases - averageCases) / averageCases) * 100) 
+    const averageChange = averageCases > 0
+      ? Math.round(((totalCases - averageCases) / averageCases) * 100)
       : 0;
 
     return {
@@ -1161,7 +1163,7 @@ export class TicketsService {
       for (let i = 23; i >= 0; i--) {
         const hour = new Date(now);
         hour.setHours(hour.getHours() - i);
-        
+
         const hourStart = new Date(hour);
         hourStart.setMinutes(0, 0, 0);
         const hourEnd = new Date(hour);
@@ -1189,11 +1191,11 @@ export class TicketsService {
       // Generate daily data for weekly/monthly
       const daysDiff = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
       const maxDays = period === 'weekly' ? 7 : Math.min(30, daysDiff);
-      
+
       for (let i = maxDays - 1; i >= 0; i--) {
         const day = new Date(now);
         day.setDate(day.getDate() - i);
-        
+
         const dayStart = new Date(day);
         dayStart.setHours(0, 0, 0, 0);
         const dayEnd = new Date(day);
@@ -1208,7 +1210,7 @@ export class TicketsService {
         const stroke = dayTickets.filter(t => t.pathway === 'STROKE').length;
         const trauma = dayTickets.filter(t => t.pathway === 'TRAUMA').length;
         const other = dayTickets.filter(t => !['STEMI', 'STROKE', 'TRAUMA'].includes(t.pathway)).length;
-        
+
 
         data.push({
           date: day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -1226,7 +1228,7 @@ export class TicketsService {
   // Acknowledge a critical case ticket
   async acknowledge(ticketId: string, userId: string, userRole: UserRole) {
     const ticket = await this.findById(ticketId);
-    
+
     // Check if ticket is already acknowledged
     if (ticket.acknowledgedAt) {
       throw new BadRequestException('Ticket has already been acknowledged');
@@ -1332,7 +1334,7 @@ export class TicketsService {
     });
 
     this.logger.log(`Ticket ${ticket.ticketNumber} acknowledged by user ${userId}`);
-    
+
   }
 
   /**
@@ -1358,7 +1360,7 @@ export class TicketsService {
     // Smart filtering: Look for logs from last 7 days for origin/destination hospitals
     // This allows finding ambulances that completed origin->destination sequences
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    
+
     console.log(`[DEBUG] Ticket ${ticket.ticketNumber} EMS Contact: ${ticket.emsContactTime}`);
     console.log(`[DEBUG] Searching for zone logs in last 7 days for Origin/Destination hospitals`);
 
@@ -1897,9 +1899,9 @@ export class TicketsService {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(this.toRadians(lat1)) *
-        Math.cos(this.toRadians(lat2)) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
+      Math.cos(this.toRadians(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 

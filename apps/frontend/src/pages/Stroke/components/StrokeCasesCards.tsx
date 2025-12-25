@@ -3,9 +3,7 @@ import {
   Box,
   Typography,
   Button,
-  Chip,
   Grid,
-  Divider,
   TextField,
   InputAdornment,
   IconButton,
@@ -16,8 +14,6 @@ import {
   Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
   Add as AddIcon,
   FilterList as FilterIcon,
   Search as SearchIcon,
@@ -26,15 +22,18 @@ import {
   TableChart as TableIcon,
   Comment as CommentIcon,
   Assignment as OutcomeFormIcon,
+  AccessTime as AccessTimeIcon,
+  MedicalServices as MedicalServicesIcon,
 } from '@mui/icons-material';
+import { format } from 'date-fns';
 import { StrokeCase } from '../../../services/strokeService';
 import StrokeCasesFilters from './StrokeCasesList/StrokeCasesFilters';
-import UnifiedCaseCard, { 
-  UnifiedCaseCardProps, 
-  PatientInfo, 
-  TimeMetric, 
-  PerformanceIndicator, 
-  CaseAction 
+import UnifiedCaseCard, {
+  UnifiedCaseCardProps,
+  PatientInfo,
+  TimeMetric,
+  PerformanceIndicator,
+  CaseAction
 } from '../../../components/Common/UnifiedCaseCard';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService } from '../../../services/notificationService';
@@ -90,14 +89,14 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       filtered = filtered.filter(case_ => {
         const patient = case_.patient;
         if (!patient) return false;
-        
+
         const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
         const nationalId = patient.nationalId?.toLowerCase() || '';
         const mrn = patient.mrn?.toLowerCase() || '';
-        
-        return fullName.includes(query) || 
-               nationalId.includes(query) || 
-               mrn.includes(query);
+
+        return fullName.includes(query) ||
+          nationalId.includes(query) ||
+          mrn.includes(query);
       });
     }
 
@@ -151,8 +150,8 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
   };
 
   const handleClearFilters = () => {
-    setFilters({ 
-      strokeType: '', 
+    setFilters({
+      strokeType: '',
       status: '',
       originHospitalId: '',
       destinationHospitalId: '',
@@ -204,7 +203,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
 
     // Calculate targets met
     const targetsMet = calculateTargetsMet(strokeCase);
-    
+
     // Performance indicators
     const performanceIndicators: PerformanceIndicator[] = [
       {
@@ -289,67 +288,69 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       },
     ];
 
-    // Expandable content
+    // Helper function for formatting timestamps
+    const formatTimestamp = (timestamp: string | undefined | null): string => {
+      if (!timestamp) return '—';
+      try {
+        return format(new Date(timestamp), 'dd MMM yyyy, HH:mm');
+      } catch {
+        return '—';
+      }
+    };
+
+    // DataRow component for consistent styling
+    const DataRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+      <Box sx={{ py: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography sx={{ color: '#64748b', fontSize: '0.7rem', fontWeight: 500 }}>
+          {label}
+        </Typography>
+        <Typography sx={{ color: '#0f172a', fontWeight: 700, fontSize: '0.75rem', textAlign: 'right' }}>
+          {value}
+        </Typography>
+      </Box>
+    );
+
+    // Expandable content with chronological timestampss
     const expandableContent = (
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
-          Treatment Information
-        </Typography>
-        <Grid container spacing={2} mb={2}>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Thrombolysis Eligible: {strokeCase.eligibleForThrombolysis ? 'Yes' : 'No'}
-            </Typography>
+      <Box sx={{ pt: 1 }}>
+        <Grid container spacing={1.5}>
+          {/* Critical Timestamps - Left Column */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ bgcolor: '#f8fafc', borderRadius: 1, p: 1.5, border: '1px solid #e2e8f0' }}>
+              <Box display="flex" alignItems="center" gap={0.75} mb={1}>
+                <AccessTimeIcon sx={{ color: '#3b82f6', fontSize: 16 }} />
+                <Typography sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.75rem' }}>
+                  Critical Timestamps
+                </Typography>
+              </Box>
+              <DataRow label="Symptom Onset" value={formatTimestamp(strokeCase.timeOfSymptomOnset)} />
+              <DataRow label="Triage" value={formatTimestamp(strokeCase.timeOfTriage)} />
+              <DataRow label="Physician Assessment" value={formatTimestamp(strokeCase.timeOfPhysicianAssessment)} />
+              <DataRow label="CT Scan Start" value={formatTimestamp(strokeCase.timeOfCtScanStart)} />
+              <DataRow label="CT Report Final" value={formatTimestamp(strokeCase.timeOfCtReportFinal)} />
+              <DataRow label="Thrombolysis Order" value={formatTimestamp(strokeCase.thrombolysisOrderTime)} />
+              <DataRow label="IV Thrombolysis" value={formatTimestamp(strokeCase.ivThrombolysisAdministrationTime)} />
+              <DataRow label="Thrombectomy Puncture" value={formatTimestamp(strokeCase.timeOfMechanicalThrombectomyPuncture)} />
+              <DataRow label="Thrombectomy Complete" value={formatTimestamp(strokeCase.timeOfThrombectomyComplete)} />
+            </Box>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Thrombectomy Eligible: {strokeCase.eligibleForThrombectomy ? 'Yes' : 'No'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Thrombolysis Contraindication: {strokeCase.thrombolysisContraindications ? 'Yes' : 'No'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Selected Treatment: {strokeCase.selectedTreatment || 'N/A'}
-            </Typography>
-          </Grid>
-        </Grid>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="subtitle2" gutterBottom>
-          Key Performance Indicators
-        </Typography>
-        <Box display="flex" gap={1} flexWrap="wrap">
-          {performanceIndicators.map((indicator, index) => (
-            <Chip
-              key={index}
-              label={indicator.label}
-              size="small"
-              color={indicator.color || 'default'}
-              icon={indicator.met ? <CheckCircleIcon /> : <CancelIcon />}
-            />
-          ))}
-        </Box>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="subtitle2" gutterBottom>
-          Case Details
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              mRS Score: {strokeCase.modifiedRankinScaleAt90Days || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Discharge To: {strokeCase.dischargeDate || 'N/A'}
-            </Typography>
+
+          {/* Treatment Information - Right Column */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ bgcolor: '#f8fafc', borderRadius: 1, p: 1.5, border: '1px solid #e2e8f0' }}>
+              <Box display="flex" alignItems="center" gap={0.75} mb={1}>
+                <MedicalServicesIcon sx={{ color: '#ef4444', fontSize: 16 }} />
+                <Typography sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.75rem' }}>
+                  Treatment Information
+                </Typography>
+              </Box>
+              <DataRow label="Thrombolysis Eligible" value={strokeCase.eligibleForThrombolysis ? 'Yes' : 'No'} />
+              <DataRow label="Thrombectomy Eligible" value={strokeCase.eligibleForThrombectomy ? 'Yes' : 'No'} />
+              <DataRow label="Thrombolysis Contraindication" value={strokeCase.thrombolysisContraindications ? 'Yes' : 'No'} />
+              <DataRow label="Selected Treatment" value={strokeCase.selectedTreatment || 'N/A'} />
+              <DataRow label="mRS Score" value={strokeCase.modifiedRankinScaleAt90Days || 'N/A'} />
+              <DataRow label="Discharge Date" value={strokeCase.dischargeDate || 'N/A'} />
+            </Box>
           </Grid>
         </Grid>
       </Box>
@@ -401,20 +402,20 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     // Calculate outcome form completeness (50% weight)
     const outcomeCompleteness = strokeCase.outcomePercentageCompleteness || 0;
     const outcomeWeight = 0.5;
-    
+
     // Calculate case data completeness (50% weight)
     const caseDataCompleteness = calculateCaseDataCompleteness(strokeCase);
     const caseDataWeight = 0.5;
-    
+
     // Calculate combined completeness
     const combinedCompleteness = Math.round(
       (outcomeCompleteness * outcomeWeight) + (caseDataCompleteness * caseDataWeight)
     );
-    
+
     // Calculate total fields for display
     const totalFields = calculateTotalFields(strokeCase);
     const completedFields = Math.round((combinedCompleteness / 100) * totalFields);
-    
+
     return {
       percentage: combinedCompleteness,
       completed: completedFields,
@@ -434,10 +435,10 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       'candidateForMechanicalThrombectomy',
       'disposition',
     ];
-    
+
     let completedFields = 0;
     let totalFields = requiredFields.length;
-    
+
     // Check basic required fields
     requiredFields.forEach(field => {
       const value = strokeCase[field as keyof StrokeCase];
@@ -445,78 +446,78 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
         completedFields++;
       }
     });
-    
+
     // If CT scan was performed, check CT-related fields
     if (strokeCase.ctScanPerformed === true) {
       const ctFields = ['timeOfCtScanStart', 'timeOfCtReportFinal', 'ctFindings'];
       let ctCompleted = 0;
-      
+
       ctFields.forEach(field => {
         const value = strokeCase[field as keyof StrokeCase];
         if (value !== null && value !== undefined && value !== '') {
           ctCompleted++;
         }
       });
-      
+
       totalFields += ctFields.length;
       completedFields += ctCompleted;
     }
-    
+
     // If candidate for IV thrombolysis, check thrombolysis fields
     if (strokeCase.candidateForIVThrombolysis === 'YES') {
       const thrombolysisFields = ['thrombolysisOrderTime', 'ivThrombolysisAdministrationTime', 'ivThrombolysisGiven'];
       let thrombolysisCompleted = 0;
-      
+
       thrombolysisFields.forEach(field => {
         const value = strokeCase[field as keyof StrokeCase];
         if (value !== null && value !== undefined && value !== '') {
           thrombolysisCompleted++;
         }
       });
-      
+
       totalFields += thrombolysisFields.length;
       completedFields += thrombolysisCompleted;
     }
-    
+
     // If candidate for mechanical thrombectomy, check thrombectomy fields
     if (strokeCase.candidateForMechanicalThrombectomy === 'YES') {
       const thrombectomyFields = ['timeOfMechanicalThrombectomyPuncture', 'mechanicalThrombectomyPerformed', 'timeOfThrombectomyComplete'];
       let thrombectomyCompleted = 0;
-      
+
       thrombectomyFields.forEach(field => {
         const value = strokeCase[field as keyof StrokeCase];
         if (value !== null && value !== undefined && value !== '') {
           thrombectomyCompleted++;
         }
       });
-      
+
       totalFields += thrombectomyFields.length;
       completedFields += thrombectomyCompleted;
     }
-    
+
     // If transfer to another hospital, check transfer fields
     if (strokeCase.transferToAnotherHospital === true) {
       const transferFields = ['timeOfTransferActivation', 'timeOfTransferDeparture', 'prehospitalNotificationBySrca'];
       let transferCompleted = 0;
-      
+
       transferFields.forEach(field => {
         const value = strokeCase[field as keyof StrokeCase];
         if (value !== null && value !== undefined && value !== '') {
           transferCompleted++;
         }
       });
-      
+
       totalFields += transferFields.length;
       completedFields += transferCompleted;
     }
-    
+
     return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
   };
 
   const calculateTotalFields = (strokeCase: StrokeCase): number => {
     // Calculate total fields for display purposes
     let totalFields = 8; // Base required fields
-    
+
     // Add conditional fields
     if (strokeCase.ctScanPerformed === true) {
       totalFields += 3; // CT fields
@@ -530,10 +531,10 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     if (strokeCase.transferToAnotherHospital === true) {
       totalFields += 3; // Transfer fields
     }
-    
+
     // Add outcome form fields (9 fields)
     totalFields += 9;
-    
+
     return totalFields;
   };
 
@@ -543,11 +544,11 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
     const combinedCompleteness = Math.round(
       (outcomeCompleteness * 0.5) + (caseDataCompleteness * 0.5)
     );
-    
+
     const outcomeText = `Outcome Form: ${outcomeCompleteness}%`;
     const caseDataText = `Case Data: ${caseDataCompleteness}%`;
     const combinedText = `Combined: ${combinedCompleteness}%`;
-    
+
     return `${outcomeText}\n${caseDataText}\n${combinedText}`;
   };
 
@@ -672,12 +673,12 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
           size="small"
         />
       </Box>
-      
+
       <Grid container spacing={2}>
         {filteredCases.map((strokeCase) => {
           const transformedCase = transformStrokeCase(strokeCase);
           return (
-            <Grid item xs={12} md={6} lg={4} key={transformedCase.caseId}>
+            <Grid item xs={12} md={6} lg={6} key={transformedCase.caseId}>
               <UnifiedCaseCard {...transformedCase} />
             </Grid>
           );

@@ -156,7 +156,6 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
       element.offsetHeight;
 
       const canvas = await html2canvas(element, {
-        background: '#ffffff',
         useCORS: true,
         allowTaint: true,
         logging: false,
