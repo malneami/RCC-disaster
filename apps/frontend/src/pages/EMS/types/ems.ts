@@ -37,6 +37,12 @@ export interface EMSAssignment {
   journeyEndTime?: Date;
   distanceKm?: number;
   notes?: string;
+  estimatedArrivalMinutes?: number;
+  estimatedArrivalTime?: Date | string;
+  lastEtaUpdateTime?: Date | string;
+  etaToOrigin?: number;
+  etaToDestination?: number;
+  routeDistanceKm?: number;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;

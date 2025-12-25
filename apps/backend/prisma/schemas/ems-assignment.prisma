@@ -18,6 +18,14 @@ model EMSAssignment {
   // Journey Details
   distanceKm              Float?          @map("distance_km")
   notes                   String?
+
+  // ETA Information
+  estimatedArrivalMinutes  Int?      @map("estimated_arrival_minutes")
+  estimatedArrivalTime     DateTime? @map("estimated_arrival_time")
+  lastEtaUpdateTime        DateTime? @map("last_eta_update_time")
+  etaToOrigin              Int?      @map("eta_to_origin")        // Minutes to pickup
+  etaToDestination         Int?      @map("eta_to_destination")   // Minutes to destination
+  routeDistanceKm          Float?    @map("route_distance_km")    // Actual road distance from OSRM
   
   // Assignment Management
   createdBy               String          @map("created_by")

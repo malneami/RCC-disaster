@@ -35,6 +35,8 @@ export interface AmbulanceRecommendation {
   score: number;
   factors: ScoreFactor[];
   estimatedArrivalMinutes: number | null;
+  etaToOrigin: number | null;
+  etaToDestination: number | null;
   distanceKm: number | null;
   zoneHistory: ZoneVisitSummary | null;
   lastGPSUpdate: string | null;

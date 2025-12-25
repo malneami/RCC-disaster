@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -72,6 +72,66 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     completeAssignment: false,
     delete: false,
   });
+
+  // Check if ambulance is late
+  // Logic: If (Now + ETA Minutes) > estimatedArrivalTime + 5 mins buffer
+  const isLate = useMemo(() => {
+    if (!assignment.estimatedArrivalMinutes || !assignment.estimatedArrivalTime) return false;
+
+    // Only apply for active statuses where travel is involved
+    if (!['EMS_CONTACT', 'EN_ROUTE', 'DEPARTED', 'PATIENT_LOADED'].includes(assignment.status)) return false;
+
+    const now = new Date();
+    const projectedArrival = new Date(now.getTime() + assignment.estimatedArrivalMinutes * 60000);
+    const targetArrival = new Date(assignment.estimatedArrivalTime);
+    const bufferMinutes = 5;
+
+    // Check if projected arrival is significantly later than target
+    return projectedArrival.getTime() > (targetArrival.getTime() + bufferMinutes * 60000);
+    // Check if projected arrival is significantly later than target
+    return projectedArrival.getTime() > (targetArrival.getTime() + bufferMinutes * 60000);
+  }, [assignment.estimatedArrivalMinutes, assignment.estimatedArrivalTime, assignment.status]);
+
+  // Live countdown logic
+  const [displayedMinutes, setDisplayedMinutes] = useState<number | null>(assignment.estimatedArrivalMinutes || null);
+
+  useEffect(() => {
+    // Sync with prop when it updates
+    setDisplayedMinutes(assignment.estimatedArrivalMinutes || null);
+  }, [assignment.estimatedArrivalMinutes]);
+
+  useEffect(() => {
+    if (!assignment.estimatedArrivalMinutes || !assignment.lastEtaUpdateTime) return;
+
+    // Only run for active statuses
+    if (!['EMS_CONTACT', 'EN_ROUTE', 'DEPARTED', 'PATIENT_LOADED'].includes(assignment.status)) return;
+
+    const intervalId = setInterval(() => {
+      // Calculate how much time passed since the last ETA update
+      const lastUpdate = new Date(assignment.lastEtaUpdateTime!);
+      const now = new Date();
+      const secondsPassed = (now.getTime() - lastUpdate.getTime()) / 1000;
+      const minutesPassed = Math.floor(secondsPassed / 60);
+
+      // New remaining time = Original Estimate - Minutes Passed
+      // Ensure we don't show negative numbers (min 0) or weird jumps
+      const newMinutes = Math.max(0, assignment.estimatedArrivalMinutes! - minutesPassed);
+
+      setDisplayedMinutes(newMinutes);
+    }, 60000); // Check every minute
+
+    return () => clearInterval(intervalId);
+  }, [assignment.estimatedArrivalMinutes, assignment.lastEtaUpdateTime, assignment.status]);
+
+  // Helper to format minute display
+  const getEtaLabel = () => {
+    if (displayedMinutes === null) return '';
+    if (displayedMinutes <= 0) return 'Arriving now';
+    if (displayedMinutes < 60) return `Arriving in ${displayedMinutes} min`;
+    const hours = Math.floor(displayedMinutes / 60);
+    const mins = displayedMinutes % 60;
+    return `Arriving in ${hours}h ${mins}m`;
+  };
 
   // Critical case check for header display
   const isCriticalCase = (assignment.ticket?.pathway === 'STEMI' || assignment.ticket?.pathway === 'STROKE');
@@ -343,9 +403,29 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           boxShadow: 4,
           transform: 'translateY(-2px)',
         },
+        border: isLate ? '2px solid #ff9800' : 'none',
+        bgcolor: isLate ? alpha('#ff9800', 0.05) : 'background.paper',
       }}
     >
       <CardContent sx={{ p: 3 }}>
+        {isLate && (
+          <Box sx={{
+            mb: 2,
+            p: 1,
+            bgcolor: '#fff3e0',
+            color: '#e65100',
+            borderRadius: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            border: '1px solid #ffe0b2'
+          }}>
+            <FontAwesomeIcon icon={faExclamationTriangle} />
+            <Typography variant="body2" fontWeight="bold">
+              Delayed: Estimated arrival exceeds initial prediction
+            </Typography>
+          </Box>
+        )}
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ flex: 1 }}>
@@ -376,6 +456,38 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
                     fontWeight: 600,
                     alignItems: 'center',
                   }}
+                />
+              )}
+              {assignment.estimatedArrivalMinutes !== undefined && assignment.estimatedArrivalMinutes !== null && assignment.estimatedArrivalMinutes > 0 && (
+                <Chip
+                  icon={<FontAwesomeIcon icon={faClock} />}
+                  label={`ETA: ${assignment.estimatedArrivalMinutes} min`}
+                  color={assignment.estimatedArrivalMinutes < 10 ? 'error' : assignment.estimatedArrivalMinutes < 20 ? 'warning' : 'success'}
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
+                />
+              )}
+              {assignment.estimatedArrivalTime && (
+                <Chip
+                  icon={<FontAwesomeIcon icon={faClock} />}
+                  label={`Original Est: ${new Date(assignment.estimatedArrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    opacity: 0.6, // Dimmed to show it's secondary
+                    borderColor: isLate ? '#ff9800' : 'default',
+                    color: isLate ? '#e65100' : 'text.secondary'
+                  }}
+                />
+              )}
+
+              {(displayedMinutes !== null) && ['EMS_CONTACT', 'EN_ROUTE', 'DEPARTED', 'PATIENT_LOADED'].includes(assignment.status) && (
+                <Chip
+                  icon={<FontAwesomeIcon icon={faClock} />}
+                  label={getEtaLabel()} // Use the dynamic label
+                  color={isLate ? "warning" : "success"} // Green normally, Orange if late
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
                 />
               )}
               {assignment.ticket?.isEmergency && (

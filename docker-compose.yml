@@ -28,6 +28,18 @@ services:
     networks:
       - rcc_network
 
+  osrm-backend:
+    image: osrm/osrm-backend
+    container_name: rcc-osrm
+    restart: always
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./docker/osrm:/data
+    command: osrm-routed --algorithm mld /data/custom_region.osrm
+    networks:
+      - rcc_network
+
 volumes:
   postgres_data:
   redis_data:

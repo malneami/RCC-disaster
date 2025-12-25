@@ -24,6 +24,7 @@ export interface AmbulanceGPSData {
     ticketId: string;
     status: string;
     priority?: string;
+    estimatedArrivalMinutes?: number;
   };
 }
 

@@ -7,6 +7,7 @@ import { EMSAssignment, Prisma, AssignmentStatus } from '@prisma/client';
 import { TimelineEventsService } from '../timeline-events/timeline-events.service';
 import { EmsLocationWorkflowService } from '../../common/services/ems-location-workflow.service';
 import { StatusMappingService } from '../../common/services/status-mapping.service';
+import { EMSETAService } from '../../common/services/ems-eta.service';
 
 interface AssignmentFilters {
   status?: AssignmentStatus;
@@ -24,7 +25,8 @@ export class EmsAssignmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly timelineEventsService: TimelineEventsService,
-    private readonly emsLocationWorkflowService: EmsLocationWorkflowService
+    private readonly emsLocationWorkflowService: EmsLocationWorkflowService,
+    private readonly emsEtaService: EMSETAService
   ) {}
 
   async create(createAssignmentDto: CreateEmsAssignmentDto, createdBy: string): Promise<EMSAssignment> {
@@ -109,6 +111,13 @@ export class EmsAssignmentsService {
         emsStatusUpdatedBy: createdBy
       }
     });
+
+    // Calculate initial ETA if ambulance is assigned
+    if (assignment.ambulanceId) {
+      this.emsEtaService.updateAssignmentETA(assignment.id).catch(err => 
+        this.logger.error(`Failed to calculate initial ETA for assignment ${assignment.id}: ${err.message}`)
+      );
+    }
 
     this.logger.log(`EMS assignment created: ${assignment.id}`);
     return assignment;
@@ -251,8 +260,8 @@ export class EmsAssignmentsService {
             where: { id: assignment.ticketId },
             data: {
               emsAssignmentStatus: 'ARRIVED',
-              emsStatusUpdatedAt: new Date(),
-              emsStatusUpdatedBy: 'system',
+              emsStatusUpdatedAt: new Date()
+              // emsStatusUpdatedBy: 'system', // Cannot use 'system' string due to FK constraint to User table
             },
           });
         }
@@ -284,8 +293,8 @@ export class EmsAssignmentsService {
           where: { id: assignment.ticketId },
           data: {
             emsAssignmentStatus: inferredStatus as any,
-            emsStatusUpdatedAt: new Date(),
-            emsStatusUpdatedBy: 'system',
+            emsStatusUpdatedAt: new Date()
+            // emsStatusUpdatedBy: 'system', // Cannot use 'system' string due to FK constraint to User table
           },
         });
       }
@@ -573,6 +582,15 @@ export class EmsAssignmentsService {
       }
     }
 
+    // Recalculate ETA if ambulance changed or status changed or location monitoring started
+    if (statusChanged || ambulanceIsChanging || ambulanceIsBeingAssigned) {
+      if (assignment.ambulanceId && assignment.status !== 'ARRIVED' && assignment.status !== 'CANCELLED') {
+        this.emsEtaService.updateAssignmentETA(assignment.id).catch(err => 
+          this.logger.error(`Failed to update ETA for assignment ${assignment.id}: ${err.message}`)
+        );
+      }
+    }
+
     this.logger.log(`EMS assignment updated: ${assignment.id}`);
     return assignment;
   }
@@ -593,6 +611,11 @@ export class EmsAssignmentsService {
     }
 
     this.logger.log(`EMS assignment soft deleted: ${id}`);
+  }
+
+  async refreshAssignmentETA(id: string): Promise<EMSAssignment> {
+    await this.emsEtaService.updateAssignmentETA(id);
+    return this.findById(id);
   }
 
   /**

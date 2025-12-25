@@ -180,9 +180,21 @@ export class EmsLocationWorkflowService {
 
           case 'EMS_ARRIVAL':
             if (!isInOriginZone) {
-              newStatus = 'DEPARTED';
-              reason = 'Ambulance left origin hospital zone';
-              hospitalName = assignment.ticket.originHospital.name;
+              // VERIFICATION: Check for GPS Glitches
+              // Only mark DEPARTED if we have at least one recent historical log that is ALSO outside the zone.
+              // This prevents single "flyer" points from triggering a departure.
+              const isDepartureConfirmed = await this.verifyZoneExit(
+                assignment.ambulanceId!,
+                assignment.ticket.originHospital
+              );
+
+              if (isDepartureConfirmed) {
+                newStatus = 'DEPARTED';
+                reason = 'Ambulance left origin hospital zone (confirmed)';
+                hospitalName = assignment.ticket.originHospital.name;
+              } else {
+                this.logger.warn(`Potential departure detected for ${assignmentId} but not confirmed by history. Ignoring single GPS point.`);
+              }
             }
             break;
 
@@ -273,6 +285,12 @@ export class EmsLocationWorkflowService {
             if (!assignment.actualArrivalTime) {
               updateData.actualArrivalTime = now;
             }
+            // If we are reverting from DEPARTED to EMS_ARRIVAL (e.g. false departure),
+            // we must clear the journeyStartTime so it doesn't get auto-fixed back to DEPARTED.
+            if (currentStatus === 'DEPARTED') {
+               updateData.journeyStartTime = null;
+               this.logger.log(`Clearing false journeyStartTime for assignment ${assignmentId} due to return to origin`);
+            }
             break;
           case 'DEPARTED':
             if (!assignment.journeyStartTime) {
@@ -324,8 +342,8 @@ export class EmsLocationWorkflowService {
           where: { id: assignment.ticketId },
           data: { 
             emsAssignmentStatus: newStatus as any,
-            emsStatusUpdatedAt: now,
-            emsStatusUpdatedBy: 'system'
+            emsStatusUpdatedAt: now
+            // emsStatusUpdatedBy: 'system' - Cannot use 'system' string due to FK constraint to User table
           }
         });
 
@@ -445,6 +463,55 @@ export class EmsLocationWorkflowService {
       this.logger.log(`Created timeline event for ticket ${ticketId}: ${status}`);
     } catch (error) {
       this.logger.error(`Failed to create timeline event: ${(error as Error).message}`, error);
+    }
+  }
+
+  /**
+   * Verify if an ambulance has truly left a zone by checking recent history
+   * Returns true if at least one recent log (last 5 mins) is also outside the zone
+   */
+  private async verifyZoneExit(ambulanceId: string, hospital: any): Promise<boolean> {
+    try {
+      if (!hospital.latitude || !hospital.longitude) return true; // Can't verify, assume true to not block
+
+      // Check logs from last 5 minutes
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      
+      const recentLogs = await this.prisma.gPSTrackingLog.findMany({
+        where: {
+          ambulanceId,
+          timestamp: { gte: fiveMinutesAgo }
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 3 // Check last few points
+      });
+
+      if (recentLogs.length === 0) {
+        // No history? This is suspicious. 
+        // If we have NO logs but the API says we are outside, it might be the FIRST point.
+        // Safer to return FALSE and wait for the polling service to populate a log.
+        return false;
+      }
+
+      // Check if any of recent logs are OUTSIDE the zone (distance > 2.5km)
+      const radiusKm = 2.5;
+      
+      const consistentPoints = recentLogs.filter(log => {
+        const dist = this.hospitalBoundsService.calculateDistance(
+          log.latitude,
+          log.longitude,
+          hospital.latitude,
+          hospital.longitude
+        );
+        return dist > radiusKm;
+      });
+
+      // We need at least 1 recent historical point to agree that we are outside
+      return consistentPoints.length >= 1;
+
+    } catch (error) {
+      this.logger.error(`Failed to verify zone exit: ${(error as Error).message}`);
+      return false; // Fail safe
     }
   }
 

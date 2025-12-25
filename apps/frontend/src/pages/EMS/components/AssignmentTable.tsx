@@ -12,9 +12,9 @@ import {
   Box,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faEdit, 
-  faTrash, 
+import {
+  faEdit,
+  faTrash,
   faPlay,
   faCheck
 } from '@fortawesome/free-solid-svg-icons';
@@ -47,6 +47,7 @@ const AssignmentTable: React.FC<AssignmentTableProps> = ({
             <TableCell>Ambulance</TableCell>
             <TableCell>Driver</TableCell>
             <TableCell>Assigned At</TableCell>
+            <TableCell>ETA</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Actions</TableCell>
           </TableRow>
@@ -68,6 +69,16 @@ const AssignmentTable: React.FC<AssignmentTableProps> = ({
               </TableCell>
               <TableCell>
                 {new Date(assignment.assignedAt).toLocaleString()}
+              </TableCell>
+              <TableCell>
+                {assignment.estimatedArrivalMinutes ? (
+                  <Chip
+                    label={`${assignment.estimatedArrivalMinutes} min`}
+                    color={assignment.estimatedArrivalMinutes < 10 ? 'error' : 'success'}
+                    size="small"
+                    variant="outlined"
+                  />
+                ) : '-'}
               </TableCell>
               <TableCell>
                 <Chip

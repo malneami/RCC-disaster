@@ -71,6 +71,29 @@ export class EmsAssignmentsController {
     return this.emsAssignmentsService.getAssignmentsByDriver(driverId);
   }
 
+  @Get(':id/eta')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Get ETA for EMS assignment' })
+  @ApiResponse({ status: 200, description: 'ETA retrieved successfully' })
+  async getAssignmentETA(@Param('id') id: string) {
+    const assignment = await this.emsAssignmentsService.findById(id);
+    return {
+      estimatedArrivalMinutes: assignment.estimatedArrivalMinutes,
+      lastEtaUpdateTime: assignment.lastEtaUpdateTime,
+      etaToOrigin: assignment.etaToOrigin,
+      etaToDestination: assignment.etaToDestination,
+      routeDistanceKm: assignment.routeDistanceKm
+    };
+  }
+
+  @Post(':id/refresh-eta')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Force refresh ETA calculation' })
+  @ApiResponse({ status: 200, description: 'ETA refreshed successfully' })
+  async refreshAssignmentETA(@Param('id') id: string) {
+    return this.emsAssignmentsService.refreshAssignmentETA(id);
+  }
+
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
   @ApiOperation({ summary: 'Get EMS assignment by ID' })

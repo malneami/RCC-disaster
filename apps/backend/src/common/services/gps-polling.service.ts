@@ -112,7 +112,7 @@ export class GPSPollingService implements OnModuleInit, OnModuleDestroy {
             imeis: '*' // Request ALL devices
           },
           {
-            timeout: 15000,
+            timeout: 30000,
             headers: { 'Content-Type': 'application/json' }
           }
         );

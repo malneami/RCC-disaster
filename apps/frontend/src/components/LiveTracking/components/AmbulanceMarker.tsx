@@ -3,11 +3,11 @@ import { Marker, Popup, Tooltip } from 'react-leaflet';
 import { DivIcon } from 'leaflet';
 import { Box, Typography, CircularProgress, Button, IconButton } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faHistory, 
-  faTachometerAlt, 
-  faCompass, 
-  faClock, 
+import {
+  faHistory,
+  faTachometerAlt,
+  faCompass,
+  faClock,
   faUser,
   faPhone,
   faMapMarkerAlt,
@@ -195,9 +195,9 @@ const AmbulanceMarker: React.FC<AmbulanceMarkerProps> = ({ ambulance, isSelected
       </Tooltip>
 
       {/* Popup - Responsive card design */}
-      <Popup 
-        maxWidth={340} 
-        minWidth={300} 
+      <Popup
+        maxWidth={340}
+        minWidth={300}
         className="modern-ambulance-popup"
         closeButton={false}
       >
@@ -378,6 +378,33 @@ const AmbulanceMarker: React.FC<AmbulanceMarkerProps> = ({ ambulance, isSelected
                         </Typography>
                         <Typography sx={{ fontSize: '13px', color: '#202124', wordBreak: 'break-word' }}>
                           {ambulance.address}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {ambulance.assignment?.estimatedArrivalMinutes && (
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '8px',
+                          backgroundColor: '#e3f2fd',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faClock} size="sm" color="#1976d2" />
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: '11px', color: '#5f6368', fontWeight: 500 }}>
+                          Estimated Arrival
+                        </Typography>
+                        <Typography sx={{ fontSize: '13px', color: '#1976d2', fontWeight: 600 }}>
+                          {ambulance.assignment.estimatedArrivalMinutes} min
                         </Typography>
                       </Box>
                     </Box>

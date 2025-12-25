@@ -9,6 +9,9 @@ import { EmsAssignmentsService } from '../ems-assignments/ems-assignments.servic
 import { StatusMappingService } from '../../common/services/status-mapping.service';
 import { AmbulanceRecommendation, ScoreFactor, ZoneVisitSummary } from './types/recommendation.types';
 import { AccessLogService, EntityType } from '../../common/services/access-log.service';
+import { EMSETAService } from '../../common/services/ems-eta.service';
+import { NotificationsService } from '../../modules/notifications/notifications.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TicketsService {
@@ -17,9 +20,13 @@ export class TicketsService {
   constructor(
     private prisma: PrismaService,
     private ticketsGateway: TicketsGateway,
-    private emsAssignmentsService: EmsAssignmentsService,
+    private configService: ConfigService,
     private accessLogService: AccessLogService,
-  ) { }
+    private emsEtaService: EMSETAService,
+    private emsAssignmentsService: EmsAssignmentsService,
+  ) {
+    this.logger = new Logger(TicketsService.name);
+  }
 
   // Priority calculation algorithm
   private calculatePriority(
@@ -1427,15 +1434,66 @@ export class TicketsService {
     const recommendations = await Promise.all(
       allAmbulances.map(async (amb) => {
         const score = await this.scoreAmbulance(amb, ticket);
+        
+        // VIRTUAL ZONE LOG INJECTION
+        // If the ambulance is physically in the zone (< 2.5km) but has no OPEN log (all logs have exitTime),
+        // we inject a "Virtual" log so the frontend correctly identifies it as "At Hospital".
+        // This handles cases where the entry log was missed or the exit log was premature.
+        let patchedZoneLogs = [...amb.zoneLogs];
+        
+        // Check physical presence (using the distance calculated in scoreAmbulance or re-calculating)
+        // score.distanceKm is the distance to Origin from calculateMissionEstimates
+        if (score.distanceKm !== null && score.distanceKm < 2.5) {
+          // Check if there is an active log for the origin hospital
+          const hasActiveLog = patchedZoneLogs.some(l => 
+            l.hospitalId === ticket.originHospitalId && !l.exitTime
+          );
+
+          if (!hasActiveLog) {
+            console.log(`[DEBUG] Injecting VIRTUAL Zone Log for ${amb.callSign} at ${ticket.originHospital.name}`);
+            const virtualLog: any = {
+              id: 'virtual-' + Date.now(),
+              ambulanceId: amb.id,
+              hospitalId: ticket.originHospitalId!,
+              hospital: ticket.originHospital,
+              entryTime: new Date(), // "Just Arrived" (or maintain 'now' to show current)
+              exitTime: null,
+              durationMinutes: 0,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            // Add to top of logs
+            patchedZoneLogs.unshift(virtualLog);
+          }
+        }
+
         return {
           ...score,
-          zoneLogs: amb.zoneLogs, // Pass raw zone logs to frontend
+          zoneLogs: patchedZoneLogs, // Return patched logs
         };
       })
     );
 
-    // Sort by score (highest first)
-    return recommendations.sort((a, b) => b.score - a.score);
+    // Sort by score (highest first), but prioritize ETA to origin
+    return recommendations.sort((a, b) => {
+      // Primary sort: Availability (Active assignments get lower priority)
+      const aIsFree = a.ambulance.status === 'IDLE';
+      const bIsFree = b.ambulance.status === 'IDLE';
+      if (aIsFree && !bIsFree) return -1;
+      if (!aIsFree && bIsFree) return 1;
+
+      // Secondary sort: ETA to Origin (if available) - Ascending (Lower is better)
+      if (a.etaToOrigin !== null && b.etaToOrigin !== null) {
+        // If difference is significant (> 5 mins), prioritize faster one
+        const etaDiff = a.etaToOrigin - b.etaToOrigin;
+        if (Math.abs(etaDiff) > 5) {
+          return etaDiff; // Lower ETA comes first
+        }
+      }
+
+      // Tertiary sort: Overall Score - Descending (Higher is better)
+      return b.score - a.score;
+    });
   }
 
   /**
@@ -1488,9 +1546,11 @@ export class TicketsService {
       ticket.originHospitalId
     );
 
-    const estimatedArrival = await this.estimateArrival(
+    // Calculate mission value estimates (ETA to Origin and Destination)
+    const estimates = await this.calculateMissionEstimates(
       ambulance,
-      ticket.originHospital
+      ticket.originHospital,
+      ticket.destinationHospital
     );
 
     const lastGPSUpdate = await this.getLastGPSUpdate(ambulance.id);
@@ -1510,8 +1570,10 @@ export class TicketsService {
       },
       score,
       factors,
-      estimatedArrivalMinutes: estimatedArrival,
-      distanceKm: distanceScore.distance,
+      estimatedArrivalMinutes: estimates.etaToOrigin, // Legacy mapping
+      etaToOrigin: estimates.etaToOrigin,
+      etaToDestination: estimates.etaToDestination,
+      distanceKm: estimates.distanceToOrigin, // Use distance to origin
       zoneHistory,
       lastGPSUpdate,
       recentAssignments,
@@ -1828,32 +1890,93 @@ export class TicketsService {
   }
 
   /**
-   * Estimate arrival time in minutes
+   * Calculate mission estimates (ETA to Origin, ETA to Destination)
    */
-  private async estimateArrival(
+  private async calculateMissionEstimates(
     ambulance: any,
-    originHospital: any
-  ): Promise<number | null> {
+    originHospital: any,
+    destinationHospital: any
+  ): Promise<{ 
+    etaToOrigin: number | null; 
+    etaToDestination: number | null; 
+    distanceToOrigin: number | null 
+  }> {
+    const result: { 
+        etaToOrigin: number | null; 
+        etaToDestination: number | null; 
+        distanceToOrigin: number | null 
+    } = {
+      etaToOrigin: null,
+      etaToDestination: null,
+      distanceToOrigin: null
+    };
+
     if (!ambulance.currentLocationLat || !ambulance.currentLocationLng) {
-      return null;
+      return result;
     }
 
-    if (!originHospital.latitude || !originHospital.longitude) {
-      return null;
+    if (!originHospital || !originHospital.latitude || !originHospital.longitude) {
+      return result;
     }
 
-    const distance = this.calculateHaversineDistance(
-      ambulance.currentLocationLat,
-      ambulance.currentLocationLng,
-      originHospital.latitude,
-      originHospital.longitude
-    );
+    // 1. Calculate ETA: Ambulance -> Origin (Pickup)
+    try {
+      // Optimization: Check straight-line distance first. 
+      // If ambulance is very close (< 1km), assume 0-1 min ETA to avoid OSRM routing weirdness (U-turns, etc.)
+      const straightDist = this.calculateHaversineDistance(
+        ambulance.currentLocationLat,
+        ambulance.currentLocationLng,
+        originHospital.latitude,
+        originHospital.longitude
+      );
 
-    // Assume average speed of 40 km/h in city
-    const avgSpeedKmh = 40;
-    const estimatedMinutes = (distance / avgSpeedKmh) * 60;
+      if (straightDist < 1.0) {
+        result.etaToOrigin = 1; // "Less than 1 min"
+        result.distanceToOrigin = straightDist;
+      } else {
+        const originRoute = await this.emsEtaService.calculateETAWithRouting(
+          { lat: ambulance.currentLocationLat, lng: ambulance.currentLocationLng },
+          { lat: originHospital.latitude, lng: originHospital.longitude }
+        );
+        result.etaToOrigin = originRoute.durationMinutes;
+        result.distanceToOrigin = originRoute.distanceKm;
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to calculate ETA to Origin: ${(error as Error).message}`);
+      // Fallback for Origin
+      const dist = this.calculateHaversineDistance(
+        ambulance.currentLocationLat,
+        ambulance.currentLocationLng,
+        originHospital.latitude,
+        originHospital.longitude
+      );
+      result.etaToOrigin = Math.round((dist / 40) * 60);
+      result.distanceToOrigin = dist;
+    }
 
-    return Math.round(estimatedMinutes);
+    // 2. Calculate ETA: Origin -> Destination (Dropoff)
+    // NOTE: This assumes straight drive from Origin to Destination. 
+    // Ideally we add Ambulance -> Origin -> Destination, but this is a good estimate for the second leg.
+    if (destinationHospital && destinationHospital.latitude && destinationHospital.longitude) {
+      try {
+        const destRoute = await this.emsEtaService.calculateETAWithRouting(
+          { lat: originHospital.latitude, lng: originHospital.longitude },
+          { lat: destinationHospital.latitude, lng: destinationHospital.longitude }
+        );
+        result.etaToDestination = destRoute.durationMinutes;
+      } catch (error) {
+         // Fallback for Destination
+         const dist = this.calculateHaversineDistance(
+          originHospital.latitude,
+          originHospital.longitude,
+          destinationHospital.latitude,
+          destinationHospital.longitude
+        );
+        result.etaToDestination = Math.round((dist / 40) * 60);
+      }
+    }
+
+    return result;
   }
 
   /**

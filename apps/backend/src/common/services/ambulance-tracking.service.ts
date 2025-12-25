@@ -4,6 +4,7 @@ import { HospitalBoundsService, AmbulancePosition } from './hospital-bounds.serv
 import { AmbulancesService } from '../../modules/ambulances/ambulances.service';
 import { EMSStatusUpdaterService } from './ems-status-updater.service';
 import { FileLoggerService } from './file-logger.service';
+import { EMSETAService } from './ems-eta.service';
 
 export interface AmbulanceLocationUpdate {
   latitude: number;
@@ -41,7 +42,8 @@ export class AmbulanceTrackingService {
     private readonly hospitalBoundsService: HospitalBoundsService,
     private readonly ambulancesService: AmbulancesService,
     private readonly emsStatusUpdater: EMSStatusUpdaterService,
-    fileLogger: FileLoggerService
+    fileLogger: FileLoggerService,
+    private readonly emsEtaService: EMSETAService
   ) {
     this.fileLogger = fileLogger;
   }
@@ -265,8 +267,14 @@ export class AmbulanceTrackingService {
           currentLocationLng: update.longitude,
           lastUpdated: update.timestamp,
           // Update speed/direction if available?
+          // Update speed/direction if available?
         }
       });
+
+      // Trigger ETA update if ambulance has active assignment (run in background)
+      this.triggerEtaUpdate(ambulanceId).catch(err => 
+        this.logger.error(`Failed to trigger ETA update for ambulance ${ambulanceId}: ${err.message}`)
+      );
 
       // Validate GPS coordinates before zone processing
       // Skip zone processing for invalid coordinates (0,0) to prevent false zone entries/exits
@@ -1489,6 +1497,25 @@ export class AmbulanceTrackingService {
     } catch (error) {
       this.logger.error(`Failed to get ambulance route: ${(error as Error).message}`, error);
       throw error;
+    }
+  }
+  /**
+   * Trigger ETA update for ambulance
+   */
+  private async triggerEtaUpdate(ambulanceId: string): Promise<void> {
+    try {
+      const assignment = await this.prisma.eMSAssignment.findFirst({
+        where: {
+          ambulanceId,
+          status: { in: ['EMS_CONTACT', 'EN_ROUTE', 'AT_PICKUP', 'PATIENT_LOADED', 'EMS_ARRIVAL', 'DEPARTED'] }
+        }
+      });
+      
+      if (assignment) {
+        await this.emsEtaService.updateAssignmentETA(assignment.id);
+      }
+    } catch (error) {
+      this.logger.error(`Error triggering ETA update for ambulance ${ambulanceId}: ${(error as Error).message}`);
     }
   }
 }
