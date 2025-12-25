@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Grid,
-  Divider,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -11,18 +10,26 @@ import {
   Delete as DeleteIcon,
   Comment as CommentIcon,
   Assignment as OutcomeFormIcon,
+  AccessTime as AccessTimeIcon,
+  MedicalServices as MedicalServicesIcon,
 } from '@mui/icons-material';
 import { StemiCase } from '../services/stemiService';
-import UnifiedCaseCard, { 
-  UnifiedCaseCardProps, 
-  PatientInfo, 
-  TimeMetric, 
-  PerformanceIndicator, 
-  CaseAction 
+import UnifiedCaseCard, {
+  UnifiedCaseCardProps,
+  PatientInfo,
+  TimeMetric,
+  PerformanceIndicator,
+  CaseAction
 } from '../../../components/Common/UnifiedCaseCard';
 import StemiOutcomeForm from './StemiOutcomeForm';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService } from '../../../services/notificationService';
+import {
+  formatTimestamp,
+  formatModeOfArrival,
+  formatPciType,
+  formatStemiStatus,
+} from '../../../helpers/formatUtils';
 
 interface StemiCasesCardsProps {
   cases: StemiCase[];
@@ -98,7 +105,7 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
     // Calculate targets met
     const targetsMet = calculateTargetsMet(stemiCase);
     const overallScore = calculateOverallScore(stemiCase);
-    
+
     // Performance indicators
     const performanceIndicators: PerformanceIndicator[] = [
       {
@@ -160,12 +167,12 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
     ];
 
     // Data completeness - use backend percentage if available
-    const dataCompleteness = stemiCase.outcomePercentageCompleteness !== undefined 
+    const dataCompleteness = stemiCase.outcomePercentageCompleteness !== undefined
       ? {
-          percentage: stemiCase.outcomePercentageCompleteness,
-          completed: Math.round((stemiCase.outcomePercentageCompleteness / 100) * 20), // Assuming 20 total fields
-          total: 20,
-        }
+        percentage: stemiCase.outcomePercentageCompleteness,
+        completed: Math.round((stemiCase.outcomePercentageCompleteness / 100) * 20), // Assuming 20 total fields
+        total: 20,
+      }
       : calculateDataCompleteness(stemiCase);
 
     // Case details
@@ -213,103 +220,155 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
       },
     ];
 
-    // Expandable content
+    // Ultra-compact data row
+    const DataRow: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+      <Box sx={{ py: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography sx={{ color: '#64748b', fontSize: '0.7rem', fontWeight: 500 }}>
+          {label}
+        </Typography>
+        <Typography sx={{ color: '#0f172a', fontWeight: 700, fontSize: '0.75rem', textAlign: 'right' }}>
+          {value}
+        </Typography>
+      </Box>
+    );
+
+    // Status badge with appropriate color
+    const getStatusBadgeColor = (status: string) => {
+      const colorMap: Record<string, { bg: string; text: string }> = {
+        'SUSPECTED': { bg: '#fef3c7', text: '#b45309' },
+        'ECG_PENDING': { bg: '#dbeafe', text: '#1d4ed8' },
+        'STEMI_CONFIRMED': { bg: '#fee2e2', text: '#b91c1c' },
+        'RCC_ACTIVATED': { bg: '#dbeafe', text: '#1d4ed8' },
+        'IN_TRANSIT': { bg: '#e0e7ff', text: '#3730a3' },
+        'PCI_READY': { bg: '#d1fae5', text: '#047857' },
+        'BALLOON_INFLATED': { bg: '#d1fae5', text: '#047857' },
+        'CCU_ADMITTED': { bg: '#d1fae5', text: '#047857' },
+        'DISCHARGED': { bg: '#d1fae5', text: '#047857' },
+        'EXPIRED': { bg: '#fee2e2', text: '#b91c1c' },
+      };
+      return colorMap[status] || { bg: '#f3f4f6', text: '#374151' };
+    };
+
+    // Ultra-compact side-by-side layout
     const expandableContent = (
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
-          Critical Timestamps
-        </Typography>
-        <Grid container spacing={2} mb={2}>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Triage Time: {stemiCase.triageTime || 'N/A'}
-            </Typography>
+      <Box sx={{ pt: 1 }}>
+        <Grid container spacing={1.5}>
+          {/* Critical Timestamps - Left Column */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ bgcolor: '#f8fafc', borderRadius: 1, p: 1.5, border: '1px solid #e2e8f0' }}>
+              <Box display="flex" alignItems="center" gap={0.75} mb={1}>
+                <AccessTimeIcon sx={{ color: '#3b82f6', fontSize: 16 }} />
+                <Typography sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.75rem' }}>
+                  Critical Timestamps
+                </Typography>
+              </Box>
+              <DataRow label="Triage" value={formatTimestamp(stemiCase.triageTime)} />
+              <DataRow label="First ECG" value={formatTimestamp(stemiCase.firstEcgTime)} />
+              <DataRow label="Door to ECG" value={stemiCase.doorToEcgMinutes ? `${stemiCase.doorToEcgMinutes} min` : '—'} />
+              <DataRow label="Door Out" value={formatTimestamp(stemiCase.doorOutTime)} />
+              <DataRow label="Cath Lab Prep" value={formatTimestamp(stemiCase.cathLabActivationTime)} />
+              <DataRow label="Cath Lab Arrival" value={formatTimestamp(stemiCase.cathLabArrivalTime)} />
+              <DataRow label="PCI Start" value={formatTimestamp(stemiCase.pciProcedureStartTime)} />
+              <DataRow label="Balloon Inflation" value={formatTimestamp(stemiCase.balloonInflationTime)} />
+              <DataRow label="PCI Complete" value={formatTimestamp(stemiCase.pciProcedureCompleteTime)} />
+            </Box>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              First ECG Time: {stemiCase.firstEcgTime || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Door to ECG Time: {stemiCase.doorToEcgMinutes || 'N/A'} min
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Door Out Time: {stemiCase.doorOutTime || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Cath Lab Prep Time: {stemiCase.cathLabActivationTime || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              PCI Procedure Start: {stemiCase.pciProcedureStartTime || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Device Activation Time: {stemiCase.cathLabActivationTime || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Legacy Balloon Time: {stemiCase.balloonInflationTime || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Cath Lab Activation: {stemiCase.cathLabActivationTime || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Cath Lab Arrival: {stemiCase.cathLabArrivalTime || 'N/A'}
-            </Typography>
+
+          {/* Treatment Information - Right Column */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ bgcolor: '#f8fafc', borderRadius: 1, p: 1.5, border: '1px solid #e2e8f0' }}>
+              <Box display="flex" alignItems="center" gap={0.75} mb={1}>
+                <MedicalServicesIcon sx={{ color: '#ef4444', fontSize: 16 }} />
+                <Typography sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.75rem' }}>
+                  Treatment Information
+                </Typography>
+              </Box>
+              <DataRow
+                label="Thrombolytic"
+                value={
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-block',
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: '9999px',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      backgroundColor: stemiCase.thrombolyticGiven ? '#d1fae5' : '#f3f4f6',
+                      color: stemiCase.thrombolyticGiven ? '#047857' : '#6b7280',
+                    }}
+                  >
+                    {stemiCase.thrombolyticGiven ? 'Yes' : 'No'}
+                  </Box>
+                }
+              />
+              <DataRow
+                label="PCI Eligible"
+                value={
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-block',
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: '9999px',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      backgroundColor: stemiCase.eligibleForPrimaryPci ? '#d1fae5' : '#f3f4f6',
+                      color: stemiCase.eligibleForPrimaryPci ? '#047857' : '#6b7280',
+                    }}
+                  >
+                    {stemiCase.eligibleForPrimaryPci ? 'Yes' : 'No'}
+                  </Box>
+                }
+              />
+              <DataRow label="PCI Type" value={formatPciType(stemiCase.pciType)} />
+              <DataRow label="PCI Location" value={stemiCase.pciLocation || '—'} />
+              <DataRow label="Arrival Mode" value={formatModeOfArrival(stemiCase.modeOfArrival)} />
+              <DataRow
+                label="Success"
+                value={
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-block',
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: '9999px',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      backgroundColor: stemiCase.successful ? '#d1fae5' : '#fef3c7',
+                      color: stemiCase.successful ? '#047857' : '#b45309',
+                    }}
+                  >
+                    {stemiCase.successful ? 'Yes' : 'Pending'}
+                  </Box>
+                }
+              />
+              <DataRow
+                label="Outcome"
+                value={
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-block',
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: '9999px',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      backgroundColor: getStatusBadgeColor(stemiCase.currentStatus).bg,
+                      color: getStatusBadgeColor(stemiCase.currentStatus).text,
+                    }}
+                  >
+                    {formatStemiStatus(stemiCase.currentStatus)}
+                  </Box>
+                }
+              />
+            </Box>
           </Grid>
         </Grid>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="subtitle2" gutterBottom>
-          Treatment Information
-        </Typography>
-        <Grid container spacing={2} mb={2}>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Thrombolytic Given: {stemiCase.thrombolyticGiven ? 'Yes' : 'No'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              PCI Eligible: {stemiCase.eligibleForPrimaryPci ? 'Yes' : 'No'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              PCI Location: {stemiCase.pciLocation || 'N/A'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Primary PCI Success: {stemiCase.successful ? 'Yes' : 'No'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Thrombolysis Success: {stemiCase.thrombolyticGiven ? 'Yes' : 'No'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Outcome: {stemiCase.currentStatus.replace(/_/g, ' ')}
-            </Typography>
-          </Grid>
-        </Grid>
-        
       </Box>
     );
 
@@ -485,7 +544,7 @@ const StemiCasesCards: React.FC<StemiCasesCardsProps> = ({
         {sortedCases.map((stemiCase) => {
           const transformedCase = transformStemiCase(stemiCase);
           return (
-            <Grid item xs={12} md={6} lg={4} key={transformedCase.caseId}>
+            <Grid item xs={12} md={6} lg={6} key={transformedCase.caseId}>
               <UnifiedCaseCard {...transformedCase} />
             </Grid>
           );

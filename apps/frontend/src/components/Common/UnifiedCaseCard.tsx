@@ -4,7 +4,6 @@ import {
   CardContent,
   Typography,
   Box,
-  Chip,
   Button,
   LinearProgress,
   Collapse,
@@ -71,22 +70,22 @@ export interface CaseDetails {
 export interface UnifiedCaseCardProps {
   // Patient Information
   patient: PatientInfo;
-  
+
   // Case Information
   caseId: string;
   caseType: 'stroke' | 'trauma' | 'stemi';
   status: string;
   severity?: string;
   pathway?: string;
-  
+
   // Performance Overview
   targetsMet?: string; // e.g., "3/3", "0/1"
   overallScore?: string; // e.g., "100%", "33%"
   performanceIndicators?: PerformanceIndicator[];
-  
+
   // Critical Time Metrics
   timeMetrics?: TimeMetric[];
-  
+
   // Data Completeness
   dataCompleteness?: {
     percentage: number;
@@ -94,16 +93,16 @@ export interface UnifiedCaseCardProps {
     total: number;
   };
   dataCompletenessTooltip?: string;
-  
+
   // Case-specific details
   caseDetails?: CaseDetails;
-  
+
   // Actions
   actions: CaseAction[];
-  
+
   // Expandable content
   expandableContent?: React.ReactNode;
-  
+
   // Styling
   variant?: 'default' | 'compact';
   elevation?: number;
@@ -113,8 +112,8 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
   patient,
   caseType,
   status,
-  severity,
-  pathway,
+  severity: _severity,
+  pathway: _pathway,
   targetsMet,
   overallScore,
   performanceIndicators = [],
@@ -147,24 +146,85 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
 
   const handleDownloadPNG = async () => {
     if (!cardRef.current) return;
-    
+
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      // Get all elements and inline their computed styles for html2canvas compatibility
+      const element = cardRef.current;
+
+      // Force a reflow to ensure all styles are computed
+      element.offsetHeight;
+
+      const canvas = await html2canvas(element, {
         background: '#ffffff',
         useCORS: true,
         allowTaint: true,
         logging: false,
-        width: cardRef.current.offsetWidth,
-        height: cardRef.current.offsetHeight,
-      });
-      
-      const link = document.createElement('a');
-      link.download = `${patient.name.replace(/\s+/g, '_')}_${caseType}_case.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+        scrollX: -window.scrollX,
+        scrollY: -window.scrollY,
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight,
+        onclone: (clonedDoc: Document) => {
+          // Find all MUI Chips in the cloned document and ensure they render properly
+          const chips = clonedDoc.querySelectorAll('.MuiChip-root');
+          chips.forEach((chip: Element) => {
+            const htmlChip = chip as HTMLElement;
+            const originalChip = cardRef.current?.querySelector(`.MuiChip-root[class="${chip.className}"]`) || chip;
+            const computedStyle = window.getComputedStyle(originalChip);
+
+            // Inline critical styles for the chip container
+            htmlChip.style.display = 'inline-flex';
+            htmlChip.style.alignItems = 'center';
+            htmlChip.style.justifyContent = 'center';
+            htmlChip.style.backgroundColor = computedStyle.backgroundColor;
+            htmlChip.style.color = computedStyle.color;
+            htmlChip.style.borderRadius = computedStyle.borderRadius;
+            htmlChip.style.padding = computedStyle.padding || '0 8px';
+            htmlChip.style.fontSize = computedStyle.fontSize;
+            htmlChip.style.fontWeight = computedStyle.fontWeight;
+            htmlChip.style.height = computedStyle.height;
+
+            // Style the chip label span explicitly
+            const chipLabel = htmlChip.querySelector('.MuiChip-label');
+            if (chipLabel) {
+              const labelEl = chipLabel as HTMLElement;
+              labelEl.style.color = computedStyle.color;
+              labelEl.style.fontSize = computedStyle.fontSize;
+              labelEl.style.fontWeight = computedStyle.fontWeight;
+              labelEl.style.visibility = 'visible';
+              labelEl.style.opacity = '1';
+              labelEl.style.display = 'block';
+            }
+          });
+
+          // Ensure all text is visible
+          const allText = clonedDoc.querySelectorAll('p, span, div');
+          allText.forEach((el: Element) => {
+            const htmlEl = el as HTMLElement;
+            if (htmlEl.style) {
+              htmlEl.style.visibility = 'visible';
+              htmlEl.style.opacity = '1';
+            }
+          });
+        },
+      } as any);
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `${patient.name.replace(/\s+/g, '_')}_${caseType}_case.png`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
     } catch (error) {
       console.error('Error downloading card as PNG:', error);
+      alert('Failed to download PNG. Please try again.');
     } finally {
       setIsDownloading(false);
     }
@@ -215,15 +275,15 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
   };
 
   const formatPatientName = (name: string) => {
-    return name.length > 20 ? `${name.substring(0, 20)}...` : name;
+    return name; // Return full name without truncation
   };
 
   return (
-    <Card 
+    <Card
       ref={cardRef}
       data-status={dataStatus}
       elevation={elevation}
-      sx={{ 
+      sx={{
         mb: 2,
         height: '100%',
         display: 'flex',
@@ -243,31 +303,27 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
     >
       <CardContent sx={{ pb: 1 }}>
         {/* Header */}
-        <Box 
-          display="flex" 
-          justifyContent="space-between" 
-          alignItems="flex-start" 
+        <Box
           mb={2}
           sx={{
             background: `linear-gradient(135deg, ${getCaseTypeColor()}10 0%, ${getCaseTypeColor()}05 100%)`,
             borderRadius: 1,
             p: 1.5,
             border: `1px solid ${getCaseTypeColor()}15`,
-            flexWrap: { xs: 'wrap', sm: 'nowrap' },
-            gap: 1,
           }}
         >
-          <Box display="flex" alignItems="center" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
+          {/* Name Row - Full Width with Menu Button */}
+          <Box display="flex" alignItems="flex-start" gap={1}>
             <Box
               sx={{
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 borderRadius: '50%',
                 background: `linear-gradient(135deg, ${getCaseTypeColor()} 0%, ${getCaseTypeColor()}CC 100%)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.2rem',
+                fontSize: '1rem',
                 color: 'white',
                 boxShadow: `0 2px 8px ${getCaseTypeColor()}40`,
                 flexShrink: 0,
@@ -275,109 +331,36 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
             >
               {getCaseTypeIcon()}
             </Box>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  fontWeight: 700, 
-                  lineHeight: 1.2,
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  lineHeight: 1.3,
                   color: 'text.primary',
                   fontSize: { xs: '1rem', sm: '1.1rem' },
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
                 }}
               >
                 {formatPatientName(patient.name)}
               </Typography>
-              <Typography 
-                variant="body2" 
+              <Typography
+                variant="body2"
                 color="text.secondary"
-                sx={{ 
+                sx={{
                   fontSize: { xs: '0.8rem', sm: '0.85rem' },
                   fontWeight: 500,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
                 }}
               >
                 {patient.age}Y {patient.gender.toLowerCase()} • {format(new Date(patient.admissionDate), 'MMM dd, HH:mm')}
               </Typography>
             </Box>
-          </Box>
-          
-          <Box 
-            display="flex" 
-            alignItems="center" 
-            gap={1}
-            sx={{ 
-              flexWrap: 'wrap',
-              justifyContent: { xs: 'flex-start', sm: 'flex-end' },
-              mt: { xs: 1, sm: 0 },
-            }}
-          >
-            {/* <Chip 
-              label={status.replace(/_/g, ' ')} 
-              size="small" 
-              color={getStatusColor(status) as any}
-              sx={{ 
-                textTransform: 'capitalize',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                maxWidth: { xs: '120px', sm: 'none' },
-                '& .MuiChip-label': {
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                },
-              }}
-            /> */}
-            {severity && (
-              <Chip 
-                label={severity} 
-                size="small" 
-                variant="outlined"
-                sx={{ 
-                  textTransform: 'capitalize',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  borderColor: getCaseTypeColor(),
-                  color: getCaseTypeColor(),
-                  maxWidth: { xs: '120px', sm: 'none' },
-                  '& .MuiChip-label': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  },
-                }}
-              />
-            )}
-            {pathway && (
-              <Chip 
-                label={pathway} 
-                size="small" 
-                variant="filled"
-                sx={{ 
-                  textTransform: 'capitalize',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  backgroundColor: 'primary.main',
-                  color: 'primary.contrastText',
-                  maxWidth: { xs: '120px', sm: 'none' },
-                  '& .MuiChip-label': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  },
-                }}
-              />
-            )}
             {actions.length > 0 && (
               <IconButton
                 size="small"
                 onClick={handleMenuClick}
                 sx={{
                   color: 'text.secondary',
+                  flexShrink: 0,
                   '&:hover': {
                     backgroundColor: 'action.hover',
                     color: 'text.primary',
@@ -393,13 +376,23 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
         {/* Performance Overview */}
         {(targetsMet || overallScore || performanceIndicators.length > 0) && (
           <Box mb={2}>
-            <Typography variant="subtitle2" gutterBottom>
+            <Typography
+              variant="subtitle2"
+              gutterBottom
+              sx={{
+                fontWeight: 800,
+                color: '#1e293b',
+                fontSize: '0.9rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
               Performance Overview
             </Typography>
             <Box display="flex" alignItems="center" gap={2} mb={1}>
               {targetsMet && (
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#1e293b', fontWeight: 700 }}>
                     Targets Met:
                   </Typography>
                   <Box display="flex" gap={0.5}>
@@ -425,18 +418,18 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
         <Box mb={2}>
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: '#1e293b', fontWeight: 700 }}>
                 Origin Hospital: {patient.originHospital || 'N/A'}
               </Typography>
             </Grid>
             <Grid item xs={6}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: '#1e293b', fontWeight: 700 }}>
                 Destination Hospital: {patient.destinationHospital || 'N/A'}
               </Typography>
             </Grid>
             {patient.nationalId && (
               <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#1e293b', fontWeight: 700 }}>
                   National ID: {patient.nationalId}
                 </Typography>
               </Grid>
@@ -447,18 +440,28 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
         {/* Critical Time Metrics */}
         {timeMetrics.length > 0 && (
           <Box mb={2}>
-            <Typography variant="subtitle2" gutterBottom>
+            <Typography
+              variant="subtitle2"
+              gutterBottom
+              sx={{
+                fontWeight: 800,
+                color: '#1e293b',
+                fontSize: '0.9rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
               Critical Time Metrics
             </Typography>
             {timeMetrics.map((metric, index) => (
               <Box key={index} mb={1}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#475569', fontWeight: 600 }}>
                     {metric.label}:
                   </Typography>
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       color={getTimeMetricColor(metric.met, metric.percentage)}
                       sx={{ fontWeight: 'bold' }}
                     >
@@ -475,7 +478,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                   color={getTimeMetricColor(metric.met, metric.percentage)}
                   sx={{ height: 6, borderRadius: 3 }}
                 />
-               {/* <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+                {/* <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
                   <Typography variant="caption" color="text.secondary">
                     {metric.met ? '✓ Target Met' : '✗ Target Missed'}
                   </Typography>
@@ -492,14 +495,24 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
 
         {/* Data Completeness */}
         {dataCompleteness && (
-          <Tooltip 
-            title={dataCompletenessTooltip || ''} 
-            arrow 
+          <Tooltip
+            title={dataCompletenessTooltip || ''}
+            arrow
             placement="top"
             enterDelay={500}
           >
             <Box mb={2}>
-              <Typography variant="subtitle2" gutterBottom>
+              <Typography
+                variant="subtitle2"
+                gutterBottom
+                sx={{
+                  fontWeight: 800,
+                  color: '#1e293b',
+                  fontSize: '0.9rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
                 Data Completeness
               </Typography>
               <Box display="flex" alignItems="center" gap={2}>
@@ -509,7 +522,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
                   sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
                   color={dataCompleteness.percentage >= 90 ? 'success' : dataCompleteness.percentage >= 70 ? 'warning' : 'error'}
                 />
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#1e293b', fontWeight: 700 }}>
                   {dataCompleteness.completed} of {dataCompleteness.total} fields completed
                 </Typography>
                 {dataCompleteness.percentage >= 90 ? (
@@ -528,7 +541,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
             <Grid container spacing={2}>
               {Object.entries(caseDetails).map(([key, value]) => (
                 <Grid item xs={6} key={key}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#1e293b', fontWeight: 700 }}>
                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {value || 'N/A'}
                   </Typography>
                 </Grid>
@@ -576,7 +589,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
             <ListItemIcon sx={{ minWidth: 36 }}>
               {action.icon}
             </ListItemIcon>
-            <ListItemText 
+            <ListItemText
               primary={action.label}
               primaryTypographyProps={{
                 fontSize: '0.875rem',
@@ -591,9 +604,9 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
       {expandableContent && (
         <>
           <Divider />
-          <Box 
-            display="flex" 
-            justifyContent="center" 
+          <Box
+            display="flex"
+            justifyContent="center"
             gap={1}
             py={1}
             sx={{
@@ -614,7 +627,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
               startIcon={<DownloadIcon />}
               disabled={isDownloading}
               variant="outlined"
-              sx={{ 
+              sx={{
                 fontSize: '0.75rem',
                 py: 0.5,
                 px: 1,
@@ -626,7 +639,7 @@ const UnifiedCaseCard: React.FC<UnifiedCaseCardProps> = ({
               size="small"
               onClick={() => setExpanded(!expanded)}
               endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              sx={{ 
+              sx={{
                 fontSize: '0.75rem',
                 py: 0.5,
                 px: 1,
