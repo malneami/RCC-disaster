@@ -23,17 +23,19 @@ import {
   ViewModule as CardsIcon,
   TableChart as TableIcon,
   Comment as CommentIcon,
+  AccessTime as AccessTimeIcon,
+  MedicalServices as MedicalServicesIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
 import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
 import { MODE_OF_ARRIVAL_OPTIONS, MECHANISM_OF_INJURY_OPTIONS, DISPOSITION_OPTIONS } from '../constants/traumaConstants';
-import UnifiedCaseCard, { 
-  UnifiedCaseCardProps, 
-  PatientInfo, 
-  TimeMetric, 
-  PerformanceIndicator, 
-  CaseAction 
+import UnifiedCaseCard, {
+  UnifiedCaseCardProps,
+  PatientInfo,
+  TimeMetric,
+  PerformanceIndicator,
+  CaseAction
 } from '../../../components/Common/UnifiedCaseCard';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService } from '../../../services/notificationService';
@@ -101,13 +103,13 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       // Search filter (use filters.search instead of searchQuery)
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           case_.patient?.firstName?.toLowerCase().includes(searchLower) ||
           case_.patient?.lastName?.toLowerCase().includes(searchLower) ||
           case_.patient?.nationalId?.toLowerCase().includes(searchLower) ||
           case_.chiefComplaint?.toLowerCase().includes(searchLower) ||
           case_.originHospital?.name?.toLowerCase().includes(searchLower);
-        
+
         if (!matchesSearch) return false;
       }
 
@@ -115,7 +117,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       if (filters.modeOfArrival && case_.modeOfArrival !== filters.modeOfArrival) return false;
       if (filters.mechanismOfInjury && case_.mechanismOfInjury !== filters.mechanismOfInjury) return false;
       if (filters.edDisposition && case_.edDisposition !== filters.edDisposition) return false;
-      
+
       // Boolean filters - convert string to boolean if needed
       if (filters.criticalCase !== null && filters.criticalCase !== '') {
         let criticalCaseValue: boolean;
@@ -135,7 +137,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
         }
         if (case_.transferCase !== transferCaseValue) return false;
       }
-      
+
       if (filters.hospitalId && case_.originHospitalId !== filters.hospitalId) return false;
 
       // Date filters
@@ -240,7 +242,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
 
     // Calculate targets met based on trauma-specific metrics
     const targetsMet = calculateTargetsMet(traumaCase);
-    
+
     // Performance indicators
     const performanceIndicators: PerformanceIndicator[] = [
       {
@@ -319,50 +321,68 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       },
     ];
 
-    // Expandable content
-    const expandableContent = (
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
-          Injury Assessment
+    // Helper function for formatting timestamps
+    const formatTimestamp = (timestamp: string | undefined | null): string => {
+      if (!timestamp) return '—';
+      try {
+        return format(new Date(timestamp), 'dd MMM yyyy, HH:mm');
+      } catch {
+        return '—';
+      }
+    };
+
+    // DataRow component for consistent styling
+    const DataRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+      <Box sx={{ py: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography sx={{ color: '#64748b', fontSize: '0.7rem', fontWeight: 500 }}>
+          {label}
         </Typography>
-        <Grid container spacing={2} mb={2}>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              GCS Score: {traumaCase.glasgowComaScale || 'N/A'}
-            </Typography>
+        <Typography sx={{ color: '#0f172a', fontWeight: 700, fontSize: '0.75rem', textAlign: 'right' }}>
+          {value}
+        </Typography>
+      </Box>
+    );
+
+    // Expandable content with chronological timestamps
+    const expandableContent = (
+      <Box sx={{ pt: 1 }}>
+        <Grid container spacing={1.5}>
+          {/* Critical Timestamps - Left Column */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ bgcolor: '#f8fafc', borderRadius: 1, p: 1.5, border: '1px solid #e2e8f0' }}>
+              <Box display="flex" alignItems="center" gap={0.75} mb={1}>
+                <AccessTimeIcon sx={{ color: '#3b82f6', fontSize: 16 }} />
+                <Typography sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.75rem' }}>
+                  Critical Timestamps
+                </Typography>
+              </Box>
+              <DataRow label="Incident Time" value={formatTimestamp(traumaCase.incidentDateTime)} />
+              <DataRow label="Arrival Time" value={formatTimestamp(traumaCase.arrivalDateTime)} />
+              <DataRow label="Response Time" value={traumaCase.responseTimeMinutes ? `${traumaCase.responseTimeMinutes} min` : '—'} />
+              <DataRow label="Transfer Request" value={formatTimestamp(traumaCase.transferRequestDateTime)} />
+              <DataRow label="Transfer Arrival" value={formatTimestamp(traumaCase.transferArrivalDateTime)} />
+              <DataRow label="Transfer Duration" value={traumaCase.transferDurationMinutes ? `${traumaCase.transferDurationMinutes} min` : '—'} />
+            </Box>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Systolic BP: {traumaCase.systolicBloodPressure || 'N/A'} mmHg
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Respiratory Rate: {traumaCase.respiratoryRate || 'N/A'} /min
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" color="text.secondary">
-              Critical Case: {traumaCase.criticalCase ? 'Yes' : 'No'}
-            </Typography>
+
+          {/* Injury Assessment - Right Column */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ bgcolor: '#f8fafc', borderRadius: 1, p: 1.5, border: '1px solid #e2e8f0' }}>
+              <Box display="flex" alignItems="center" gap={0.75} mb={1}>
+                <MedicalServicesIcon sx={{ color: '#ef4444', fontSize: 16 }} />
+                <Typography sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.75rem' }}>
+                  Injury Assessment
+                </Typography>
+              </Box>
+              <DataRow label="GCS Score" value={traumaCase.glasgowComaScale || 'N/A'} />
+              <DataRow label="Systolic BP" value={traumaCase.systolicBloodPressure ? `${traumaCase.systolicBloodPressure} mmHg` : 'N/A'} />
+              <DataRow label="Respiratory Rate" value={traumaCase.respiratoryRate ? `${traumaCase.respiratoryRate} /min` : 'N/A'} />
+              <DataRow label="Critical Case" value={traumaCase.criticalCase ? 'Yes' : 'No'} />
+              <DataRow label="Transfer Case" value={traumaCase.transferCase ? 'Yes' : 'No'} />
+              <DataRow label="ED Disposition" value={traumaCase.edDisposition || 'N/A'} />
+            </Box>
           </Grid>
         </Grid>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="subtitle2" gutterBottom>
-          Body Region Injuries
-        </Typography>
-        <Box display="flex" gap={1} flexWrap="wrap">
-          {getBodyRegionInjuries(traumaCase).map((injury, index) => (
-            <Chip
-              key={index}
-              label={injury}
-              size="small"
-              color={injury.includes('Severe') || injury.includes('Critical') ? 'error' : 'default'}
-            />
-          ))}
-        </Box>
       </Box>
     );
 
@@ -476,7 +496,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
 
   const getInjurySeverity = (traumaCase: TraumaCase): string => {
     if (traumaCase.criticalCase) return 'Critical';
-    
+
     const injuries = [
       traumaCase.headAndNeckInjury,
       traumaCase.chestInjury,
@@ -497,7 +517,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
 
   const getBodyRegionInjuries = (traumaCase: TraumaCase): string[] => {
     const injuries = [];
-    
+
     if (traumaCase.headAndNeckInjury) {
       injuries.push(`Head/Neck: ${traumaCase.headAndNeckInjury}`);
     }
@@ -670,12 +690,12 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
           size="small"
         />
       </Box>
-      
+
       <Grid container spacing={2}>
         {filteredCases.map((traumaCase) => {
           const transformedCase = transformTraumaCase(traumaCase);
           return (
-            <Grid item xs={12} md={6} lg={4} key={transformedCase.caseId}>
+            <Grid item xs={12} md={6} lg={6} key={transformedCase.caseId}>
               <UnifiedCaseCard {...transformedCase} />
             </Grid>
           );
