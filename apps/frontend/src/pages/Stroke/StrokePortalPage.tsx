@@ -90,7 +90,7 @@ const StrokePortalPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const [casesResponse, kpiData] = await Promise.all([
+      const [casesResult, kpiResult] = await Promise.allSettled([
         StrokeService.getStrokeCasesPaginated({
           hospitalId: appliedFilters.hospitalId,
           originHospitalId: appliedFilters.originHospitalId,
@@ -107,11 +107,23 @@ const StrokePortalPage: React.FC = () => {
         StrokeService.getKPISummary()
       ]);
 
-      setStrokeCases(casesResponse.cases);
-      setTotalCases(casesResponse.total);
-      setKpiSummary(kpiData);
+      if (casesResult.status === 'fulfilled') {
+        setStrokeCases(casesResult.value.cases);
+        setTotalCases(casesResult.value.total);
+        // Convert stroke cases to timeline events
+        const events = convertStrokeCasesToTimelineEvents(casesResult.value.cases);
+        setTimelineEvents(events);
+      } else {
+        console.error('Failed to load cases:', casesResult.reason);
+        setError('Failed to load stroke cases');
+      }
 
-
+      if (kpiResult.status === 'fulfilled') {
+        setKpiSummary(kpiResult.value);
+      } else {
+        console.error('Failed to load KPI summary:', kpiResult.reason);
+        // Don't set error here so cases can still be viewed
+      }
     } catch (err) {
       setError('Failed to load stroke portal data');
       console.error('Error loading stroke portal data:', err);

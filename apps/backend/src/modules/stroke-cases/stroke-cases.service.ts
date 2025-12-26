@@ -1008,8 +1008,8 @@ export class StrokeCasesService {
     const kpi10Met = cases.filter(c => c.swallowingScreeningWithin4Hours === true).length;
     const kpi10Total = totalCases;
 
-    // KPI 11: 3-month follow-up ≥80% - use threeMonthFollowupComplete from outcome form
-    const kpi11Met = cases.filter(c => (c as any).threeMonthFollowupComplete === true).length;
+    // KPI 11: 3-month follow-up ≥80%
+    const kpi11Met = cases.filter(c => c.modifiedRankinScaleAt90Days !== null && c.modifiedRankinScaleAt90Days !== undefined).length;
     const kpi11Total = totalCases;
 
     const avgDoorToPhysician = this.calculateAverage(cases.map(c => c.doorToPhysicianMinutes).filter(v => v !== null && v !== undefined));
@@ -1328,8 +1328,6 @@ export class StrokeCasesService {
         admittedToStrokeUnit: true,
         swallowingScreeningWithin4Hours: true,
         followUpCallCompleted: true,
-        // @ts-ignore - threeMonthFollowupComplete will be available after running 'prisma generate'
-        threeMonthFollowupComplete: true,
         timeOfCtScanStart: true,
         ivThrombolysisGiven: true,
         modifiedRankinScaleAt90Days: true,
