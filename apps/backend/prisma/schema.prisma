@@ -20,9 +20,6 @@ enum UserRole {
   DATA_COLLECTOR
   CATH_LAB_USER
   HOSPITAL_USER
-  ED_NURSE
-  UNIT_NURSE
-  BED_COORDINATOR
 }
 
 enum UserStatus {
@@ -252,7 +249,6 @@ enum StrokeTypeDetailed {
   LARGE_VESSEL_OCCLUSION
   SMALL_VESSEL_DISEASE
   CARDIOEMBOLIC
-  CRYPTOGENIC
   OTHER_DETERMINED
   UNKNOWN
   ISCHEMIC_STROKE
@@ -778,6 +774,8 @@ model Patient {
   middleName      String?        @map("middle_name")
   dateOfBirth     DateTime?      @map("date_of_birth") // Will be removed after migration
   age             Int?           // Age in years
+  ageMonths       Int?           @map("age_months") // Age in months (for precise age when manually entered)
+  ageDays         Int?           @map("age_days") // Age in days (for precise age when manually entered)
   gender          PatientGender
   maritalStatus   MaritalStatus? @map("marital_status")
   
@@ -1339,6 +1337,7 @@ model StrokeCase {
   closureReport                   String?     @map("closure_report")
   functionalStatus                String?     @map("functional_status") // INDEPENDENT, ASSISTANCE_REQUIRED, DEPENDENT, etc.
   mortality                       String?     @map("mortality") // ALIVE, DEAD, UNKNOWN
+  threeMonthFollowupComplete      Boolean     @default(false) @map("three_month_followup_complete")
   outcomeFormCompleted            Boolean     @default(false) @map("outcome_form_completed")
   outcomeFormCompletionDate       DateTime?   @map("outcome_form_completion_date")
   outcomePercentageCompleteness   Int         @default(0) @map("outcome_percentage_completeness") // 0-100
