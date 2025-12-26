@@ -78,6 +78,9 @@ const UserManagement: React.FC = () => {
     { value: 'DATA_COLLECTOR', label: 'Data Collector' },
     { value: 'CATH_LAB_USER', label: 'Cath Lab User' },
     { value: 'HOSPITAL_USER', label: 'Hospital User' },
+    { value: 'ED_NURSE', label: 'ED Nurse' },
+    { value: 'UNIT_NURSE', label: 'Unit Nurse' },
+    { value: 'BED_COORDINATOR', label: 'Bed Coordinator' },
   ];
 
   const loadUsers = async () => {

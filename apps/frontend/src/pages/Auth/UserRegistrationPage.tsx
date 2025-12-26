@@ -57,6 +57,9 @@ const UserRegistrationPage: React.FC = () => {
     { value: 'DATA_COLLECTOR', label: 'Data Collector', description: 'Clinical Data Entry' },
     { value: 'CATH_LAB_USER', label: 'Cath Lab User', description: 'Cardiac Catheterization Lab' },
     { value: 'HOSPITAL_USER', label: 'Hospital User', description: 'Hospital-specific access and management' },
+    { value: 'ED_NURSE', label: 'ED Nurse', description: 'Emergency Department Nurse' },
+    { value: 'UNIT_NURSE', label: 'Unit Nurse', description: 'Unit/Floor Nurse' },
+    { value: 'BED_COORDINATOR', label: 'Bed Coordinator', description: 'Bed Management Coordinator' },
   ];
 
   useEffect(() => {
