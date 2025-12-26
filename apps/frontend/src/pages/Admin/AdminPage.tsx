@@ -23,7 +23,7 @@ function TabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ pt: 3 }}>
+        <Box sx={{ py: 4 }}>
           {children}
         </Box>
       )}
@@ -43,17 +43,41 @@ const AdminPage: React.FC = () => {
       <Helmet>
         <title>System Administration - RCC Healthcare Platform</title>
       </Helmet>
-      
-      <Box>
-        <Typography variant="h4" component="h1" gutterBottom>
-          System Administration
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Platform configuration, user management, and system monitoring
-        </Typography>
-        
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange}>
+
+      <Box sx={{
+        maxWidth: 1600,
+        mx: 'auto',
+        minHeight: '100vh',
+        background: 'transparent'
+      }}>
+        <Box sx={{
+          borderBottom: 1,
+          borderColor: 'divider',
+          mb: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4
+        }}>
+          <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main', letterSpacing: '-0.02em', mr: 2 }}>
+            RCC ADMIN
+          </Typography>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            sx={{
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: '3px 3px 0 0',
+              },
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '1rem',
+                minWidth: 120,
+                py: 2
+              }
+            }}
+          >
             <Tab label="Registration Requests" />
             <Tab label="User Management" />
             <Tab label="Ambulance Tracking" />

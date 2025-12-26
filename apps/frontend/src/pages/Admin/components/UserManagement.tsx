@@ -27,48 +27,48 @@ import {
   MenuItem,
   Pagination,
   Grid,
+  FormControlLabel,
+  alpha,
 } from '@mui/material';
-import { 
-  Refresh, 
+import {
+  Refresh,
   LockReset,
   Edit,
   Email,
   Business,
   Delete,
+  ContentCopy,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { userManagementService, User, UpdateUserDto } from '../../../services/userManagementService';
 import { userRegistrationService, Hospital } from '../../../services/userRegistrationService';
+import AdminStatsGrid from './AdminStatsGrid';
+import UserDetailDrawer from './UserDetailDrawer';
 
 const UserManagement: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [resetDialog, setResetDialog] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [adminComments, setAdminComments] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetResult, setResetResult] = useState<{ user: User } | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [roleFilter, setRoleFilter] = useState('');
-  
-  // Edit user state
-  const [editDialog, setEditDialog] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
-  const [editData, setEditData] = useState<UpdateUserDto>({});
-  const [editLoading, setEditLoading] = useState(false);
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [editErrors, setEditErrors] = useState<{ [key: string]: string }>({});
-  
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
   // Delete user state
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteResult, setDeleteResult] = useState<{ message: string; user: User } | null>(null);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    pendingRequests: 0,
+    activeAdmins: 0
+  });
 
   const userRoles = [
     { value: '', label: 'All Roles' },
@@ -87,9 +87,23 @@ const UserManagement: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await userManagementService.getAllUsers(page, 10, roleFilter || undefined);
+      const [response, requests] = await Promise.all([
+        userManagementService.getAllUsers(page, 10, roleFilter || undefined),
+        userRegistrationService.getAllRegistrationRequests()
+      ]);
       setUsers(response.data);
       setTotalPages(response.pages);
+
+      // Calculate basic stats for the dashboard
+      const total = response.total; // Assuming total comes from metadata
+      const pending = requests.filter(r => r.status === 'PENDING').length;
+      const admins = response.data.filter(u => u.role === 'ADMIN').length; // This is naive, ideally from backend
+
+      setStats({
+        totalUsers: total || response.data.length,
+        pendingRequests: pending,
+        activeAdmins: admins
+      });
     } catch (err: any) {
       setError('Failed to load users');
     } finally {
@@ -100,19 +114,6 @@ const UserManagement: React.FC = () => {
   useEffect(() => {
     loadUsers();
   }, [page, roleFilter]);
-
-  useEffect(() => {
-    const fetchHospitals = async () => {
-      try {
-        const hospitalsData = await userRegistrationService.getHospitals();
-        setHospitals(hospitalsData);
-      } catch (err) {
-        // Failed to fetch hospitals
-      }
-    };
-
-    fetchHospitals();
-  }, []);
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -136,141 +137,34 @@ const UserManagement: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return 'success';
+        return '#10b981';
       case 'INACTIVE':
-        return 'default';
+        return '#64748b';
       case 'LOCKED':
-        return 'error';
+        return '#ef4444';
       case 'SUSPENDED':
-        return 'warning';
+        return '#f59e0b';
       default:
-        return 'default';
+        return '#64748b';
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!selectedUser) return;
-
-    // Validate password
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    try {
-      setResetLoading(true);
-      setError(null);
-
-      const result = await userManagementService.resetUserPassword(
-        selectedUser.id,
-        newPassword,
-        adminComments || undefined
-      );
-      
-      setResetResult(result);
-      setResetDialog(false);
-      setNewPassword('');
-      setConfirmPassword('');
-      setAdminComments('');
-      loadUsers(); // Refresh users list
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to reset password');
-    } finally {
-      setResetLoading(false);
+  const getRoleBadgeStyles = (role: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return { bg: alpha('#ef4444', 0.1), color: '#ef4444' };
+      case 'RCC':
+        return { bg: alpha('#2563eb', 0.1), color: '#2563eb' };
+      case 'EMS':
+        return { bg: alpha('#10b981', 0.1), color: '#10b981' };
+      default:
+        return { bg: alpha('#64748b', 0.1), color: '#64748b' };
     }
   };
 
-  const handleCloseResetDialog = () => {
-    setResetDialog(false);
-    setSelectedUser(null);
-    setNewPassword('');
-    setConfirmPassword('');
-    setAdminComments('');
-    setError(null);
-  };
-
-  const handleCloseResultDialog = () => {
-    setResetResult(null);
-  };
-
-  const handleEditUser = (user: User) => {
-    setEditUser(user);
-    setEditData({
-      role: user.role,
-      hospitalId: user.hospitalId || '',
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phoneNumber: user.phoneNumber || '',
-    });
-    setEditDialog(true);
-  };
-
-  const validateEditForm = (): boolean => {
-    const errors: { [key: string]: string } = {};
-
-    if (!editData.firstName || editData.firstName.trim() === '') {
-      errors.firstName = 'First name is required';
-    } else if (editData.firstName.length < 2) {
-      errors.firstName = 'First name must be at least 2 characters long';
-    } else if (editData.firstName.length > 50) {
-      errors.firstName = 'First name must not exceed 50 characters';
-    }
-
-    if (!editData.lastName || editData.lastName.trim() === '') {
-      errors.lastName = 'Last name is required';
-    } else if (editData.lastName.length < 2) {
-      errors.lastName = 'Last name must be at least 2 characters long';
-    } else if (editData.lastName.length > 50) {
-      errors.lastName = 'Last name must not exceed 50 characters';
-    }
-
-    if (!editData.role || editData.role === '') {
-      errors.role = 'Role is required';
-    }
-
-    setEditErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleUpdateUser = async () => {
-    if (!editUser) return;
-
-    if (!validateEditForm()) {
-      setError('Please fix the validation errors before submitting');
-      return;
-    }
-
-    try {
-      setEditLoading(true);
-      setError(null);
-      setEditErrors({});
-
-      await userManagementService.updateUser(editUser.id, editData);
-      
-      setEditDialog(false);
-      setEditUser(null);
-      setEditData({});
-      setEditErrors({});
-      loadUsers(); // Refresh users list
-      enqueueSnackbar('User updated successfully!', { variant: 'success' });
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update user');
-    } finally {
-      setEditLoading(false);
-    }
-  };
-
-  const handleCloseEditDialog = () => {
-    setEditDialog(false);
-    setEditUser(null);
-    setEditData({});
-    setEditErrors({});
-    setError(null);
+  const handleOpenDrawer = (user: User) => {
+    setSelectedUser(user);
+    setDrawerOpen(true);
   };
 
   const handleDeleteUser = (user: User) => {
@@ -287,7 +181,7 @@ const UserManagement: React.FC = () => {
       setError(null);
 
       const result = await userManagementService.deleteUser(userToDelete.id);
-      
+
       setDeleteResult(result);
       setDeleteDialog(false);
       setUserToDelete(null);
@@ -319,23 +213,34 @@ const UserManagement: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" component="h1">
-          User Management
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>
+            User Management Hub
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Control center for system access, security roles, and user accounts.
+          </Typography>
+        </Box>
         <Button
-          variant="outlined"
+          variant="contained"
           startIcon={<Refresh />}
           onClick={loadUsers}
           disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            textTransform: 'none',
+            fontWeight: 600
+          }}
         >
-          Refresh
+          Sync Data
         </Button>
       </Box>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Manage system users, reset passwords, and view user information
-      </Typography>
+      <AdminStatsGrid stats={stats} />
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -343,152 +248,190 @@ const UserManagement: React.FC = () => {
         </Alert>
       )}
 
-      {/* Filters */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <FormControl fullWidth>
-            <InputLabel>Filter by Role</InputLabel>
-            <Select
-              value={roleFilter}
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
-                setPage(1); // Reset to first page when filtering
-              }}
-              label="Filter by Role"
-            >
-              {userRoles.map((role) => (
-                <MenuItem key={role.value} value={role.value}>
-                  {role.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+      {/* Control Bar */}
+      <Box sx={{
+        display: 'flex',
+        gap: 2,
+        mb: 3,
+        p: 2,
+        bgcolor: 'background.paper',
+        borderRadius: 3,
+        border: '1px solid',
+        borderColor: 'divider',
+        alignItems: 'center'
+      }}>
+        <TextField
+          placeholder="Search by name, email or ID..."
+          size="small"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{
+            flexGrow: 1,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              bgcolor: 'background.default'
+            }
+          }}
+          InputProps={{
+            startAdornment: <Refresh sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />,
+          }}
+        />
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel>All Roles</InputLabel>
+          <Select
+            value={roleFilter}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setPage(1);
+            }}
+            label="All Roles"
+            sx={{ borderRadius: 2, bgcolor: 'background.default' }}
+          >
+            {userRoles.map((role) => (
+              <MenuItem key={role.value} value={role.value}>
+                {role.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
 
-      <Card>
-        <TableContainer component={Paper} variant="outlined">
-          <Table>
-            <TableHead>
+      <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', overflow: 'hidden', boxShadow: 'none' }}>
+        <TableContainer>
+          <Table size="small">
+            <TableHead sx={{ bgcolor: alpha('#f8fafc', 0.5) }}>
               <TableRow>
-                <TableCell>User</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Hospital</TableCell>
-                <TableCell>Last Login</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell sx={{ py: 2, fontWeight: 700, color: 'text.secondary' }}>ID</TableCell>
+                <TableCell sx={{ py: 2, fontWeight: 700, color: 'text.secondary' }}>USER DETAILS</TableCell>
+                <TableCell sx={{ py: 2, fontWeight: 700, color: 'text.secondary' }}>ROLE</TableCell>
+                <TableCell sx={{ py: 2, fontWeight: 700, color: 'text.secondary' }}>STATUS</TableCell>
+                <TableCell sx={{ py: 2, fontWeight: 700, color: 'text.secondary' }}>HOSPITAL</TableCell>
+                <TableCell sx={{ py: 2, fontWeight: 700, color: 'text.secondary' }}>LAST ACCESS</TableCell>
+                <TableCell sx={{ py: 2, fontWeight: 700, color: 'text.secondary', textAlign: 'right' }}>ACTIONS</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {user.firstName} {user.lastName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        ID: {user.id}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center">
-                      <Email sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                      {user.email}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={user.role} 
-                      color={getRoleColor(user.role) as any}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={user.status} 
-                      color={getStatusColor(user.status) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {user.hospital ? (
-                      <Box display="flex" alignItems="center">
-                        <Business sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+              {users
+                .filter(u => {
+                  const firstName = u.firstName || '';
+                  const lastName = u.lastName || '';
+                  const email = u.email || '';
+                  const id = u.id || '';
+                  const query = (searchQuery || '').toLowerCase();
+                  return firstName.toLowerCase().includes(query) ||
+                    lastName.toLowerCase().includes(query) ||
+                    email.toLowerCase().includes(query) ||
+                    id.toLowerCase().includes(query);
+                })
+                .map((user) => (
+                  <TableRow
+                    key={user.id}
+                    hover
+                    onClick={() => handleOpenDrawer(user)}
+                    sx={{
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                      '&:hover': { bgcolor: alpha('#2563eb', 0.04) + ' !important' }
+                    }}
+                  >
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Box
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(user.id);
+                          enqueueSnackbar('Full ID copied to clipboard', { variant: 'info' });
+                        }}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          fontFamily: 'monospace',
+                          fontSize: '0.75rem',
+                          color: 'text.secondary',
+                          cursor: 'pointer',
+                          '&:hover': { color: 'primary.main' }
+                        }}
+                      >
+                        {user.id.slice(0, 8)}...
+                        <ContentCopy sx={{ fontSize: 12 }} />
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          bgcolor: alpha('#2563eb', 0.1),
+                          color: '#2563eb',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                          fontSize: '0.75rem'
+                        }}>
+                          {(user.firstName?.[0] || '?')}{(user.lastName?.[0] || '')}
+                        </Box>
                         <Box>
-                          <Typography variant="body2">{user.hospital.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            ID: {user.hospital.id}
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                            {user.firstName} {user.lastName}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Email sx={{ fontSize: 12 }} /> {user.email}
                           </Typography>
                         </Box>
                       </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        Not assigned
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {user.lastLogin ? (
-                      <Box>
-                        <Typography variant="body2">
-                          {new Date(user.lastLogin).toLocaleDateString()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(user.lastLogin).toLocaleTimeString()}
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{
+                        display: 'inline-flex',
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: 1.5,
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        ...getRoleBadgeStyles(user.role)
+                      }}>
+                        {user.role}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getStatusColor(user.status) }} />
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                          {user.status}
                         </Typography>
                       </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        Never
+                    </TableCell>
+                    <TableCell>
+                      {user.hospital ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Business sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                            {user.hospital.name}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>Unassigned</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500, display: 'block' }}>
+                        {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                       </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
-                      <Tooltip title="Edit User">
-                        <IconButton 
-                          size="small" 
-                          color="primary"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Reset Password">
-                        <span>
-                          <IconButton 
-                            size="small" 
-                            color="warning"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setResetDialog(true);
-                            }}
-                            disabled={user.status !== 'ACTIVE'}
-                          >
-                            <LockReset />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      <Tooltip title="Delete User">
-                        <span>
-                          <IconButton 
-                            size="small" 
-                            color="error"
-                            onClick={() => handleDeleteUser(user)}
-                            disabled={user.role === 'ADMIN'}
-                          >
-                            <Delete />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      {user.lastLogin && (
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {new Date(user.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'right' }}>
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(user); }}>
+                        <Edit sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
@@ -504,252 +447,16 @@ const UserManagement: React.FC = () => {
         </Box>
       </Card>
 
-      {/* Reset Password Dialog */}
-      <Dialog 
-        open={resetDialog} 
-        onClose={handleCloseResetDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Reset Password for {selectedUser?.firstName} {selectedUser?.lastName}
-        </DialogTitle>
-        <DialogContent>
-          {selectedUser && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body1" gutterBottom>
-                <strong>User:</strong> {selectedUser.firstName} {selectedUser.lastName}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Email:</strong> {selectedUser.email}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Role:</strong> {selectedUser.role}
-              </Typography>
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                This will set a new password for the user. The user will be able to login immediately with this password.
-              </Alert>
-            </Box>
-          )}
-          
-          <TextField
-            fullWidth
-            label="New Password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            disabled={resetLoading}
-            helperText="Minimum 8 characters"
-            sx={{ mb: 2 }}
-          />
-
-          <TextField
-            fullWidth
-            label="Confirm New Password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={resetLoading}
-            helperText="Must match the password above"
-            sx={{ mb: 2 }}
-          />
-          
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Admin Comments (Optional)"
-            value={adminComments}
-            onChange={(e) => setAdminComments(e.target.value)}
-            placeholder="Add any notes about why the password was reset..."
-            disabled={resetLoading}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseResetDialog} disabled={resetLoading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleResetPassword}
-            color="warning"
-            variant="contained"
-            disabled={resetLoading || !newPassword || !confirmPassword || newPassword !== confirmPassword || newPassword.length < 8}
-          >
-            {resetLoading ? <CircularProgress size={20} /> : 'Reset Password'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Reset Result Dialog */}
-      <Dialog 
-        open={!!resetResult} 
-        onClose={handleCloseResultDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Password Reset Successful
-        </DialogTitle>
-        <DialogContent>
-          {resetResult && (
-            <Box>
-              <Alert severity="success" sx={{ mb: 2 }}>
-                Password has been reset successfully for {resetResult.user.firstName} {resetResult.user.lastName}
-              </Alert>
-              
-              <Alert severity="info">
-                <Typography variant="body2">
-                  <strong>Success:</strong> The user can now login with the new password you set.
-                  Make sure to share the new password securely with the user.
-                </Typography>
-              </Alert>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseResultDialog} variant="contained">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit User Dialog */}
-      <Dialog 
-        open={editDialog} 
-        onClose={handleCloseEditDialog}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          Edit User: {editUser?.firstName} {editUser?.lastName}
-        </DialogTitle>
-        <DialogContent>
-          {editUser && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body1" gutterBottom>
-                <strong>Email:</strong> {editUser.email}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Current Role:</strong> {editUser.role}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Current Hospital:</strong> {editUser.hospital?.name || 'Not assigned'}
-              </Typography>
-            </Box>
-          )}
-          
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                label="First Name"
-                value={editData.firstName || ''}
-                onChange={(e) => {
-                  setEditData({...editData, firstName: e.target.value});
-                  if (editErrors.firstName) {
-                    setEditErrors({...editErrors, firstName: ''});
-                  }
-                }}
-                disabled={editLoading}
-                error={!!editErrors.firstName}
-                helperText={editErrors.firstName}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                label="Last Name"
-                value={editData.lastName || ''}
-                onChange={(e) => {
-                  setEditData({...editData, lastName: e.target.value});
-                  if (editErrors.lastName) {
-                    setEditErrors({...editErrors, lastName: ''});
-                  }
-                }}
-                disabled={editLoading}
-                error={!!editErrors.lastName}
-                helperText={editErrors.lastName}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Phone Number"
-                value={editData.phoneNumber || ''}
-                onChange={(e) => setEditData({...editData, phoneNumber: e.target.value})}
-                disabled={editLoading}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required error={!!editErrors.role}>
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={editData.role || ''}
-                  onChange={(e) => {
-                    setEditData({...editData, role: e.target.value});
-                    if (editErrors.role) {
-                      setEditErrors({...editErrors, role: ''});
-                    }
-                  }}
-                  disabled={editLoading}
-                  label="Role"
-                >
-                  <MenuItem value="ADMIN">Admin</MenuItem>
-                  <MenuItem value="RCC">RCC Coordinator</MenuItem>
-                  <MenuItem value="EMS">EMS Operator</MenuItem>
-                  <MenuItem value="DATA_COLLECTOR">Data Collector</MenuItem>
-                  <MenuItem value="CATH_LAB_USER">Cath Lab User</MenuItem>
-                  <MenuItem value="HOSPITAL_USER">Hospital User</MenuItem>
-                </Select>
-                {editErrors.role && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                    {editErrors.role}
-                  </Typography>
-                )}
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Hospital</InputLabel>
-                <Select
-                  value={editData.hospitalId || ''}
-                  onChange={(e) => setEditData({...editData, hospitalId: e.target.value})}
-                  disabled={editLoading}
-                  label="Hospital"
-                >
-                  <MenuItem value="">
-                    <em>No hospital assigned</em>
-                  </MenuItem>
-                  {hospitals.map((hospital) => (
-                    <MenuItem key={hospital.id} value={hospital.id}>
-                      {hospital.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseEditDialog} disabled={editLoading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleUpdateUser}
-            color="primary"
-            variant="contained"
-            disabled={editLoading}
-          >
-            {editLoading ? <CircularProgress size={20} /> : 'Update User'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <UserDetailDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        user={selectedUser}
+        onUpdateSuccess={loadUsers}
+      />
 
       {/* Delete User Confirmation Dialog */}
-      <Dialog 
-        open={deleteDialog} 
+      <Dialog
+        open={deleteDialog}
         onClose={handleCloseDeleteDialog}
         maxWidth="sm"
         fullWidth
@@ -794,7 +501,7 @@ const UserManagement: React.FC = () => {
           <Button onClick={handleCloseDeleteDialog} disabled={deleteLoading}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirmDelete}
             color="error"
             variant="contained"
@@ -806,8 +513,8 @@ const UserManagement: React.FC = () => {
       </Dialog>
 
       {/* Delete Result Dialog */}
-      <Dialog 
-        open={!!deleteResult} 
+      <Dialog
+        open={!!deleteResult}
         onClose={handleCloseDeleteResult}
         maxWidth="sm"
         fullWidth
@@ -821,7 +528,7 @@ const UserManagement: React.FC = () => {
               <Alert severity="success" sx={{ mb: 2 }}>
                 {deleteResult.message}
               </Alert>
-              
+
               <Alert severity="info">
                 <Typography variant="body2">
                   <strong>Success:</strong> The user has been deactivated (soft deleted).
