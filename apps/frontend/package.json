@@ -38,6 +38,7 @@
     "chart.js": "^4.5.0",
     "date-fns": "^2.30.0",
     "dayjs": "^1.11.10",
+    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
     "notistack": "^3.0.1",
@@ -54,6 +55,7 @@
     "simple-peer": "^9.11.1",
     "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.1.12",
+    "xlsx": "^0.18.5",
     "yup": "^1.4.0"
   },
   "devDependencies": {

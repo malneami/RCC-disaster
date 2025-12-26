@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   Chip,
+  Button,
 } from '@mui/material';
 import {
   LocalHospital,
@@ -23,8 +24,13 @@ import {
   Medication,
   Assessment,
   Scanner,
+  FileDownload,
+  Image as ImageIcon,
 } from '@mui/icons-material';
+import * as ExcelJS from 'exceljs';
+import html2canvas from 'html2canvas';
 import { StrokeCase } from '../../../services/strokeService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface StrokeTimelineViewProps {
   strokeCase: StrokeCase;
@@ -52,6 +58,9 @@ interface TimelinePhase {
 }
 
 const StrokeTimelineView: React.FC<StrokeTimelineViewProps> = ({ strokeCase }) => {
+  const { user } = useAuth();
+  const timelineRef = React.useRef<HTMLDivElement>(null);
+
   const createTimelinePhases = (): TimelinePhase[] => {
     const phases: TimelinePhase[] = [];
 
@@ -308,7 +317,6 @@ const StrokeTimelineView: React.FC<StrokeTimelineViewProps> = ({ strokeCase }) =
 
   const timelinePhases = createTimelinePhases();
 
-
   const formatDateTime = (timestamp: string): string => {
     if (!timestamp) return '';
     try {
@@ -319,11 +327,319 @@ const StrokeTimelineView: React.FC<StrokeTimelineViewProps> = ({ strokeCase }) =
     }
   };
 
+  /**
+   * Exports timeline phases and events to Excel file
+   * Uses timelinePhases as the single source of truth
+   */
+  const handleExportToExcel = async () => {
+    // Flatten phases and events for Excel export
+    const exportData: Array<{
+      'Phase Name': string;
+      'Phase Description': string;
+      'Event Status': string;
+      'Event Description': string;
+      'Timestamp': string;
+      'Target': string;
+      'Recorded': string;
+    }> = [];
+
+    timelinePhases.forEach((phase) => {
+      phase.events.forEach((event) => {
+        // Format timestamp as displayed in UI
+        const formattedTimestamp = event.recorded && event.timestamp
+          ? formatDateTime(event.timestamp)
+          : 'Time not recorded';
+
+        exportData.push({
+          'Phase Name': phase.title,
+          'Phase Description': phase.description,
+          'Event Status': event.status,
+          'Event Description': event.description,
+          'Timestamp': formattedTimestamp,
+          'Target': event.target || '',
+          'Recorded': event.recorded ? 'Yes' : 'No',
+        });
+      });
+    });
+
+    // Prepare patient data
+    const patientName = strokeCase.patient 
+      ? `${strokeCase.patient.firstName || ''} ${strokeCase.patient.lastName || ''}`.trim() 
+      : '';
+    const patientNationalId = strokeCase.patient?.nationalId || '';
+    const patientAge = strokeCase.patient?.age ? `${strokeCase.patient.age} years` : '';
+    const patientGender = strokeCase.patient?.gender || '';
+
+    // Prepare user metadata
+    const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || '' : '';
+    const userRole = user?.role || '';
+    const userHospital = user?.hospital?.name || '';
+
+    // Create combined data with patient info, user metadata, and timeline data
+    const combinedData: Array<Record<string, any>> = [
+      // Patient Information Section (highlighted)
+      { 'Phase Name': 'PATIENT INFORMATION', 'Phase Description': '', 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      { 'Phase Name': 'Patient Name', 'Phase Description': patientName, 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      { 'Phase Name': 'National ID', 'Phase Description': patientNationalId, 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      { 'Phase Name': 'Age', 'Phase Description': patientAge, 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      { 'Phase Name': 'Gender', 'Phase Description': patientGender, 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      // Empty row separator
+      { 'Phase Name': '', 'Phase Description': '', 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      // User Metadata Section
+      { 'Phase Name': 'User Information', 'Phase Description': '', 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      { 'Phase Name': 'User Name', 'Phase Description': userName, 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      { 'Phase Name': 'User Role', 'Phase Description': userRole, 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      { 'Phase Name': 'Organization / Hospital', 'Phase Description': userHospital, 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      // Empty row separator
+      { 'Phase Name': '', 'Phase Description': '', 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      // Timeline Data Header
+      { 'Phase Name': 'TIMELINE DATA', 'Phase Description': '', 'Event Status': '', 'Event Description': '', 'Timestamp': '', 'Target': '', 'Recorded': '' },
+      // Timeline data rows
+      ...exportData,
+    ];
+
+    // Create workbook and worksheet using ExcelJS
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Timeline Data');
+
+    // Define column headers
+    const headers = ['Phase Name', 'Phase Description', 'Event Status', 'Event Description', 'Timestamp', 'Target', 'Recorded'];
+    
+    // Add header row with styling
+    const headerRow = worksheet.addRow(headers);
+    headerRow.height = 25; // Increased header row height
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFf44336' } // Red background for Stroke
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+
+    // Find where actual timeline data starts (after "TIMELINE DATA" header row)
+    const timelineDataHeaderIndex = combinedData.findIndex(row => row['Phase Name'] === 'TIMELINE DATA');
+    const actualDataStartIndex = timelineDataHeaderIndex + 1;
+
+    // Add all data rows
+    combinedData.forEach((rowData, index) => {
+      const row = worksheet.addRow([
+        rowData['Phase Name'],
+        rowData['Phase Description'],
+        rowData['Event Status'],
+        rowData['Event Description'],
+        rowData['Timestamp'],
+        rowData['Target'],
+        rowData['Recorded']
+      ]);
+
+      // Apply alternating row colors only to actual timeline data rows (skip metadata rows)
+      if (index >= actualDataStartIndex) {
+        const dataRowIndex = index - actualDataStartIndex;
+        const isEvenRow = dataRowIndex % 2 === 0;
+        row.eachCell((cell) => {
+          if (isEvenRow) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF5F5F5' } // Light gray for even rows
+            };
+          } else {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFFFFFFF' } // White for odd rows
+            };
+          }
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+          };
+          cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        });
+      } else {
+        // Style metadata rows (patient info, user info, etc.) - no alternating colors
+        row.eachCell((cell) => {
+          cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        });
+      }
+    });
+
+    // Auto-size columns
+    worksheet.columns.forEach((column, index) => {
+      const columnData = combinedData.map(row => {
+        const keys = ['Phase Name', 'Phase Description', 'Event Status', 'Event Description', 'Timestamp', 'Target', 'Recorded'];
+        return String(row[keys[index]] || '');
+      });
+      const maxLength = Math.max(
+        headers[index].length,
+        ...columnData.map(val => val.length)
+      );
+      column.width = Math.max(15, Math.min(maxLength + 2, 50));
+    });
+
+    // Generate filename with case ID or current date
+    const caseId = strokeCase.id ? strokeCase.id.slice(-8).toUpperCase() : '';
+    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const filename = caseId 
+      ? `Stroke_Timeline_${caseId}.xlsx`
+      : `Stroke_Timeline_${currentDate}.xlsx`;
+
+    // Write file and trigger download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  /**
+   * Exports timeline view as PNG image with patient information
+   */
+  const handleExportToPNG = async () => {
+    if (!timelineRef.current) return;
+    
+    try {
+      // Prepare patient data
+      const patientName = strokeCase.patient 
+        ? `${strokeCase.patient.firstName || ''} ${strokeCase.patient.lastName || ''}`.trim() 
+        : 'N/A';
+      const patientNationalId = strokeCase.patient?.nationalId || 'N/A';
+
+      // Create a temporary wrapper element with patient info
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'background: white; padding: 20px; font-family: Arial, sans-serif;';
+      
+      // Create patient info section
+      const patientInfo = document.createElement('div');
+      patientInfo.style.cssText = 'margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 4px;';
+      
+      const title = document.createElement('h3');
+      title.textContent = 'Patient Information';
+      title.style.cssText = 'margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #333;';
+      
+      const nameLabel = document.createElement('div');
+      nameLabel.style.cssText = 'margin-bottom: 5px; font-size: 14px;';
+      nameLabel.innerHTML = `<strong>Patient Name:</strong> ${patientName}`;
+      
+      const idLabel = document.createElement('div');
+      idLabel.style.cssText = 'font-size: 14px;';
+      idLabel.innerHTML = `<strong>National ID:</strong> ${patientNationalId}`;
+      
+      patientInfo.appendChild(title);
+      patientInfo.appendChild(nameLabel);
+      patientInfo.appendChild(idLabel);
+      
+      // Clone the timeline content
+      const timelineClone = timelineRef.current.cloneNode(true) as HTMLElement;
+      
+      // Remove export buttons from the clone
+      // Find all buttons in the clone
+      const buttons = timelineClone.querySelectorAll('button');
+      
+      buttons.forEach((button) => {
+        const buttonText = button.textContent || '';
+        // Check if it's an export button
+        if (buttonText.includes('Export as PNG') || buttonText.includes('Export to Excel')) {
+          // Find the parent container (the Box with flex gap that contains the buttons)
+          let parent: HTMLElement | null = button.parentElement;
+          while (parent && parent !== timelineClone) {
+            // Check if this parent contains multiple buttons (the button container)
+            const siblingButtons = parent.querySelectorAll('button');
+            if (siblingButtons.length >= 2) {
+              // This is the button container, remove it
+              parent.remove();
+              break;
+            }
+            parent = parent.parentElement;
+          }
+        }
+      });
+      
+      // Append to wrapper
+      wrapper.appendChild(patientInfo);
+      wrapper.appendChild(timelineClone);
+      
+      // Temporarily add to document for capture
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-9999px';
+      document.body.appendChild(wrapper);
+      
+      // Capture the wrapper
+      const canvas = await html2canvas(wrapper, {
+        background: '#ffffff',
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+      });
+      
+      // Clean up
+      document.body.removeChild(wrapper);
+      
+      const link = document.createElement('a');
+      const caseId = strokeCase.id ? strokeCase.id.slice(-8).toUpperCase() : '';
+      const currentDate = new Date().toISOString().split('T')[0];
+      const filename = caseId 
+        ? `Stroke_Timeline_${caseId}.png`
+        : `Stroke_Timeline_${currentDate}.png`;
+      
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error exporting to PNG:', error);
+    }
+  };
+
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Stroke Timeline
-      </Typography>
+    <Box ref={timelineRef}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h6" gutterBottom>
+          Stroke Timeline
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<ImageIcon />}
+            onClick={handleExportToPNG}
+            sx={{
+              borderColor: '#f44336',
+              color: '#f44336',
+              '&:hover': {
+                borderColor: '#d32f2f',
+                backgroundColor: '#ffebee',
+              },
+            }}
+          >
+            Export as PNG
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<FileDownload />}
+            onClick={handleExportToExcel}
+            sx={{
+              backgroundColor: '#f44336',
+              '&:hover': {
+                backgroundColor: '#d32f2f',
+              },
+            }}
+          >
+            Export to Excel
+          </Button>
+        </Box>
+      </Box>
       <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
         Critical timestamps and KPI performance for this stroke case
       </Typography>
