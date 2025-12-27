@@ -285,9 +285,7 @@ export class EmsDashboardService {
           ambulance: true,
           ticket: {
             select: {
-              emergencyType: true,
-              stemiCases: { select: { id: true }, take: 1 },
-              strokeCases: { select: { id: true }, take: 1 },
+              pathway: true,
             },
           },
         }
@@ -319,7 +317,7 @@ export class EmsDashboardService {
       };
 
       // Helper to update metrics for a specific type
-      const updateMetrics = (type: 'overall' | 'stroke' | 'stemi' | 'trauma', a: any, isTargetType: boolean) => {
+      const updateMetrics = (type: 'overall' | 'stroke' | 'stemi' | 'trauma', a: any, isTargetType: boolean, pathway?: string) => {
         if (type !== 'overall' && !isTargetType) return;
         
         const m = metrics[type];
@@ -328,40 +326,43 @@ export class EmsDashboardService {
         if (a.status === 'ARRIVED') {
             m.totalCompleted++;
 
-            // 1. EMS Response Time
+            // 1. EMS Response Time - Time from assignment to actual arrival at scene
             if (a.assignedAt && a.actualArrivalTime) {
                 const responseTime = (new Date(a.actualArrivalTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
                 m.totalResponseTime += responseTime;
+                console.log(`Response Time: ${responseTime} minutes`);
             }
 
-            // 2. Case Preparation Time (CPT)
-            if (a.journeyStartTime && a.actualArrivalTime) {
-                const cpt = (new Date(a.journeyStartTime).getTime() - new Date(a.actualArrivalTime).getTime()) / (1000 * 60);
+            // 2. Case Preparation Time (CPT) - Time from assignment to journey start
+            if (a.assignedAt && a.journeyStartTime) {
+                const cpt = (new Date(a.journeyStartTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
                 if (cpt > 0) {
                     m.totalCPT += cpt;
                     m.cptCount++;
                 }
             }
 
-            // 3. Assignment Duration
+            // 3. Assignment Duration - Time from journey start to journey end
             if (a.journeyEndTime && a.journeyStartTime) {
                 const duration = (new Date(a.journeyEndTime).getTime() - new Date(a.journeyStartTime).getTime()) / (1000 * 60);
                 m.totalAssignmentDuration += duration;
             }
 
-            // 4. Total Transfer Time
+            // 4. Total Transfer Time - Time from assignment to journey end
             if (a.journeyEndTime && a.assignedAt) {
                 const transferTime = (new Date(a.journeyEndTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
                 m.totalTransferTime += transferTime;
             }
 
-            // 5. On-Time Arrival Rate
+            // 5. On-Time Arrival Rate - Based on pathway-specific targets
             if (a.journeyEndTime && a.assignedAt) {
                 const totalTime = (new Date(a.journeyEndTime).getTime() - new Date(a.assignedAt).getTime()) / (1000 * 60);
-                let targetTime = 75; // Default target
-                if (metrics.stroke && type === 'stroke') targetTime = 90;
-                else if (metrics.stemi && type === 'stemi') targetTime = 75;
-                // For trauma, use default or specific if defined later
+                // Pathway-specific target times (in minutes) - use actual pathway from assignment
+                const assignmentPathway = pathway?.toUpperCase() || 'GENERAL';
+                let targetTime = 75; // Default for GENERAL
+                if (assignmentPathway === 'STROKE') targetTime = 90; // Stroke target: 90 minutes
+                else if (assignmentPathway === 'STEMI') targetTime = 75; // STEMI target: 75 minutes
+                else if (assignmentPathway === 'TRAUMA') targetTime = 60; // Trauma target: 60 minutes
                 
                 if (totalTime <= targetTime) m.onTimeCount++;
             }
@@ -373,18 +374,20 @@ export class EmsDashboardService {
       };
 
       allAssignments.forEach(a => {
-        // Determine case type
-        const isStemiCase = a.ticket?.emergencyType === 'STEMI' || (a.ticket?.stemiCases && a.ticket.stemiCases.length > 0);
-        const isStrokeCase = a.ticket?.emergencyType === 'STROKE' || (a.ticket?.strokeCases && a.ticket.strokeCases.length > 0);
-        const isTraumaCase = a.ticket?.emergencyType === 'TRAUMA'; // Assuming 'TRAUMA' is the enum value
+        // Determine case type from pathway (case-insensitive comparison)
+        const pathway = a.ticket?.pathway || 'GENERAL';
+        const pathwayUpper = pathway.toUpperCase();
+        const isStemiCase = pathwayUpper === 'STEMI';
+        const isStrokeCase = pathwayUpper === 'STROKE';
+        const isTraumaCase = pathwayUpper === 'TRAUMA';
 
-        // Update Overall
-        updateMetrics('overall', a, true);
+        // Update Overall (all assignments) - pass pathway for on-time calculation
+        updateMetrics('overall', a, true, pathway);
 
-        // Update Specific Types
-        updateMetrics('stemi', a, isStemiCase);
-        updateMetrics('stroke', a, isStrokeCase);
-        updateMetrics('trauma', a, isTraumaCase);
+        // Update Specific Types based on pathway
+        updateMetrics('stemi', a, isStemiCase, pathway);
+        updateMetrics('stroke', a, isStrokeCase, pathway);
+        updateMetrics('trauma', a, isTraumaCase, pathway);
       });
 
       // Helper to calculate final averages
@@ -405,7 +408,7 @@ export class EmsDashboardService {
       const strokeStats = calculateFinalStats(metrics.stroke);
       const traumaStats = calculateFinalStats(metrics.trauma);
 
-      this.logger.log(`Performance Report Generated. Total: ${overallStats.totalAssignments}, Stroke: ${strokeStats.totalAssignments}, STEMI: ${stemiStats.totalAssignments}`);
+      this.logger.log(`Performance Report Generated. Total: ${overallStats.totalAssignments}, Stroke: ${strokeStats.totalAssignments}, STEMI: ${stemiStats.totalAssignments}, Trauma: ${traumaStats.totalAssignments}`);
 
       // Count active drivers (unchanged logic)
       const enRouteAssignments = allAssignments.filter(a => a.status === 'EN_ROUTE');
