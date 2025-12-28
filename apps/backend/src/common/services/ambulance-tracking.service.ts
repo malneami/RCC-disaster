@@ -507,7 +507,7 @@ export class AmbulanceTrackingService {
   private async handleZoneLogic(ambulanceId: string, validation: any): Promise<void> {
     let zoneChanged = false;
     const MIN_ZONE_DURATION_MS = 3 * 60 * 1000; // Minimum 3 minutes in zone before exit is valid (increased from 2 to reduce GPS noise)
-    const MIN_ENTRY_CONFIRMATION_MS = 45 * 1000; // Require 45 seconds of consistent zone presence before logging entry (increased from 30)
+    const MIN_ENTRY_CONFIRMATION_MS = 130 * 1000; // Require 120 seconds of history (was 45s) to allow capturing 3+ logs with 30s polling interval
     const ZONE_TRANSITION_COOLDOWN_MS = 3 * 60 * 1000; // 3 minute cooldown between zone transitions (prevents rapid re-entries)
     const now = new Date();
     
