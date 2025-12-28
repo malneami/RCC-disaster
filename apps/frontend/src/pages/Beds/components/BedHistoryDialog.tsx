@@ -19,30 +19,31 @@ import {
   TimelineDot,
 } from '@mui/lab';
 import { History as HistoryIcon } from '@mui/icons-material';
-import { Bed } from '../services/bedService';
 import { BedStatusHistoryItem } from '../services/bedService';
 import { BedStatusChip } from './BedStatusChip';
 import { getBedStatusColor } from '../utils/bedStatusUtils';
 import { useBedHistory } from '../hooks/useBedHistory';
+import { useBed } from '../hooks/useBed';
 
 interface BedHistoryDialogProps {
   open: boolean;
   onClose: () => void;
-  bed: Bed | null;
+  bedId: string | null;
 }
 
 const BedHistoryDialog: React.FC<BedHistoryDialogProps> = ({
   open,
   onClose,
-  bed,
+  bedId,
 }) => {
-  const { history, loading, error, refetch } = useBedHistory(bed?.id || null, open && !!bed);
+  const { bed, loading: bedLoading } = useBed(bedId);
+  const { history, loading, error, refetch } = useBedHistory(bedId, open && !!bedId);
 
   useEffect(() => {
-    if (open && bed) {
+    if (open && bedId) {
       refetch();
     }
-  }, [open, bed, refetch]);
+  }, [open, bedId, refetch]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -58,6 +59,20 @@ const BedHistoryDialog: React.FC<BedHistoryDialogProps> = ({
   const getUserName = (user: BedStatusHistoryItem['changedBy']) => {
     return `${user.firstName} ${user.lastName}`;
   };
+
+  if (!bedId) return null;
+
+  if (bedLoading) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogContent>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!bed) return null;
 

@@ -40,6 +40,29 @@ export class PatientInfoDto {
   mrn?: string;
 }
 
+export class BedListItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  bedNumber!: string;
+
+  @ApiProperty({ enum: BedStatus })
+  status!: BedStatus;
+
+  @ApiProperty()
+  isOperational!: boolean;
+
+  @ApiProperty()
+  unitName!: string;
+
+  @ApiProperty({ type: HospitalInfoDto, required: false })
+  hospital?: HospitalInfoDto;
+
+  @ApiProperty({ required: false })
+  currentPatientName?: string;
+}
+
 export class BedResponseDto {
   @ApiProperty()
   id!: string;

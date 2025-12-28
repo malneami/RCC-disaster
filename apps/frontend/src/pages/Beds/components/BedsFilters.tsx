@@ -17,7 +17,7 @@ interface BedsFiltersProps {
   open: boolean;
   onClose: () => void;
   filters: {
-    hospitalId: string;
+    hospitalId?: string;
     unitId: string;
     status: string;
   };

@@ -2,27 +2,29 @@ import { Injectable, ForbiddenException, NotFoundException, Logger, BadRequestEx
 import { PrismaService } from '../../database/prisma.service';
 import { BedStatus, UserRole } from '@prisma/client';
 import { GetBedsDto } from './dto/get-beds.dto';
-import { BedResponseDto } from './dto/bed-response.dto';
+import { BedResponseDto, BedListItemDto } from './dto/bed-response.dto';
 import { UpdateBedStatusDto } from './dto/update-bed-status.dto';
+import { CreateBedDto } from './dto/create-bed.dto';
 
 @Injectable()
 export class BedsService {
   private readonly logger = new Logger(BedsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findAll(
     filters: GetBedsDto,
     userHospitalId: string | null,
     userRole: UserRole,
-  ): Promise<BedResponseDto[]> {
+  ): Promise<BedListItemDto[]> {
+    const isAdminOrRCC = userRole === UserRole.ADMIN || userRole === UserRole.RCC;
     const isHospitalUser = [
       UserRole.HOSPITAL_USER,
       UserRole.ED_NURSE,
       UserRole.UNIT_NURSE,
       UserRole.BED_COORDINATOR,
     ].includes(userRole as any);
-    
+
     if (isHospitalUser && !userHospitalId) {
       throw new ForbiddenException('Hospital assignment required to view beds');
     }
@@ -33,33 +35,12 @@ export class BedsService {
 
     if (isHospitalUser) {
       where.hospitalId = userHospitalId;
-    } else if (filters.hospitalId) {
+    }
+    else if (filters.hospitalId) {
       where.hospitalId = filters.hospitalId;
-    } else if (userHospitalId && userRole !== UserRole.ADMIN && userRole !== UserRole.RCC) {
-      where.hospitalId = userHospitalId;
     }
 
     if (filters.unitId) {
-      const targetHospitalId = filters.hospitalId || userHospitalId;
-      
-      if (targetHospitalId) {
-        const unit = await this.prisma.unit.findFirst({
-          where: {
-            id: filters.unitId,
-            hospitalId: targetHospitalId,
-            deletedAt: null,
-          },
-        });
-
-        if (!unit) {
-          if (isHospitalUser) {
-            throw new ForbiddenException('Unit not found or does not belong to your hospital');
-          } else {
-            throw new NotFoundException('Unit not found or does not belong to the specified hospital');
-          }
-        }
-      }
-
       where.unitId = filters.unitId;
     }
 
@@ -67,8 +48,172 @@ export class BedsService {
       where.status = filters.status;
     }
 
+
     const beds = await this.prisma.bed.findMany({
       where,
+      include: {
+        unit: {
+          select: {
+            name: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: [
+        { unit: { name: 'asc' } },
+        { bedNumber: 'asc' },
+      ],
+    });
+
+    return beds.map((bed): BedListItemDto => {
+      const base: any = {
+        id: bed.id,
+        bedNumber: bed.bedNumber,
+        status: bed.status,
+        isOperational: bed.isOperational,
+        unitName: bed.unit.name,
+        hospital: {
+          id: bed.hospital.id,
+          name: bed.hospital.name,
+        },
+        currentPatientName: bed.currentPatient
+          ? `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`
+          : undefined,
+      };
+
+      return base;
+    });
+  }
+
+  async getStats(
+    filters: GetBedsDto,
+    userHospitalId: string | null,
+    userRole: UserRole,
+  ): Promise<{
+    total: number;
+    vacant: number;
+    occupied: number;
+    cleaning: number;
+    blocked: number;
+    reserved: number;
+  }> {
+    const isAdminOrRCC = userRole === UserRole.ADMIN || userRole === UserRole.RCC;
+    const isHospitalUser = [
+      UserRole.HOSPITAL_USER,
+      UserRole.ED_NURSE,
+      UserRole.UNIT_NURSE,
+      UserRole.BED_COORDINATOR,
+    ].includes(userRole as any);
+
+    if (isHospitalUser && !userHospitalId) {
+      throw new ForbiddenException('Hospital assignment required to view bed statistics');
+    }
+
+    const where: any = {
+      deletedAt: null,
+    };
+
+    if (isHospitalUser) {
+      where.hospitalId = userHospitalId;
+    }
+    else if (filters.hospitalId) {
+      where.hospitalId = filters.hospitalId;
+    }
+
+    if (filters.unitId) {
+      where.unitId = filters.unitId;
+    }
+
+    const total = await this.prisma.bed.count({ where });
+    const [vacant, occupied, cleaning, blocked, reserved] = await Promise.all([
+      this.prisma.bed.count({ where: { ...where, status: BedStatus.VACANT } }),
+      this.prisma.bed.count({ where: { ...where, status: BedStatus.OCCUPIED } }),
+      this.prisma.bed.count({ where: { ...where, status: BedStatus.CLEANING } }),
+      this.prisma.bed.count({ where: { ...where, status: BedStatus.BLOCKED } }),
+      this.prisma.bed.count({ where: { ...where, status: BedStatus.RESERVED } }),
+    ]);
+
+    return {
+      total,
+      vacant,
+      occupied,
+      cleaning,
+      blocked,
+      reserved,
+    };
+  }
+
+  async create(
+    createDto: CreateBedDto,
+    userHospitalId: string | null,
+    userRole: UserRole,
+  ): Promise<BedResponseDto> {
+    const isHospitalUser = [
+      UserRole.HOSPITAL_USER,
+      UserRole.ED_NURSE,
+      UserRole.UNIT_NURSE,
+      UserRole.BED_COORDINATOR,
+    ].includes(userRole as any);
+
+    if (isHospitalUser && !userHospitalId) {
+      throw new ForbiddenException('Hospital assignment required to create beds');
+    }
+
+    const unit = await this.prisma.unit.findFirst({
+      where: {
+        id: createDto.unitId,
+        deletedAt: null,
+      },
+      include: {
+        hospital: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!unit) {
+      throw new NotFoundException('Unit not found');
+    }
+
+    if (isHospitalUser && unit.hospitalId !== userHospitalId) {
+      throw new ForbiddenException('Unit does not belong to your hospital');
+    }
+
+    const existingBed = await this.prisma.bed.findFirst({
+      where: {
+        unitId: createDto.unitId,
+        bedNumber: createDto.bedNumber,
+        deletedAt: null,
+      },
+    });
+
+    if (existingBed) {
+      throw new BadRequestException(`Bed number "${createDto.bedNumber}" already exists in this unit`);
+    }
+
+    const bed = await this.prisma.bed.create({
+      data: {
+        unitId: createDto.unitId,
+        hospitalId: unit.hospitalId,
+        bedNumber: createDto.bedNumber,
+        status: BedStatus.VACANT,
+        location: createDto.location || null,
+        notes: createDto.notes || null,
+        isOperational: createDto.isOperational !== undefined ? createDto.isOperational : true,
+      },
       include: {
         unit: {
           select: {
@@ -95,13 +240,9 @@ export class BedsService {
           },
         },
       },
-      orderBy: [
-        { unit: { name: 'asc' } },
-        { bedNumber: 'asc' },
-      ],
     });
 
-    return beds.map((bed) => ({
+    return {
       id: bed.id,
       bedNumber: bed.bedNumber,
       status: bed.status,
@@ -118,15 +259,15 @@ export class BedsService {
       },
       currentPatient: bed.currentPatient
         ? {
-            id: bed.currentPatient.id,
-            name: `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`,
-            nationalId: bed.currentPatient.nationalId || undefined,
-            age: bed.currentPatient.age || undefined,
-            gender: bed.currentPatient.gender || undefined,
-            mrn: bed.currentPatient.mrn || undefined,
-          }
+          id: bed.currentPatient.id,
+          name: `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`,
+          nationalId: bed.currentPatient.nationalId || undefined,
+          age: bed.currentPatient.age || undefined,
+          gender: bed.currentPatient.gender || undefined,
+          mrn: bed.currentPatient.mrn || undefined,
+        }
         : undefined,
-    }));
+    };
   }
 
   async findOne(id: string, userHospitalId: string | null, userRole: UserRole): Promise<BedResponseDto> {
@@ -173,7 +314,7 @@ export class BedsService {
       UserRole.UNIT_NURSE,
       UserRole.BED_COORDINATOR,
     ].includes(userRole as any);
-    
+
     if (isHospitalUser && bed.hospitalId !== userHospitalId) {
       throw new ForbiddenException('Access denied to this bed');
     }
@@ -195,13 +336,13 @@ export class BedsService {
       },
       currentPatient: bed.currentPatient
         ? {
-            id: bed.currentPatient.id,
-            name: `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`,
-            nationalId: bed.currentPatient.nationalId || undefined,
-            age: bed.currentPatient.age || undefined,
-            gender: bed.currentPatient.gender || undefined,
-            mrn: bed.currentPatient.mrn || undefined,
-          }
+          id: bed.currentPatient.id,
+          name: `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`,
+          nationalId: bed.currentPatient.nationalId || undefined,
+          age: bed.currentPatient.age || undefined,
+          gender: bed.currentPatient.gender || undefined,
+          mrn: bed.currentPatient.mrn || undefined,
+        }
         : undefined,
     };
   }
@@ -296,7 +437,7 @@ export class BedsService {
     }
 
     const shouldClearPatient = newStatus === BedStatus.VACANT || newStatus === BedStatus.CLEANING;
-    
+
     const updatedBed = await this.prisma.bed.update({
       where: { id },
       data: {
@@ -362,13 +503,13 @@ export class BedsService {
       },
       currentPatient: updatedBed.currentPatient
         ? {
-            id: updatedBed.currentPatient.id,
-            name: `${updatedBed.currentPatient.firstName} ${updatedBed.currentPatient.lastName}`,
-            nationalId: updatedBed.currentPatient.nationalId || undefined,
-            age: updatedBed.currentPatient.age || undefined,
-            gender: updatedBed.currentPatient.gender || undefined,
-            mrn: updatedBed.currentPatient.mrn || undefined,
-          }
+          id: updatedBed.currentPatient.id,
+          name: `${updatedBed.currentPatient.firstName} ${updatedBed.currentPatient.lastName}`,
+          nationalId: updatedBed.currentPatient.nationalId || undefined,
+          age: updatedBed.currentPatient.age || undefined,
+          gender: updatedBed.currentPatient.gender || undefined,
+          mrn: updatedBed.currentPatient.mrn || undefined,
+        }
         : undefined,
     };
   }
@@ -437,5 +578,47 @@ export class BedsService {
         email: item.changedBy.email,
       },
     }));
+  }
+
+  async delete(
+    bedId: string,
+    userHospitalId: string | null,
+    userRole: UserRole,
+  ): Promise<void> {
+    if (userRole !== UserRole.HOSPITAL_USER && userRole !== UserRole.ADMIN && userRole !== UserRole.RCC) {
+      throw new ForbiddenException('Only hospital users, admins, and RCC can delete beds');
+    }
+
+    const bed = await this.prisma.bed.findFirst({
+      where: {
+        id: bedId,
+        deletedAt: null,
+      },
+    });
+
+    if (!bed) {
+      throw new NotFoundException('Bed not found');
+    }
+
+    if (userRole === UserRole.HOSPITAL_USER) {
+      if (!userHospitalId) {
+        throw new ForbiddenException('Hospital assignment required to delete beds');
+      }
+      if (bed.hospitalId !== userHospitalId) {
+        throw new ForbiddenException('Cannot delete bed from another hospital');
+      }
+    }
+
+    if (bed.status === BedStatus.OCCUPIED) {
+      throw new BadRequestException('Cannot delete an occupied bed. Please discharge the patient first.');
+    }
+
+    if (bed.currentBedRequestId) {
+      throw new BadRequestException('Cannot delete a bed with an active bed request');
+    }
+
+    await this.prisma.bed.delete({
+      where: { id: bedId },
+    });
   }
 }

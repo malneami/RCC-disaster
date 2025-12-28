@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useQueryClient } from 'react-query';
 import {
   Box,
   Typography,
@@ -37,6 +38,7 @@ const HospitalDashboardPage: React.FC = () => {
   const { hospitalId } = useParams<{ hospitalId: string }>();
   const navigate = useNavigate();
   const { isFullscreen, setIsFullscreen } = useFullscreen();
+  const queryClient = useQueryClient();
   const [hospital, setHospital] = useState<Hospital | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const [criticalCases, setCriticalCases] = useState<CriticalCase[]>([]);
@@ -44,23 +46,75 @@ const HospitalDashboardPage: React.FC = () => {
   const [transferTickets, setTransferTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
+  
+  const [bedFilters, setBedFilters] = useState<{
+    hospitalId?: string;
+    unitId: string;
+    status: string;
+  }>({
+    unitId: '',
+    status: '',
+  });
+
+  const loadHospitalData = useCallback(async (isInitialLoad = false) => {
+    if (!hospitalId) return;
+    
+    const shouldShowLoading = isInitialLoad || !hasLoadedRef.current;
+    
+    try {
+      if (shouldShowLoading) {
+        setLoading(true);
+      }
+      setError(null);
+      
+      const hospitalData = await hospitalService.getHospitalById(hospitalId);
+      setHospital(hospitalData);
+
+      const [criticalCasesData, transferTicketsData] = await Promise.all([
+        hospitalService.getActiveCriticalCases(hospitalId),
+        hospitalService.getTransferTicketsForHospital(hospitalId),
+      ]);
+
+      setCriticalCases(criticalCasesData);
+      setRelatedTickets([]);
+      setTransferTickets(Array.isArray(transferTicketsData) ? transferTicketsData : []);
+      
+      // Refetch beds data using React Query
+      queryClient.invalidateQueries(['beds', hospitalId]);
+      
+      hasLoadedRef.current = true;
+    } catch (err) {
+      setError('Failed to load hospital data');
+      console.error('Error loading hospital data:', err);
+    } finally {
+      if (shouldShowLoading) {
+        setLoading(false);
+      }
+    }
+  }, [hospitalId, queryClient]);
 
   useEffect(() => {
     if (hospitalId) {
-      loadHospitalData();
+      hasLoadedRef.current = false;
+      loadHospitalData(true);
+      setBedFilters({
+        unitId: '',
+        status: '',
+      });
     }
-  }, [hospitalId]);
+  }, [hospitalId, loadHospitalData]);
 
   // Auto-refresh data every 30 seconds
   useEffect(() => {
     if (hospitalId) {
       const interval = setInterval(() => {
-        loadHospitalData();
+        loadHospitalData(false); 
       }, 30000); // Refresh every 30 seconds
 
       return () => clearInterval(interval);
     }
-  }, [hospitalId]);
+  }, [hospitalId, loadHospitalData]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -95,33 +149,6 @@ const HospitalDashboardPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error toggling fullscreen:', error);
-    }
-  };
-
-  const loadHospitalData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Load hospital data
-      const hospitalData = await hospitalService.getHospitalById(hospitalId!);
-      setHospital(hospitalData);
-
-      // Load critical cases and tickets
-      const [criticalCasesData, transferTicketsData] = await Promise.all([
-        hospitalService.getActiveCriticalCases(hospitalId!),
-        hospitalService.getTransferTicketsForHospital(hospitalId!),
-      ]);
-
-      setCriticalCases(criticalCasesData);
-      setRelatedTickets([]); // Empty since transferTickets now includes hospital tickets
-      setTransferTickets(Array.isArray(transferTicketsData) ? transferTicketsData : []);
-      
-    } catch (err) {
-      setError('Failed to load hospital data');
-      console.error('Error loading hospital data:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -234,7 +261,7 @@ const HospitalDashboardPage: React.FC = () => {
           </Box>
           <Box>
             <Tooltip title="Refresh Data">
-              <IconButton onClick={loadHospitalData}>
+              <IconButton onClick={() => loadHospitalData(false)}>
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
@@ -391,7 +418,7 @@ const HospitalDashboardPage: React.FC = () => {
               <RelatedTicketsManager
                 hospitalTickets={relatedTickets}
                 transferTickets={transferTickets}                
-                onRefresh={loadHospitalData}
+                onRefresh={() => loadHospitalData(false)}
                 onViewTicket={handleViewTicket}
                 onEditTicket={handleEditTicket}
                 isLoading={loading}
@@ -498,7 +525,11 @@ const HospitalDashboardPage: React.FC = () => {
 
           {tabValue === 3 && (
             <Box sx={{ p: 3 }}>
-              <HospitalBedsTab hospitalId={hospitalId!} />
+              <HospitalBedsTab 
+                hospitalId={hospitalId!} 
+                filters={bedFilters}
+                onFiltersChange={setBedFilters}
+              />
             </Box>
           )}
         </Paper>

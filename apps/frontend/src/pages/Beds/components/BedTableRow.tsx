@@ -14,18 +14,21 @@ import {
   Edit as EditIcon,
   Visibility as ViewIcon,
   History as HistoryIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { Bed, BedStatus } from '../services/bedService';
+import { BedListItem, BedStatus } from '../services/bedService';
 import { BedStatusChip } from './BedStatusChip';
 
 interface BedTableRowProps {
-  bed: Bed;
-  onBedClick?: (bed: Bed) => void;
-  onChangeStatus?: (bed: Bed, newStatus: BedStatus) => void;
-  onViewDetails?: (bed: Bed) => void;
-  onEditBed?: (bed: Bed) => void;
-  onViewHistory?: (bed: Bed) => void;
+  bed: BedListItem;
+  onBedClick?: (bed: BedListItem) => void;
+  onChangeStatus?: (bed: BedListItem, newStatus: BedStatus) => void;
+  onViewDetails?: (bed: BedListItem) => void;
+  onEditBed?: (bed: BedListItem) => void;
+  onViewHistory?: (bed: BedListItem) => void;
+  onDeleteBed?: (bed: BedListItem) => void;
   isAdmin?: boolean;
+  isHospitalUser?: boolean;
 }
 
 const BedTableRow: React.FC<BedTableRowProps> = ({ 
@@ -34,7 +37,9 @@ const BedTableRow: React.FC<BedTableRowProps> = ({
   onViewDetails,
   onEditBed,
   onViewHistory,
+  onDeleteBed,
   isAdmin = false,
+  isHospitalUser = false,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -65,6 +70,13 @@ const BedTableRow: React.FC<BedTableRowProps> = ({
   const handleViewHistory = () => {
     if (onViewHistory) {
       onViewHistory(bed);
+    }
+    handleMenuClose();
+  };
+
+  const handleDeleteBed = () => {
+    if (onDeleteBed) {
+      onDeleteBed(bed);
     }
     handleMenuClose();
   };
@@ -121,6 +133,12 @@ const BedTableRow: React.FC<BedTableRowProps> = ({
                   Edit Bed
                 </MenuItem>
               )}
+              {isHospitalUser && (
+                <MenuItem onClick={handleDeleteBed} sx={{ color: 'error.main' }}>
+                  <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                  Delete Bed
+                </MenuItem>
+              )}
             </Menu>
           </Box>
         </TableCell>
@@ -129,21 +147,18 @@ const BedTableRow: React.FC<BedTableRowProps> = ({
         </TableCell>
         <TableCell>
           <Typography variant="body2">
-            {bed.unit.name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {bed.unit.bedType.replace(/_/g, ' ')}
+            {bed.unitName}
           </Typography>
         </TableCell>
         <TableCell>
           <Typography variant="body2">
-            {bed.hospital.name}
+            {bed.hospital?.name || '-'}
           </Typography>
         </TableCell>
         <TableCell>
-          {bed.currentPatient ? (
+          {bed.currentPatientName ? (
             <Typography variant="body2" fontWeight={500}>
-              {bed.currentPatient.name}
+              {bed.currentPatientName}
             </Typography>
           ) : (
             <Typography variant="body2" color="text.secondary">

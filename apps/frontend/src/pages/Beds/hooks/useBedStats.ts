@@ -1,15 +1,16 @@
 import { useQuery } from 'react-query';
-import { bedService, BedListItem, GetBedsParams } from '../services/bedService';
+import { bedService, BedStats, GetBedStatsParams } from '../services/bedService';
 
-export const useBeds = (filters?: GetBedsParams) => {
-  const query = useQuery(
-    ['beds', filters],
-    () => bedService.getBeds(filters),
+export const useBedStats = (filters?: GetBedStatsParams) => {
+  const query = useQuery<BedStats, Error>(
+    ['bedStats', filters],
+    () => bedService.getBedStats(filters),
     {
       refetchInterval: 20000, // Refetch every 20 seconds
       staleTime: 10000, 
       cacheTime: 5 * 60 * 1000, 
       retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
           return false;
         }
@@ -20,9 +21,9 @@ export const useBeds = (filters?: GetBedsParams) => {
   );
 
   return {
-    beds: (query.data || []) as BedListItem[],
+    stats: query.data,
     loading: query.isLoading,
-    error: query.error ? (query.error as any)?.response?.data?.message || 'Failed to fetch beds' : null,
+    error: query.error ? (query.error as any)?.response?.data?.message || 'Failed to fetch bed stats' : null,
     refetch: query.refetch,
   };
 };

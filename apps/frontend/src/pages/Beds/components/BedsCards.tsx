@@ -27,27 +27,30 @@ import {
   Edit as EditIcon,
   Visibility as ViewIcon,
   History as HistoryIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { Bed, BedStatus } from '../services/bedService';
+import { BedListItem, BedStatus } from '../services/bedService';
 import { BedStatusChip } from './BedStatusChip';
 import BedsFilters from './BedsFilters';
 
 interface BedsCardsProps {
-  beds: Bed[];
+  beds: BedListItem[];
   loading?: boolean;
-  onViewDetails?: (bed: Bed) => void;
-  onEditBed?: (bed: Bed) => void;
-  onViewHistory?: (bed: Bed) => void;
+  onViewDetails?: (bed: BedListItem) => void;
+  onEditBed?: (bed: BedListItem) => void;
+  onViewHistory?: (bed: BedListItem) => void;
+  onDeleteBed?: (bed: BedListItem) => void;
   totalCount?: number;
   hospitals?: Array<{ id: string; name: string }>;
   units?: Array<{ id: string; name: string }>;
   appliedFilters: {
-    hospitalId: string;
+    hospitalId?: string;
     unitId: string;
     status: string;
   };
   onFiltersApplied: (filters: any) => void;
   isAdmin?: boolean;
+  isHospitalUser?: boolean;
   userHospitalId?: string | null;
   onViewModeChange?: (mode: 'table' | 'cards') => void;
   searchValue?: string;
@@ -64,12 +67,14 @@ const BedsCards: React.FC<BedsCardsProps> = ({
   onViewDetails,
   onEditBed,
   onViewHistory,
+  onDeleteBed,
   totalCount = 0,
   hospitals,
   units,
   appliedFilters,
   onFiltersApplied,
   isAdmin = false,
+  isHospitalUser = false,
   userHospitalId,
   onViewModeChange,
   searchValue = '',
@@ -82,7 +87,7 @@ const BedsCards: React.FC<BedsCardsProps> = ({
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [filters, setFilters] = useState(appliedFilters);
   const [searchInput, setSearchInput] = useState(searchValue);
-  const [filteredBeds, setFilteredBeds] = useState<Bed[]>(beds);
+  const [filteredBeds, setFilteredBeds] = useState<BedListItem[]>(beds);
   const [anchorEl, setAnchorEl] = useState<{ [key: string]: HTMLElement | null }>({});
 
   useEffect(() => {
@@ -105,16 +110,14 @@ const BedsCards: React.FC<BedsCardsProps> = ({
       const query = searchInput.toLowerCase().trim();
       filtered = filtered.filter(bed => {
         const bedNumber = bed.bedNumber.toLowerCase();
-        const unitName = bed.unit.name.toLowerCase();
-        const hospitalName = bed.hospital.name.toLowerCase();
-        const patientName = bed.currentPatient?.name.toLowerCase() || '';
-        const location = bed.location?.toLowerCase() || '';
+        const unitName = bed.unitName.toLowerCase();
+        const hospitalName = bed.hospital?.name.toLowerCase() || '';
+        const patientName = bed.currentPatientName?.toLowerCase() || '';
 
         return bedNumber.includes(query) ||
                unitName.includes(query) ||
                hospitalName.includes(query) ||
-               patientName.includes(query) ||
-               location.includes(query);
+               patientName.includes(query);
       });
     }
 
@@ -157,16 +160,23 @@ const BedsCards: React.FC<BedsCardsProps> = ({
     setAnchorEl({ ...anchorEl, [bedId]: null });
   };
 
-  const handleViewDetails = (bed: Bed) => {
+  const handleViewDetails = (bed: BedListItem) => {
     if (onViewDetails) {
       onViewDetails(bed);
     }
     handleMenuClose(bed.id);
   };
 
-  const handleEditBed = (bed: Bed) => {
+  const handleEditBed = (bed: BedListItem) => {
     if (onEditBed) {
       onEditBed(bed);
+    }
+    handleMenuClose(bed.id);
+  };
+
+  const handleDeleteBed = (bed: BedListItem) => {
+    if (onDeleteBed) {
+      onDeleteBed(bed);
     }
     handleMenuClose(bed.id);
   };
@@ -355,6 +365,12 @@ const BedsCards: React.FC<BedsCardsProps> = ({
                                 Edit Bed
                               </MenuItem>
                             )}
+                        {isHospitalUser && (
+                          <MenuItem onClick={() => handleDeleteBed(bed)} sx={{ color: 'error.main' }}>
+                            <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                            Delete Bed
+                          </MenuItem>
+                        )}
                           </Menu>
                         </Box>
 
@@ -363,40 +379,28 @@ const BedsCards: React.FC<BedsCardsProps> = ({
                             Unit
                           </Typography>
                           <Typography variant="body1" fontWeight={500}>
-                            {bed.unit.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {bed.unit.bedType.replace(/_/g, ' ')}
+                            {bed.unitName}
                           </Typography>
                         </Box>
 
-                        <Box sx={{ mt: 2 }}>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Hospital
-                          </Typography>
-                          <Typography variant="body1">
-                            {bed.hospital.name}
-                          </Typography>
-                        </Box>
+                        {bed.hospital && (
+                          <Box sx={{ mt: 2 }}>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              Hospital
+                            </Typography>
+                            <Typography variant="body1">
+                              {bed.hospital.name}
+                            </Typography>
+                          </Box>
+                        )}
 
-                        {bed.currentPatient && (
+                        {bed.currentPatientName && (
                           <Box sx={{ mt: 2 }}>
                             <Typography variant="body2" color="text.secondary" gutterBottom>
                               Patient
                             </Typography>
                             <Typography variant="body1" fontWeight={500}>
-                              {bed.currentPatient.name}
-                            </Typography>
-                          </Box>
-                        )}
-
-                        {bed.location && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                              Location
-                            </Typography>
-                            <Typography variant="body1">
-                              {bed.location}
+                              {bed.currentPatientName}
                             </Typography>
                           </Box>
                         )}

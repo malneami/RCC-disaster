@@ -13,22 +13,53 @@ import {
   Card,
   CardContent,
   Avatar,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { Person as PersonIcon } from '@mui/icons-material';
-import { Bed } from '../services/bedService';
 import { BedStatusChip } from './BedStatusChip';
+import { useBed } from '../hooks/useBed';
 
 interface ViewBedDialogProps {
   open: boolean;
   onClose: () => void;
-  bed: Bed | null;
+  bedId: string | null;
 }
 
 const ViewBedDialog: React.FC<ViewBedDialogProps> = ({
   open,
   onClose,
-  bed,
+  bedId,
 }) => {
+  const { bed, loading, error } = useBed(bedId);
+
+  if (!bedId) return null;
+
+  if (loading) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogContent>
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+            <CircularProgress />
+          </Box>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (error) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogContent>
+          <Alert severity="error">{error}</Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
   if (!bed) return null;
 
   const isOccupied = bed.status === 'OCCUPIED' && bed.currentPatient;

@@ -17,31 +17,33 @@ import {
   Divider,
   ListItemText,
   ListItemIcon,
+  CircularProgress,
 } from '@mui/material';
 import {
   Circle as CircleIcon,
 } from '@mui/icons-material';
-import { Bed, BedStatus, bedService } from '../services/bedService';
+import { BedStatus } from '../services/bedService';
 import { BedStatusChip } from './BedStatusChip';
-import { useSnackbar } from 'notistack';
+import { useBed } from '../hooks/useBed';
+import { useBedMutations } from '../hooks/useBedMutations';
 
 interface EditBedDialogProps {
   open: boolean;
   onClose: () => void;
-  bed: Bed | null;
-  onUpdate: (bedId: string, data: { status: BedStatus; location?: string }) => Promise<void>;
+  bedId: string | null;
+  onUpdate: () => void;
 }
 
 const EditBedDialog: React.FC<EditBedDialogProps> = ({
   open,
   onClose,
-  bed,
+  bedId,
   onUpdate,
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
+  const { bed, loading: bedLoading } = useBed(bedId);
+  const { updateBed, updateBedLoading } = useBedMutations();
   const [status, setStatus] = useState<BedStatus>('VACANT');
   const [location, setLocation] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,23 +54,19 @@ const EditBedDialog: React.FC<EditBedDialogProps> = ({
   }, [bed]);
 
   const handleSubmit = async () => {
-    if (!bed) return;
+    if (!bed || !bedId) return;
 
     try {
-      setLoading(true);
       setError(null);
-      
-      await bedService.updateBedStatus(bed.id, status);
-      
-      await onUpdate(bed.id, { status, location: location.trim() || undefined });
-      enqueueSnackbar('Bed status updated successfully', { variant: 'success' });
+      await updateBed({
+        bedId,
+        status,
+      });
+      onUpdate();
       onClose();
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to update bed status';
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to update bed status';
       setError(errorMessage);
-      enqueueSnackbar(errorMessage, { variant: 'error' });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -109,6 +107,20 @@ const EditBedDialog: React.FC<EditBedDialogProps> = ({
   const getStatusLabel = (status: BedStatus): string => {
     return status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, ' ');
   };
+
+  if (!bedId) return null;
+
+  if (bedLoading) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogContent>
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+            <CircularProgress />
+          </Box>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!bed) return null;
 
@@ -227,15 +239,15 @@ const EditBedDialog: React.FC<EditBedDialogProps> = ({
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+        <Button onClick={onClose} disabled={updateBedLoading}>
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading || status === bed.status}
+          disabled={updateBedLoading || status === bed.status}
         >
-          {loading ? 'Updating...' : 'Update Bed'}
+          {updateBedLoading ? 'Updating...' : 'Update Bed'}
         </Button>
       </DialogActions>
     </Dialog>

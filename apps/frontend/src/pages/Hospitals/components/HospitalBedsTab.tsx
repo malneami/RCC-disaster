@@ -1,92 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { Box, CircularProgress } from '@mui/material';
-import { Bed as BedIcon } from '@mui/icons-material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, CircularProgress, Button } from '@mui/material';
+import { Bed as BedIcon, Add as AddIcon } from '@mui/icons-material';
 
 import BedsTable from '../../Beds/components/BedsTable';
 import BedsCards from '../../Beds/components/BedsCards';
 import EditBedDialog from '../../Beds/components/EditBedDialog';
 import ViewBedDialog from '../../Beds/components/ViewBedDialog';
 import BedHistoryDialog from '../../Beds/components/BedHistoryDialog';
+import AddBedDialog from '../../Beds/components/AddBedDialog';
+import DeleteBedDialog from '../../Beds/components/DeleteBedDialog';
 import { useBeds } from '../../Beds/hooks/useBeds';
 import { useUnits } from '../../Beds/hooks/useUnits';
-import { Bed, BedStatus } from '../../Beds/services/bedService';
+import { BedListItem, BedStatus, GetBedsParams } from '../../Beds/services/bedService';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useBedMutations } from '../../Beds/hooks/useBedMutations';
 
 interface HospitalBedsTabProps {
   hospitalId: string;
+  filters?: {
+    hospitalId?: string;
+    unitId: string;
+    status: string;
+  };
+  onFiltersChange?: (filters: {
+    hospitalId?: string;
+    unitId: string;
+    status: string;
+  }) => void;
 }
 
-const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ hospitalId }) => {
+const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ 
+  hospitalId, 
+  filters: externalFilters,
+  onFiltersChange 
+}) => {
+  const { user } = useAuth();
+  
+  // Check if user can create/delete beds
+  const canManageBeds = user?.role === 'HOSPITAL_USER' || 
+                        user?.role === 'ED_NURSE' || 
+                        user?.role === 'UNIT_NURSE' || 
+                        user?.role === 'ADMIN' || 
+                        user?.role === 'RCC';
+  
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
-  const [appliedFilters, setAppliedFilters] = useState({
-    hospitalId: '', // Not used since we're already filtered by hospital
+  
+  const defaultFilters = {
     unitId: '',
     status: '',
-  });
+  };
+  
+  const [localFilters, setLocalFilters] = useState(defaultFilters);
+  
+  const appliedFilters = externalFilters !== undefined ? externalFilters : localFilters;
+  
+  const setAppliedFilters = (filters: typeof defaultFilters) => {
+    if (onFiltersChange) {
+      onFiltersChange(filters);
+    } else {
+      setLocalFilters(filters);
+    }
+  };
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
+  const [selectedBedId, setSelectedBedId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [addBedDialogOpen, setAddBedDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const { units, loading: unitsLoading } = useUnits(hospitalId, true);
 
-  const bedParams: {
-    hospitalId?: string;
-    unitId?: string;
-    status?: Bed['status'];
-  } = {
-    hospitalId, // Always filter by the hospital
-  };
+  const bedFilters = useMemo((): GetBedsParams => {
+    const filters: GetBedsParams = {
+      hospitalId,
+    };
+    
+    if (appliedFilters.unitId) {
+      filters.unitId = appliedFilters.unitId;
+    }
+    
+    if (appliedFilters.status) {
+      filters.status = appliedFilters.status as BedStatus;
+    }
+    
+    return filters;
+  }, [hospitalId, appliedFilters.unitId, appliedFilters.status]);
 
-  if (appliedFilters.unitId) {
-    bedParams.unitId = appliedFilters.unitId;
-  }
-
-  if (appliedFilters.status) {
-    bedParams.status = appliedFilters.status as Bed['status'];
-  }
-
-  const { beds, loading: bedsLoading, refetch } = useBeds(bedParams);
+  const { beds, loading: bedsLoading } = useBeds(bedFilters);
+  
+  const { deleteBed, deleteBedLoading } = useBedMutations(bedFilters);
 
   useEffect(() => {
-    if (editDialogOpen || viewDialogOpen) {
-      return;
+    if (!externalFilters && !onFiltersChange) {
+      setLocalFilters({
+        unitId: '',
+        status: '',
+      });
     }
+  }, [hospitalId, externalFilters, onFiltersChange]);
 
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        refetch().then(() => {
-          setLastUpdated(new Date());
-        });
-      }
-    }, 20000); // 20 seconds
+  // Update lastUpdated when beds data changes
+  useEffect(() => {
+    if (beds.length > 0 || !bedsLoading) {
+      setLastUpdated(new Date());
+    }
+  }, [beds, bedsLoading]);
 
-    return () => clearInterval(interval);
-  }, [refetch, editDialogOpen, viewDialogOpen]);
-
-  const handleViewDetails = (bed: Bed) => {
-    setSelectedBed(bed);
+  const handleViewDetails = (bed: BedListItem) => {
+    setSelectedBedId(bed.id);
     setViewDialogOpen(true);
   };
 
-  const handleEditBed = (bed: Bed) => {
-    setSelectedBed(bed);
+  const handleEditBed = (bed: BedListItem) => {
+    setSelectedBedId(bed.id);
     setEditDialogOpen(true);
   };
 
-  const handleViewHistory = (bed: Bed) => {
-    setSelectedBed(bed);
+  const handleViewHistory = (bed: BedListItem) => {
+    setSelectedBedId(bed.id);
     setHistoryDialogOpen(true);
   };
 
-  const handleUpdateBed = async (_bedId: string, _data: { status: BedStatus; location?: string }) => {
-    await refetch();
+  const handleUpdateBed = async () => {
     setEditDialogOpen(false);
-    setSelectedBed(null);
-    setLastUpdated(new Date());
+    setSelectedBedId(null);
   };
 
   const handleFiltersApplied = (filters: typeof appliedFilters) => {
@@ -101,6 +143,27 @@ const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ hospitalId }) => {
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+
+  const handleDeleteBed = (bed: BedListItem) => {
+    setSelectedBedId(bed.id);
+    setDeleteDialogOpen(true);
+    setDeleteError(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedBedId) return;
+
+    try {
+      setDeleteError(null);
+      await deleteBed(selectedBedId);
+      setDeleteDialogOpen(false);
+      setSelectedBedId(null);
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to delete bed';
+      setDeleteError(errorMessage);
+    }
   };
 
   if (bedsLoading && beds.length === 0) {
@@ -125,6 +188,15 @@ const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ hospitalId }) => {
               </Box>
             </Box>
           </Box>
+          {canManageBeds && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setAddBedDialogOpen(true)}
+            >
+              Add Bed
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -135,6 +207,8 @@ const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ hospitalId }) => {
           onViewDetails={handleViewDetails}
           onEditBed={handleEditBed}
           onViewHistory={handleViewHistory}
+          onDeleteBed={canManageBeds ? handleDeleteBed : undefined}
+          isHospitalUser={canManageBeds}
           isAdmin={false} // Never show hospital filter in hospital dashboard context
           totalCount={beds.length}
           page={page}
@@ -160,6 +234,8 @@ const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ hospitalId }) => {
           onViewDetails={handleViewDetails}
           onEditBed={handleEditBed}
           onViewHistory={handleViewHistory}
+          onDeleteBed={canManageBeds ? handleDeleteBed : undefined}
+          isHospitalUser={canManageBeds}
           totalCount={beds.length}
           hospitals={undefined} // No hospital filter needed since we're already scoped to one hospital
           units={units}
@@ -184,9 +260,9 @@ const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ hospitalId }) => {
         open={editDialogOpen}
         onClose={() => {
           setEditDialogOpen(false);
-          setSelectedBed(null);
+          setSelectedBedId(null);
         }}
-        bed={selectedBed}
+        bedId={selectedBedId}
         onUpdate={handleUpdateBed}
       />
 
@@ -194,19 +270,42 @@ const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ hospitalId }) => {
         open={viewDialogOpen}
         onClose={() => {
           setViewDialogOpen(false);
-          setSelectedBed(null);
+          setSelectedBedId(null);
         }}
-        bed={selectedBed}
+        bedId={selectedBedId}
       />
 
       <BedHistoryDialog
         open={historyDialogOpen}
         onClose={() => {
           setHistoryDialogOpen(false);
-          setSelectedBed(null);
+          setSelectedBedId(null);
         }}
-        bed={selectedBed}
+        bedId={selectedBedId}
       />
+
+      {canManageBeds && (
+        <>
+          <AddBedDialog
+            open={addBedDialogOpen}
+            onClose={() => setAddBedDialogOpen(false)}
+            hospitalId={hospitalId}
+          />
+
+          <DeleteBedDialog
+            open={deleteDialogOpen}
+            onClose={() => {
+              setDeleteDialogOpen(false);
+              setSelectedBedId(null);
+              setDeleteError(null);
+            }}
+            onConfirm={handleConfirmDelete}
+            bedId={selectedBedId}
+            loading={deleteBedLoading}
+            error={deleteError}
+          />
+        </>
+      )}
     </>
   );
 };

@@ -28,16 +28,18 @@ import {
 import BedsTableHeader from './BedsTableHeader';
 import BedTableRow from './BedTableRow';
 import BedsFilters from './BedsFilters';
-import { Bed, BedStatus } from '../services/bedService';
+import { BedListItem, BedStatus } from '../services/bedService';
 
 export interface BedsTableProps {
-  beds: Bed[];
+  beds: BedListItem[];
   loading?: boolean;
-  onBedClick?: (bed: Bed) => void;
-  onChangeStatus?: (bed: Bed, newStatus: BedStatus) => void;
-  onViewDetails?: (bed: Bed) => void;
-  onEditBed?: (bed: Bed) => void;
-  onViewHistory?: (bed: Bed) => void;
+  onBedClick?: (bed: BedListItem) => void;
+  onChangeStatus?: (bed: BedListItem, newStatus: BedStatus) => void;
+  onViewDetails?: (bed: BedListItem) => void;
+  onEditBed?: (bed: BedListItem) => void;
+  onViewHistory?: (bed: BedListItem) => void;
+  onDeleteBed?: (bed: BedListItem) => void;
+  isHospitalUser?: boolean;
   totalCount?: number;
   page?: number;
   rowsPerPage?: number;
@@ -46,7 +48,7 @@ export interface BedsTableProps {
   hospitals?: Array<{ id: string; name: string }>;
   units?: Array<{ id: string; name: string }>;
   appliedFilters: {
-    hospitalId: string;
+    hospitalId?: string;
     unitId: string;
     status: string;
   };
@@ -66,6 +68,8 @@ const BedsTable: React.FC<BedsTableProps> = ({
   onViewDetails,
   onEditBed,
   onViewHistory,
+  onDeleteBed,
+  isHospitalUser = false,
   isAdmin = false,
   totalCount = 0,
   page = 0,
@@ -84,7 +88,7 @@ const BedsTable: React.FC<BedsTableProps> = ({
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [filters, setFilters] = useState(appliedFilters);
   const [searchInput, setSearchInput] = useState(searchValue);
-  const [filteredBeds, setFilteredBeds] = useState<Bed[]>(beds);
+  const [filteredBeds, setFilteredBeds] = useState<BedListItem[]>(beds);
 
   useEffect(() => {
     setFilters(appliedFilters);
@@ -105,16 +109,14 @@ const BedsTable: React.FC<BedsTableProps> = ({
       const query = searchInput.toLowerCase().trim();
       filtered = filtered.filter(bed => {
         const bedNumber = bed.bedNumber.toLowerCase();
-        const unitName = bed.unit.name.toLowerCase();
-        const hospitalName = bed.hospital.name.toLowerCase();
-        const patientName = bed.currentPatient?.name.toLowerCase() || '';
-        const location = bed.location?.toLowerCase() || '';
+        const unitName = bed.unitName.toLowerCase();
+        const hospitalName = bed.hospital?.name.toLowerCase() || '';
+        const patientName = bed.currentPatientName?.toLowerCase() || '';
 
         return bedNumber.includes(query) ||
                unitName.includes(query) ||
                hospitalName.includes(query) ||
-               patientName.includes(query) ||
-               location.includes(query);
+               patientName.includes(query);
       });
     }
 
@@ -240,7 +242,9 @@ const BedsTable: React.FC<BedsTableProps> = ({
                     onViewDetails={onViewDetails}
                     onEditBed={onEditBed}
                     onViewHistory={onViewHistory}
+                    onDeleteBed={onDeleteBed}
                     isAdmin={isAdmin}
+                    isHospitalUser={isHospitalUser}
                   />
                 ))
               )}
