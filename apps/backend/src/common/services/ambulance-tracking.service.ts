@@ -644,11 +644,42 @@ export class AmbulanceTrackingService {
               continue; // Skip entry - not enough confirmation
             }
           } else {
-            // Not enough valid GPS logs in recent history - skip entry to avoid false positives
-            this.logger.debug(
-              `Ambulance ${ambulanceId} appears near ${hospital.hospital.hospitalName} but only ${validGPSLogs.length} GPS points available (need at least 3) - skipping entry`
-            );
-            continue;
+            // Not enough valid GPS logs in recent history - check fallback for stationary/stale data
+            // If ambulance is parked (e.g. engine off), it might send old timestamps or no new data
+            // In this case, we check the LATEST known location (regardless of time)
+            
+            const latestLog = await this.prisma.gPSTrackingLog.findFirst({
+              where: {
+                ambulanceId: ambulanceId,
+                // Valid coordinates only
+                latitude: { not: 0, gte: 16.0, lte: 32.0 },
+                longitude: { not: 0, gte: 34.0, lte: 55.0 }
+              },
+              orderBy: {
+                timestamp: 'desc'
+              }
+            });
+
+            if (latestLog) {
+              const distance = this.hospitalBoundsService.calculateDistance(
+                latestLog.latitude,
+                latestLog.longitude,
+                hospital.hospital.centerLat,
+                hospital.hospital.centerLng
+              );
+
+              if (distance <= hospital.hospital.radiusKm) {
+                this.logger.log(`Ambulance ${ambulanceId} zone entry confirmed by historical/stale GPS data (latest log: ${latestLog.timestamp.toISOString()})`);
+                // Allow entry - this covers the "startup with stale data" case
+              } else {
+                 this.logger.debug(
+                  `Ambulance ${ambulanceId} appears near ${hospital.hospital.hospitalName} but recent history is insufficient and latest log is out of zone - skipping entry`
+                );
+                continue;
+              }
+            } else {
+               continue; // No logs at all
+            }
           }
 
           // Classify zone type (origin/destination/other)
