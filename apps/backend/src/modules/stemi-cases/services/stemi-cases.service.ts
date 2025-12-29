@@ -342,6 +342,31 @@ export class StemiCasesService {
       // Ensure we have a valid user ID
       const validUserId = await this.getValidUserId(userId);
 
+      // Determine the effective origin and destination hospital IDs
+      const effectiveOriginHospitalId = patientInfo?.originHospitalId ?? existingCase.originHospitalId;
+      const effectiveDestinationHospitalId = patientInfo?.destinationHospitalId !== undefined 
+        ? (patientInfo.destinationHospitalId || null)
+        : existingCase.destinationHospitalId;
+
+      // Automatically determine case type based on destination hospital
+      // If destination hospital is added/changed (and different from origin), set to TRANSFER
+      // If destination hospital is removed or same as origin, set to DIRECT
+      let determinedCaseType = existingCase.caseType || 'DIRECT';
+      if (patientInfo?.destinationHospitalId !== undefined) {
+        if (effectiveDestinationHospitalId && 
+            effectiveOriginHospitalId && 
+            effectiveDestinationHospitalId !== effectiveOriginHospitalId) {
+          determinedCaseType = 'TRANSFER';
+        } else {
+          determinedCaseType = 'DIRECT';
+        }
+      } else if (effectiveDestinationHospitalId && 
+                 effectiveOriginHospitalId && 
+                 effectiveDestinationHospitalId !== effectiveOriginHospitalId) {
+        // Destination hospital exists and is different from origin
+        determinedCaseType = 'TRANSFER';
+      }
+
       // Update patient if patientInfo provided
       if (patientInfo) {
         await this.stemiPatientService.updatePatient(existingCase.patientId, patientInfo, validUserId, ipAddress, userAgent);
@@ -356,8 +381,8 @@ export class StemiCasesService {
             ...(patientInfo?.originHospitalId && {
               originHospitalId: patientInfo.originHospitalId,
             }),
-            ...(patientInfo?.destinationHospitalId && {
-              destinationHospitalId: patientInfo.destinationHospitalId,
+            ...(patientInfo?.destinationHospitalId !== undefined && {
+              destinationHospitalId: patientInfo.destinationHospitalId || null,
             }),
           }
         });
@@ -379,8 +404,13 @@ export class StemiCasesService {
       if (stemiData.ecgFindings !== undefined) {
         updateData.ecgFindings = stemiData.ecgFindings;
       }
+      
+      // Set case type: use explicitly provided value, or auto-determined value
       if (stemiData.caseType !== undefined) {
         updateData.caseType = stemiData.caseType;
+      } else {
+        // Automatically update case type based on destination hospital
+        updateData.caseType = determinedCaseType;
       }
       
       // Add admission details if provided (check for existence, not truthiness)
@@ -395,8 +425,8 @@ export class StemiCasesService {
       if (patientInfo?.originHospitalId !== undefined && patientInfo?.originHospitalId !== null && patientInfo?.originHospitalId !== '') {
         updateData.originHospitalId = patientInfo.originHospitalId;
       }
-      if (patientInfo?.destinationHospitalId !== undefined && patientInfo?.destinationHospitalId !== null && patientInfo?.destinationHospitalId !== '') {
-        updateData.destinationHospitalId = patientInfo.destinationHospitalId;
+      if (patientInfo?.destinationHospitalId !== undefined) {
+        updateData.destinationHospitalId = patientInfo.destinationHospitalId || null;
       }
 
       // Add transfer dates if provided (check for existence)

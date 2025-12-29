@@ -241,10 +241,29 @@ export class TraumaCasesService {
       await this.traumaPatientService.updatePatient(existingCase.patientId, updateTraumaCaseDto.patientInfo, validUserId);
     }
 
+    // Determine the effective destination hospital ID
+    const effectiveDestinationHospitalId = updateTraumaCaseDto.destinationHospitalId !== undefined
+      ? (updateTraumaCaseDto.destinationHospitalId || null)
+      : existingCase.destinationHospitalId;
+
     // Calculate derived fields if relevant data is being updated
     let responseTimeMinutes = existingCase.responseTimeMinutes;
     let criticalCase = existingCase.criticalCase;
     let transferCase = existingCase.transferCase;
+
+    // Automatically determine transferCase based on destinationHospitalId
+    // If destination hospital is added/changed (and not null), set to true
+    // If destination hospital is removed (set to null), set to false
+    // Only update transferCase when destinationHospitalId is explicitly being updated
+    if (updateTraumaCaseDto.destinationHospitalId !== undefined) {
+      transferCase = effectiveDestinationHospitalId !== null && effectiveDestinationHospitalId !== undefined;
+    }
+
+    // Override with transferRequestDateTime if explicitly provided (legacy behavior)
+    // This takes precedence over destinationHospitalId-based determination
+    if (updateTraumaCaseDto.transferRequestDateTime !== undefined) {
+      transferCase = updateTraumaCaseDto.transferRequestDateTime !== null;
+    }
 
     if (updateTraumaCaseDto.incidentDateTime || updateTraumaCaseDto.arrivalDateTime) {
       const arrivalDateTime = updateTraumaCaseDto.arrivalDateTime 
@@ -261,10 +280,6 @@ export class TraumaCasesService {
 
     if (updateTraumaCaseDto.glasgowComaScale !== undefined) {
       criticalCase = updateTraumaCaseDto.glasgowComaScale < 8;
-    }
-
-    if (updateTraumaCaseDto.transferRequestDateTime !== undefined) {
-      transferCase = updateTraumaCaseDto.transferRequestDateTime !== null;
     }
 
     // Remove patientInfo from the update data since we handle it separately
