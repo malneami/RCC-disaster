@@ -11,7 +11,7 @@ export class GPSPollingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(GPSPollingService.name);
   private readonly fileLogger: FileLoggerService;
   private pollingInterval: NodeJS.Timeout | null = null;
-  private readonly POLL_INTERVAL_MS = 30000; // 30 seconds
+  private readonly POLL_INTERVAL_MS = 50000; // 60 seconds
   private readonly GPS_API_URL = 'https://gps3.tawasolmap.com/new_api/';
   private readonly GPS_API_KEY = '7798AA377F99763506758557AC7741A1';
   private isRunning = false;
@@ -112,7 +112,7 @@ export class GPSPollingService implements OnModuleInit, OnModuleDestroy {
             imeis: '*' // Request ALL devices
           },
           {
-            timeout: 30000,
+            timeout: 60000,
             headers: { 'Content-Type': 'application/json' }
           }
         );
