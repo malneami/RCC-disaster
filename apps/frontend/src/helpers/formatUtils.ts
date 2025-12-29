@@ -155,6 +155,40 @@ export const formatCaseType = (caseType?: string): string => {
     return typeMap[caseType] || caseType?.replace(/_/g, ' ') || 'Not specified';
 };
 
+/**
+ * Gets case type label for display in Case Information sections
+ * Returns "Direct" or "Transferred" for consistent UI display
+ * @param caseType - Case type string ('DIRECT' | 'TRANSFER') for STEMI
+ * @param transferCase - Boolean for Trauma cases
+ * @param destinationHospitalId - Optional destination hospital ID (for Stroke cases)
+ * @param originHospitalId - Optional origin hospital ID (for Stroke cases)
+ */
+export const getCaseTypeLabel = (
+    caseType?: 'DIRECT' | 'TRANSFER',
+    transferCase?: boolean,
+    destinationHospitalId?: string,
+    originHospitalId?: string
+): 'Direct' | 'Transferred' => {
+    // STEMI: Uses caseType field
+    if (caseType === 'TRANSFER') return 'Transferred';
+    if (caseType === 'DIRECT') return 'Direct';
+    
+    // Trauma: Uses transferCase boolean
+    if (transferCase === true) return 'Transferred';
+    if (transferCase === false) return 'Direct';
+    
+    // Stroke: Infer from destinationHospitalId
+    if (destinationHospitalId && originHospitalId && destinationHospitalId !== originHospitalId) {
+        return 'Transferred';
+    }
+    if (destinationHospitalId && originHospitalId && destinationHospitalId === originHospitalId) {
+        return 'Direct';
+    }
+    
+    // Default to Direct if no clear indicator
+    return 'Direct';
+};
+
 // ===== Gender Formatting =====
 
 /**

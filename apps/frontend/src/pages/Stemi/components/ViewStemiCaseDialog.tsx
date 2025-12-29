@@ -52,6 +52,7 @@ import { StemiCase } from '../services/stemiService';
 import StemiTimelineView from './StemiTimelineView';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService, CaseNote } from '../../../services/notificationService';
+import { getCaseTypeLabel } from '../../../helpers/formatUtils';
 
 interface ViewStemiCaseDialogProps {
   open: boolean;
@@ -259,6 +260,16 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
                               backgroundColor: getStatusColor(stemiCase.currentStatus),
                               color: 'white'
                             }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell><strong>Case Type</strong></TableCell>
+                        <TableCell>
+                          <Chip
+                            label={getCaseTypeLabel(stemiCase.caseType)}
+                            size="small"
+                            color={stemiCase.caseType === 'TRANSFER' ? 'info' : 'primary'}
                           />
                         </TableCell>
                       </TableRow>

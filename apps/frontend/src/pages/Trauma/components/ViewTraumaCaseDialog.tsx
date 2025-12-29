@@ -49,6 +49,7 @@ import {
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService, CaseNote } from '../../../services/notificationService';
+import { getCaseTypeLabel } from '../../../helpers/formatUtils';
 
 interface ViewTraumaCaseDialogProps {
   open: boolean;
@@ -227,6 +228,16 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableBody>
+                      <TableRow>
+                        <TableCell><strong>Case Type</strong></TableCell>
+                        <TableCell>
+                          <Chip
+                            label={getCaseTypeLabel(undefined, traumaCase.transferCase)}
+                            size="small"
+                            color={traumaCase.transferCase ? 'info' : 'primary'}
+                          />
+                        </TableCell>
+                      </TableRow>
                       <TableRow>
                         <TableCell><strong>Origin Hospital</strong></TableCell>
                         <TableCell>{traumaCase.originHospital?.name || 'N/A'}</TableCell>

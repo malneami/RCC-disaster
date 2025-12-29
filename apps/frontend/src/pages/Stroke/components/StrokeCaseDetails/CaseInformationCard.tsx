@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 
 import { StrokeCase, StrokeService } from '../../../../services/strokeService';
+import { getCaseTypeLabel } from '../../../../helpers/formatUtils';
 
 interface CaseInformationCardProps {
   strokeCase: StrokeCase;
@@ -16,6 +17,8 @@ interface CaseInformationCardProps {
 const CaseInformationCard: React.FC<CaseInformationCardProps> = ({
   strokeCase,
 }) => {
+  const caseTypeLabel = getCaseTypeLabel(undefined, undefined, strokeCase.destinationHospitalId, strokeCase.originHospitalId);
+  
   return (
     <Card>
       <CardContent>
@@ -25,6 +28,14 @@ const CaseInformationCard: React.FC<CaseInformationCardProps> = ({
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary">Ticket Number:</Typography>
           <Typography variant="body1">{strokeCase.ticket?.ticketNumber || 'N/A'}</Typography>
+        </Box>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary">Case Type:</Typography>
+          <Chip
+            label={caseTypeLabel}
+            color={caseTypeLabel === 'Transferred' ? 'info' : 'primary'}
+            size="small"
+          />
         </Box>
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary">Stroke Type:</Typography>
