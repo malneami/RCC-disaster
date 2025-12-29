@@ -110,9 +110,6 @@ const StrokePortalPage: React.FC = () => {
       if (casesResult.status === 'fulfilled') {
         setStrokeCases(casesResult.value.cases);
         setTotalCases(casesResult.value.total);
-        // Convert stroke cases to timeline events
-        const events = convertStrokeCasesToTimelineEvents(casesResult.value.cases);
-        setTimelineEvents(events);
       } else {
         console.error('Failed to load cases:', casesResult.reason);
         setError('Failed to load stroke cases');

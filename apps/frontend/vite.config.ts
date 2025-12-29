@@ -3,8 +3,10 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
+import basicSsl from '@vitejs/plugin-basic-ssl';
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), basicSsl()],
   define: {
     global: 'globalThis',
     'process.env': {},
@@ -20,10 +22,19 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    https: true,
+    host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://10.138.40.24:3001',
         changeOrigin: true,
+        secure: false,
+      },
+      '/socket.io': {
+        target: 'http://10.138.40.24:3001',
+        changeOrigin: true,
+        ws: true,
+        secure: false,
       },
     },
   },

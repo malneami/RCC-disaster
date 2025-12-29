@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
 import { PrismaService } from '../../database/prisma.service';
 
@@ -36,6 +37,7 @@ import { PrismaService } from '../../database/prisma.service';
   },
   namespace: '/ems',
 })
+@UseGuards(WsJwtAuthGuard)
 export class EmsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
@@ -43,37 +45,72 @@ export class EmsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(EmsGateway.name);
   private connectedClients = new Map<string, { socket: Socket; userId: string; role: string }>();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   async handleConnection(client: Socket) {
     try {
-      this.logger.log(`Client connected: ${client.id}`);
-      
+      this.logger.log(`🔌 [EmsGateway] Client attempting connection: ${client.id}`);
+
+      // Manually verify JWT token since guards don't run for handleConnection
+      const token = client.handshake.auth?.token || client.handshake.headers.authorization?.replace('Bearer ', '');
+
+      if (!token) {
+        this.logger.warn(`⚠️ [EmsGateway] Connection attempt without token: ${client.id}`);
+        client.disconnect();
+        return;
+      }
+
+      let user;
+      try {
+        user = this.jwtService.verify(token);
+        // Store verified user in handshake.auth for use in SubscribeMessage handlers
+        client.handshake.auth.user = user;
+      } catch (error) {
+        this.logger.warn(`❌ [EmsGateway] Invalid token for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`);
+        client.disconnect();
+        return;
+      }
+
+      if (!user || !user.id) {
+        this.logger.warn(`⚠️ [EmsGateway] Invalid user data in token: ${client.id}`);
+        client.disconnect();
+        return;
+      }
+
       // Join client to general EMS room
-      client.join('ems-general');
-      
-      // Store client info
+      await client.join('ems-general');
+
+      // Store client info with actual user data
       this.connectedClients.set(client.id, {
         socket: client,
-        userId: client.handshake.auth?.userId || 'anonymous',
-        role: client.handshake.auth?.role || 'guest',
+        userId: user.id,
+        role: user.role,
       });
+
+      this.logger.log(`✅ [EmsGateway] Client connected: ${client.id} - User: ${user.email} (${user.role})`);
 
       // Send connection confirmation
       client.emit('connected', {
         message: 'Connected to EMS real-time updates',
         clientId: client.id,
+        userId: user.id,
         timestamp: new Date().toISOString(),
       });
 
     } catch (error) {
-      this.logger.error(`Connection error for client ${client.id}:`, (error as Error).message);
+      this.logger.error(`❌ [EmsGateway] Connection error for client ${client.id}: ${(error as Error).message}`);
       client.disconnect();
     }
   }
 
   async handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+    const clientData = this.connectedClients.get(client.id);
+    if (clientData) {
+      this.logger.log(`🔌 [EmsGateway] Client disconnected: ${client.id} - User: ${clientData.userId}`);
+    }
     this.connectedClients.delete(client.id);
   }
 

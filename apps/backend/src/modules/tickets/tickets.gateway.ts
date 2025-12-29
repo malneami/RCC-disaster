@@ -1,6 +1,7 @@
-import { WebSocketGateway, WebSocketServer, SubscribeMessage, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, SubscribeMessage, OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UseGuards } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
 import { TicketStatus, UserRole } from '@prisma/client';
 
@@ -28,23 +29,73 @@ import { TicketStatus, UserRole } from '@prisma/client';
   },
 })
 @UseGuards(WsJwtAuthGuard)
-export class TicketsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class TicketsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
+  private readonly logger = new Logger(TicketsGateway.name);
   private connectedClients = new Map<string, { socket: Socket; user: any }>();
 
-  handleConnection(client: Socket) {
-    const user = client.handshake.auth.user;
-    if (user) {
+  constructor(private jwtService: JwtService) {
+    this.logger.log('🎯 [TicketsGateway] Gateway constructor called');
+  }
+
+  afterInit(server: Server) {
+    this.logger.log('✅ [TicketsGateway] WebSocket Gateway initialized successfully');
+    this.logger.log(`📡 [TicketsGateway] Server instance: ${server ? 'exists' : 'null'}`);
+  }
+
+  async handleConnection(client: Socket) {
+    try {
+      this.logger.log(`🔌 [TicketsGateway] Client attempting connection: ${client.id}`);
+
+      // Manually verify JWT token since guards don't run for handleConnection
+      const token = client.handshake.auth?.token || client.handshake.headers.authorization?.replace('Bearer ', '');
+
+      if (!token) {
+        this.logger.warn(`⚠️ [TicketsGateway] Connection attempt without token: ${client.id}`);
+        client.disconnect();
+        return;
+      }
+
+      let user;
+      try {
+        user = this.jwtService.verify(token);
+        // Store verified user in handshake.auth for use in SubscribeMessage handlers
+        client.handshake.auth.user = user;
+      } catch (error) {
+        this.logger.warn(`❌ [TicketsGateway] Invalid token for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`);
+        client.disconnect();
+        return;
+      }
+
+      if (!user || !user.id) {
+        this.logger.warn(`⚠️ [TicketsGateway] Invalid user data in token: ${client.id}`);
+        client.disconnect();
+        return;
+      }
+
       this.connectedClients.set(client.id, { socket: client, user });
-      console.log(`Client connected: ${client.id} - User: ${user.email}`);
+      this.logger.log(`✅ [TicketsGateway] Client connected: ${client.id} - User: ${user.email}`);
+
+      // Send connection confirmation
+      client.emit('connected', {
+        message: 'Connected to tickets gateway',
+        clientId: client.id,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error(`❌ [TicketsGateway] Error handling connection: ${error instanceof Error ? error.message : String(error)}`);
+      client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
+    const clientData = this.connectedClients.get(client.id);
+    if (clientData) {
+      this.logger.log(`🔌 [TicketsGateway] Client disconnected: ${client.id} - User: ${clientData.user?.email || 'unknown'}`);
+    }
     this.connectedClients.delete(client.id);
-    console.log(`Client disconnected: ${client.id}`);
   }
 
   // Subscribe to ticket updates

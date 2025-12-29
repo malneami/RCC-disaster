@@ -3,9 +3,9 @@ import {
   Box,
   Typography,
   Button,
-  Chip,
+
   Grid,
-  Divider,
+
   TextField,
   InputAdornment,
   IconButton,
@@ -515,30 +515,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
     return 'Minor';
   };
 
-  const getBodyRegionInjuries = (traumaCase: TraumaCase): string[] => {
-    const injuries = [];
 
-    if (traumaCase.headAndNeckInjury) {
-      injuries.push(`Head/Neck: ${traumaCase.headAndNeckInjury}`);
-    }
-    if (traumaCase.chestInjury) {
-      injuries.push(`Chest: ${traumaCase.chestInjury}`);
-    }
-    if (traumaCase.abdomenInjury) {
-      injuries.push(`Abdomen: ${traumaCase.abdomenInjury}`);
-    }
-    if (traumaCase.extremitiesInjury) {
-      injuries.push(`Extremities: ${traumaCase.extremitiesInjury}`);
-    }
-    if (traumaCase.externalInjury) {
-      injuries.push(`External: ${traumaCase.externalInjury}`);
-    }
-    if (traumaCase.faceInjury) {
-      injuries.push(`Face: ${traumaCase.faceInjury}`);
-    }
-
-    return injuries.length > 0 ? injuries : ['No specific injuries recorded'];
-  };
 
   const getDaysAgo = (dateString: string): string => {
     const days = Math.floor((Date.now() - new Date(dateString).getTime()) / (1000 * 60 * 60 * 24));

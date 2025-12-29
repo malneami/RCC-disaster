@@ -41,14 +41,14 @@ export const VideoCallSocketProvider: React.FC<VideoCallSocketProviderProps> = (
     }
 
     // Get socket base URL
-    const baseUrl = getWebSocketUrl() || "http://localhost:3001";
+    const baseUrl = getWebSocketUrl();
     const namespace = '/video-calls';
-    
+
     console.log(`[VideoCallSocketContext] Connecting to: ${baseUrl}${namespace}`);
 
     // Get token for authentication
     const token = authService.getToken();
-    
+
     if (!token) {
       console.warn('[VideoCallSocketContext] No token available, cannot connect');
       setConnectionError('No authentication token available');
@@ -80,7 +80,7 @@ export const VideoCallSocketProvider: React.FC<VideoCallSocketProviderProps> = (
     newSocket.on('disconnect', (reason) => {
       if (!isMountedRef.current) return;
       setIsConnected(false);
-      
+
       if (reason === 'io server disconnect') {
         console.error('[VideoCallSocketContext] Server disconnected:', reason);
         setConnectionError(`Server disconnected: ${reason}`);

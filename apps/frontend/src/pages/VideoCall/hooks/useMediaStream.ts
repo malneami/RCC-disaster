@@ -8,6 +8,12 @@ export const useMediaStream = () => {
   useEffect(() => {
     let mediaStream: MediaStream | null = null;
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.warn('Media devices not supported or blocked by browser (likely due to insecure HTTP context)');
+      enqueueSnackbar('Camera access requires HTTPS or localhost. Please check browser security settings.', { variant: 'warning' });
+      return;
+    }
+
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {

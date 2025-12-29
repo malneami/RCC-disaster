@@ -7,7 +7,9 @@
  * Removes /api/v1 suffix if present, as Socket.IO doesn't use REST API paths
  */
 export function getWebSocketBaseUrl(): string {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+  // If VITE_API_BASE_URL is set, use it. Otherwise, construct based on current hostname
+  // This allows the app to work on LAN (e.g. 192.168.x.x) without changing env vars
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:3001`;
   
   // Remove /api/v1 or /api suffix if present
   let baseUrl = apiBaseUrl.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');

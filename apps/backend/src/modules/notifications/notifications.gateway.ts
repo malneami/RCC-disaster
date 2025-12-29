@@ -9,12 +9,30 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
 import { PrismaService } from '../../database/prisma.service';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow connections with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      // Allow localhost with any port for development
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        callback(null, true);
+        return;
+      }
+      // Allow configured frontend URL
+      if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     credentials: true,
   },
   namespace: '/notifications',
@@ -27,36 +45,67 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   private readonly logger = new Logger(NotificationsGateway.name);
   private connectedClients = new Map<string, { socket: Socket; userId: string; role: string }>();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   async handleConnection(client: Socket) {
     try {
+      this.logger.log(`🔌 [NotificationsGateway] Client attempting connection: ${client.id}`);
 
-      let user = client.handshake.auth?.user;
+      // Manually verify JWT token since guards don't run for handleConnection
+      const token = client.handshake.auth?.token || client.handshake.headers.authorization?.replace('Bearer ', '');
 
-      if (user) {
-        this.connectedClients.set(client.id, { socket: client, userId: user.id, role: user.role });
-        this.logger.log(`✅ [NotificationsGateway] Client connected: ${client.id} - User: ${user.email} (${user.role})`);
-        
-        // Join user-specific room for targeted notifications
-        await client.join(`user-${user.id}`);
-        
-        // Join role-specific rooms
-        await client.join(`role-${user.role}`);
-        
-        // Join hospital-specific room if user has hospital
-        if (user.hospitalId) {
-          await client.join(`hospital-${user.hospitalId}`);
-        }
-      } else {
-        this.logger.warn(`⚠️ [NotificationsGateway] Client connected without user info: ${client.id}`);
-        this.logger.debug(`Available auth data:`, client.handshake.auth);
+      if (!token) {
+        this.logger.warn(`⚠️ [NotificationsGateway] Connection attempt without token: ${client.id}`);
+        client.disconnect();
+        return;
       }
+
+      let user;
+      try {
+        user = this.jwtService.verify(token);
+        // Store verified user in handshake.auth for use in SubscribeMessage handlers
+        client.handshake.auth.user = user;
+      } catch (error) {
+        this.logger.warn(`❌ [NotificationsGateway] Invalid token for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`);
+        client.disconnect();
+        return;
+      }
+
+      if (!user || !user.id) {
+        this.logger.warn(`⚠️ [NotificationsGateway] Invalid user data in token: ${client.id}`);
+        client.disconnect();
+        return;
+      }
+
+      this.connectedClients.set(client.id, { socket: client, userId: user.id, role: user.role });
+      this.logger.log(`✅ [NotificationsGateway] Client connected: ${client.id} - User: ${user.email} (${user.role})`);
+
+      // Join user-specific room for targeted notifications
+      await client.join(`user-${user.id}`);
+
+      // Join role-specific rooms
+      await client.join(`role-${user.role}`);
+
+      // Join hospital-specific room if user has hospital
+      if (user.hospitalId) {
+        await client.join(`hospital-${user.hospitalId}`);
+      }
+
+      // Send connection confirmation
+      client.emit('connected', {
+        message: 'Connected to notifications',
+        clientId: client.id,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
       this.logger.error(`❌ [NotificationsGateway] Error handling connection: ${error instanceof Error ? error.message : String(error)}`);
-      this.logger.error(`Error stack:`, error instanceof Error ? error.stack : 'No stack trace');
+      client.disconnect();
     }
   }
+
 
   async handleDisconnect(client: Socket) {
     const clientData = this.connectedClients.get(client.id);

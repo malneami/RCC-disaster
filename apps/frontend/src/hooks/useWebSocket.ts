@@ -21,7 +21,7 @@ export const useWebSocket = (namespace?: string): UseWebSocketReturn => {
   useEffect(() => {
     isMountedRef.current = true;
     
-    const socketUrl = getWebSocketUrl(namespace) || "http://localhost:3001";
+    const socketUrl = getWebSocketUrl(namespace);
 
     const token = authService.getToken();
     
