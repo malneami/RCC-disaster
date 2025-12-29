@@ -463,6 +463,53 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
   };
 
   /**
+   * Parses target string (e.g., "10 min", "4 hours") to minutes
+   */
+  const parseTargetToMinutes = (targetString: string): number | null => {
+    if (!targetString) return null;
+    
+    const normalized = targetString.trim().toLowerCase();
+    const match = normalized.match(/(\d+(?:\.\d+)?)\s*(min|mins|minute|minutes|hour|hours|hr|hrs)/);
+    
+    if (!match) return null;
+    
+    const value = parseFloat(match[1]);
+    const unit = match[2];
+    
+    if (unit.startsWith('hour') || unit.startsWith('hr')) {
+      return value * 60; // Convert hours to minutes
+    } else {
+      return value; // Already in minutes
+    }
+  };
+
+  /**
+   * Validates a timeline event against its KPI target
+   * Returns validation status if target exists and both times are available, null otherwise
+   */
+  const validateEventKpi = (event: TimelineEvent): { met: boolean; actualMinutes: number; targetMinutes: number } | null => {
+    // Only validate if target exists
+    if (!event.target) return null;
+    
+    // Need reference time (pathwayStarted) and event timestamp
+    const referenceTime = stemiCase.pathwayStarted;
+    if (!referenceTime || !event.timestamp || !event.recorded) return null;
+    
+    // Parse target to minutes
+    const targetMinutes = parseTargetToMinutes(event.target);
+    if (targetMinutes === null) return null;
+    
+    // Calculate actual time difference in minutes
+    const actualMinutes = StemiDatetimeService.calculateTimeDifference(referenceTime, event.timestamp);
+    
+    return {
+      met: actualMinutes <= targetMinutes,
+      actualMinutes,
+      targetMinutes,
+    };
+  };
+
+  /**
    * Exports timeline view as PNG image with patient information
    */
   const handleExportToPNG = async () => {
@@ -895,6 +942,23 @@ const StemiTimelineView: React.FC<StemiTimelineViewProps> = ({ stemiCase }) => {
                                 }}
                               />
                             )}
+                            {(() => {
+                              const validation = validateEventKpi(event);
+                              if (validation) {
+                                return (
+                                  <Chip
+                                    label={validation.met ? '✓ Met Target' : '✗ Missed Target'}
+                                    size="small"
+                                    color={validation.met ? 'success' : 'error'}
+                                    sx={{
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
+                                    }}
+                                  />
+                                );
+                              }
+                              return null;
+                            })()}
                             <Typography 
                               variant="caption" 
                               sx={{ 

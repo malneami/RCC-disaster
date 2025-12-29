@@ -328,6 +328,70 @@ const StrokeTimelineView: React.FC<StrokeTimelineViewProps> = ({ strokeCase }) =
   };
 
   /**
+   * Parses target string (e.g., "10 min", "4 hours") to minutes
+   */
+  const parseTargetToMinutes = (targetString: string): number | null => {
+    if (!targetString) return null;
+    
+    const normalized = targetString.trim().toLowerCase();
+    const match = normalized.match(/(\d+(?:\.\d+)?)\s*(min|mins|minute|minutes|hour|hours|hr|hrs)/);
+    
+    if (!match) return null;
+    
+    const value = parseFloat(match[1]);
+    const unit = match[2];
+    
+    if (unit.startsWith('hour') || unit.startsWith('hr')) {
+      return value * 60; // Convert hours to minutes
+    } else {
+      return value; // Already in minutes
+    }
+  };
+
+  /**
+   * Calculates time difference in minutes between two datetime strings
+   */
+  const calculateTimeDifference = (startTime: string, endTime: string): number => {
+    if (!startTime || !endTime) return 0;
+    
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return 0;
+    }
+    
+    const diffMs = end.getTime() - start.getTime();
+    return Math.floor(diffMs / (1000 * 60)); // Convert to minutes
+  };
+
+  /**
+   * Validates a timeline event against its KPI target
+   * Returns validation status if target exists and both times are available, null otherwise
+   */
+  const validateEventKpi = (event: TimelineEvent): { met: boolean; actualMinutes: number; targetMinutes: number } | null => {
+    // Only validate if target exists
+    if (!event.target) return null;
+    
+    // Need reference time (dateOfAdmission) and event timestamp
+    const referenceTime = strokeCase.dateOfAdmission;
+    if (!referenceTime || !event.timestamp || !event.recorded) return null;
+    
+    // Parse target to minutes
+    const targetMinutes = parseTargetToMinutes(event.target);
+    if (targetMinutes === null) return null;
+    
+    // Calculate actual time difference in minutes
+    const actualMinutes = calculateTimeDifference(referenceTime, event.timestamp);
+    
+    return {
+      met: actualMinutes <= targetMinutes,
+      actualMinutes,
+      targetMinutes,
+    };
+  };
+
+  /**
    * Exports timeline phases and events to Excel file
    * Uses timelinePhases as the single source of truth
    */
@@ -809,6 +873,23 @@ const StrokeTimelineView: React.FC<StrokeTimelineViewProps> = ({ strokeCase }) =
                                 }}
                               />
                             )}
+                            {(() => {
+                              const validation = validateEventKpi(event);
+                              if (validation) {
+                                return (
+                                  <Chip
+                                    label={validation.met ? '✓ Met Target' : '✗ Missed Target'}
+                                    size="small"
+                                    color={validation.met ? 'success' : 'error'}
+                                    sx={{
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
+                                    }}
+                                  />
+                                );
+                              }
+                              return null;
+                            })()}
                             <Typography 
                               variant="caption" 
                               sx={{ 
