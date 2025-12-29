@@ -4,9 +4,9 @@ export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976D2', // Medical Blue
-      light: '#42A5F5',
-      dark: '#1565C0',
+      main: '#0056b3', // Medical Blue - Premium Healthcare
+      light: '#3378c5',
+      dark: '#003d80',
       contrastText: '#ffffff',
     },
     secondary: {
@@ -52,36 +52,36 @@ export const theme = createTheme({
       900: '#212121',
     },
     background: {
-      default: '#F8F9FA',
+      default: '#F5F7FA',
       paper: '#FFFFFF',
     },
   },
   typography: {
     // Include Arabic-capable fonts with sensible fallbacks
-    fontFamily: '"Tajawal", "Noto Naskh Arabic", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Inter", "Tajawal", "Noto Naskh Arabic", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontSize: '2.5rem',
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 1.2,
     },
     h2: {
       fontSize: '2rem',
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 1.2,
     },
     h3: {
       fontSize: '1.75rem',
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 1.2,
     },
     h4: {
       fontSize: '1.5rem',
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 1.2,
     },
     h5: {
       fontSize: '1.25rem',
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 1.2,
     },
     h6: {
@@ -99,7 +99,7 @@ export const theme = createTheme({
     },
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 12,
   },
   components: {
     MuiButton: {

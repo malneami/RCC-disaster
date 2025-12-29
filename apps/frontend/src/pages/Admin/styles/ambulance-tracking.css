@@ -1,0 +1,244 @@
+/* Ambulance Tracking Dashboard - Premium Styling */
+
+/* Search Bar Enhanced Focus */
+.ambulance-search-input .MuiOutlinedInput-root {
+  transition: all 0.2s ease-in-out;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+.ambulance-search-input .MuiOutlinedInput-root:hover {
+  background: #fafbfc;
+}
+
+.ambulance-search-input .MuiOutlinedInput-root.Mui-focused {
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12);
+}
+
+.ambulance-search-input .MuiOutlinedInput-notchedOutline {
+  border-color: #e5e7eb;
+  border-width: 1.5px;
+}
+
+.ambulance-search-input .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #cbd5e1;
+}
+
+.ambulance-search-input .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #0056b3;
+  border-width: 2px;
+}
+
+/* Premium Table Styling */
+.ambulance-table-container {
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #e5e7eb;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.ambulance-table-container .MuiTable-root {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 750px;
+}
+
+/* Column Width Definitions */
+.ambulance-table-container .MuiTableCell-root:nth-child(1) { width: 15%; } /* Vehicle */
+.ambulance-table-container .MuiTableCell-root:nth-child(2) { width: 18%; } /* IMEI */
+.ambulance-table-container .MuiTableCell-root:nth-child(3) { width: 22%; } /* Location */
+.ambulance-table-container .MuiTableCell-root:nth-child(4) { width: 10%; } /* Speed */
+.ambulance-table-container .MuiTableCell-root:nth-child(5) { width: 10%; } /* Direction */
+.ambulance-table-container .MuiTableCell-root:nth-child(6) { width: 15%; } /* Last Update */
+.ambulance-table-container .MuiTableCell-root:nth-child(7) { width: 10%; } /* Actions */
+
+.ambulance-table-container .MuiTableHead-root {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.ambulance-table-container .MuiTableHead-root .MuiTableCell-head {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 12px 12px;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.ambulance-table-container .MuiTableBody-root .MuiTableRow-root {
+  transition: all 0.15s ease-in-out;
+}
+
+.ambulance-table-container .MuiTableBody-root .MuiTableRow-root:hover {
+  background-color: #f8fafc;
+}
+
+.ambulance-table-container .MuiTableBody-root .MuiTableCell-root {
+  padding: 12px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.8125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* IMEI Badge Styling */
+.imei-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e40af;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Location Display */
+.location-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-size: 0.7rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+/* Vehicle Name Display */
+.vehicle-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vehicle-name .vehicle-icon {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0056b3 0%, #003d80 100%);
+  border-radius: 8px;
+  color: white;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0, 86, 179, 0.25);
+}
+
+.vehicle-name .vehicle-text {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Action Button */
+.action-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0056b3 0%, #0066cc 100%);
+  color: white;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 86, 179, 0.2);
+}
+
+.action-button:hover {
+  background: linear-gradient(135deg, #003d80 0%, #0056b3 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 86, 179, 0.3);
+}
+
+/* Speed Display */
+.speed-display {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #166534;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+/* Direction Display */
+.direction-display {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: #fefce8;
+  border: 1px solid #fde047;
+  border-radius: 6px;
+  color: #854d0e;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+/* Timestamp Display */
+.timestamp-display {
+  color: #6b7280;
+  font-size: 0.8125rem;
+}
+
+/* Premium Card Container */
+.ambulance-tracking-card {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.ambulance-tracking-card .MuiCardContent-root {
+  padding: 32px !important;
+}
+
+/* Empty State Styling */
+.empty-state {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-radius: 50%;
+  color: #94a3b8;
+}
+
+/* Results Counter */
+.results-counter {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-top: 20px;
+  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}

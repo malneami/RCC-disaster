@@ -13,10 +13,11 @@ import {
   Tooltip,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faAmbulance, 
+import {
+  faAmbulance,
   faMapMarkerAlt,
-  faLocationArrow
+  faLocationArrow,
+  faClock,
 } from '@fortawesome/free-solid-svg-icons';
 
 interface GPSAmbulance {
@@ -40,15 +41,34 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
   onViewGPS,
 }) => {
   const formatSpeed = (speed?: number) => {
-    return speed !== undefined ? `${speed} km/h` : 'N/A';
+    return speed !== undefined ? `${speed} km/h` : '—';
   };
 
   const formatDirection = (direction?: number) => {
-    return direction !== undefined ? `${direction}°` : 'N/A';
+    return direction !== undefined ? `${direction}°` : '—';
+  };
+
+  const formatTimestamp = (timestamp?: string) => {
+    if (!timestamp) return null;
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return 'Invalid Date';
+    }
   };
 
   return (
-    <TableContainer component={Paper}>
+    <TableContainer
+      component={Paper}
+      className="ambulance-table-container"
+      elevation={0}
+    >
       <Table>
         <TableHead>
           <TableRow>
@@ -58,86 +78,118 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
             <TableCell>Speed</TableCell>
             <TableCell>Direction</TableCell>
             <TableCell>Last Update</TableCell>
-            <TableCell>Actions</TableCell>
+            <TableCell align="center">Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {ambulances.map((ambulance: GPSAmbulance, index: number) => (
-            <TableRow key={ambulance.imei || index} hover>
+            <TableRow key={ambulance.imei || index}>
+              {/* Vehicle Name */}
               <TableCell>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <FontAwesomeIcon 
-                    icon={faAmbulance} 
-                    style={{ marginRight: 8, color: '#1976d2' }} 
-                  />
-                  <Typography variant="body2" fontWeight={600}>
-                    {ambulance.name || ambulance.imei}
+                <Box className="vehicle-name">
+                  <Box className="vehicle-icon">
+                    <FontAwesomeIcon icon={faAmbulance} />
+                  </Box>
+                  <Typography className="vehicle-text">
+                    {ambulance.name || `Vehicle ${index + 1}`}
                   </Typography>
                 </Box>
               </TableCell>
+
+              {/* IMEI */}
               <TableCell>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
-                    color: 'primary.main'
-                  }}
-                >
+                <Box className="imei-badge">
                   {ambulance.imei}
-                </Typography>
+                </Box>
               </TableCell>
+
+              {/* Location */}
               <TableCell>
-                {ambulance.lat != null && ambulance.lng != null && 
-                 typeof ambulance.lat === 'number' && typeof ambulance.lng === 'number' ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <FontAwesomeIcon 
-                      icon={faMapMarkerAlt} 
-                      size="sm" 
-                      style={{ marginRight: 4, color: '#666' }} 
+                {ambulance.lat != null && ambulance.lng != null &&
+                  typeof ambulance.lat === 'number' && typeof ambulance.lng === 'number' ? (
+                  <Box className="location-display">
+                    <FontAwesomeIcon
+                      icon={faMapMarkerAlt}
+                      style={{ color: '#0056b3', fontSize: 12 }}
                     />
-                    <Typography 
-                      variant="body2" 
-                      sx={{ fontFamily: 'monospace' }}
-                    >
+                    <span>
                       {Number(ambulance.lat).toFixed(6)}, {Number(ambulance.lng).toFixed(6)}
+                    </span>
+                  </Box>
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: '#9ca3af',
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    No location data
+                  </Typography>
+                )}
+              </TableCell>
+
+              {/* Speed */}
+              <TableCell>
+                {ambulance.speed !== undefined ? (
+                  <Box className="speed-display">
+                    {formatSpeed(ambulance.speed)}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                    —
+                  </Typography>
+                )}
+              </TableCell>
+
+              {/* Direction */}
+              <TableCell>
+                {ambulance.direction !== undefined ? (
+                  <Box className="direction-display">
+                    {formatDirection(ambulance.direction)}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                    —
+                  </Typography>
+                )}
+              </TableCell>
+
+              {/* Last Update */}
+              <TableCell>
+                {ambulance.timestamp ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FontAwesomeIcon
+                      icon={faClock}
+                      style={{ color: '#9ca3af', fontSize: 12 }}
+                    />
+                    <Typography className="timestamp-display">
+                      {formatTimestamp(ambulance.timestamp)}
                     </Typography>
                   </Box>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No location
-                  </Typography>
-                )}
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2">
-                  {formatSpeed(ambulance.speed)}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2">
-                  {formatDirection(ambulance.direction)}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                {ambulance.timestamp ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {new Date(ambulance.timestamp).toLocaleString()}
-                  </Typography>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    N/A
-                  </Typography>
-                )}
-              </TableCell>
-              <TableCell>
-                <Tooltip title="View GPS Location" arrow>
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => onViewGPS(ambulance)}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: '#ef4444',
+                      fontWeight: 500,
+                      fontSize: '0.8125rem',
+                    }}
                   >
-                    <FontAwesomeIcon icon={faLocationArrow} />
+                    Invalid Date
+                  </Typography>
+                )}
+              </TableCell>
+
+              {/* Actions */}
+              <TableCell align="center">
+                <Tooltip title="View GPS Location" arrow placement="top">
+                  <IconButton
+                    className="action-button"
+                    onClick={() => onViewGPS(ambulance)}
+                    size="small"
+                  >
+                    <FontAwesomeIcon icon={faLocationArrow} style={{ fontSize: 14, color: '#ffffff' }} />
                   </IconButton>
                 </Tooltip>
               </TableCell>
@@ -150,4 +202,3 @@ const AmbulanceTrackingTable: React.FC<AmbulanceTrackingTableProps> = ({
 };
 
 export default AmbulanceTrackingTable;
-

@@ -10,13 +10,15 @@ import {
   Alert,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faAmbulance, 
+import {
+  faAmbulance,
   faSearch,
+  faSatelliteDish,
 } from '@fortawesome/free-solid-svg-icons';
 import { emsService } from '../../EMS/services/emsService';
 import GPSLocationDialog from './GPSLocationDialog';
 import AmbulanceTrackingTable from './AmbulanceTrackingTable';
+import '../styles/ambulance-tracking.css';
 
 interface GPSAmbulance {
   imei: string;
@@ -39,10 +41,10 @@ const AmbulanceTrackingData: React.FC = () => {
     const fetchGPSData = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const allGPSData = await emsService.getAmbulancesGPS();
-        
+
         // Extract array of GPS data from API response
         if (allGPSData?.data && Array.isArray(allGPSData.data)) {
           setAmbulances(allGPSData.data);
@@ -87,7 +89,7 @@ const AmbulanceTrackingData: React.FC = () => {
 
   const filteredAmbulances = useMemo(() => {
     if (!ambulances || ambulances.length === 0) return [];
-    
+
     const query = searchQuery.toLowerCase();
     return ambulances.filter((ambulance: GPSAmbulance) => {
       return (
@@ -99,50 +101,131 @@ const AmbulanceTrackingData: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+        gap={3}
+      >
+        <CircularProgress
+          size={48}
+          thickness={4}
+          sx={{ color: '#0056b3' }}
+        />
+        <Typography variant="body2" color="text.secondary" fontWeight={500}>
+          Loading ambulance tracking data...
+        </Typography>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Alert severity="error">
+      <Alert
+        severity="error"
+        sx={{
+          borderRadius: 3,
+          py: 2,
+          '& .MuiAlert-message': { fontWeight: 500 }
+        }}
+      >
         Failed to load ambulances data. Please try again later.
       </Alert>
     );
   }
 
   return (
-    <Card>
+    <Card className="ambulance-tracking-card" elevation={0}>
       <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-          Ambulance Tracking Data
-        </Typography>
-        
+        {/* Header Section */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #0056b3 0%, #003d80 100%)',
+                borderRadius: 3,
+                boxShadow: '0 4px 12px rgba(0, 86, 179, 0.25)',
+              }}
+            >
+              <FontAwesomeIcon icon={faSatelliteDish} style={{ color: 'white', fontSize: 20 }} />
+            </Box>
+            <Box>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  color: '#1f2937',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Ambulance Tracking Data
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Real-time GPS tracking and vehicle monitoring
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Search Bar */}
         <TextField
           fullWidth
-          placeholder="Search by IMEI or name..."
+          placeholder="Search by IMEI or vehicle name..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          className="ambulance-search-input"
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <FontAwesomeIcon icon={faSearch} />
+                <FontAwesomeIcon
+                  icon={faSearch}
+                  style={{ color: '#9ca3af', fontSize: 16 }}
+                />
               </InputAdornment>
             ),
           }}
-          sx={{ mb: 3 }}
+          sx={{
+            mb: 4,
+            '& .MuiOutlinedInput-root': {
+              py: 0.5,
+              fontSize: '0.9375rem',
+            },
+            '& .MuiOutlinedInput-input': {
+              py: 1.75,
+            }
+          }}
         />
 
+        {/* Content */}
         {filteredAmbulances.length === 0 ? (
-          <Box textAlign="center" py={4}>
-            <FontAwesomeIcon 
-              icon={faAmbulance} 
-              style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }}
-            />
+          <Box className="empty-state">
+            <Box className="empty-state-icon">
+              <FontAwesomeIcon
+                icon={faAmbulance}
+                style={{ fontSize: 32 }}
+              />
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                color: '#374151',
+                mb: 1
+              }}
+            >
+              No Ambulances Found
+            </Typography>
             <Typography variant="body2" color="text.secondary">
-              {searchQuery ? 'No ambulances found matching your search.' : 'No ambulances found.'}
+              {searchQuery
+                ? 'No ambulances match your search criteria. Try adjusting your search.'
+                : 'No ambulances are currently being tracked.'}
             </Typography>
           </Box>
         ) : (
@@ -152,10 +235,14 @@ const AmbulanceTrackingData: React.FC = () => {
           />
         )}
 
+        {/* Results Counter */}
         {filteredAmbulances.length > 0 && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-            Showing {filteredAmbulances.length} of {ambulances?.length || 0} ambulances
-          </Typography>
+          <Box className="results-counter" sx={{ mt: 3 }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#64748b' }}>
+              Showing <strong style={{ color: '#0056b3' }}>{filteredAmbulances.length}</strong> of{' '}
+              <strong>{ambulances?.length || 0}</strong> vehicles
+            </Typography>
+          </Box>
         )}
       </CardContent>
 
@@ -173,4 +260,3 @@ const AmbulanceTrackingData: React.FC = () => {
 };
 
 export default AmbulanceTrackingData;
-
