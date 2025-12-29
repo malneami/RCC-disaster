@@ -838,6 +838,7 @@ model Patient {
   accessLogs      PatientAccessLog[]
   beds            Bed[]
   bedRequests     BedRequest[]
+  bedStatusHistory BedStatusHistory[]
   
   // Stroke Relations
   strokeCases     StrokeCase[]
@@ -2655,6 +2656,8 @@ model Bed {
   isOperational       Boolean           @default(true) @map("is_operational")
   currentPatientId    String?           @map("current_patient_id")
   currentBedRequestId String?           @unique @map("current_bed_request_id")
+  caseId              String?           @map("case_id")
+  caseType            CaseType?         @map("case_type")
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
   deletedAt           DateTime?         @map("deleted_at")
@@ -2673,6 +2676,8 @@ model Bed {
   @@index([status])
   @@index([bedNumber])
   @@index([currentPatientId])
+  @@index([caseId])
+  @@index([caseType])
   @@unique([unitId, bedNumber])
 }
 
@@ -2723,6 +2728,9 @@ model BedRequest {
 model BedStatusHistory {
   id            String      @id @default(uuid())
   bedId         String      @map("bed_id")
+  patientId     String?     @map("patient_id")
+  caseId        String?     @map("case_id")
+  caseType      CaseType?   @map("case_type")
   previousStatus BedStatus? @map("previous_status")
   newStatus     BedStatus   @map("new_status")
   changedById   String      @map("changed_by_id")
@@ -2733,6 +2741,7 @@ model BedStatusHistory {
   // Relations
   bed           Bed         @relation(fields: [bedId], references: [id], onDelete: Cascade)
   changedBy     User        @relation("BedStatusChanger", fields: [changedById], references: [id])
+  patient       Patient?    @relation(fields: [patientId], references: [id], onDelete: SetNull)
   
   @@map("bed_status_history")
   @@index([bedId])
@@ -2740,4 +2749,7 @@ model BedStatusHistory {
   @@index([changedById])
   @@index([newStatus])
   @@index([bedId, changedAt])
+  @@index([patientId])
+  @@index([caseId])
+  @@index([caseType])
 }

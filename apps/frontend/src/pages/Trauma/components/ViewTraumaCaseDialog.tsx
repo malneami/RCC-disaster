@@ -50,6 +50,9 @@ import { TraumaCase, TraumaService } from '../../../services/traumaService';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService, CaseNote } from '../../../services/notificationService';
 import { getCaseTypeLabel } from '../../../helpers/formatUtils';
+import { bedService } from '../../../pages/Beds/services/bedService';
+import { useQuery } from 'react-query';
+import { Hotel as HotelIcon } from '@mui/icons-material';
 
 interface ViewTraumaCaseDialogProps {
   open: boolean;
@@ -66,6 +69,21 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
   const [caseNotes, setCaseNotes] = useState<CaseNote[]>([]);
   const [loadingCaseNotes, setLoadingCaseNotes] = useState(false);
+
+  const assignedBed = traumaCase?.assignedBed || null;
+
+  const { data: bedHistory } = useQuery(
+    ['bedHistory', assignedBed?.id],
+    () => assignedBed ? bedService.getBedStatusHistory(assignedBed.id) : Promise.resolve([]),
+    {
+      enabled: !!assignedBed?.id && open,
+      staleTime: 5 * 60 * 1000,
+    }
+  );
+
+  const bedAssignmentHistory = bedHistory?.find(
+    (entry) => entry.caseId === traumaCase?.id && entry.caseType === 'TRAUMA'
+  );
 
   useEffect(() => {
     if (open && traumaCase) {
@@ -257,6 +275,72 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                     </TableBody>
                   </Table>
                 </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Bed Assignment Information */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
+                  <HotelIcon color="primary" />
+                  Bed Assignment
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                
+                {assignedBed ? (
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell><strong>Bed Number</strong></TableCell>
+                          <TableCell>{assignedBed.bedNumber}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell><strong>Unit</strong></TableCell>
+                          <TableCell>{assignedBed.unit.name}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell><strong>Hospital</strong></TableCell>
+                          <TableCell>{assignedBed.hospital.name}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell><strong>Bed ID</strong></TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                              {assignedBed.id}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                        {bedAssignmentHistory?.changedAt && (
+                          <TableRow>
+                            <TableCell><strong>Arrival Date/Time</strong></TableCell>
+                            <TableCell>
+                              {TraumaService.formatDateTime(bedAssignmentHistory.changedAt)}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        <TableRow>
+                          <TableCell><strong>Status</strong></TableCell>
+                          <TableCell>
+                            <Chip
+                              label={assignedBed.status}
+                              color={assignedBed.status === 'OCCUPIED' ? 'primary' : 'default'}
+                              size="small"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No bed assigned to this trauma case
+                    </Typography>
+                  </Box>
+                )}
               </CardContent>
             </Card>
           </Grid>

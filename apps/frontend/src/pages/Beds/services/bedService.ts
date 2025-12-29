@@ -28,6 +28,8 @@ export interface Bed {
   status: BedStatus;
   location?: string;
   isOperational: boolean;
+  caseId?: string;
+  caseType?: CaseType;
   unit: {
     id: string;
     name: string;
@@ -67,6 +69,8 @@ export interface BedStats {
   reserved: number;
 }
 
+export type CaseType = 'TRAUMA' | 'STEMI' | 'STROKE';
+
 export interface BedStatusHistoryItem {
   id: string;
   previousStatus: BedStatus | null;
@@ -74,12 +78,21 @@ export interface BedStatusHistoryItem {
   changedAt: string;
   reason?: string | null;
   notes?: string | null;
+  patientId?: string | null;
+  caseId?: string | null;
+  caseType?: CaseType | null;
   changedBy: {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
   };
+  patient?: {
+    id: string;
+    name: string;
+    nationalId?: string | null;
+    mrn?: string | null;
+  } | null;
 }
 
 class BedService {
@@ -160,6 +173,19 @@ class BedService {
 
   async deleteBed(bedId: string): Promise<void> {
     await apiClient.patch(`/beds/${bedId}`);
+  }
+
+  async assignBed(
+    bedId: string,
+    data: {
+      patientId: string;
+      caseId?: string;
+      caseType?: CaseType;
+      arrivalDate?: string;
+    },
+  ): Promise<Bed> {
+    const response = await apiClient.patch<Bed>(`/beds/${bedId}/assign`, data);
+    return response.data;
   }
 }
 

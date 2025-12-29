@@ -1,6 +1,9 @@
 model BedStatusHistory {
   id            String      @id @default(uuid())
   bedId         String      @map("bed_id")
+  patientId     String?     @map("patient_id")
+  caseId        String?     @map("case_id")
+  caseType      CaseType?   @map("case_type")
   previousStatus BedStatus? @map("previous_status")
   newStatus     BedStatus   @map("new_status")
   changedById   String      @map("changed_by_id")
@@ -11,6 +14,7 @@ model BedStatusHistory {
   // Relations
   bed           Bed         @relation(fields: [bedId], references: [id], onDelete: Cascade)
   changedBy     User        @relation("BedStatusChanger", fields: [changedById], references: [id])
+  patient       Patient?    @relation(fields: [patientId], references: [id], onDelete: SetNull)
   
   @@map("bed_status_history")
   @@index([bedId])
@@ -18,4 +22,7 @@ model BedStatusHistory {
   @@index([changedById])
   @@index([newStatus])
   @@index([bedId, changedAt])
+  @@index([patientId])
+  @@index([caseId])
+  @@index([caseType])
 }

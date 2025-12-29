@@ -59,6 +59,22 @@ export interface InjuryAssessmentFormData {
   externalInjury: string;
 }
 
+export interface BedAssignmentFormData {
+  hospitalId?: string; 
+  hospitalType?: 'origin' | 'destination'; 
+  unitId?: string;
+  bedId?: string;
+  bedNumber?: string; 
+  location?: string; 
+  arrivalDate?: string; 
+  assignedBed?: { 
+    id: string;
+    bedNumber: string;
+    unitName: string;
+    hospitalName: string;
+  };
+}
+
 export interface DispositionFormData {
   edDisposition: string;
   disposition: {
@@ -77,6 +93,7 @@ export interface TraumaCaseFormData {
   vitalsAssessment: VitalsAssessmentFormData;
   injuryAssessment: InjuryAssessmentFormData;
   disposition: DispositionFormData;
+  bedAssignment?: BedAssignmentFormData;
   originHospitalId: string;
   destinationHospitalId: string;
 }

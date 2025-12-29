@@ -111,6 +111,12 @@ export const TRAUMA_FORM_STEPS = [
     icon: '✅',
     description: 'Final disposition and follow-up'
   },
+  { 
+    id: 'bed-assignment', 
+    label: 'Bed Assignment', 
+    icon: '🛏️',
+    description: 'Assign bed to patient (optional)'
+  },
 ] as const;
 
 // KPI thresholds

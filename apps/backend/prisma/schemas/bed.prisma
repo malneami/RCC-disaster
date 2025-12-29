@@ -9,6 +9,8 @@ model Bed {
   isOperational       Boolean           @default(true) @map("is_operational")
   currentPatientId    String?           @map("current_patient_id")
   currentBedRequestId String?           @unique @map("current_bed_request_id")
+  caseId              String?           @map("case_id")
+  caseType            CaseType?         @map("case_type")
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
   deletedAt           DateTime?         @map("deleted_at")
@@ -27,5 +29,7 @@ model Bed {
   @@index([status])
   @@index([bedNumber])
   @@index([currentPatientId])
+  @@index([caseId])
+  @@index([caseType])
   @@unique([unitId, bedNumber])
 }

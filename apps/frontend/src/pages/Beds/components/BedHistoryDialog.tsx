@@ -18,7 +18,7 @@ import {
   TimelineContent,
   TimelineDot,
 } from '@mui/lab';
-import { History as HistoryIcon } from '@mui/icons-material';
+import { History as HistoryIcon, Person as PersonIcon, Assignment as AssignmentIcon } from '@mui/icons-material';
 import { BedStatusHistoryItem } from '../services/bedService';
 import { BedStatusChip } from './BedStatusChip';
 import { getBedStatusColor } from '../utils/bedStatusUtils';
@@ -158,6 +158,45 @@ const BedHistoryDialog: React.FC<BedHistoryDialogProps> = ({
                     <Typography variant="body2" sx={{ mb: 1 }}>
                       Changed by: <strong>{getUserName(item.changedBy)}</strong>
                     </Typography>
+                    {item.patient && (
+                      <Box sx={{ mt: 1, p: 1.5, bgcolor: 'primary.light', borderRadius: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <PersonIcon fontSize="small" />
+                          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                            Patient Information:
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {item.patient.name}
+                        </Typography>
+                        {item.patient.nationalId && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            National ID: {item.patient.nationalId}
+                          </Typography>
+                        )}
+                        {item.patient.mrn && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            MRN: {item.patient.mrn}
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+                    {item.caseType && item.caseId && (
+                      <Box sx={{ mt: 1, p: 1.5, bgcolor: 'info.light', borderRadius: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <AssignmentIcon fontSize="small" />
+                          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                            Case Information:
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          Case Type: {item.caseType}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                          Case ID: {item.caseId}
+                        </Typography>
+                      </Box>
+                    )}
                     {item.reason && (
                       <Box sx={{ mt: 1 }}>
                         <Typography variant="caption" color="text.secondary">

@@ -1,6 +1,6 @@
 /**
  * Disposition Step Component
- * Fifth and final step of the trauma case creation form
+ * Fifth step of the trauma case creation form
  */
 
 import React from 'react';
@@ -80,7 +80,7 @@ const DispositionStep: React.FC<DispositionStepProps> = ({
         </FormControl>
       </Grid>
       
-      
+
       <Grid item xs={12}>
         <TextField
           fullWidth

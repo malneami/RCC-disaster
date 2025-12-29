@@ -17,6 +17,7 @@ interface ReviewStepProps {
     vitalsAssessment: any;
     injuryAssessment: any;
     disposition: any;
+    bedAssignment?: any;
   };
   timelineWarnings?: Record<string, string[]>;
   validationErrors?: Record<string, string>;
@@ -94,6 +95,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings: _ti
   const hasPatientErrors = Object.keys(validationErrors).some(key => key.startsWith('patientInfo.'));
   const hasIncidentErrors = Object.keys(validationErrors).some(key => key.startsWith('incidentDetails.'));
   const hasDispositionErrors = Object.keys(validationErrors).some(key => key.startsWith('disposition.'));
+  const hasBedAssignmentErrors = Object.keys(validationErrors).some(key => key.startsWith('bedAssignment.'));
 
   return (
     <Box>
@@ -302,6 +304,85 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings: _ti
               </Card>
             </Grid>
           )}
+
+        {/* Bed Assignment */}
+        {(formData.bedAssignment?.assignedBed || formData.bedAssignment?.bedId || formData.bedAssignment?.bedNumber || hasBedAssignmentErrors) && (
+          <Grid item xs={12} md={6}>
+            <Card sx={cardStyles(hasBedAssignmentErrors)}>
+              <CardContent sx={cardContentStyles}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                  Bed Assignment
+                </Typography>
+                {formData.bedAssignment?.assignedBed ? (
+                  <>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Bed Number
+                      </Typography>
+                      {renderValue(formData.bedAssignment.assignedBed.bedNumber)}
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Unit
+                      </Typography>
+                      {renderValue(formData.bedAssignment.assignedBed.unitName)}
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Hospital
+                      </Typography>
+                      {renderValue(formData.bedAssignment.assignedBed.hospitalName)}
+                    </Box>
+                    {formData.bedAssignment.arrivalDate && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Expected Arrival Date/Time
+                        </Typography>
+                        {renderValue(formatDateTime(formData.bedAssignment.arrivalDate))}
+                      </Box>
+                    )}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Bed ID
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                        {formData.bedAssignment.assignedBed.id}
+                      </Typography>
+                    </Box>
+                  </>
+                ) : (formData.bedAssignment?.bedNumber || formData.bedAssignment?.bedId) ? (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Bed: {formData.bedAssignment.bedNumber || formData.bedAssignment.bedId}
+                    </Typography>
+                    <Typography variant="body2" color="error" sx={{ mt: 1, fontWeight: 600 }}>
+                      Bed assignment validation required
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      No bed assigned
+                    </Typography>
+                  </Box>
+                )}
+                {hasBedAssignmentErrors && (
+                  <Box sx={{ mt: 1 }}>
+                    {Object.entries(validationErrors)
+                      .filter(([key]) => key.startsWith('bedAssignment.'))
+                      .map(([key, message]) => (
+                        <Alert key={key} severity="error" variant="outlined" sx={{ mb: 1, borderRadius: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: 'error.dark' }}>
+                            <strong>{key.replace('bedAssignment.', '').replace(/([A-Z])/g, ' $1').trim()}:</strong> {message}
+                          </Typography>
+                        </Alert>
+                      ))}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
 
         {/* Disposition */}
         <Grid item xs={12} md={6}>

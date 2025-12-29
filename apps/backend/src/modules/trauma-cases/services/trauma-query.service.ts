@@ -79,7 +79,43 @@ export class TraumaQueryService {
       this.prisma.traumaCase.count({ where }),
     ]);
 
-    // Parse JSON fields for each case
+    const caseIds = cases.map(c => c.id);
+    const beds = await this.prisma.bed.findMany({
+      where: {
+        caseId: { in: caseIds },
+        caseType: 'TRAUMA',
+        deletedAt: null,
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedType: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            age: true,
+            gender: true,
+            mrn: true,
+          },
+        },
+      },
+    });
+
+    const bedMap = new Map(beds.map(bed => [bed.caseId!, bed]));
+
     const parsedCases = cases.map(case_ => {
       let vitalSigns = null;
       let disposition = null;
@@ -106,11 +142,37 @@ export class TraumaQueryService {
         }
       }
       
+      const assignedBed = bedMap.get(case_.id);
+
       return {
         ...case_,
         vitalSigns,
         disposition,
-      };
+        assignedBed: assignedBed ? {
+          id: assignedBed.id,
+          bedNumber: assignedBed.bedNumber,
+          status: assignedBed.status,
+          location: assignedBed.location || undefined,
+          isOperational: assignedBed.isOperational,
+          unit: {
+            id: assignedBed.unit.id,
+            name: assignedBed.unit.name,
+            bedType: assignedBed.unit.bedType,
+          },
+          hospital: {
+            id: assignedBed.hospital.id,
+            name: assignedBed.hospital.name,
+          },
+          currentPatient: assignedBed.currentPatient ? {
+            id: assignedBed.currentPatient.id,
+            name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+            nationalId: assignedBed.currentPatient.nationalId || undefined,
+            age: assignedBed.currentPatient.age || undefined,
+            gender: assignedBed.currentPatient.gender || undefined,
+            mrn: assignedBed.currentPatient.mrn || undefined,
+          } : undefined,
+        } : null,
+      } as any;
     });
 
     return { cases: parsedCases, total };
@@ -133,6 +195,40 @@ export class TraumaQueryService {
     if (!traumaCase) {
       throw new NotFoundException('Trauma case not found');
     }
+
+    const assignedBed = await this.prisma.bed.findFirst({
+      where: {
+        caseId: id,
+        caseType: 'TRAUMA',
+        deletedAt: null,
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedType: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            age: true,
+            gender: true,
+            mrn: true,
+          },
+        },
+      },
+    });
 
     // Parse JSON fields
     let vitalSigns = null;
@@ -164,6 +260,30 @@ export class TraumaQueryService {
       ...traumaCase,
       vitalSigns,
       disposition,
-    };
+      assignedBed: assignedBed ? {
+        id: assignedBed.id,
+        bedNumber: assignedBed.bedNumber,
+        status: assignedBed.status,
+        location: assignedBed.location || undefined,
+        isOperational: assignedBed.isOperational,
+        unit: {
+          id: assignedBed.unit.id,
+          name: assignedBed.unit.name,
+          bedType: assignedBed.unit.bedType,
+        },
+        hospital: {
+          id: assignedBed.hospital.id,
+          name: assignedBed.hospital.name,
+        },
+        currentPatient: assignedBed.currentPatient ? {
+          id: assignedBed.currentPatient.id,
+          name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+          nationalId: assignedBed.currentPatient.nationalId || undefined,
+          age: assignedBed.currentPatient.age || undefined,
+          gender: assignedBed.currentPatient.gender || undefined,
+          mrn: assignedBed.currentPatient.mrn || undefined,
+        } : undefined,
+      } : null,
+    } as any;
   }
 }

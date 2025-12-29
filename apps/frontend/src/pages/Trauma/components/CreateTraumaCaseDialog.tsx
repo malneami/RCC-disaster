@@ -28,12 +28,16 @@ import IncidentDetailsStep from './forms/IncidentDetailsStep';
 import VitalsAssessmentStep from './forms/VitalsAssessmentStep';
 import InjuryAssessmentStep from './forms/InjuryAssessmentStep';
 import DispositionStep from './forms/DispositionStep';
+import BedAssignmentStep from './forms/BedAssignmentStep';
 import ReviewStep from './forms/ReviewStep';
 
 // Types and constants
-import { CreateTraumaCaseData } from '../../../services/traumaService';
+import { CreateTraumaCaseData, TraumaService } from '../../../services/traumaService';
 import { TRAUMA_FORM_STEPS } from '../constants/traumaConstants';
 import { Hospital } from '../../../services/hospitalService';
+import { bedService } from '../../../pages/Beds/services/bedService';
+import { useSnackbar } from 'notistack';
+import { BedAssignmentFormData } from '../types/traumaTypes';
 
 const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F-]+$/;
 const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
@@ -103,8 +107,10 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [validatingBed, setValidatingBed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [timelineWarnings, setTimelineWarnings] = useState<Record<string, string[]>>({});
@@ -169,6 +175,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         restrictions: '',
       },
     },
+    bedAssignment: undefined,
   });
   const originRequiresDestination = !!originHospital && !originHospital.hasTraumaService;
 
@@ -229,16 +236,17 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         extremitiesInjury: '1 - No Injury: - No injury',
         externalInjury: '1 - No Injury: - No injury',
       },
-      disposition: {
-        edDisposition: 'DISCHARGE',
         disposition: {
-          dischargeInstructions: '',
-          followUpRequired: false,
-          followUpDate: '',
-          medicationsPrescribed: '',
-          restrictions: '',
+          edDisposition: 'DISCHARGE',
+          disposition: {
+            dischargeInstructions: '',
+            followUpRequired: false,
+            followUpDate: '',
+            medicationsPrescribed: '',
+            restrictions: '',
+          },
         },
-      },
+        bedAssignment: undefined,
     });
     onClose();
   }, [onClose]);
@@ -391,8 +399,9 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         const patientErrors = await validateStep(0);
         const incidentErrors = await validateStep(1);
         const dispositionErrors = await validateStep(4);
-        const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors };
-
+        const bedAssignmentErrors = await validateStep(5);
+        const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors, ...bedAssignmentErrors };
+        
         setValidationErrors(allErrors);
       };
 
@@ -402,8 +411,8 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
 
   // Track which steps have issues
   const stepIssues = useMemo(() => {
-    const issues = [false, false, false, false, false, false];
-
+    const issues = [false, false, false, false, false, false, false];
+    
     // Step 0 (Patient) - check validation errors
     if (Object.keys(validationErrors).some(key => key.startsWith('patientInfo.') || key === 'originHospitalId' || key === 'destinationHospitalId')) {
       issues[0] = true;
@@ -429,10 +438,12 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
     if (Object.keys(validationErrors).some(key => key.startsWith('disposition.'))) {
       issues[4] = true;
     }
-
-    // Step 5 (Review) - check timeline warnings and validation errors
+    
+    // Step 5 (Bed Assignment) - optional, no validation needed
+    
+    // Step 6 (Review) - check timeline warnings and validation errors
     if (hasTimelineWarnings || hasValidationErrors) {
-      issues[5] = true;
+      issues[6] = true;
     }
 
     return issues;
@@ -488,25 +499,147 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
           errors['disposition.edDisposition'] = 'ED Disposition is required';
         }
         break;
+      case 5: // Bed Assignment (optional, but validate if bed is selected)
+        if (formData.bedAssignment && 'bedId' in formData.bedAssignment && (formData.bedAssignment as BedAssignmentFormData).bedId) {
+          try {
+            const bedId = (formData.bedAssignment as BedAssignmentFormData).bedId;
+            if (bedId) {
+              const bed = await bedService.getBedById(bedId);
+              if (bed.status !== 'VACANT' && bed.status !== 'RESERVED') {
+                errors['bedAssignment.bedId'] = `Bed ${bed.bedNumber} is ${bed.status} and cannot be assigned. Please select a VACANT or RESERVED bed.`;
+              }
+            }
+          } catch (err: any) {
+            errors['bedAssignment.bedId'] = err?.response?.data?.message || 'Failed to validate bed. Please select a different bed.';
+          }
+          if (validationErrors['bedAssignment.bedId']) {
+            errors['bedAssignment.bedId'] = validationErrors['bedAssignment.bedId'];
+          }
+        }
+        break;
     }
 
     return errors;
   };
 
   const handleNext = async () => {
+    if (activeStep === 5) {
+      const bedAssignment = formData.bedAssignment as BedAssignmentFormData | undefined;
+      if (bedAssignment && (bedAssignment.bedNumber || bedAssignment.location || bedAssignment.bedId)) {
+        setValidatingBed(true);
+        try {
+          const bedErrors = await validateStep(5);
+          setValidationErrors(bedErrors);
+          
+          if (bedErrors['bedAssignment.bedId']) {
+            try {
+              if (bedAssignment && bedAssignment.unitId) {
+                const availableBeds = await bedService.getBeds({ unitId: bedAssignment.unitId });
+                const validBeds = availableBeds.filter(
+                  (bed) => bed.status === 'VACANT' || bed.status === 'RESERVED'
+                );
+                
+                if (validBeds.length > 0) {
+                  const firstVacantBed = validBeds.find((bed) => bed.status === 'VACANT') || validBeds[0];
+                  const bed = await bedService.getBedById(firstVacantBed.id);
+                  
+                  handleStepDataChange({
+                    bedAssignment: {
+                      ...bedAssignment,
+                      bedId: bed.id,
+                      bedNumber: bed.bedNumber,
+                      assignedBed: {
+                        id: bed.id,
+                        bedNumber: bed.bedNumber,
+                        unitName: bed.unit.name,
+                        hospitalName: bed.hospital.name,
+                      },
+                    },
+                  });
+                  
+                  setValidatingBed(false);
+                  setError(null);
+                  setActiveStep((activeStep + 1) as any);
+                  return;
+                }
+              }
+            } catch (autoAssignErr: any) {
+              setValidatingBed(false);
+              const errorMessage = autoAssignErr?.response?.data?.message 
+                || autoAssignErr?.message 
+                || 'Failed to auto-assign a bed. Please try selecting a bed manually or try again.';
+              setError(errorMessage);
+              return;
+            }
+            
+            setValidatingBed(false);
+            if (!bedAssignment.unitId) {
+              setError('Please select a unit first before assigning a bed.');
+            } else {
+              setError('No available beds found in the selected unit. Please select a different unit or skip bed assignment.');
+            }
+            return;
+          }
+          
+          if (bedAssignment.bedId && !bedAssignment.assignedBed) {
+            try {
+              const bed = await bedService.getBedById(bedAssignment.bedId);
+              if (bed.status === 'VACANT' || bed.status === 'RESERVED') {
+                handleStepDataChange({
+                  bedAssignment: {
+                    ...bedAssignment,
+                    assignedBed: {
+                      id: bed.id,
+                      bedNumber: bed.bedNumber,
+                      unitName: bed.unit.name,
+                      hospitalName: bed.hospital.name,
+                    },
+                  },
+                });
+              } else {
+                setValidatingBed(false);
+                setError(`The selected bed "${bed.bedNumber}" is ${bed.status} and cannot be assigned. Please select a VACANT or RESERVED bed.`);
+                return;
+              }
+            } catch (err: any) {
+              setValidatingBed(false);
+              const errorMessage = err?.response?.data?.message 
+                || err?.message 
+                || 'Failed to fetch bed details. The bed may not exist or there was a network error. Please try selecting a different bed.';
+              setError(errorMessage);
+              return;
+            }
+          }
+          
+          setValidatingBed(false);
+          setActiveStep((activeStep + 1) as any);
+          setError(null);
+          return;
+        } catch (err: any) {
+          setValidatingBed(false);
+          const errorMessage = err?.response?.data?.message 
+            || err?.message 
+            || 'Failed to validate bed assignment. Please check your selection and try again.';
+          setError(errorMessage);
+          return;
+        }
+      }
+    }
+    
     const errors = await validateStep(activeStep);
     setValidationErrors(errors);
-
+    
     // If on last step before review, validate all required steps first
     if (activeStep === TRAUMA_FORM_STEPS.length - 1) {
       // Validate all required steps before going to review
       const patientErrors = await validateStep(0);
       const incidentErrors = await validateStep(1);
       const dispositionErrors = await validateStep(4);
-      const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors };
-
+      const bedAssignmentErrors = await validateStep(5);
+      const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors, ...bedAssignmentErrors };
+      
       setValidationErrors(allErrors);
-
+      
       // If there are validation errors, navigate to first step with error
       if (Object.keys(allErrors).length > 0) {
         const firstErrorKey = Object.keys(allErrors)[0];
@@ -517,12 +650,14 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
           targetStep = 1;
         } else if (firstErrorKey.startsWith('disposition.')) {
           targetStep = 4;
+        } else if (firstErrorKey.startsWith('bedAssignment.')) {
+          targetStep = 5;
         }
         setActiveStep(targetStep as any);
         setError('Please correct the highlighted information before proceeding.');
         return;
       }
-
+    
       // If there are timeline warnings, go to review step
       if (hasTimelineWarnings) {
         setActiveStep(TRAUMA_FORM_STEPS.length as any); // Go to review step
@@ -566,7 +701,16 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
     const patientErrors = await validateStep(0);
     const incidentErrors = await validateStep(1);
     const dispositionErrors = await validateStep(4);
-    const combinedErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors };
+    const bedAssignmentErrors = await validateStep(5);
+    const combinedErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors, ...bedAssignmentErrors };
+    
+    if (bedAssignmentErrors['bedAssignment.bedId']) {
+      setValidationErrors(combinedErrors);
+      setError('Please go back to the Bed Assignment step and select a valid VACANT or RESERVED bed, or let the system auto-assign one.');
+      // Navigate to bed assignment step
+      setActiveStep(5);
+      return;
+    }
 
     // Update validation errors state
     setValidationErrors(combinedErrors);
@@ -641,6 +785,27 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         disposition: formData.disposition.disposition,
       };
 
+      const createdCase = await TraumaService.createTraumaCase(submitData);
+      
+      const bedAssignment = formData.bedAssignment as BedAssignmentFormData | undefined;
+      if (bedAssignment && 'bedId' in bedAssignment && bedAssignment.bedId && createdCase?.id && createdCase?.patientId) {
+        try {
+          await bedService.assignBed(bedAssignment.bedId as string, {
+            patientId: createdCase.patientId,
+            caseId: createdCase.id,
+            caseType: 'TRAUMA',
+            arrivalDate: 'arrivalDate' in bedAssignment ? bedAssignment.arrivalDate : undefined,
+          });
+          enqueueSnackbar('Trauma case created and bed assigned successfully', { variant: 'success' });
+        } catch (bedError: any) {
+          console.error('Error assigning bed:', bedError);
+          enqueueSnackbar(
+            'Case created but bed assignment failed: ' + (bedError?.response?.data?.message || bedError?.message || 'Unknown error'),
+            { variant: 'warning' }
+          );
+        }
+      }
+      
       await onSubmit(submitData);
       handleClose();
     } catch (err: any) {
@@ -719,6 +884,30 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
           />
         );
       case 5:
+        return (
+          <BedAssignmentStep
+            data={formData.bedAssignment || {}}
+            onChange={(data) => handleStepDataChange({ bedAssignment: { ...(formData.bedAssignment || {}), ...data } })}
+            errors={{}}
+            validationErrors={validationErrors}
+            patientInfo={formData.patientInfo}
+            onValidationError={(error) => {
+              if (error) {
+                setValidationErrors((prev) => ({
+                  ...prev,
+                  'bedAssignment.bedId': error,
+                }));
+              } else {
+                setValidationErrors((prev) => {
+                  const newErrors = { ...prev };
+                  delete newErrors['bedAssignment.bedId'];
+                  return newErrors;
+                });
+              }
+            }}
+          />
+        );
+      case 6:
         return (
           <ReviewStep
             formData={formData}
@@ -810,9 +999,10 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             <Button
               onClick={handleNext}
               variant="contained"
-              disabled={loading}
+              disabled={loading || validatingBed}
+              startIcon={validatingBed ? <CircularProgress size={20} /> : null}
             >
-              Next
+              {validatingBed ? 'Validating Bed...' : 'Next'}
             </Button>
           )}
         </DialogActions>

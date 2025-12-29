@@ -15,6 +15,7 @@ import { GetBedsDto } from './dto/get-beds.dto';
 import { BedResponseDto, BedListItemDto } from './dto/bed-response.dto';
 import { UpdateBedStatusDto } from './dto/update-bed-status.dto';
 import { CreateBedDto } from './dto/create-bed.dto';
+import { AssignBedDto } from './dto/assign-bed.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -28,7 +29,7 @@ export class BedsController {
   constructor(private readonly bedsService: BedsService) {}
 
   @Get()
-  @Roles(UserRole.HOSPITAL_USER, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR, UserRole.ADMIN, UserRole.RCC)
+  @Roles(UserRole.HOSPITAL_USER,UserRole.DATA_COLLECTOR, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR, UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Get all beds (hospital users filtered by their hospital, admin/RCC get all beds)' })
   @ApiResponse({ status: 200, description: 'List of beds', type: [BedListItemDto] })
   @ApiResponse({ status: 403, description: 'Forbidden - insufficient permissions' })
@@ -78,7 +79,7 @@ export class BedsController {
   }
 
   @Get('units')
-  @Roles(UserRole.HOSPITAL_USER, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR, UserRole.ADMIN, UserRole.RCC)
+  @Roles(UserRole.HOSPITAL_USER,UserRole.DATA_COLLECTOR, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR, UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Get units for a hospital' })
   @ApiQuery({ name: 'hospitalId', required: false, description: 'Hospital ID (admin only, defaults to user\'s hospital)' })
   @ApiResponse({ status: 200, description: 'List of units' })
@@ -105,7 +106,7 @@ export class BedsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.HOSPITAL_USER, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR, UserRole.ADMIN, UserRole.RCC)
+  @Roles(UserRole.HOSPITAL_USER,UserRole.DATA_COLLECTOR, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR, UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Get bed by ID' })
   @ApiParam({ name: 'id', description: 'Bed ID' })
   @ApiResponse({ status: 200, description: 'Bed details', type: BedResponseDto })
@@ -138,6 +139,28 @@ export class BedsController {
     return this.bedsService.updateStatus(
       id,
       updateDto,
+      req.user?.id,
+      req.user?.hospitalId || null,
+      req.user?.role,
+    );
+  }
+
+  @Patch(':id/assign')
+  @Roles(UserRole.ED_NURSE,UserRole.DATA_COLLECTOR,  UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR, UserRole.ADMIN, UserRole.RCC)
+  @ApiOperation({ summary: 'Assign a patient to a bed' })
+  @ApiParam({ name: 'id', description: 'Bed ID' })
+  @ApiResponse({ status: 200, description: 'Bed assigned successfully', type: BedResponseDto })
+  @ApiResponse({ status: 400, description: 'Bed not available (status is OCCUPIED, CLEANING, or BLOCKED)' })
+  @ApiResponse({ status: 403, description: 'Forbidden - insufficient permissions' })
+  @ApiResponse({ status: 404, description: 'Bed not found or patient not found' })
+  async assign(
+    @Param('id') id: string,
+    @Body() assignDto: AssignBedDto,
+    @Request() req: any,
+  ): Promise<BedResponseDto> {
+    return this.bedsService.assignBed(
+      id,
+      assignDto,
       req.user?.id,
       req.user?.hospitalId || null,
       req.user?.role,
