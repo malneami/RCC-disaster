@@ -64,7 +64,16 @@ export const VideoCallSocketProvider: React.FC<VideoCallSocketProviderProps> = (
       reconnectionAttempts: Infinity, // Keep trying to reconnect
       timeout: 20000,
       autoConnect: true,
-      auth: { token },
+      auth: {
+        token,
+        userId: user.id,
+        userInfo: {
+          name: user.firstName ? `${user.firstName} ${user.lastName}` : user.email,
+          email: user.email,
+          role: user.role,
+          hospitalId: user.hospitalId,
+        }
+      },
       forceNew: false, // Reuse existing connection if available
     };
 

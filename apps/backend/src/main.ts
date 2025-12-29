@@ -156,9 +156,9 @@ async function bootstrap() {
         socket.to(targetSocketId).emit('callUser', { signal: signalData, from: socket.id, name });
         logger.log(`📞 Forwarded call to ${targetSocketId}`);
       } else {
-        // Broadcast to all other clients in the namespace
-        socket.broadcast.emit('callUser', { signal: signalData, from: socket.id, name });
-        logger.log(`📞 Broadcast call to all clients`);
+        // Target user not found or offline
+        socket.emit('callError', { message: 'User is not online or not found', targetUserId: userIdToCall, targetEmail: emailToCall });
+        logger.log(`⚠️ Call failed: Target user ${userIdToCall || userToCall} not found`);
       }
     });
     
