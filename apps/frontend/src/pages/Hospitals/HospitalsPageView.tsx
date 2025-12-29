@@ -101,22 +101,12 @@ const HospitalCard: React.FC<{
     hospital.pediatricBedsAvailable + hospital.standardBedsAvailable + (hospital.nicuBedsAvailable || 0);
   const percentage = totalBeds > 0 ? Math.round((availableBeds / totalBeds) * 100) : 0;
 
-  const getStatusConfig = () => {
-    const status = hospital.status?.toLowerCase() || '';
-    if (status === 'active' || status === 'operational')
-      return { color: '#10b981', label: 'Active', bg: alpha('#10b981', 0.1) };
-    if (status === 'maintenance')
-      return { color: '#f59e0b', label: 'Maintenance', bg: alpha('#f59e0b', 0.1) };
-    return { color: '#ef4444', label: 'Inactive', bg: alpha('#ef4444', 0.1) };
-  };
-
   const getCapacityColor = () => {
     if (percentage <= 15) return '#ef4444';
     if (percentage <= 35) return '#f59e0b';
     return '#10b981';
   };
 
-  const statusConfig = getStatusConfig();
   const capacityColor = getCapacityColor();
 
   return (
@@ -159,27 +149,9 @@ const HospitalCard: React.FC<{
 
         {/* Hospital Info */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>
-              {hospital.name}
-            </Typography>
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.5,
-                px: 1.5,
-                py: 0.25,
-                borderRadius: 2,
-                backgroundColor: statusConfig.bg,
-              }}
-            >
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: statusConfig.color }} />
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: statusConfig.color }}>
-                {statusConfig.label}
-              </Typography>
-            </Box>
-          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', mb: 0.5 }}>
+            {hospital.name}
+          </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
             📍 {hospital.cluster || 'Unassigned'}
           </Typography>
