@@ -1,7 +1,5 @@
-import axios from 'axios';
 import { TicketFilter } from '../../../services/ticketService';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+import apiClient from '../../../services/apiClient';
 
 export class TicketExportService {
   static async exportToExcel(filters?: TicketFilter & { emsStatus?: string }): Promise<void> {
@@ -24,9 +22,9 @@ export class TicketExportService {
         });
       }
 
-      const exportUrl = `${API_BASE_URL}/tickets/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       
-      const response = await axios.get(exportUrl, {
+      const response = await apiClient.get(`/tickets/export${queryString}`, {
         responseType: 'blob',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

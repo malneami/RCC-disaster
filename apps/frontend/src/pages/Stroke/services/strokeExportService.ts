@@ -1,7 +1,5 @@
-import axios from 'axios';
 import { StrokeCaseFilters } from '../../../services/strokeService';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+import apiClient from '../../../services/apiClient';
 
 export class StrokeExportService {
   static async exportToExcel(filters?: StrokeCaseFilters): Promise<void> {
@@ -16,9 +14,9 @@ export class StrokeExportService {
         });
       }
 
-      const exportUrl = `${API_BASE_URL}/stroke-cases/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       
-      const response = await axios.get(exportUrl, {
+      const response = await apiClient.get(`/stroke-cases/export${queryString}`, {
         responseType: 'blob',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

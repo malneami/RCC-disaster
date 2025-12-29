@@ -16,6 +16,7 @@ import FloatingScrollbar from '../../components/Common/FloatingScrollbar';
 import { StemiService, StemiCase, StemiKpiResponse, StemiFilterParams } from './services/stemiService';
 import { StemiExportService } from './services/stemiExportService';
 import { useAuth } from '../../contexts/AuthContext';
+import apiClient from '../../services/apiClient';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -116,9 +117,8 @@ const StemiPortalPage: React.FC = () => {
   useEffect(() => {
     const loadHospitals = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/v1/hospitals');
-        const hospitalsData = await response.json();
-        setHospitals(hospitalsData);
+        const response = await apiClient.get('/hospitals');
+        setHospitals(response.data);
       } catch (error) {
         console.error('Error loading hospitals:', error);
       }

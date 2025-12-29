@@ -15,13 +15,14 @@ import {
   Collapse,
   CircularProgress,
 } from '@mui/material';
-import { 
+import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
   CalendarToday as CalendarIcon,
   LocationOn as LocationIcon,
 } from '@mui/icons-material';
 import { StemiKpiResponse } from '../services/stemiService';
+import apiClient from '../../../services/apiClient';
 
 interface StemiKPIDashboardProps {
   kpiSummary: StemiKpiResponse | null;
@@ -33,13 +34,13 @@ interface StemiKPIDashboardProps {
   onFilterChange?: (filters: { hospitalId?: string; startDate?: string; endDate?: string }) => void;
 }
 
-const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({ 
-  kpiSummary, 
-  filters = {}, 
-  onFilterChange 
+const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
+  kpiSummary,
+  filters = {},
+  onFilterChange
 }) => {
   const [localFilters, setLocalFilters] = useState(filters);
-  const [hospitals, setHospitals] = useState<Array<{id: string, name: string}>>([]);
+  const [hospitals, setHospitals] = useState<Array<{ id: string, name: string }>>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hospitalsLoading, setHospitalsLoading] = useState(true);
@@ -50,9 +51,8 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
     const loadHospitals = async () => {
       try {
         setHospitalsLoading(true);
-        const response = await fetch('http://localhost:3001/api/v1/hospitals');
-        const hospitalsData = await response.json();
-        setHospitals(hospitalsData);
+        const response = await apiClient.get('/hospitals');
+        setHospitals(response.data);
       } catch (error) {
         console.error('Error loading hospitals:', error);
       } finally {
@@ -69,28 +69,28 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
 
   const validateDateRange = (startDate?: string, endDate?: string): string => {
     if (!startDate || !endDate) return '';
-    
+
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     if (end < start) {
       return 'To Date cannot be earlier than From Date';
     }
-    
+
     return '';
   };
 
   const handleFilterChange = async (key: string, value: string) => {
     const newFilters = { ...localFilters, [key]: value };
-    
+
     // Validate date range
     const error = validateDateRange(
       key === 'startDate' ? value : newFilters.startDate,
       key === 'endDate' ? value : newFilters.endDate
     );
-    
+
     setDateError(error);
-    
+
     // Only apply filters if there's no date error
     if (!error) {
       setLocalFilters(newFilters);
@@ -113,7 +113,7 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
     const clearedFilters = {};
     setLocalFilters(clearedFilters);
     setDateError('');
-    
+
     // Then apply the cleared filters
     if (onFilterChange) {
       setIsLoading(true);
@@ -202,11 +202,11 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
             size="small"
           />
         </Box>
-        
+
         <Typography variant="body2" color="textSecondary" gutterBottom>
           Target: {target}
         </Typography>
-        
+
         <Box mb={2}>
           <Typography variant="h4" component="div">
             {percentage.toFixed(1)}%
@@ -215,14 +215,14 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
             {withinTarget} of {totalCases} cases
           </Typography>
         </Box>
-        
+
         <LinearProgress
           variant="determinate"
           value={getProgressValue(percentage)}
           color={getStatusColor(status) as any}
           sx={{ height: 8, borderRadius: 4 }}
         />
-        
+
         {additionalInfo && (
           <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
             {additionalInfo}
@@ -252,7 +252,7 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
   //           size="small"
   //         />
   //       </Box>
-        
+
   //       <Box mb={2}>
   //         <Typography variant="h4" component="div">
   //           {percentage.toFixed(1)}%
@@ -261,7 +261,7 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
   //           {subset} {subsetLabel} of {total} total
   //         </Typography>
   //       </Box>
-        
+
   //       <LinearProgress
   //         variant="determinate"
   //         value={getProgressValue(percentage)}
@@ -345,7 +345,7 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
                   ))}
                 </TextField>
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <TextField
                   type="date"
@@ -365,7 +365,7 @@ const StemiKPIDashboard: React.FC<StemiKPIDashboardProps> = ({
                   error={!!(dateError && localFilters.startDate && localFilters.endDate)}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <TextField
                   type="date"

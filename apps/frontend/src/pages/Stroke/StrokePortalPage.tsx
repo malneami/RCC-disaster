@@ -15,6 +15,7 @@ import FloatingScrollbar from '../../components/Common/FloatingScrollbar';
 import { StrokeService, StrokeCase, StrokeKPISummary, StrokeCaseFilters } from '../../services/strokeService';
 import { StrokeExportService } from './services/strokeExportService';
 import { useAuth } from '../../contexts/AuthContext';
+import apiClient from '../../services/apiClient';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -72,9 +73,8 @@ const StrokePortalPage: React.FC = () => {
   useEffect(() => {
     const loadHospitals = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/v1/hospitals');
-        const hospitalsData = await response.json();
-        setHospitals(hospitalsData);
+        const response = await apiClient.get('/hospitals');
+        setHospitals(response.data);
       } catch (error) {
         console.error('Error loading hospitals:', error);
       }

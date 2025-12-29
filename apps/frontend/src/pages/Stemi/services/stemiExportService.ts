@@ -1,7 +1,5 @@
-import axios from 'axios';
 import { StemiFilterParams } from './stemiService';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+import apiClient from '../../../services/apiClient';
 
 export class StemiExportService {
   static async exportToExcel(filters?: StemiFilterParams): Promise<void> {
@@ -24,9 +22,9 @@ export class StemiExportService {
         });
       }
 
-      const exportUrl = `${API_BASE_URL}/stemi-cases/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       
-      const response = await axios.get(exportUrl, {
+      const response = await apiClient.get(`/stemi-cases/export${queryString}`, {
         responseType: 'blob',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

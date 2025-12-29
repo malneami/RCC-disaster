@@ -1,7 +1,5 @@
-import axios from 'axios';
 import { TraumaCaseFilters } from '../../../services/traumaService';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+import apiClient from '../../../services/apiClient';
 
 export class TraumaExportService {
   static async exportToExcel(filters?: TraumaCaseFilters): Promise<void> {
@@ -20,9 +18,9 @@ export class TraumaExportService {
         });
       }
 
-      const exportUrl = `${API_BASE_URL}/trauma-cases/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       
-      const response = await axios.get(exportUrl, {
+      const response = await apiClient.get(`/trauma-cases/export${queryString}`, {
         responseType: 'blob',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

@@ -1,5 +1,6 @@
 // @ts-nocheck - Version mismatch between vite and vitest types
-import { defineConfig, loadEnv } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
@@ -7,23 +8,6 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiBaseUrl = env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
-  const socketUrl = env.VITE_SOCKET_URL || (() => {
-    const baseUrl = apiBaseUrl.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');
-    return baseUrl || 'http://localhost:3001';
-  })();
-
-  const getProxyTarget = (url: string): string => {
-    try {
-      const urlObj = new URL(url);
-      return `${urlObj.protocol}//${urlObj.host}`;
-    } catch {
-      return url.includes('://') ? url : `http://${url}`;
-    }
-  };
-
-  const apiProxyTarget = getProxyTarget(apiBaseUrl);
-  const socketProxyTarget = getProxyTarget(socketUrl);
 
   return {
     plugins: [react(), basicSsl()],
@@ -46,15 +30,15 @@ export default defineConfig(({ mode }) => {
       host: env.VITE_HOST !== 'false',
       proxy: {
         '/api': {
-          target: apiProxyTarget,
+          target: 'http://10.138.40.24:3001',
           changeOrigin: true,
-          secure: env.VITE_PROXY_SECURE === 'true',
+          secure: false, // Allow self-signed certs if backend used them (it doesn't, but safe to add)
         },
         '/socket.io': {
-          target: socketProxyTarget,
+          target: 'http://10.138.40.24:3001',
           changeOrigin: true,
           ws: true,
-          secure: env.VITE_PROXY_SECURE === 'true',
+          secure: false,
         },
       },
     },
