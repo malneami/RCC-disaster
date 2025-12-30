@@ -14,7 +14,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import * as yup from 'yup';
-import { CreateStemiCaseData, PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment } from '../services/stemiService';
+import { CreateStemiCaseData, PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment, StemiCase } from '../services/stemiService';
 import { StemiDatetimeService } from '../services/stemiDatetimeService';
 import { Hospital } from '../../../services/hospitalService';
 import PatientInfoStep from './forms/PatientInfoStep';
@@ -23,11 +23,16 @@ import CriticalTimestampsStep from './forms/CriticalTimestampsStep';
 import InterventionsAndTreatmentsStep from './forms/InterventionsAndTreatmentsStep';
 import ClinicalAssessmentStep from './forms/ClinicalAssessmentStep';
 import ReviewStep from './forms/ReviewStep';
+import BedAssignmentStep from '../../Trauma/components/forms/BedAssignmentStep';
+import { bedService } from '../../Beds/services/bedService';
+import { useSnackbar } from 'notistack';
+import { useQueryClient } from 'react-query';
+import { BedAssignmentFormData } from '../../Trauma/types/traumaTypes';
 
 interface CreateStemiCaseDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateStemiCaseData) => Promise<void>;
+  onSubmit: (data: CreateStemiCaseData) => Promise<StemiCase>;
 }
 
 const steps = [
@@ -36,6 +41,7 @@ const steps = [
   'Critical Timestamps',
   'Interventions & Treatments',
   'Clinical Assessment',
+  'Bed Assignment',
   'Review & Submit',
 ];
 
@@ -98,6 +104,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -169,6 +177,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     troponinValue: undefined as number | undefined,
     additionalNotes: '',
   });
+
+  const [bedAssignment, setBedAssignment] = useState<BedAssignmentFormData | undefined>(undefined);
 
   const handlePatientInfoChange = useCallback((updated: PatientInfo) => {
     setPatientInfo((prev) => {
@@ -404,7 +414,11 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     issues[2] = timelineWarningKeys.some((key) => key.startsWith('criticalTimestamps.'));
     issues[3] = timelineWarningKeys.some((key) => key.startsWith('interventionsAndTreatments.'));
     issues[4] = timelineWarningKeys.some((key) => key.startsWith('clinicalAssessment.'));
-    issues[5] = hasTimelineWarnings;
+    const hasBedAssignmentErrors = Object.keys(validationErrors).some((key) =>
+      key.startsWith('bedAssignment.')
+    );
+    issues[5] = hasBedAssignmentErrors;
+    issues[6] = hasTimelineWarnings;
 
     return issues;
   }, [validationErrors, timelineWarningKeys, hasTimelineWarnings]);
@@ -437,8 +451,19 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
       return;
     }
 
+    // Validate bed assignment step if on review step
+    if (activeStep === 6) {
+      const bedAssignmentErrors = await validateStep(5);
+      if (Object.keys(bedAssignmentErrors).length > 0) {
+        setValidationErrors((prev) => ({ ...prev, ...bedAssignmentErrors }));
+        setActiveStep(5);
+        setError('Please correct the bed assignment information before submitting.');
+        return;
+      }
+    }
+
     if (hasTimelineWarnings) {
-      setActiveStep(5);
+      setActiveStep(6);
       const firstWarning = timelineWarnings[Object.keys(timelineWarnings)[0]]?.[0];
       setError(firstWarning || 'Please review the timeline warnings before submitting.');
       return;
@@ -481,7 +506,29 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         additionalNotes: additionalData.additionalNotes || undefined,
       };
 
-      await onSubmit(formData);
+      const createdCase = await onSubmit(formData);
+
+      // Assign bed if specified
+      const bedAssignmentData = bedAssignment as any;
+      if (bedAssignmentData && bedAssignmentData.bedId && createdCase?.id && createdCase?.patientId) {
+        try {
+          await bedService.assignBed(bedAssignmentData.bedId, {
+            patientId: createdCase.patientId,
+            caseId: createdCase.id,
+            caseType: 'STEMI',
+            arrivalDate: bedAssignmentData.arrivalDate,
+          });
+          enqueueSnackbar('STEMI case created and bed assigned successfully', { variant: 'success' });
+          // Invalidate hospitals queries and dispatch event to trigger refetch
+          queryClient.invalidateQueries('hospitals');
+          window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
+        } catch (bedErr: any) {
+          console.error('Error assigning bed:', bedErr);
+          enqueueSnackbar('STEMI case created but bed assignment failed: ' + (bedErr?.response?.data?.message || bedErr?.message || 'Unknown error'), { variant: 'warning' });
+        }
+      } else if (bedAssignmentData && bedAssignmentData.bedId) {
+        enqueueSnackbar('STEMI case created but bed assignment skipped (missing case or patient ID)', { variant: 'warning' });
+      }
 
       // Reset form
       setActiveStep(0);
@@ -538,6 +585,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         troponinValue: undefined,
         additionalNotes: '',
       });
+      setBedAssignment(undefined);
       setOriginHospital(null);
       setValidationErrors({});
     } catch (err: any) {
@@ -554,6 +602,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
       setError(null);
       setValidationErrors({});
       setOriginHospital(null);
+      setBedAssignment(undefined);
       onClose();
     }
   };
@@ -648,6 +697,19 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         );
       case 5:
         return (
+          <BedAssignmentStep
+            data={bedAssignment || {}}
+            onChange={(data) => setBedAssignment({ ...bedAssignment, ...data } as BedAssignmentFormData)}
+            errors={validationErrors}
+            validationErrors={validationErrors}
+            patientInfo={{
+              originHospitalId: patientInfo.originHospitalId,
+              destinationHospitalId: patientInfo.destinationHospitalId,
+            } as any}
+          />
+        );
+      case 6:
+        return (
           <ReviewStep
             patientInfo={patientInfo}
             admissionDetails={admissionDetails}
@@ -656,6 +718,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             clinicalAssessment={clinicalAssessment}
             additionalData={additionalData}
             timelineWarnings={timelineWarnings}
+            bedAssignment={bedAssignment}
           />
         );
       default:

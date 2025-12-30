@@ -298,6 +298,41 @@ export class StemiCasesService {
       throw new NotFoundException('STEMI case not found');
     }
 
+    // Get assigned bed information
+    const assignedBed = await this.prisma.bed.findFirst({
+      where: {
+        caseId: id,
+        caseType: 'STEMI',
+        deletedAt: null,
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedType: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            age: true,
+            gender: true,
+            mrn: true,
+          },
+        },
+      },
+    });
+
     // Transform the data to match the expected frontend format
     return {
       ...stemiCase,
@@ -326,6 +361,30 @@ export class StemiCasesService {
         fibrinolyticAbsoluteContraindications: stemiCase.fibrinolyticAbsoluteContraindications,
         fibrinolyticRelativeContraindications: stemiCase.fibrinolyticRelativeContraindications,
       },
+      assignedBed: assignedBed ? {
+        id: assignedBed.id,
+        bedNumber: assignedBed.bedNumber,
+        status: assignedBed.status,
+        location: assignedBed.location || undefined,
+        isOperational: assignedBed.isOperational,
+        unit: {
+          id: assignedBed.unit.id,
+          name: assignedBed.unit.name,
+          bedType: assignedBed.unit.bedType,
+        },
+        hospital: {
+          id: assignedBed.hospital.id,
+          name: assignedBed.hospital.name,
+        },
+        currentPatient: assignedBed.currentPatient ? {
+          id: assignedBed.currentPatient.id,
+          name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+          nationalId: assignedBed.currentPatient.nationalId || undefined,
+          age: assignedBed.currentPatient.age || undefined,
+          gender: assignedBed.currentPatient.gender || undefined,
+          mrn: assignedBed.currentPatient.mrn || undefined,
+        } : undefined,
+      } : null,
     };
   }
 

@@ -153,6 +153,32 @@ export interface StemiCase {
   metKpi5?: boolean;
   metKpi6?: boolean;
   
+  // Bed Assignment
+  assignedBed?: {
+    id: string;
+    bedNumber: string;
+    status: string;
+    location?: string;
+    isOperational: boolean;
+    unit: {
+      id: string;
+      name: string;
+      bedType: string;
+    };
+    hospital: {
+      id: string;
+      name: string;
+    };
+    currentPatient?: {
+      id: string;
+      name: string;
+      nationalId?: string;
+      age?: number;
+      gender?: string;
+      mrn?: string;
+    };
+  } | null;
+  
   // Relations
   ticket: {
     id: string;

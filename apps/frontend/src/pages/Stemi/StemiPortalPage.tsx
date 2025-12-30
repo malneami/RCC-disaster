@@ -347,12 +347,13 @@ const StemiPortalPage: React.FC = () => {
   };
 
 
-  const handleCreateCase = async (caseData: any) => {
+  const handleCreateCase = async (caseData: any): Promise<StemiCase> => {
     try {
       const newCase = await StemiService.createStemiCase(caseData);
       setStemiCases(prev => [newCase, ...prev]);
       setCreateDialogOpen(false);
       await loadData(); // Refresh KPIs
+      return newCase;
     } catch (err: any) {
       console.error('Error creating STEMI case:', err);
       throw err;

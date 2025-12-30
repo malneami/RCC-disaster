@@ -163,8 +163,77 @@ export class StemiQueryService {
         },
       });
 
+      // Enrich cases with assignedBed information
+      const caseIds = cases.map(c => c.id);
+      const beds = await this.prisma.bed.findMany({
+        where: {
+          caseId: { in: caseIds },
+          caseType: 'STEMI',
+          deletedAt: null,
+        },
+        include: {
+          unit: {
+            select: {
+              id: true,
+              name: true,
+              bedType: true,
+            },
+          },
+          hospital: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          currentPatient: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              nationalId: true,
+              age: true,
+              gender: true,
+              mrn: true,
+            },
+          },
+        },
+      });
+
+      const bedMap = new Map(beds.map(bed => [bed.caseId!, bed]));
+
+      const enrichedCases = cases.map(case_ => {
+        const assignedBed = bedMap.get(case_.id);
+        return {
+          ...case_,
+          assignedBed: assignedBed ? {
+            id: assignedBed.id,
+            bedNumber: assignedBed.bedNumber,
+            status: assignedBed.status,
+            location: assignedBed.location || undefined,
+            isOperational: assignedBed.isOperational,
+            unit: {
+              id: assignedBed.unit.id,
+              name: assignedBed.unit.name,
+              bedType: assignedBed.unit.bedType,
+            },
+            hospital: {
+              id: assignedBed.hospital.id,
+              name: assignedBed.hospital.name,
+            },
+            currentPatient: assignedBed.currentPatient ? {
+              id: assignedBed.currentPatient.id,
+              name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+              nationalId: assignedBed.currentPatient.nationalId || undefined,
+              age: assignedBed.currentPatient.age || undefined,
+              gender: assignedBed.currentPatient.gender || undefined,
+              mrn: assignedBed.currentPatient.mrn || undefined,
+            } : undefined,
+          } : null,
+        } as any;
+      });
+
       return {
-        cases,
+        cases: enrichedCases,
         total,
         page: Math.floor(offset / limit) + 1,
         limit,

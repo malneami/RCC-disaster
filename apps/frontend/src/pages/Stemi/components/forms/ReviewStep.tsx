@@ -9,6 +9,7 @@ import {
   Chip,
 } from '@mui/material';
 import { PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment } from '../../services/stemiService';
+import { BedAssignmentFormData } from '../../../Trauma/types/traumaTypes';
 
 interface ReviewStepProps {
   patientInfo: PatientInfo;
@@ -26,6 +27,7 @@ interface ReviewStepProps {
     troponinValue?: number;
   };
   timelineWarnings?: Record<string, string[]>;
+  bedAssignment?: BedAssignmentFormData;
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({
@@ -36,6 +38,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   clinicalAssessment,
   additionalData,
   timelineWarnings = {},
+  bedAssignment,
 }) => {
   const formatDateTime = (dateTime: string) => {
     if (!dateTime) return 'Not specified';
@@ -409,6 +412,55 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Bed Assignment */}
+        {(bedAssignment?.assignedBed || bedAssignment?.bedId || bedAssignment?.bedNumber) && (
+          <Grid item xs={12} md={6}>
+            <Card sx={cardStyles(false)}>
+              <CardContent sx={cardContentStyles}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                  Bed Assignment
+                </Typography>
+                {bedAssignment.assignedBed ? (
+                  <>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Bed Number</Typography>
+                      <Typography variant="body2">{bedAssignment.assignedBed.bedNumber}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Unit</Typography>
+                      <Typography variant="body2">{bedAssignment.assignedBed.unitName}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Hospital</Typography>
+                      <Typography variant="body2">{bedAssignment.assignedBed.hospitalName}</Typography>
+                    </Box>
+                    {bedAssignment.arrivalDate && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Expected Arrival Date/Time</Typography>
+                        <Typography variant="body2">{formatDateTime(bedAssignment.arrivalDate)}</Typography>
+                      </Box>
+                    )}
+                    {bedAssignment.assignedBed.id && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Bed ID</Typography>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          {bedAssignment.assignedBed.id}
+                        </Typography>
+                      </Box>
+                    )}
+                  </>
+                ) : (
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No bed assigned in this step.
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );
