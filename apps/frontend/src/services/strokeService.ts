@@ -223,6 +223,30 @@ export interface StrokeCase {
   timeline?: StrokeTimeline[];
   assessmentScores?: StrokeAssessmentScore[];
   rehabilitation?: StrokeRehabilitation[];
+  assignedBed?: {
+    id: string;
+    bedNumber: string;
+    status: string;
+    location?: string;
+    isOperational: boolean;
+    unit: {
+      id: string;
+      name: string;
+      bedType: string;
+    };
+    hospital: {
+      id: string;
+      name: string;
+    };
+    currentPatient?: {
+      id: string;
+      name: string;
+      nationalId?: string;
+      age?: number;
+      gender?: string;
+      mrn?: string;
+    };
+  } | null;
   
   createdAt: string;
   updatedAt: string;
@@ -311,6 +335,22 @@ export interface StrokeRehabilitation {
 }
 
 // Create/Update DTOs
+export interface BedAssignmentFormData {
+  hospitalId?: string;
+  hospitalType?: 'origin' | 'destination';
+  unitId?: string;
+  bedId?: string;
+  bedNumber?: string;
+  location?: string;
+  arrivalDate?: string;
+  assignedBed?: {
+    id: string;
+    bedNumber: string;
+    unitName: string;
+    hospitalName: string;
+  };
+}
+
 export interface CreateStrokeCaseData {
   ticketId?: string;
   patientId?: string;
@@ -321,6 +361,7 @@ export interface CreateStrokeCaseData {
   strokeType: StrokeType;
   strokeSeverity?: StrokeSeverity;
   currentStatus: StrokeStatus;
+  bedAssignment?: BedAssignmentFormData;
   selectedTreatment?: StrokeTreatment;
   eligibleForThrombolysis?: boolean;
   thrombolysisContraindications?: string;

@@ -21,6 +21,10 @@ import AssessmentStep from './CreateStrokeCase/AssessmentStep';
 import DiagnosisStep from './CreateStrokeCase/DiagnosisStep';
 import TreatmentStep from './CreateStrokeCase/TreatmentStep';
 import ReviewStep from './CreateStrokeCase/ReviewStep';
+import BedAssignmentStep from '../../Trauma/components/forms/BedAssignmentStep';
+import { bedService } from '../../Beds/services/bedService';
+import { useSnackbar } from 'notistack';
+import { useQueryClient } from 'react-query';
 
 const DESTINATION_REQUIRED_MESSAGE =
   'Please select a destination hospital because the selected origin hospital does not provide Stroke service.';
@@ -97,6 +101,7 @@ const steps = [
   'Assessment',
   'Diagnosis',
   'Treatment',
+  'Bed Assignment',
   'Review & Submit'
 ];
 
@@ -107,6 +112,8 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
   onUpdate,
 }) => {
   const { } = useAuth();
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -128,6 +135,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       phoneNumber: '',
       email: '',
     },
+    bedAssignment: undefined,
   });
 
   const originRequiresDestination = !!originHospital && !originHospital.hasStrokeService;
@@ -148,6 +156,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         phoneNumber: '',
         email: '',
       },
+      bedAssignment: undefined,
     });
     setActiveStep(0);
     setError(null);
@@ -373,6 +382,22 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
   // Load case data when dialog opens or case changes
   useEffect(() => {
     if (strokeCase && open) {
+      let bedAssignment = undefined;
+      if (strokeCase.assignedBed) {
+        bedAssignment = {
+          bedId: strokeCase.assignedBed.id,
+          bedNumber: strokeCase.assignedBed.bedNumber,
+          unitId: strokeCase.assignedBed.unit?.id,
+          hospitalId: strokeCase.assignedBed.hospital?.id,
+          assignedBed: {
+            id: strokeCase.assignedBed.id,
+            bedNumber: strokeCase.assignedBed.bedNumber,
+            unitName: strokeCase.assignedBed.unit?.name || '',
+            hospitalName: strokeCase.assignedBed.hospital?.name || '',
+          },
+        };
+      }
+
       setFormData({
         // Basic Information
         originHospitalId: strokeCase.originHospitalId,
@@ -439,6 +464,9 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         // Follow-up & Outcome Tracking
         followUpContactAttempted: strokeCase.followUpContactAttempted,
         modifiedRankinScaleAt90Days: strokeCase.modifiedRankinScaleAt90Days,
+        
+        // Bed Assignment
+        bedAssignment,
       });
       setActiveStep(0);
       setError(null);
@@ -473,6 +501,12 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         delete newErrors['modeOfArrival'];
       } else if (field === 'strokeType') {
         delete newErrors['strokeType'];
+      } else if (field === 'bedAssignment') {
+        Object.keys(newErrors).forEach(key => {
+          if (key.startsWith('bedAssignment.')) {
+            delete newErrors[key];
+          }
+        });
       }
 
       return newErrors;
@@ -518,6 +552,19 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           />
         );
       case 4:
+        return (
+          <BedAssignmentStep
+            data={formData.bedAssignment || {}}
+            onChange={(data) => updateFormData('bedAssignment', { ...formData.bedAssignment, ...data })}
+            errors={validationErrors}
+            validationErrors={validationErrors}
+            patientInfo={{
+              originHospitalId: formData.originHospitalId,
+              destinationHospitalId: formData.destinationHospitalId,
+            } as any}
+          />
+        );
+      case 5:
         return <ReviewStep formData={formData} timelineWarnings={timelineWarnings} />;
       default:
         return null;
@@ -566,6 +613,24 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         // Treatment fields are mostly optional
         break;
       case 4:
+        if (formData.bedAssignment && 'bedId' in formData.bedAssignment && (formData.bedAssignment as any).bedId) {
+          try {
+            const bedId = (formData.bedAssignment as any).bedId;
+            if (bedId) {
+              const bed = await bedService.getBedById(bedId);
+              if (bed.status !== 'VACANT' && bed.status !== 'RESERVED') {
+                errors['bedAssignment.bedId'] = `Bed ${bed.bedNumber} is ${bed.status} and cannot be assigned. Please select a VACANT or RESERVED bed.`;
+              }
+            }
+          } catch (err: any) {
+            errors['bedAssignment.bedId'] = err?.response?.data?.message || 'Failed to validate bed. Please select a different bed.';
+          }
+          if (validationErrors['bedAssignment.bedId']) {
+            errors['bedAssignment.bedId'] = validationErrors['bedAssignment.bedId'];
+          }
+        }
+        break;
+      case 5:
         // Review step
         break;
     }
@@ -614,6 +679,8 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           targetStep = 0;
         } else if (firstErrorKey === 'strokeType') {
           targetStep = 1;
+        } else if (firstErrorKey.startsWith('bedAssignment.')) {
+          targetStep = 4;
         }
         setActiveStep(targetStep);
         setError('Please correct the highlighted information before submitting.');
@@ -622,8 +689,8 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       }
 
       // Prepare update data with patientInfo included
-      const { patientInfo, ...otherData } = formData;
-
+      const { patientInfo, bedAssignment, ...otherData } = formData;
+      
       // Clean empty string values and convert them to undefined
       const cleanedData = Object.entries(otherData).reduce((acc, [key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
@@ -639,6 +706,38 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
 
       console.log('Sending update data:', cleanedData);
       await onUpdate(strokeCase.id, cleanedData);
+      
+      const bedAssignmentData = bedAssignment as any;
+      const currentBedId = strokeCase.assignedBed?.id;
+      const newBedId = bedAssignmentData && 'bedId' in bedAssignmentData ? bedAssignmentData.bedId : undefined;
+      
+      if (newBedId && newBedId !== currentBedId && strokeCase.patientId) {
+        try {
+          await bedService.assignBed(newBedId, {
+            patientId: strokeCase.patientId,
+            caseId: strokeCase.id,
+            caseType: 'STROKE',
+            arrivalDate: bedAssignmentData?.arrivalDate,
+          });
+          enqueueSnackbar('Stroke case updated and bed assigned successfully', { variant: 'success' });
+          // Invalidate hospitals queries and dispatch event to trigger refetch
+          queryClient.invalidateQueries('hospitals');
+          window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
+        } catch (bedError: any) {
+          console.error('Error assigning bed:', bedError);
+          enqueueSnackbar(
+            'Case updated but bed assignment failed: ' + (bedError?.response?.data?.message || bedError?.message || 'Unknown error'),
+            { variant: 'warning' }
+          );
+        }
+      } else if (!newBedId && currentBedId) {
+        enqueueSnackbar('Stroke case updated. Note: To unassign the bed, please use the bed management interface.', { variant: 'info' });
+      } else if (newBedId && newBedId === currentBedId) {
+        enqueueSnackbar('Stroke case updated successfully', { variant: 'success' });
+      } else {
+        enqueueSnackbar('Stroke case updated successfully', { variant: 'success' });
+      }
+      
       setSuccess('Case updated successfully!');
       setError(null);
 

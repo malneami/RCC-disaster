@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hospital, HospitalFilters } from '../../services/hospitalService';
 import { hospitalService } from '../../services/hospitalService';
@@ -111,6 +111,18 @@ const HospitalsPage: React.FC = () => {
     updateCapacityDialogOpen,
     filterDialogOpen,
   };
+
+  // Listen for hospital capacity changes (e.g., when beds are assigned/unassigned)
+  useEffect(() => {
+    const handleCapacityChange = () => {
+      loadHospitals();
+    };
+
+    window.addEventListener('hospital-capacity-changed', handleCapacityChange);
+    return () => {
+      window.removeEventListener('hospital-capacity-changed', handleCapacityChange);
+    };
+  }, [loadHospitals]);
 
   return (
     <HospitalsPageView

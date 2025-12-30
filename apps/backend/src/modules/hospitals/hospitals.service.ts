@@ -3,7 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 import { UpdateHospitalDto } from './dto/update-hospital.dto';
 import { UpdateHospitalCapacityDto } from './dto/update-hospital-capacity.dto';
-import { HospitalStatus } from '@prisma/client';
+import { HospitalStatus, BedType, BedStatus } from '@prisma/client';
 
 interface HospitalFilters {
   status?: HospitalStatus;
@@ -32,10 +32,136 @@ export class HospitalsService {
     if (filters.hasStrokeService !== undefined) where.hasStrokeService = filters.hasStrokeService;
     if (filters.hasTraumaService !== undefined) where.hasTraumaService = filters.hasTraumaService;
 
-    return this.prisma.hospital.findMany({
+    const hospitals = await this.prisma.hospital.findMany({
       where,
       orderBy: { name: 'asc' },
     });
+
+    if (hospitals.length === 0) {
+      return hospitals;
+    }
+
+    // Get hospital IDs
+    const hospitalIds = hospitals.map(h => h.id);
+
+    const beds = await this.prisma.bed.findMany({
+      where: {
+        hospitalId: { in: hospitalIds },
+        deletedAt: null,
+        isOperational: true,
+      },
+      include: {
+        unit: {
+          select: {
+            bedType: true,
+          },
+        },
+      },
+    });
+
+    const bedCountsByHospital = new Map<string, Record<BedType, { total: number; available: number }>>();
+
+    for (const hospitalId of hospitalIds) {
+      bedCountsByHospital.set(hospitalId, {
+        [BedType.ICU]: { total: 0, available: 0 },
+        [BedType.PICU]: { total: 0, available: 0 },
+        [BedType.NICU]: { total: 0, available: 0 },
+        [BedType.MALE_WARD]: { total: 0, available: 0 },
+        [BedType.FEMALE_WARD]: { total: 0, available: 0 },
+        [BedType.PEDIATRIC_WARD]: { total: 0, available: 0 },
+        [BedType.STANDARD_WARD]: { total: 0, available: 0 },
+        [BedType.ED]: { total: 0, available: 0 },
+        [BedType.STROKE_UNIT]: { total: 0, available: 0 },
+        [BedType.CCU]: { total: 0, available: 0 },
+        [BedType.OTHER]: { total: 0, available: 0 },
+      });
+    }
+
+    for (const bed of beds) {
+      const hospitalId = bed.hospitalId;
+      const bedType = bed.unit.bedType;
+      const counts = bedCountsByHospital.get(hospitalId);
+      
+      if (counts && bedType in counts) {
+        counts[bedType].total++;
+        
+        if (bed.status === BedStatus.VACANT || bed.status === BedStatus.RESERVED) {
+          counts[bedType].available++;
+        }
+      }
+    }
+
+    for (const hospital of hospitals) {
+      const bedCounts = bedCountsByHospital.get(hospital.id);
+      if (bedCounts) {
+        hospital.icuBeds = bedCounts[BedType.ICU].total;
+        hospital.icuBedsAvailable = bedCounts[BedType.ICU].available;
+        hospital.picuBeds = bedCounts[BedType.PICU].total;
+        hospital.picuBedsAvailable = bedCounts[BedType.PICU].available;
+        hospital.nicuBeds = bedCounts[BedType.NICU].total;
+        hospital.nicuBedsAvailable = bedCounts[BedType.NICU].available;
+        hospital.maleBeds = bedCounts[BedType.MALE_WARD].total;
+        hospital.maleBedsAvailable = bedCounts[BedType.MALE_WARD].available;
+        hospital.femaleBeds = bedCounts[BedType.FEMALE_WARD].total;
+        hospital.femaleBedsAvailable = bedCounts[BedType.FEMALE_WARD].available;
+        hospital.pediatricBeds = bedCounts[BedType.PEDIATRIC_WARD].total;
+        hospital.pediatricBedsAvailable = bedCounts[BedType.PEDIATRIC_WARD].available;
+        hospital.standardBeds = bedCounts[BedType.STANDARD_WARD].total;
+        hospital.standardBedsAvailable = bedCounts[BedType.STANDARD_WARD].available;
+      }
+    }
+
+    return hospitals;
+  }
+
+  /**
+   * Calculate actual bed capacity from Bed table for a hospital
+   * Returns counts grouped by bed type
+   */
+  private async calculateBedCapacity(hospitalId: string): Promise<Record<BedType, { total: number; available: number }>> {
+    // Initialize counts for all bed types
+    const counts: Record<BedType, { total: number; available: number }> = {
+      [BedType.ICU]: { total: 0, available: 0 },
+      [BedType.PICU]: { total: 0, available: 0 },
+      [BedType.NICU]: { total: 0, available: 0 },
+      [BedType.MALE_WARD]: { total: 0, available: 0 },
+      [BedType.FEMALE_WARD]: { total: 0, available: 0 },
+      [BedType.PEDIATRIC_WARD]: { total: 0, available: 0 },
+      [BedType.STANDARD_WARD]: { total: 0, available: 0 },
+      [BedType.ED]: { total: 0, available: 0 },
+      [BedType.STROKE_UNIT]: { total: 0, available: 0 },
+      [BedType.CCU]: { total: 0, available: 0 },
+      [BedType.OTHER]: { total: 0, available: 0 },
+    };
+
+    const beds = await this.prisma.bed.findMany({
+      where: {
+        hospitalId,
+        deletedAt: null,
+        isOperational: true,
+      },
+      include: {
+        unit: {
+          select: {
+            bedType: true,
+          },
+        },
+      },
+    });
+
+    for (const bed of beds) {
+      const bedType = bed.unit.bedType;
+      
+      if (bedType in counts) {
+        counts[bedType].total++;
+        
+        if (bed.status === BedStatus.VACANT || bed.status === BedStatus.RESERVED) {
+          counts[bedType].available++;
+        }
+      }
+    }
+
+    return counts;
   }
 
   async getForRegistration() {
@@ -60,6 +186,24 @@ export class HospitalsService {
     if (!hospital) {
       throw new NotFoundException(`Hospital with ID ${id} not found`);
     }
+
+    // Calculate actual bed capacity from Bed table
+    const bedCounts = await this.calculateBedCapacity(id);
+    
+    hospital.icuBeds = bedCounts.ICU.total;
+    hospital.icuBedsAvailable = bedCounts.ICU.available;
+    hospital.picuBeds = bedCounts.PICU.total;
+    hospital.picuBedsAvailable = bedCounts.PICU.available;
+    hospital.nicuBeds = bedCounts.NICU.total;
+    hospital.nicuBedsAvailable = bedCounts.NICU.available;
+    hospital.maleBeds = bedCounts.MALE_WARD.total;
+    hospital.maleBedsAvailable = bedCounts.MALE_WARD.available;
+    hospital.femaleBeds = bedCounts.FEMALE_WARD.total;
+    hospital.femaleBedsAvailable = bedCounts.FEMALE_WARD.available;
+    hospital.pediatricBeds = bedCounts.PEDIATRIC_WARD.total;
+    hospital.pediatricBedsAvailable = bedCounts.PEDIATRIC_WARD.available;
+    hospital.standardBeds = bedCounts.STANDARD_WARD.total;
+    hospital.standardBedsAvailable = bedCounts.STANDARD_WARD.available;
 
     return hospital;
   }

@@ -38,6 +38,7 @@ import { Hospital } from '../../../services/hospitalService';
 import { bedService } from '../../../pages/Beds/services/bedService';
 import { useSnackbar } from 'notistack';
 import { BedAssignmentFormData } from '../types/traumaTypes';
+import { useQueryClient } from 'react-query';
 
 const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F-]+$/;
 const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
@@ -108,6 +109,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
   onSubmit,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [validatingBed, setValidatingBed] = useState(false);
@@ -797,6 +799,9 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             arrivalDate: 'arrivalDate' in bedAssignment ? bedAssignment.arrivalDate : undefined,
           });
           enqueueSnackbar('Trauma case created and bed assigned successfully', { variant: 'success' });
+          // Invalidate hospitals queries and dispatch event to trigger refetch
+          queryClient.invalidateQueries('hospitals');
+          window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
         } catch (bedError: any) {
           console.error('Error assigning bed:', bedError);
           enqueueSnackbar(

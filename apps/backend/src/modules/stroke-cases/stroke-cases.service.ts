@@ -421,7 +421,7 @@ export class StrokeCasesService {
   }): Promise<StrokeCase[]> {
     const where = this.buildFindAllWhereClause(filters);
 
-    return this.prisma.strokeCase.findMany({
+    const cases = await this.prisma.strokeCase.findMany({
       where,
       include: {
         ticket: {
@@ -468,6 +468,74 @@ export class StrokeCasesService {
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+
+    const caseIds = cases.map(c => c.id);
+    const beds = await this.prisma.bed.findMany({
+      where: {
+        caseId: { in: caseIds },
+        caseType: 'STROKE',
+        deletedAt: null,
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedType: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            age: true,
+            gender: true,
+            mrn: true,
+          },
+        },
+      },
+    });
+
+    const bedMap = new Map(beds.map(bed => [bed.caseId!, bed]));
+
+    return cases.map(case_ => {
+      const assignedBed = bedMap.get(case_.id);
+      return {
+        ...case_,
+        assignedBed: assignedBed ? {
+          id: assignedBed.id,
+          bedNumber: assignedBed.bedNumber,
+          status: assignedBed.status,
+          location: assignedBed.location || undefined,
+          isOperational: assignedBed.isOperational,
+          unit: {
+            id: assignedBed.unit.id,
+            name: assignedBed.unit.name,
+            bedType: assignedBed.unit.bedType,
+          },
+          hospital: {
+            id: assignedBed.hospital.id,
+            name: assignedBed.hospital.name,
+          },
+          currentPatient: assignedBed.currentPatient ? {
+            id: assignedBed.currentPatient.id,
+            name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+            nationalId: assignedBed.currentPatient.nationalId || undefined,
+            age: assignedBed.currentPatient.age || undefined,
+            gender: assignedBed.currentPatient.gender || undefined,
+            mrn: assignedBed.currentPatient.mrn || undefined,
+          } : undefined,
+        } : null,
+      } as any;
     });
   }
 
@@ -551,8 +619,76 @@ export class StrokeCasesService {
       take: limit,
     });
 
+    const caseIds = cases.map(c => c.id);
+    const beds = await this.prisma.bed.findMany({
+      where: {
+        caseId: { in: caseIds },
+        caseType: 'STROKE',
+        deletedAt: null,
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedType: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            age: true,
+            gender: true,
+            mrn: true,
+          },
+        },
+      },
+    });
+
+    const bedMap = new Map(beds.map(bed => [bed.caseId!, bed]));
+
+    const casesWithBeds = cases.map(case_ => {
+      const assignedBed = bedMap.get(case_.id);
+      return {
+        ...case_,
+        assignedBed: assignedBed ? {
+          id: assignedBed.id,
+          bedNumber: assignedBed.bedNumber,
+          status: assignedBed.status,
+          location: assignedBed.location || undefined,
+          isOperational: assignedBed.isOperational,
+          unit: {
+            id: assignedBed.unit.id,
+            name: assignedBed.unit.name,
+            bedType: assignedBed.unit.bedType,
+          },
+          hospital: {
+            id: assignedBed.hospital.id,
+            name: assignedBed.hospital.name,
+          },
+          currentPatient: assignedBed.currentPatient ? {
+            id: assignedBed.currentPatient.id,
+            name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+            nationalId: assignedBed.currentPatient.nationalId || undefined,
+            age: assignedBed.currentPatient.age || undefined,
+            gender: assignedBed.currentPatient.gender || undefined,
+            mrn: assignedBed.currentPatient.mrn || undefined,
+          } : undefined,
+        } : null,
+      } as any;
+    });
+
     return {
-      cases,
+      cases: casesWithBeds,
       total,
       page: Math.floor(offset / limit) + 1,
       limit,
@@ -753,9 +889,69 @@ export class StrokeCasesService {
       throw new NotFoundException('Stroke case not found');
     }
 
+    const assignedBed = await this.prisma.bed.findFirst({
+      where: {
+        caseId: id,
+        caseType: 'STROKE',
+        deletedAt: null,
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedType: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            age: true,
+            gender: true,
+            mrn: true,
+          },
+        },
+      },
+    });
+
     console.log('=== FINDONE RESULT ===');
     console.log('Patient data:', JSON.stringify(strokeCase.patient, null, 2));
-    return strokeCase;
+    return {
+      ...strokeCase,
+      assignedBed: assignedBed ? {
+        id: assignedBed.id,
+        bedNumber: assignedBed.bedNumber,
+        status: assignedBed.status,
+        location: assignedBed.location || undefined,
+        isOperational: assignedBed.isOperational,
+        unit: {
+          id: assignedBed.unit.id,
+          name: assignedBed.unit.name,
+          bedType: assignedBed.unit.bedType,
+        },
+        hospital: {
+          id: assignedBed.hospital.id,
+          name: assignedBed.hospital.name,
+        },
+        currentPatient: assignedBed.currentPatient ? {
+          id: assignedBed.currentPatient.id,
+          name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+          nationalId: assignedBed.currentPatient.nationalId || undefined,
+          age: assignedBed.currentPatient.age || undefined,
+          gender: assignedBed.currentPatient.gender || undefined,
+          mrn: assignedBed.currentPatient.mrn || undefined,
+        } : undefined,
+      } : null,
+    } as any;
   }
 
   async update(id: string, updateStrokeCaseDto: UpdateStrokeCaseDto, userId: string): Promise<StrokeCase> {

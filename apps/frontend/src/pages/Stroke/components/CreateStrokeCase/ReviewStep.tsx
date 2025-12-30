@@ -14,9 +14,10 @@ import { hospitalService, Hospital } from '../../../../services/hospitalService'
 interface ReviewStepProps {
   formData: CreateStrokeCaseData;
   timelineWarnings?: Record<string, string[]>;
+  validationErrors?: Record<string, string>;
 }
 
-const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {} }) => {
+const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}, validationErrors = {} }) => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
 
   useEffect(() => {
@@ -122,23 +123,24 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
     );
   };
 
-  const renderValue = (value: string, hasIssue: boolean) => (
-    <Box
-      component="span"
-      sx={
-        hasIssue
-          ? {
-            display: 'inline-block',
-            fontWeight: 700,
-            color: 'warning.main',
-            ml: 0.5,
-          }
-          : { ml: 0.5 }
-      }
-    >
-      {value}
-    </Box>
-  );
+  const renderValue = (value: any, hasIssue = false) => {
+    if (value === null || value === undefined || value === '') {
+      return <Typography variant="body2" color="text.secondary">Not specified</Typography>;
+    }
+    return (
+      <Typography
+        variant="body2"
+        sx={{
+          fontWeight: hasIssue ? 700 : 400,
+          color: hasIssue ? 'warning.dark' : 'text.primary',
+        }}
+      >
+        {String(value)}
+      </Typography>
+    );
+  };
+
+  const hasBedAssignmentErrors = Object.keys(validationErrors).some(key => key.startsWith('bedAssignment.'));
 
   const patientWarnings = getWarnings(
     'transferRequestDateTime',
@@ -379,6 +381,66 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Bed Assignment */}
+        {(formData.bedAssignment?.assignedBed || formData.bedAssignment?.bedId || formData.bedAssignment?.bedNumber || hasBedAssignmentErrors) && (
+          <Grid item xs={12} md={6}>
+            <Card sx={cardStyles(hasBedAssignmentErrors)}>
+              <CardContent sx={cardContentStyles}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                  Bed Assignment
+                </Typography>
+                {formData.bedAssignment?.assignedBed ? (
+                  <>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Bed Number</Typography>
+                      {renderValue(formData.bedAssignment.assignedBed.bedNumber)}
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Unit</Typography>
+                      {renderValue(formData.bedAssignment.assignedBed.unitName)}
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Hospital</Typography>
+                      {renderValue(formData.bedAssignment.assignedBed.hospitalName)}
+                    </Box>
+                    {formData.bedAssignment.arrivalDate && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Expected Arrival Date/Time</Typography>
+                        {renderValue(formatDateTime(formData.bedAssignment.arrivalDate))}
+                      </Box>
+                    )}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Bed ID</Typography>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                        {formData.bedAssignment.assignedBed.id}
+                      </Typography>
+                    </Box>
+                  </>
+                ) : (
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No bed assigned in this step.
+                    </Typography>
+                    {hasBedAssignmentErrors && (
+                      <Box sx={{ mt: 1 }}>
+                        {Object.entries(validationErrors)
+                          .filter(([key]) => key.startsWith('bedAssignment.'))
+                          .map(([key, message]) => (
+                            <Alert key={key} severity="error" variant="outlined" sx={{ mb: 1, borderRadius: 2 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: 'error.dark' }}>
+                                <strong>{key.replace('bedAssignment.', '').replace(/([A-Z])/g, ' $1').trim()}:</strong> {message}
+                              </Typography>
+                            </Alert>
+                          ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

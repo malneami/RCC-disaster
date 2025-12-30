@@ -15,18 +15,22 @@ import {
 } from '@mui/material';
 import * as yup from 'yup';
 
-import { CreateStrokeCaseData } from '../../../services/strokeService';
+import { CreateStrokeCaseData, StrokeCase } from '../../../services/strokeService';
 import { Hospital } from '../../../services/hospitalService';
 import PatientStep from './CreateStrokeCase/PatientStep';
 import AssessmentStep from './CreateStrokeCase/AssessmentStep';
 import DiagnosisStep from './CreateStrokeCase/DiagnosisStep';
 import TreatmentStep from './CreateStrokeCase/TreatmentStep';
 import ReviewStep from './CreateStrokeCase/ReviewStep';
+import BedAssignmentStep from '../../Trauma/components/forms/BedAssignmentStep';
+import { bedService } from '../../Beds/services/bedService';
+import { useSnackbar } from 'notistack';
+import { useQueryClient } from 'react-query';
 
 interface CreateStrokeCaseDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateStrokeCaseData) => Promise<void>;
+  onSubmit: (data: CreateStrokeCaseData) => Promise<StrokeCase>;
 }
 
 const steps = [
@@ -34,6 +38,7 @@ const steps = [
   'Assessment',
   'Diagnosis',
   'Treatment',
+  'Bed Assignment',
   'Review & Submit'
 ];
 
@@ -105,6 +110,8 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +129,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       mrn: '',
       age: undefined,
     },
+    bedAssignment: undefined,
   });
 
   const originRequiresDestination = !!originHospital && !originHospital.hasStrokeService;
@@ -139,6 +147,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
         mrn: '',
         age: undefined,
       },
+      bedAssignment: undefined,
     });
     setError(null);
     setValidationErrors({});
@@ -227,7 +236,20 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           />
         );
       case 4:
-        return <ReviewStep formData={formData} timelineWarnings={timelineWarnings} />;
+        return (
+          <BedAssignmentStep
+            data={formData.bedAssignment || {}}
+            onChange={(data) => updateFormData('bedAssignment', { ...formData.bedAssignment, ...data })}
+            errors={validationErrors}
+            validationErrors={validationErrors}
+            patientInfo={{
+              originHospitalId: formData.originHospitalId,
+              destinationHospitalId: formData.destinationHospitalId,
+            } as any}
+          />
+        );
+      case 5:
+        return <ReviewStep formData={formData} timelineWarnings={timelineWarnings} validationErrors={validationErrors} />;
       default:
         return null;
     }
@@ -424,8 +446,8 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
 
   // Track which steps have issues
   const stepIssues = useMemo(() => {
-    const issues = [false, false, false, false, false];
-
+    const issues = [false, false, false, false, false, false];
+    
     // Step 0 (Patient) - check validation errors and transfer warnings
     if (Object.keys(validationErrors).some(key => key.startsWith('patientInfo.') || key === 'originHospitalId' || key === 'destinationHospitalId' || key === 'modeOfArrival') ||
       Object.keys(timelineWarnings).some(key =>
@@ -467,12 +489,17 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
     )) {
       issues[3] = true;
     }
-
-    // Step 4 (Review) - has timeline warnings
-    if (hasTimelineWarnings) {
+    
+    // Step 4 (Bed Assignment) - check validation errors
+    if (Object.keys(validationErrors).some(key => key.startsWith('bedAssignment.'))) {
       issues[4] = true;
     }
-
+    
+    // Step 5 (Review) - has timeline warnings
+    if (hasTimelineWarnings) {
+      issues[5] = true;
+    }
+    
     return issues;
   }, [validationErrors, timelineWarnings, hasTimelineWarnings]);
 
@@ -518,6 +545,24 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
         // Treatment fields are mostly optional
         break;
       case 4:
+        if (formData.bedAssignment && 'bedId' in formData.bedAssignment && (formData.bedAssignment as any).bedId) {
+          try {
+            const bedId = (formData.bedAssignment as any).bedId;
+            if (bedId) {
+              const bed = await bedService.getBedById(bedId);
+              if (bed.status !== 'VACANT' && bed.status !== 'RESERVED') {
+                errors['bedAssignment.bedId'] = `Bed ${bed.bedNumber} is ${bed.status} and cannot be assigned. Please select a VACANT or RESERVED bed.`;
+              }
+            }
+          } catch (err: any) {
+            errors['bedAssignment.bedId'] = err?.response?.data?.message || 'Failed to validate bed. Please select a different bed.';
+          }
+          if (validationErrors['bedAssignment.bedId']) {
+            errors['bedAssignment.bedId'] = validationErrors['bedAssignment.bedId'];
+          }
+        }
+        break;
+      case 5:
         // Review step
         break;
     }
@@ -526,6 +571,88 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   };
 
   const handleNext = async () => {
+    if (activeStep === 4) {
+      const bedAssignment = formData.bedAssignment as any;
+      if (bedAssignment && (bedAssignment.bedId || bedAssignment.bedNumber || bedAssignment.location)) {
+        try {
+          const bedErrors = await validateStep(4);
+          setValidationErrors(bedErrors);
+
+          if (bedErrors['bedAssignment.bedId']) {
+            try {
+              if (bedAssignment && bedAssignment.unitId) {
+                const availableBeds = await bedService.getBeds({ unitId: bedAssignment.unitId });
+                const validBeds = availableBeds.filter(
+                  (bed) => bed.status === 'VACANT' || bed.status === 'RESERVED'
+                );
+
+                if (validBeds.length > 0) {
+                  const firstVacantBed = validBeds.find((bed) => bed.status === 'VACANT') || validBeds[0];
+                  const bed = await bedService.getBedById(firstVacantBed.id);
+
+                  updateFormData('bedAssignment', {
+                    ...bedAssignment,
+                    bedId: bed.id,
+                    bedNumber: bed.bedNumber,
+                    assignedBed: {
+                      id: bed.id,
+                      bedNumber: bed.bedNumber,
+                      unitName: bed.unit.name,
+                      hospitalName: bed.hospital.name,
+                    },
+                  });
+
+                  setError(null);
+                  setActiveStep((activeStep + 1) as any);
+                  return;
+                } else {
+                  setError('No available beds found in the selected unit. Please select a different unit or skip bed assignment.');
+                }
+              } else {
+                setError('Please select a unit first before assigning a bed.');
+              }
+            } catch (autoAssignErr: any) {
+              const errorMessage = autoAssignErr?.response?.data?.message || autoAssignErr?.message || 'Failed to auto-assign a bed. Please try selecting a bed manually or try again.';
+              setError(errorMessage);
+            }
+
+            setError('The selected bed is not available. Please select a valid VACANT or RESERVED bed, or let the system auto-assign one by clearing the bed search field.');
+            return;
+          }
+
+          if (bedAssignment.bedId && !bedAssignment.assignedBed) {
+            try {
+              const bed = await bedService.getBedById(bedAssignment.bedId);
+              if (bed.status === 'VACANT' || bed.status === 'RESERVED') {
+                updateFormData('bedAssignment', {
+                  ...bedAssignment,
+                  assignedBed: {
+                    id: bed.id,
+                    bedNumber: bed.bedNumber,
+                    unitName: bed.unit.name,
+                    hospitalName: bed.hospital.name,
+                  },
+                });
+              } else {
+                setError(`Bed ${bed.bedNumber} is ${bed.status} and cannot be assigned. Please select a VACANT or RESERVED bed.`);
+              }
+            } catch (err: any) {
+              const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch bed details. The bed may not exist or there was a network error. Please try selecting a different bed.';
+              setError(errorMessage);
+            }
+          }
+
+          setActiveStep((activeStep + 1) as any);
+          setError(null);
+          return;
+        } catch (err: any) {
+          const errorMessage = err?.response?.data?.message || err?.message || 'Failed to validate bed assignment. Please check your selection and try again.';
+          setError(errorMessage);
+          return;
+        }
+      }
+    }
+
     const errors = await validateStep(activeStep);
     setValidationErrors(errors);
 
@@ -546,7 +673,15 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   const handleSubmit = async () => {
     const patientErrors = await validateStep(0);
     const assessmentErrors = await validateStep(1);
-    const combinedErrors = { ...patientErrors, ...assessmentErrors };
+    const bedAssignmentErrors = await validateStep(4);
+    const combinedErrors = { ...patientErrors, ...assessmentErrors, ...bedAssignmentErrors };
+
+    if (bedAssignmentErrors['bedAssignment.bedId']) {
+      setValidationErrors(combinedErrors);
+      setError('Please go back to the Bed Assignment step and select a valid VACANT or RESERVED bed, or let the system auto-assign one.');
+      setActiveStep(4);
+      return;
+    }
 
     if (Object.keys(combinedErrors).length > 0) {
       setValidationErrors(combinedErrors);
@@ -556,7 +691,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
     }
 
     if (hasTimelineWarnings) {
-      setActiveStep(4);
+      setActiveStep(5);
       const firstWarning = timelineWarnings[Object.keys(timelineWarnings)[0]]?.[0];
       setError(firstWarning || 'Please review the timeline warnings before submitting.');
       return;
@@ -565,7 +700,29 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
     try {
       setLoading(true);
       setError(null);
-      await onSubmit(formData);
+      const createdCase = await onSubmit(formData);
+      
+      const bedAssignment = formData.bedAssignment as any;
+      if (bedAssignment && bedAssignment.bedId && createdCase?.id && createdCase?.patientId) {
+        try {
+          await bedService.assignBed(bedAssignment.bedId, {
+            patientId: createdCase.patientId,
+            caseId: createdCase.id,
+            caseType: 'STROKE',
+            arrivalDate: bedAssignment.arrivalDate,
+          });
+          enqueueSnackbar('Stroke case created and bed assigned successfully', { variant: 'success' });
+          // Invalidate hospitals queries and dispatch event to trigger refetch
+          queryClient.invalidateQueries('hospitals');
+          window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
+        } catch (bedErr: any) {
+          console.error('Error assigning bed:', bedErr);
+          enqueueSnackbar('Stroke case created but bed assignment failed: ' + (bedErr?.response?.data?.message || bedErr?.message || 'Unknown error'), { variant: 'warning' });
+        }
+      } else if (bedAssignment && bedAssignment.bedId) {
+        enqueueSnackbar('Stroke case created but bed assignment skipped (missing case or patient ID)', { variant: 'warning' });
+      }
+      
       handleClose();
     } catch (err: any) {
       console.error('Error creating stroke case:', err);

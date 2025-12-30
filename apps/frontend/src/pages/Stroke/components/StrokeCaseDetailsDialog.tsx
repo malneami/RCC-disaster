@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -29,7 +29,7 @@ import {
   faExclamationTriangle,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { StrokeCase } from '../../../services/strokeService';
+import { StrokeCase, StrokeService } from '../../../services/strokeService';
 import PatientInformationCard from './StrokeCaseDetails/PatientInformationCard';
 import CaseInformationCard from './StrokeCaseDetails/CaseInformationCard';
 import ClinicalAssessmentsCard from './StrokeCaseDetails/ClinicalAssessmentsCard';
@@ -37,6 +37,7 @@ import PerformanceTimingsCard from './StrokeCaseDetails/PerformanceTimingsCard';
 import KPIPerformanceCard from './StrokeCaseDetails/KPIPerformanceCard';
 import TreatmentInformationCard from './StrokeCaseDetails/TreatmentInformationCard';
 import HospitalInformationCard from './StrokeCaseDetails/HospitalInformationCard';
+import BedAssignmentCard, { BedAssignmentCardRef } from './StrokeCaseDetails/BedAssignmentCard';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService, CaseNote } from '../../../services/notificationService';
 import StrokeTimelineView from './StrokeTimelineView';
@@ -59,6 +60,39 @@ const StrokeCaseDetailsDialog: React.FC<StrokeCaseDetailsDialogProps> = ({
   const [activeTab, setActiveTab] = useState(0);
   const [caseNotes, setCaseNotes] = useState<CaseNote[]>([]);
   const [loadingCaseNotes, setLoadingCaseNotes] = useState(false);
+  const [currentCase, setCurrentCase] = useState<StrokeCase | null>(strokeCase);
+  const [loadingCase, setLoadingCase] = useState(false);
+  const bedAssignmentCardRef = useRef<BedAssignmentCardRef>(null);
+
+  useEffect(() => {
+    if (open && strokeCase?.id) {
+      const fetchLatestCase = async () => {
+        try {
+          setLoadingCase(true);
+          const refreshedCase = await StrokeService.getStrokeCase(strokeCase.id);
+          setCurrentCase(refreshedCase);
+        } catch (error) {
+          console.error('Error fetching latest case data:', error);
+          setCurrentCase(strokeCase);
+        } finally {
+          setLoadingCase(false);
+        }
+      };
+      fetchLatestCase();
+    } else {
+      setCurrentCase(strokeCase);
+    }
+  }, [open, strokeCase?.id]);
+
+  useEffect(() => {
+    setCurrentCase(strokeCase);
+  }, [strokeCase]);
+
+  useEffect(() => {
+    if (open && currentCase?.assignedBed?.id && !loadingCase && bedAssignmentCardRef.current) {
+      bedAssignmentCardRef.current.refetchBedHistory();
+    }
+  }, [open, currentCase?.id, currentCase?.assignedBed?.id, loadingCase]);
 
   useEffect(() => {
     if (open && strokeCase) {
@@ -169,6 +203,10 @@ const StrokeCaseDetailsDialog: React.FC<StrokeCaseDetailsDialogProps> = ({
               </Grid>
               <Grid item xs={12} md={6}>
                 <HospitalInformationCard strokeCase={strokeCase} />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <BedAssignmentCard ref={bedAssignmentCardRef} strokeCase={currentCase || strokeCase} />
               </Grid>
 
               {/* Fifth Row - Case Notes Section */}
