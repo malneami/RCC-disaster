@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab, Tooltip, Button } from '@mui/material';
-import { Assessment, Dashboard, Warning, TransferWithinAStation, Schedule, Add, FileDownload } from '@mui/icons-material';
+import { Box, Tabs, Tab, CircularProgress, Fab, Tooltip } from '@mui/material';
+import { Add, Assessment, Dashboard, Warning, TransferWithinAStation, Schedule, FileDownload } from '@mui/icons-material';
+
 import { Helmet } from 'react-helmet-async';
 
 import TraumaCasesList from './components/TraumaCasesList';
@@ -256,17 +257,6 @@ const TraumaPortalPage: React.FC = () => {
     );
   }
 
-  // Header actions
-  const headerActions = (
-    <Button
-      variant="contained"
-      color="primary"
-      onClick={() => setCreateDialogOpen(true)}
-    >
-      Create Trauma Case
-    </Button>
-  );
-
   // KPI Cards for the portal skeleton
   const kpiCards = [
     {
@@ -314,7 +304,7 @@ const TraumaPortalPage: React.FC = () => {
         steps={portalSteps}
         activeStep={activeTab}
         onRefresh={loadData}
-        headerActions={headerActions}
+        onCreateCase={() => setCreateDialogOpen(true)}
         kpiCards={kpiCards}
       >
         {/* Main Content Tabs */}

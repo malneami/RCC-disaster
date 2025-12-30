@@ -5,9 +5,8 @@ import {
   Tab,
   CircularProgress,
   Typography,
-  Button,
 } from '@mui/material';
-import { Bed as BedIcon, Dashboard, Add as AddIcon } from '@mui/icons-material';
+import { Bed as BedIcon, Dashboard } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import BedsTable from './components/BedsTable';
@@ -251,31 +250,12 @@ const BedsPage: React.FC = () => {
       <PortalSkeleton
         title="Bed Management"
         subtitle={`Last updated: ${lastUpdated.toLocaleTimeString()}`}
-        portalType="patients"
+        portalType="beds"
         steps={portalSteps}
         activeStep={activeTab}
         onRefresh={loadData}
         kpiCards={kpiCards}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            {isHospitalUserRole && (
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setAddBedDialogOpen(true)}
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                  },
-                }}
-              >
-                Add Bed
-              </Button>
-            )}
-          </Box>
-        }
+        onCreateCase={isHospitalUserRole ? () => setAddBedDialogOpen(true) : undefined}
       >
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
           <Tabs 

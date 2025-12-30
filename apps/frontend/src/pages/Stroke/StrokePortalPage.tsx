@@ -284,23 +284,6 @@ const StrokePortalPage: React.FC = () => {
     );
   }
 
-  const headerActions = (
-    <Fab
-      color="primary"
-      size="medium"
-      onClick={() => setCreateDialogOpen(true)}
-      sx={{
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        color: 'white',
-        '&:hover': {
-          backgroundColor: 'rgba(255, 255, 255, 0.3)',
-        },
-      }}
-    >
-      <Add />
-    </Fab>
-  );
-
   // Create KPI cards data
   const kpiCards = [
     {
@@ -348,7 +331,7 @@ const StrokePortalPage: React.FC = () => {
         steps={portalSteps}
         activeStep={activeTab}
         onRefresh={loadData}
-        headerActions={headerActions}
+        onCreateCase={() => setCreateDialogOpen(true)}
         kpiCards={kpiCards}
       >
         {/* ... error display ... */}

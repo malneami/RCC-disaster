@@ -553,17 +553,6 @@ const StemiPortalPage: React.FC = () => {
     );
   }
 
-  // Header actions
-  const headerActions = (
-    <Button
-      variant="contained"
-      color="primary"
-      onClick={() => setCreateDialogOpen(true)}
-    >
-      Create STEMI Case
-    </Button>
-  );
-
   // KPI Cards for the portal skeleton
   const kpiCards = [
     {
@@ -620,7 +609,7 @@ const StemiPortalPage: React.FC = () => {
         steps={portalSteps}
         activeStep={activeTab}
         onRefresh={() => loadData({ forceGlobalSpinner: true })}
-        headerActions={headerActions}
+        onCreateCase={() => setCreateDialogOpen(true)}
         kpiCards={kpiCards}
       >
         {/* Main Content Tabs */}

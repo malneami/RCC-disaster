@@ -3,21 +3,22 @@ import {
   Box,
   Container,
   Typography,
-  Paper,
-  Stepper,
-  Step,
-  StepLabel,
-  Chip,
+  Button,
   IconButton,
   Tooltip,
-  Grid,
-  Card,
-  CardContent,
+  alpha,
+  Divider,
 } from '@mui/material';
 import {
-  ArrowBack,
   Refresh,
   Settings,
+  Add,
+  Favorite,
+  People,
+  LocalHospital,
+  Psychology,
+  Warning,
+  Hotel,
 } from '@mui/icons-material';
 
 export interface PortalStep {
@@ -36,7 +37,7 @@ export interface KPICard {
 export interface PortalSkeletonProps {
   title: string;
   subtitle?: string;
-  portalType: 'stroke' | 'trauma' | 'stemi' | 'patients';
+  portalType: 'stroke' | 'trauma' | 'stemi' | 'patients' | 'beds';
   steps: PortalStep[];
   activeStep: number;
   children: ReactNode;
@@ -44,6 +45,7 @@ export interface PortalSkeletonProps {
   onRefresh?: () => void;
   onSettings?: () => void;
   showSteps?: boolean;
+  onCreateCase?: () => void;
   headerActions?: ReactNode;
   kpiCards?: KPICard[];
 }
@@ -52,121 +54,238 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
   title,
   subtitle,
   portalType,
-  steps,
-  activeStep,
-  children,
-  onBack,
+  kpiCards = [],
   onRefresh,
   onSettings,
-  showSteps = true,
+  onCreateCase,
   headerActions,
-  kpiCards = [],
+  children,
 }) => {
-  const getPortalColor = () => {
+  // Get button text based on portal type
+  const getCreateButtonText = () => {
     switch (portalType) {
-      case 'stroke': return '#1976d2'; // Blue
-      case 'trauma': return '#d32f2f'; // Red
-      case 'stemi': return '#388e3c'; // Green
-      case 'patients': return '#7b1fa2'; // Purple
-      default: return '#1976d2';
+      case 'stemi':
+        return 'Create STEMI Case';
+      case 'stroke':
+        return 'Create Stroke Case';
+      case 'trauma':
+        return 'Create Trauma Case';
+      case 'beds':
+        return 'Add Bed';
+      default:
+        return 'Create Case';
     }
   };
 
-  const getPortalIcon = () => {
+  // Get portal-specific header background color (hospital dashboard style)
+  const getHeaderBackground = () => {
     switch (portalType) {
-      case 'stroke': return '🧠';
-      case 'trauma': return '🚑';
-      case 'stemi': return '❤️';
-      case 'patients': return '👥';
-      default: return '🏥';
+      case 'stemi':
+        return '#FFFFFF'; // Clean white
+      case 'stroke':
+        return '#FFFFFF'; // Clean white
+      case 'trauma':
+        return '#FFFFFF'; // Clean white
+      case 'beds':
+        return '#FFFFFF'; // Clean white
+      default:
+        return '#FFFFFF';
     }
   };
 
-  const getPortalGradient = () => {
+  // Get portal accent color (medical professional colors)
+  const getPortalAccentColor = () => {
     switch (portalType) {
-      case 'stroke': 
-        return 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)';
-      case 'trauma': 
-        return 'linear-gradient(135deg, #d32f2f 0%, #f44336 100%)';
-      case 'stemi': 
-        return 'linear-gradient(135deg, #388e3c 0%, #66bb6a 100%)';
-      case 'patients': 
-        return 'linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%)';
-      default: 
-        return 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)';
+      case 'stemi':
+        return '#1976D2'; // Medical blue
+      case 'stroke':
+        return '#1976D2'; // Medical blue
+      case 'trauma':
+        return '#D32F2F'; // Medical red
+      case 'beds':
+        return '#2E7D32'; // Medical green
+      default:
+        return '#1976D2';
     }
+  };
+
+  // Get text color for header (hospital dashboard style)
+  const getHeaderTextColor = () => {
+    return '#1A1A1A'; // Dark professional text
+  };
+
+  // Get subtitle color for header
+  const getHeaderSubtitleColor = () => {
+    return '#666666'; // Professional gray
+  };
+
+  // Get portal icon component based on portal type
+  const getPortalIconComponent = () => {
+    switch (portalType) {
+      case 'stemi':
+        return Favorite;
+      case 'stroke':
+        return Psychology;
+      case 'trauma':
+        return Warning;
+      case 'patients':
+        return People;
+      case 'beds':
+        return Hotel;
+      default:
+        return LocalHospital;
+    }
+  };
+
+  // Hospital dashboard card colors (professional, clean)
+  const hospitalCardColors = [
+    { bg: '#FFFFFF', border: '#E0E0E0', icon: '#1976D2' }, // White with blue accent
+    { bg: '#FFFFFF', border: '#E0E0E0', icon: '#2E7D32' }, // White with green accent
+    { bg: '#FFFFFF', border: '#E0E0E0', icon: '#D32F2F' }, // White with red accent
+    { bg: '#FFFFFF', border: '#E0E0E0', icon: '#ED6C02' }, // White with orange accent
+    { bg: '#FFFFFF', border: '#E0E0E0', icon: '#7B1FA2' }, // White with purple accent
+  ];
+
+  // Map KPI cards to hospital colors
+  const getCardStyle = (index: number) => {
+    const colorIndex = index % hospitalCardColors.length;
+    return hospitalCardColors[colorIndex];
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-      {/* Header */}
-      <Box
-        sx={{
-          background: getPortalGradient(),
-          color: 'white',
-          py: 2,
-          mb: 2,
-        }}
-      >
-        <Container maxWidth="xl">
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {onBack && (
-                <IconButton
-                  onClick={onBack}
-                  sx={{ color: 'white', mr: 0.5 }}
-                  size="medium"
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#F5F5F5' }}>
+      {/* Hospital Dashboard Header */}
+      <Container maxWidth="xl" sx={{ px: 3, py: 3 }}>
+        <Box
+          sx={{
+            backgroundColor: getHeaderBackground(),
+            borderRadius: '8px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            py: 2.5,
+            px: 3,
+          }}
+        >
+          {/* Header Section */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '8px',
+                    backgroundColor: getPortalAccentColor(),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 1.5,
+                    boxShadow: `0 2px 8px ${getPortalAccentColor()}40`,
+                    color: '#FFFFFF',
+                  }}
                 >
-                  <ArrowBack />
-                </IconButton>
-              )}
-              
-              <Box>
-                <Typography variant="h4" component="h1" fontWeight="bold" sx={{ mb: 0.5 }}>
-                  {getPortalIcon()} {title}
+                  {React.createElement(getPortalIconComponent(), { sx: { fontSize: '1.5rem' } })}
+                </Box>
+                <Typography
+                  variant="h5"
+                  component="h1"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: '1.5rem',
+                    color: getHeaderTextColor(),
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {title || 'STEMI Portal'}
                 </Typography>
-                {subtitle && (
-                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 400 }}>
-                    {subtitle}
-                  </Typography>
-                )}
               </Box>
-              
-              <Chip
-                label={portalType.toUpperCase()}
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '0.875rem',
-                  px: 1.5,
-                  py: 0.5,
-                  height: 'auto',
-                }}
-              />
+              {subtitle && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: '0.875rem',
+                    color: getHeaderSubtitleColor(),
+                    fontWeight: 400,
+                    ml: 6.5,
+                  }}
+                >
+                  {subtitle}
+                </Typography>
+              )}
             </Box>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {headerActions}
-              
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              {/* Create Case Button - Special Prominent Style */}
+              {onCreateCase && (
+                <Button
+                  variant="contained"
+                  startIcon={<Add sx={{ fontSize: '1.25rem' }} />}
+                  onClick={onCreateCase}
+                  sx={{
+                    backgroundColor: '#FF8A4C',
+                    color: '#ffffff',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    px: 3,
+                    py: 1,
+                    borderRadius: '6px',
+                    border: 'none',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    '&:hover': {
+                      backgroundColor: '#FF7A33',
+                      boxShadow: '0 3px 6px rgba(0, 0, 0, 0.15)',
+                    },
+                    '&:active': {
+                      backgroundColor: '#E96A2C',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {getCreateButtonText()}
+                </Button>
+              )}
+
+              {/* Additional header actions */}
+              {headerActions && (
+                <Box>
+                  {headerActions}
+                </Box>
+              )}
               {onRefresh && (
-                <Tooltip title="Refresh Data">
+                <Tooltip title="Refresh">
                   <IconButton
                     onClick={onRefresh}
-                    sx={{ color: 'white' }}
-                    size="large"
+                    size="medium"
+                    sx={{
+                      color: '#666666',
+                      backgroundColor: '#F5F5F5',
+                      border: '1px solid #E0E0E0',
+                      '&:hover': {
+                        backgroundColor: '#EEEEEE',
+                        borderColor: getPortalAccentColor(),
+                        color: getPortalAccentColor(),
+                      },
+                    }}
                   >
                     <Refresh />
                   </IconButton>
                 </Tooltip>
               )}
-              
               {onSettings && (
-                <Tooltip title="Portal Settings">
+                <Tooltip title="Settings">
                   <IconButton
                     onClick={onSettings}
-                    sx={{ color: 'white' }}
-                    size="large"
+                    size="medium"
+                    sx={{
+                      color: '#666666',
+                      backgroundColor: '#F5F5F5',
+                      border: '1px solid #E0E0E0',
+                      '&:hover': {
+                        backgroundColor: '#EEEEEE',
+                        borderColor: getPortalAccentColor(),
+                        color: getPortalAccentColor(),
+                      },
+                    }}
                   >
                     <Settings />
                   </IconButton>
@@ -174,97 +293,79 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
               )}
             </Box>
           </Box>
-        </Container>
-      </Box>
 
-      <Container maxWidth="xl" sx={{ px: 2 }}>
-        {/* Progress Steps */}
-        {showSteps && steps.length > 0 && (
-          <Paper sx={{ p: 2, mb: 2, borderRadius: 1 }}>
-            <Stepper activeStep={activeStep} alternativeLabel>
-              {steps.map((step, index) => (
-                <Step key={step.label}>
-                  <StepLabel
-                    StepIconComponent={({ active, completed }) => (
-                      <Box
-                        sx={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: completed || active 
-                            ? getPortalColor() 
-                            : '#e0e0e0',
-                          color: completed || active ? 'white' : '#666',
-                          fontWeight: 'bold',
-                          fontSize: '0.875rem',
-                          boxShadow: completed || active ? 1 : 0,
-                        }}
-                      >
-                        {step.icon || (index + 1)}
-                      </Box>
-                    )}
+          {/* Divider between header and cards */}
+          {kpiCards.length > 0 && (
+            <Divider sx={{ my: 2, borderColor: 'divider' }} />
+          )}
+
+          {/* KPI Cards - StatPill style from Hospitals page */}
+          {kpiCards.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: 2,
+                mb: 0,
+              }}
+            >
+              {kpiCards.map((card, index) => {
+                const cardStyle = getCardStyle(index);
+                const accentColor = card.color || cardStyle.icon;
+
+                return (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 2,
+                      py: 1,
+                      borderRadius: 3,
+                      backgroundColor: alpha(accentColor, 0.08),
+                      border: `1px solid ${alpha(accentColor, 0.2)}`,
+                      transition: 'all 0.2s ease',
+                      cursor: 'default',
+                      '&:hover': {
+                        backgroundColor: alpha(accentColor, 0.12),
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
                   >
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6" fontWeight="medium" sx={{ mb: 0.5 }}>
-                        {step.label}
-                      </Typography>
-                      {step.description && (
-                        <Typography variant="body2" color="text.secondary">
-                          {step.description}
-                        </Typography>
-                      )}
+                    <Box sx={{ color: accentColor, display: 'flex', alignItems: 'center', '& svg': { fontSize: 18 } }}>
+                      {card.icon}
                     </Box>
-                  </StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </Paper>
-        )}
-
-        {/* KPI Cards */}
-        {kpiCards.length > 0 && (
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            {kpiCards.map((card, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <Card sx={{ borderRadius: 1, boxShadow: 1 }}>
-                  <CardContent sx={{ p: 1.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box sx={{ mr: 1, color: card.color, fontSize: 20 }}>
-                        {card.icon}
-                      </Box>
-                      <Box>
-                        <Typography variant="h6" fontWeight="bold">
-                          {card.value}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-                          {card.title}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
+                    <Typography sx={{ fontWeight: 700, color: accentColor, fontSize: '1rem', lineHeight: 1 }}>
+                      {card.value}
+                    </Typography>
+                    <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500, lineHeight: 1 }}>
+                      {card.title}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
+        </Box>
       </Container>
 
-      {/* Main Content - Full Width */}
-      <Box sx={{ width: '100%' }}>
-        {children}
-      </Box>
-
-      <Container maxWidth="xl" sx={{ px: 2 }}>
-
-        {/* Footer */}
-        <Box sx={{ py: 2, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            {portalType.toUpperCase()} Portal • Regional Coordination Center
-          </Typography>
-        </Box>
+      {/* Main Content - Hospital Dashboard Style */}
+      <Container maxWidth="xl" sx={{ py: 3, px: 3 }}>
+        {children && (
+          <Box
+            sx={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              border: '1px solid #E0E0E0',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              p: 3,
+            }}
+          >
+            {children}
+          </Box>
+        )}
       </Container>
     </Box>
   );
