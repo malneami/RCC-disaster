@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import * as yup from 'yup';
 
-import { CreateStrokeCaseData, StrokeCase } from '../../../services/strokeService';
+import { CreateStrokeCaseData, StrokeCase, StrokeService } from '../../../services/strokeService';
 import { Hospital } from '../../../services/hospitalService';
 import PatientStep from './CreateStrokeCase/PatientStep';
 import AssessmentStep from './CreateStrokeCase/AssessmentStep';
@@ -31,6 +31,7 @@ interface CreateStrokeCaseDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CreateStrokeCaseData) => Promise<StrokeCase>;
+  onCaseCreated?: (createdCase: StrokeCase) => void;
 }
 
 const steps = [
@@ -109,6 +110,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   open,
   onClose,
   onSubmit,
+  onCaseCreated,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
@@ -703,24 +705,39 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       const createdCase = await onSubmit(formData);
       
       const bedAssignment = formData.bedAssignment as any;
-      if (bedAssignment && bedAssignment.bedId && createdCase?.id && createdCase?.patientId) {
-        try {
-          await bedService.assignBed(bedAssignment.bedId, {
-            patientId: createdCase.patientId,
-            caseId: createdCase.id,
-            caseType: 'STROKE',
-            arrivalDate: bedAssignment.arrivalDate,
-          });
-          enqueueSnackbar('Stroke case created and bed assigned successfully', { variant: 'success' });
-          // Invalidate hospitals queries and dispatch event to trigger refetch
-          queryClient.invalidateQueries('hospitals');
-          window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
-        } catch (bedErr: any) {
-          console.error('Error assigning bed:', bedErr);
-          enqueueSnackbar('Stroke case created but bed assignment failed: ' + (bedErr?.response?.data?.message || bedErr?.message || 'Unknown error'), { variant: 'warning' });
+      if (bedAssignment && bedAssignment.bedId) {
+        if (createdCase?.id && createdCase?.patientId) {
+          try {
+            await bedService.assignBed(bedAssignment.bedId, {
+              patientId: createdCase.patientId,
+              caseId: createdCase.id,
+              caseType: 'STROKE',
+              arrivalDate: bedAssignment.arrivalDate,
+            });
+            enqueueSnackbar('Stroke case created and bed assigned successfully', { variant: 'success' });
+            // Invalidate hospitals queries and dispatch event to trigger refetch
+            queryClient.invalidateQueries('hospitals');
+            window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
+            
+            // Refetch the case to get updated bed assignment data
+            try {
+              const refreshedCase = await StrokeService.getStrokeCase(createdCase.id);
+              // Notify parent component with refreshed case
+              if (onCaseCreated) {
+                onCaseCreated(refreshedCase);
+              }
+            } catch (refreshError) {
+              console.error('Error refreshing case after bed assignment:', refreshError);
+            }
+          } catch (bedErr: any) {
+            console.error('Error assigning bed:', bedErr);
+            enqueueSnackbar('Stroke case created but bed assignment failed: ' + (bedErr?.response?.data?.message || bedErr?.message || 'Unknown error'), { variant: 'warning' });
+          }
+        } else {
+          // This should not happen if the API returns the case properly, but handle it gracefully
+          console.warn('Case created but missing ID or patient ID for bed assignment');
+          enqueueSnackbar('Stroke case created but bed assignment skipped (missing case or patient ID)', { variant: 'warning' });
         }
-      } else if (bedAssignment && bedAssignment.bedId) {
-        enqueueSnackbar('Stroke case created but bed assignment skipped (missing case or patient ID)', { variant: 'warning' });
       }
       
       handleClose();

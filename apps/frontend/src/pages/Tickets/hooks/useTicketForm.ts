@@ -91,6 +91,7 @@ export const useTicketForm = ({ open, onSubmit }: UseTicketFormProps) => {
         originHospitalId: formData.originHospitalId!,
         priority: formData.priority!,
         pathway: formData.pathway!,
+        bedAssignment: formData.bedAssignment,
       } as CreateTicketData;
 
       // Ensure emsContactTime is properly formatted as ISO-8601 string

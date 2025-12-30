@@ -27,6 +27,7 @@ import {
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { Ticket } from '../../../services/ticketService';
+import TicketBedAssignmentCard from './TicketBedAssignmentCard';
 
 interface TicketDetailsTabProps {
   ticket: Ticket;
@@ -281,6 +282,10 @@ const TicketDetailsTab: React.FC<TicketDetailsTabProps> = ({ ticket, onViewPatie
               </List>
             </CardContent>
           </Card>
+        </Grid>
+
+        <Grid item xs={12}>
+          <TicketBedAssignmentCard ticket={ticket} />
         </Grid>
 
         {/* Medical Information */}

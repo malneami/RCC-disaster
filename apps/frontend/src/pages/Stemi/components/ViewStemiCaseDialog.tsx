@@ -53,6 +53,9 @@ import StemiTimelineView from './StemiTimelineView';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService, CaseNote } from '../../../services/notificationService';
 import { getCaseTypeLabel } from '../../../helpers/formatUtils';
+import { bedService } from '../../../pages/Beds/services/bedService';
+import { useQuery } from 'react-query';
+import { Hotel as HotelIcon } from '@mui/icons-material';
 
 interface ViewStemiCaseDialogProps {
   open: boolean;
@@ -70,6 +73,22 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
   const [caseNotes, setCaseNotes] = useState<CaseNote[]>([]);
   const [loadingCaseNotes, setLoadingCaseNotes] = useState(false);
+
+  const assignedBed = stemiCase?.assignedBed || null;
+
+  const { data: bedHistory } = useQuery(
+    ['bedHistory', assignedBed?.id, stemiCase?.id],
+    () => assignedBed ? bedService.getBedStatusHistory(assignedBed.id) : Promise.resolve([]),
+    {
+      enabled: !!assignedBed?.id && open,
+      staleTime: 0,
+      cacheTime: 0,
+    }
+  );
+
+  const bedAssignmentHistory = bedHistory?.find(
+    (entry) => entry.caseId === stemiCase?.id && entry.caseType === 'STEMI'
+  );
 
   useEffect(() => {
     if (open && stemiCase) {
@@ -367,6 +386,71 @@ const ViewStemiCaseDialog: React.FC<ViewStemiCaseDialogProps> = ({
                       </TableBody>
                     </Table>
                   </TableContainer>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Bed Assignment Information */}
+            <Grid item xs={12} md={6}>
+              <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={2}>
+                    <HotelIcon color="primary" />
+                    <Typography variant="h6">Bed Assignment</Typography>
+                  </Box>
+                  
+                  {assignedBed ? (
+                    <TableContainer component={Paper} elevation={0}>
+                      <Table size="small">
+                        <TableBody>
+                          <TableRow>
+                            <TableCell><strong>Bed Number</strong></TableCell>
+                            <TableCell>{assignedBed.bedNumber}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>Unit</strong></TableCell>
+                            <TableCell>{assignedBed.unit?.name || 'N/A'}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>Hospital</strong></TableCell>
+                            <TableCell>{assignedBed.hospital?.name || 'N/A'}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>Bed ID</strong></TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                                {assignedBed.id}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                          {bedAssignmentHistory?.changedAt && (
+                            <TableRow>
+                              <TableCell><strong>Arrival Date/Time</strong></TableCell>
+                              <TableCell>
+                                {formatDate(bedAssignmentHistory.changedAt)}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          <TableRow>
+                            <TableCell><strong>Status</strong></TableCell>
+                            <TableCell>
+                              <Chip
+                                label={assignedBed.status}
+                                color={assignedBed.status === 'OCCUPIED' ? 'primary' : 'default'}
+                                size="small"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Box sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No bed assigned to this STEMI case
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Grid>

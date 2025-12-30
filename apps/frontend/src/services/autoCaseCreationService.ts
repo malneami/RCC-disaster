@@ -3,6 +3,8 @@ import { StrokeService, CreateStrokeCaseData } from './strokeService';
 import { StemiService, CreateStemiCaseData } from '../pages/Stemi/services/stemiService';
 import { Ticket } from './ticketService';
 import { Patient } from './patientService';
+import { BedAssignmentFormData } from '../pages/Trauma/types/traumaTypes';
+import { bedService } from '../pages/Beds/services/bedService';
 
 export interface AutoCaseCreationResult {
   success: boolean;
@@ -18,24 +20,59 @@ class AutoCaseCreationService {
   async createCaseFromTicket(
     ticket: Ticket,
     patient: Patient,
-    timeFields?: { triageTime?: string; symptomOnsetTime?: string }
+    timeFields?: { triageTime?: string; symptomOnsetTime?: string },
+    bedAssignment?: BedAssignmentFormData
   ): Promise<AutoCaseCreationResult> {
     try {
       const pathway = ticket.pathway?.toUpperCase();
       
+      let result: AutoCaseCreationResult;
+      
       switch (pathway) {
         case 'TRAUMA':
-          return await this.createTraumaCase(ticket, patient);
+          result = await this.createTraumaCase(ticket, patient);
+          break;
         case 'STROKE':
-          return await this.createStrokeCase(ticket, patient, timeFields);
+          result = await this.createStrokeCase(ticket, patient, timeFields);
+          break;
         case 'STEMI':
-          return await this.createStemiCase(ticket, patient, timeFields);
+          result = await this.createStemiCase(ticket, patient, timeFields);
+          break;
         default:
           return {
             success: false,
             error: `No automatic case creation for pathway: ${pathway}`
           };
       }
+
+      if (result.success && result.caseId && bedAssignment && bedAssignment.bedId) {
+        try {
+          const caseTypeMap: Record<string, 'TRAUMA' | 'STROKE' | 'STEMI'> = {
+            'trauma': 'TRAUMA',
+            'stroke': 'STROKE',
+            'stemi': 'STEMI',
+          };
+          
+          await bedService.assignBed(bedAssignment.bedId, {
+            patientId: patient.id,
+            caseId: result.caseId,
+            caseType: result.caseType ? caseTypeMap[result.caseType] : undefined,
+            arrivalDate: bedAssignment.arrivalDate,
+          });
+          
+          // Dispatch event to update hospital capacity
+          window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
+        } catch (bedError: any) {
+          console.error('Error assigning bed after case creation:', bedError);
+          // Don't fail the case creation if bed assignment fails
+          return {
+            ...result,
+            error: result.error || `Case created but bed assignment failed: ${bedError?.response?.data?.message || bedError?.message || 'Unknown error'}`,
+          };
+        }
+      }
+
+      return result;
     } catch (error) {
       console.error('Error in auto case creation:', error);
       return {

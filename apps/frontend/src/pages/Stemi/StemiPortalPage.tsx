@@ -351,7 +351,7 @@ const StemiPortalPage: React.FC = () => {
     try {
       const newCase = await StemiService.createStemiCase(caseData);
       setStemiCases(prev => [newCase, ...prev]);
-      setCreateDialogOpen(false);
+      // Don't close dialog here - let CreateStemiCaseDialog handle it after bed assignment
       await loadData(); // Refresh KPIs
       return newCase;
     } catch (err: any) {
@@ -819,6 +819,12 @@ const StemiPortalPage: React.FC = () => {
         open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
         onSubmit={handleCreateCase}
+        onCaseCreated={(createdCase) => {
+          setStemiCases(prev => prev.map(case_ => case_.id === createdCase.id ? createdCase : case_));
+          if (selectedCase?.id === createdCase.id) {
+            setSelectedCase(createdCase);
+          }
+        }}
       />
 
       <EditStemiCaseDialog

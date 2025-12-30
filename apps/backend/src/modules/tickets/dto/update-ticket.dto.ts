@@ -2,6 +2,7 @@ import { IsString, IsOptional, IsEnum, IsBoolean, IsDateString, IsUUID, Validate
 import { Type } from 'class-transformer';
 import { TicketPriority, TicketStatus, TicketPathway } from '@prisma/client';
 import { VitalsDto, DiagnosticsDto, RequiredResourcesDto } from './create-ticket.dto';
+import { AssignBedDto } from '../../beds/dto/assign-bed.dto';
 
 export class UpdateTicketDto {
   @IsOptional()
@@ -82,6 +83,9 @@ export class UpdateTicketDto {
   @IsOptional()
   @IsUUID()
   assignedToId?: string;
+
+  @IsOptional()
+  bedAssignment?: AssignBedDto; 
 }
 
 export class UpdateTicketStatusDto {

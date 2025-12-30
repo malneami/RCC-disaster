@@ -73,6 +73,36 @@ export class RequiredResourcesDto {
   picu?: boolean;
 }
 
+export class BedAssignmentDto {
+  @IsOptional()
+  @IsUUID()
+  hospitalId?: string;
+
+  @IsOptional()
+  @IsEnum(['origin', 'destination'])
+  hospitalType?: 'origin' | 'destination';
+
+  @IsOptional()
+  @IsUUID()
+  unitId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  bedId?: string;
+
+  @IsOptional()
+  @IsString()
+  bedNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
+  @IsDateString()
+  arrivalDate?: string;
+}
+
 export class CreateTicketDto {
   @IsNotEmpty()
   @IsUUID()
@@ -152,4 +182,9 @@ export class CreateTicketDto {
   @IsOptional()
   @IsUUID()
   assignedToId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BedAssignmentDto)
+  bedAssignment?: BedAssignmentDto;
 }

@@ -14,7 +14,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import * as yup from 'yup';
-import { CreateStemiCaseData, PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment, StemiCase } from '../services/stemiService';
+import { CreateStemiCaseData, PatientInfo, CriticalTimestamps, InterventionsAndTreatments, ClinicalAssessment, StemiCase, StemiService } from '../services/stemiService';
 import { StemiDatetimeService } from '../services/stemiDatetimeService';
 import { Hospital } from '../../../services/hospitalService';
 import PatientInfoStep from './forms/PatientInfoStep';
@@ -33,6 +33,7 @@ interface CreateStemiCaseDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CreateStemiCaseData) => Promise<StemiCase>;
+  onCaseCreated?: (createdCase: StemiCase) => void;
 }
 
 const steps = [
@@ -103,6 +104,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   open,
   onClose,
   onSubmit,
+  onCaseCreated,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
@@ -510,44 +512,40 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
 
       // Assign bed if specified
       const bedAssignmentData = bedAssignment as any;
-      if (bedAssignmentData && bedAssignmentData.bedId && createdCase?.id && createdCase?.patientId) {
-        try {
-          await bedService.assignBed(bedAssignmentData.bedId, {
-            patientId: createdCase.patientId,
-            caseId: createdCase.id,
-            caseType: 'STEMI',
-            arrivalDate: bedAssignmentData.arrivalDate,
-          });
-          enqueueSnackbar('STEMI case created and bed assigned successfully', { variant: 'success' });
-          // Invalidate hospitals queries and dispatch event to trigger refetch
-          queryClient.invalidateQueries('hospitals');
-          window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
-        } catch (bedErr: any) {
-          console.error('Error assigning bed:', bedErr);
-          enqueueSnackbar('STEMI case created but bed assignment failed: ' + (bedErr?.response?.data?.message || bedErr?.message || 'Unknown error'), { variant: 'warning' });
+      if (bedAssignmentData && bedAssignmentData.bedId) {
+        if (createdCase?.id && createdCase?.patientId) {
+          try {
+            await bedService.assignBed(bedAssignmentData.bedId, {
+              patientId: createdCase.patientId,
+              caseId: createdCase.id,
+              caseType: 'STEMI',
+              arrivalDate: bedAssignmentData.arrivalDate,
+            });
+            enqueueSnackbar('STEMI case created and bed assigned successfully', { variant: 'success' });
+            // Invalidate hospitals queries and dispatch event to trigger refetch
+            queryClient.invalidateQueries('hospitals');
+            window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
+            
+            try {
+              const refreshedCase = await StemiService.getStemiCaseById(createdCase.id);
+              // Notify parent component with refreshed case
+              if (onCaseCreated) {
+                onCaseCreated(refreshedCase);
+              }
+            } catch (refreshError) {
+              console.error('Error refreshing case after bed assignment:', refreshError);
+            }
+          } catch (bedErr: any) {
+            console.error('Error assigning bed:', bedErr);
+            enqueueSnackbar('STEMI case created but bed assignment failed: ' + (bedErr?.response?.data?.message || bedErr?.message || 'Unknown error'), { variant: 'warning' });
+          }
+        } else {
+          console.warn('Case created but missing ID or patient ID for bed assignment');
+          enqueueSnackbar('STEMI case created but bed assignment skipped (missing case or patient ID)', { variant: 'warning' });
         }
-      } else if (bedAssignmentData && bedAssignmentData.bedId) {
-        enqueueSnackbar('STEMI case created but bed assignment skipped (missing case or patient ID)', { variant: 'warning' });
       }
 
-      // Reset form
-      setActiveStep(0);
-      setPatientInfo({
-        firstName: '',
-        lastName: '',
-        nationalId: '',
-        age: undefined,
-        gender: 'MALE',
-        phoneNumber: '',
-        address: '',
-        emergencyContact: '',
-        emergencyPhone: '',
-        medicalHistory: '',
-        allergies: '',
-        medications: '',
-        originHospitalId: '',
-        destinationHospitalId: '',
-      });
+      handleClose();
       setAdmissionDetails({
         admissionTime: '',
         modeOfArrival: '' as any,

@@ -421,6 +421,15 @@ class PatientService {
     return response.data;
   }
 
+  async getPatientCasesWithBeds(patientId: string): Promise<{
+    traumaCases?: Array<any>;
+    strokeCases?: Array<any>;
+    stemiCases?: Array<any>;
+  }> {
+    const response = await apiClient.get(`/patients/${patientId}/cases-with-beds`);
+    return response.data;
+  }
+
   async getLatestCaseInfo(nationalId: string): Promise<{
     caseType: 'stroke' | 'trauma' | 'stemi' | null;
     caseId: string | null;

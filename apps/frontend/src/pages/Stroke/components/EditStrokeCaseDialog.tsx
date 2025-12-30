@@ -384,11 +384,21 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
     if (strokeCase && open) {
       let bedAssignment = undefined;
       if (strokeCase.assignedBed) {
+        // Determine hospital type by comparing with origin/destination hospitals
+        const bedHospitalId = strokeCase.assignedBed.hospital?.id;
+        let hospitalType: 'origin' | 'destination' | undefined = undefined;
+        if (bedHospitalId === strokeCase.originHospitalId) {
+          hospitalType = 'origin';
+        } else if (bedHospitalId === strokeCase.destinationHospitalId) {
+          hospitalType = 'destination';
+        }
+        
         bedAssignment = {
           bedId: strokeCase.assignedBed.id,
           bedNumber: strokeCase.assignedBed.bedNumber,
           unitId: strokeCase.assignedBed.unit?.id,
-          hospitalId: strokeCase.assignedBed.hospital?.id,
+          hospitalId: bedHospitalId,
+          hospitalType: hospitalType,
           assignedBed: {
             id: strokeCase.assignedBed.id,
             bedNumber: strokeCase.assignedBed.bedNumber,

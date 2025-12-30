@@ -181,10 +181,11 @@ const StrokePortalPage: React.FC = () => {
     try {
       const newCase = await StrokeService.createStrokeCase(data);
       setStrokeCases(prev => [newCase, ...prev]);
-      setCreateDialogOpen(false);
+      // Don't close dialog here - let CreateStrokeCaseDialog handle it after bed assignment
       // Refresh KPI data
       const updatedKpi = await StrokeService.getKPISummary();
       setKpiSummary(updatedKpi);
+      return newCase; // Return the created case so bed assignment can use it
     } catch (err) {
       console.error('Error creating stroke case:', err);
       throw err;
@@ -460,6 +461,14 @@ const StrokePortalPage: React.FC = () => {
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
           onSubmit={handleCreateCase}
+          onCaseCreated={(createdCase) => {
+            // Update the case in the list with the refreshed case (includes bed assignment)
+            setStrokeCases(prev => prev.map(case_ => case_.id === createdCase.id ? createdCase : case_));
+            // If this case is selected, update it
+            if (selectedCase?.id === createdCase.id) {
+              setSelectedCase(createdCase);
+            }
+          }}
         />
 
         {/* View Case Dialog */}

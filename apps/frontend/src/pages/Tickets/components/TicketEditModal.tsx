@@ -19,6 +19,7 @@ import { hospitalService } from '../../../services/hospitalService';
 import MultiStepDialog from '../../../components/Common/MultiStepDialog';
 import { useTicketEditForm } from '../hooks/useTicketEditForm';
 import { formatForDateTimeLocal } from '@/helpers';
+import { BedAssignmentStep } from './TicketFormSteps';
 
 interface TicketEditModalProps {
   open: boolean;
@@ -91,6 +92,20 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({
           <TransportInfoStep
             formData={formData}
             onDataChange={onDataChange}
+          />
+        ),
+      },
+      {
+        label: 'Bed Assignment',
+        content: (
+          <BedAssignmentStep
+            formData={formData}
+            onDataChange={onDataChange}
+            patientId={ticket?.patientId}
+            ticketId={ticket?.id}
+            mode="update"
+            originHospitalId={formData.originHospitalId || ticket?.originHospitalId}
+            destinationHospitalId={formData.destinationHospitalId || ticket?.destinationHospitalId}
           />
         ),
       },
@@ -531,6 +546,68 @@ const ReviewStep: React.FC<{
             <Typography variant="body2">
               <strong>Transport Mode:</strong> {formData.transportMode}
             </Typography>
+          )}
+          {formData.bedAssignment && formData.bedAssignment.bedId && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Bed Assignment
+              </Typography>
+              {formData.bedAssignment.bedNumber && (
+                <Typography variant="body2">
+                  <strong>Bed Number:</strong> {formData.bedAssignment.bedNumber}
+                </Typography>
+              )}
+              {formData.bedAssignment.assignedBed && (
+                <>
+                  <Typography variant="body2">
+                    <strong>Unit:</strong> {formData.bedAssignment.assignedBed.unitName}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Hospital:</strong> {formData.bedAssignment.assignedBed.hospitalName}
+                  </Typography>
+                </>
+              )}
+              {formData.bedAssignment.arrivalDate && (
+                <Typography variant="body2">
+                  <strong>Arrival Date:</strong> {new Date(formData.bedAssignment.arrivalDate).toLocaleString()}
+                </Typography>
+              )}
+            </Box>
+          )}
+          {/* Show existing bed assignments from ticket cases */}
+          {!formData.bedAssignment && ticket && (
+            <>
+              {((ticket.traumaCases && ticket.traumaCases.some(c => c.assignedBed)) ||
+                (ticket.strokeCases && ticket.strokeCases.some(c => c.assignedBed)) ||
+                (ticket.stemiCases && ticket.stemiCases.some(c => c.assignedBed))) && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Existing Bed Assignments
+                  </Typography>
+                  {ticket.traumaCases?.map(case_ => 
+                    case_.assignedBed && (
+                      <Typography key={case_.id} variant="body2">
+                        <strong>Trauma Case:</strong> Bed {case_.assignedBed.bedNumber} - {case_.assignedBed.unit.name}
+                      </Typography>
+                    )
+                  )}
+                  {ticket.strokeCases?.map(case_ => 
+                    case_.assignedBed && (
+                      <Typography key={case_.id} variant="body2">
+                        <strong>Stroke Case:</strong> Bed {case_.assignedBed.bedNumber} - {case_.assignedBed.unit.name}
+                      </Typography>
+                    )
+                  )}
+                  {ticket.stemiCases?.map(case_ => 
+                    case_.assignedBed && (
+                      <Typography key={case_.id} variant="body2">
+                        <strong>STEMI Case:</strong> Bed {case_.assignedBed.bedNumber} - {case_.assignedBed.unit.name}
+                      </Typography>
+                    )
+                  )}
+                </Box>
+              )}
+            </>
           )}
           {formData.emsUnit && (
             <Typography variant="body2">

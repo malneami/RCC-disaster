@@ -239,6 +239,61 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
             </Card>
           </Grid>
         )}
+
+        {/* Bed Assignment */}
+        {formData.bedAssignment && formData.bedAssignment.bedId && (
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Bed Assignment
+                </Typography>
+                <Grid container spacing={2}>
+                  {formData.bedAssignment.bedNumber && (
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Bed Number
+                      </Typography>
+                      <Typography variant="body1">
+                        {formData.bedAssignment.bedNumber}
+                      </Typography>
+                    </Grid>
+                  )}
+                  {formData.bedAssignment.assignedBed && (
+                    <>
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Unit
+                        </Typography>
+                        <Typography variant="body1">
+                          {formData.bedAssignment.assignedBed.unitName}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Hospital
+                        </Typography>
+                        <Typography variant="body1">
+                          {formData.bedAssignment.assignedBed.hospitalName}
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  {formData.bedAssignment.arrivalDate && (
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Arrival Date
+                      </Typography>
+                      <Typography variant="body1">
+                        {new Date(formData.bedAssignment.arrivalDate).toLocaleString()}
+                      </Typography>
+                    </Grid>
+                  )}
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
 
       <Divider sx={{ my: 3 }} />

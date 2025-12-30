@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { TicketStatus, UserRole, ActivityType, AssignmentStatus } from '@prisma/client';
+import { TicketStatus, UserRole, ActivityType, AssignmentStatus, BedStatus } from '@prisma/client';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto, UpdateTicketStatusDto, AssignTicketDto } from './dto/update-ticket.dto';
 import { TicketFilterDto } from './dto/ticket-filter.dto';
@@ -99,7 +99,7 @@ export class TicketsService {
     const ticketNumber = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
     // Create ticket with audit trail
-    const { requiredResources, triageTime, symptomOnsetTime, ...ticketData } = createTicketDto;
+    const { requiredResources, triageTime, symptomOnsetTime, bedAssignment, ...ticketData } = createTicketDto;
 
     // Convert datetime strings to Date objects if provided
     const processedData = {
@@ -522,14 +522,257 @@ export class TicketsService {
             assignedAt: 'desc',
           },
         },
+        strokeCases: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            patientId: true,
+            originHospitalId: true,
+            destinationHospitalId: true,
+            strokeType: true,
+            ticketId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        stemiCases: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            patientId: true,
+            originHospitalId: true,
+            destinationHospitalId: true,
+            ticketId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        traumaCases: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            patientId: true,
+            originHospitalId: true,
+            destinationHospitalId: true,
+            ticketId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
-    });
+    }) as any;
 
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
 
-    return ticket;
+    const allCaseIds: string[] = [];
+    
+    (ticket.traumaCases || []).forEach((case_: any) => {
+      allCaseIds.push(case_.id);
+    });
+    (ticket.strokeCases || []).forEach((case_: any) => {
+      allCaseIds.push(case_.id);
+    });
+    (ticket.stemiCases || []).forEach((case_: any) => {
+      allCaseIds.push(case_.id);
+    });
+
+    const caseBeds = allCaseIds.length > 0 ? await this.prisma.bed.findMany({
+      where: {
+        caseId: { in: allCaseIds },
+        caseType: { in: ['TRAUMA', 'STROKE', 'STEMI'] },
+        deletedAt: null,
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedType: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            age: true,
+            gender: true,
+            mrn: true,
+          },
+        },
+      },
+    }) : [];
+
+    const patientBeds = await this.prisma.bed.findMany({
+      where: {
+        currentPatientId: ticket.patientId,
+        caseId: null, // Beds assigned to patient but not to a case
+        deletedAt: null,
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedType: true,
+          },
+        },
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        currentPatient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nationalId: true,
+            age: true,
+            gender: true,
+            mrn: true,
+          },
+        },
+      },
+    });
+
+    const caseBedMap = new Map(caseBeds.map(bed => [bed.caseId!, bed]));
+
+    const enrichedTraumaCases = (ticket.traumaCases || []).map((case_: any) => {
+      const assignedBed = caseBedMap.get(case_.id);
+      return {
+        ...case_,
+        assignedBed: assignedBed ? {
+          id: assignedBed.id,
+          bedNumber: assignedBed.bedNumber,
+          status: assignedBed.status,
+          location: assignedBed.location || undefined,
+          isOperational: assignedBed.isOperational,
+          unit: {
+            id: assignedBed.unit.id,
+            name: assignedBed.unit.name,
+            bedType: assignedBed.unit.bedType,
+          },
+          hospital: {
+            id: assignedBed.hospital.id,
+            name: assignedBed.hospital.name,
+          },
+          currentPatient: assignedBed.currentPatient ? {
+            id: assignedBed.currentPatient.id,
+            name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+            nationalId: assignedBed.currentPatient.nationalId || undefined,
+            age: assignedBed.currentPatient.age || undefined,
+            gender: assignedBed.currentPatient.gender || undefined,
+            mrn: assignedBed.currentPatient.mrn || undefined,
+          } : undefined,
+        } : null,
+      } as any;
+    }) || [];
+
+    const enrichedStrokeCases = (ticket.strokeCases || []).map((case_: any) => {
+      const assignedBed = caseBedMap.get(case_.id);
+      return {
+        ...case_,
+        assignedBed: assignedBed ? {
+          id: assignedBed.id,
+          bedNumber: assignedBed.bedNumber,
+          status: assignedBed.status,
+          location: assignedBed.location || undefined,
+          isOperational: assignedBed.isOperational,
+          unit: {
+            id: assignedBed.unit.id,
+            name: assignedBed.unit.name,
+            bedType: assignedBed.unit.bedType,
+          },
+          hospital: {
+            id: assignedBed.hospital.id,
+            name: assignedBed.hospital.name,
+          },
+          currentPatient: assignedBed.currentPatient ? {
+            id: assignedBed.currentPatient.id,
+            name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+            nationalId: assignedBed.currentPatient.nationalId || undefined,
+            age: assignedBed.currentPatient.age || undefined,
+            gender: assignedBed.currentPatient.gender || undefined,
+            mrn: assignedBed.currentPatient.mrn || undefined,
+          } : undefined,
+        } : null,
+      } as any;
+    }) || [];
+
+    const enrichedStemiCases = (ticket.stemiCases || []).map((case_: any) => {
+      const assignedBed = caseBedMap.get(case_.id);
+      return {
+        ...case_,
+        assignedBed: assignedBed ? {
+          id: assignedBed.id,
+          bedNumber: assignedBed.bedNumber,
+          status: assignedBed.status,
+          location: assignedBed.location || undefined,
+          isOperational: assignedBed.isOperational,
+          unit: {
+            id: assignedBed.unit.id,
+            name: assignedBed.unit.name,
+            bedType: assignedBed.unit.bedType,
+          },
+          hospital: {
+            id: assignedBed.hospital.id,
+            name: assignedBed.hospital.name,
+          },
+          currentPatient: assignedBed.currentPatient ? {
+            id: assignedBed.currentPatient.id,
+            name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
+            nationalId: assignedBed.currentPatient.nationalId || undefined,
+            age: assignedBed.currentPatient.age || undefined,
+            gender: assignedBed.currentPatient.gender || undefined,
+            mrn: assignedBed.currentPatient.mrn || undefined,
+          } : undefined,
+        } : null,
+      } as any;
+    }) || [];
+
+    const formattedPatientBeds = patientBeds.map(bed => ({
+      id: bed.id,
+      bedNumber: bed.bedNumber,
+      status: bed.status,
+      location: bed.location || undefined,
+      isOperational: bed.isOperational,
+      unit: {
+        id: bed.unit.id,
+        name: bed.unit.name,
+        bedType: bed.unit.bedType,
+      },
+      hospital: {
+        id: bed.hospital.id,
+        name: bed.hospital.name,
+      },
+      currentPatient: bed.currentPatient ? {
+        id: bed.currentPatient.id,
+        name: `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`,
+        nationalId: bed.currentPatient.nationalId || undefined,
+        age: bed.currentPatient.age || undefined,
+        gender: bed.currentPatient.gender || undefined,
+        mrn: bed.currentPatient.mrn || undefined,
+      } : undefined,
+    }));
+
+    return {
+      ...ticket,
+      traumaCases: enrichedTraumaCases,
+      strokeCases: enrichedStrokeCases,
+      stemiCases: enrichedStemiCases,
+      patientBeds: formattedPatientBeds, 
+    };
   }
 
   // Update ticket with status transition validation
@@ -541,7 +784,7 @@ export class TicketsService {
       throw new ForbiddenException('Only assigned EMS can update this ticket');
     }
 
-    const { assignedToId, requiredResources, originHospitalId, destinationHospitalId, ...updateData } = updateTicketDto;
+    const { assignedToId, requiredResources, originHospitalId, destinationHospitalId, bedAssignment, ...updateData } = updateTicketDto;
 
     // Convert DateTime fields from strings to Date objects
     const processedUpdateData = {

@@ -14,19 +14,25 @@ import {
 } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ticketService, Ticket } from '../../services/ticketService';
+import { ticketService, Ticket, UpdateTicketData } from '../../services/ticketService';
 import { useAuth } from '../../contexts/AuthContext';
+import { bedService } from '../Beds/services/bedService';
+import { useSnackbar } from 'notistack';
+import { useQueryClient } from 'react-query';
 import UpdateStatusModal from './components/UpdateStatusModal';
 import TicketEditModal from './components/TicketEditModal';
 import TicketDetailsTab from './components/TicketDetailsTab';
 import GenericPageHeader from '../../components/Common/GenericPageHeader';
 import GenericTabs from '../../components/Common/GenericTabs';
 import AccessLogsTab from '../../components/Common/AccessLogsTab';
+import { CaseType } from '@prisma/client';
 
 const TicketViewPage: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,11 +74,54 @@ const TicketViewPage: React.FC = () => {
     }
   };
 
-  const handleTicketEdit = async (data: any) => {
+  const handleTicketEdit = async (data: UpdateTicketData) => {
     if (!ticket) return;
 
     try {
       await ticketService.updateTicket(ticket.id, data);
+      
+      if (data.bedAssignment && data.bedAssignment.bedId && ticket.patientId) {
+        const updatedTicket = await ticketService.getTicketById(ticket.id);
+        const allCases = [
+          ...(updatedTicket.traumaCases || []),
+          ...(updatedTicket.strokeCases || []),
+          ...(updatedTicket.stemiCases || []),
+        ];
+        
+        if (allCases.length > 0) {
+          const mostRecentCase = allCases.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )[0];
+          
+          let caseType: CaseType | undefined;
+          if ('strokeType' in mostRecentCase) {
+            caseType = 'STROKE';
+          } else if ('ecgResult' in mostRecentCase) {
+            caseType = 'STEMI';
+          } else {
+            caseType = 'TRAUMA';
+          }
+          
+          try {
+            await bedService.assignBed(data.bedAssignment.bedId, {
+              patientId: ticket.patientId,
+              caseId: mostRecentCase.id,
+              caseType: caseType,
+              arrivalDate: data.bedAssignment.arrivalDate,
+            });
+            enqueueSnackbar('Bed assigned successfully', { variant: 'success' });
+            queryClient.invalidateQueries('hospitals');
+            window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
+          } catch (bedError: any) {
+            console.error('Error assigning bed during ticket update:', bedError);
+            enqueueSnackbar(
+              'Ticket updated but bed assignment failed: ' + (bedError?.response?.data?.message || bedError?.message || 'Unknown error'),
+              { variant: 'warning' }
+            );
+          }
+        }
+      }
+      
       await loadTicket(); // Reload ticket to get updated data
       setEditModalOpen(false);
     } catch (err) {

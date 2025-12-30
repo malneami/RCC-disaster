@@ -1,6 +1,8 @@
 import { apiClient } from './apiClient';
 import { autoCaseCreationService } from './autoCaseCreationService';
 import { patientService } from './patientService';
+import { bedService } from '../pages/Beds/services/bedService';
+import { BedAssignmentFormData } from '../pages/Trauma/types/traumaTypes';
 
 export interface Vitals {
   bloodPressure?: number;
@@ -48,6 +50,7 @@ export interface CreateTicketData {
   requiresSpecialist?: boolean;
   requiredResources?: RequiredResources;
   assignedToId?: string;
+  bedAssignment?: BedAssignmentFormData;
 }
 
 export interface UpdateTicketData {
@@ -70,6 +73,7 @@ export interface UpdateTicketData {
   requiresSpecialist?: boolean;
   requiredResources?: RequiredResources;
   assignedToId?: string;
+  bedAssignment?: BedAssignmentFormData;
 }
 
 export interface TicketFilter {
@@ -204,6 +208,132 @@ export interface Ticket {
       email: string;
     };
   }>;
+  traumaCases?: Array<{
+    id: string;
+    patientId: string;
+    originHospitalId: string;
+    destinationHospitalId?: string;
+    currentStatus: string;
+    createdAt: string;
+    updatedAt: string;
+    ticketId: string;
+    assignedBed?: {
+      id: string;
+      bedNumber: string;
+      status: string;
+      location?: string;
+      isOperational: boolean;
+      unit: {
+        id: string;
+        name: string;
+        bedType: string;
+      };
+      hospital: {
+        id: string;
+        name: string;
+      };
+      currentPatient?: {
+        id: string;
+        name: string;
+        nationalId?: string;
+        age?: number;
+        gender?: string;
+        mrn?: string;
+      };
+    } | null;
+  }>;
+  strokeCases?: Array<{
+    id: string;
+    patientId: string;
+    originHospitalId: string;
+    destinationHospitalId?: string;
+    currentStatus: string;
+    createdAt: string;
+    updatedAt: string;
+    ticketId: string;
+    assignedBed?: {
+      id: string;
+      bedNumber: string;
+      status: string;
+      location?: string;
+      isOperational: boolean;
+      unit: {
+        id: string;
+        name: string;
+        bedType: string;
+      };
+      hospital: {
+        id: string;
+        name: string;
+      };
+      currentPatient?: {
+        id: string;
+        name: string;
+        nationalId?: string;
+        age?: number;
+        gender?: string;
+        mrn?: string;
+      };
+    } | null;
+  }>;
+  stemiCases?: Array<{
+    id: string;
+    patientId: string;
+    originHospitalId: string;
+    destinationHospitalId?: string;
+    currentStatus: string;
+    createdAt: string;
+    updatedAt: string;
+    ticketId: string;
+    assignedBed?: {
+      id: string;
+      bedNumber: string;
+      status: string;
+      location?: string;
+      isOperational: boolean;
+      unit: {
+        id: string;
+        name: string;
+        bedType: string;
+      };
+      hospital: {
+        id: string;
+        name: string;
+      };
+      currentPatient?: {
+        id: string;
+        name: string;
+        nationalId?: string;
+        age?: number;
+        gender?: string;
+        mrn?: string;
+      };
+    } | null;
+  }>;
+  patientBeds?: Array<{
+    id: string;
+    bedNumber: string;
+    status: string;
+    location?: string;
+    isOperational: boolean;
+    unit: {
+      id: string;
+      name: string;
+      bedType: string;
+    };
+    hospital: {
+      id: string;
+      name: string;
+    };
+    currentPatient?: {
+      id: string;
+      name: string;
+      nationalId?: string;
+      age?: number;
+      gender?: string;
+      mrn?: string;
+    };
+  }>;
 }
 
 export interface TicketStatistics {
@@ -269,24 +399,35 @@ class TicketService {
     const response = await apiClient.post('/tickets', data);
     const ticket = response.data;
     
+    let caseId: string | undefined;
+    let caseType: 'TRAUMA' | 'STROKE' | 'STEMI' | undefined;
+    
     // Automatically create trauma, stroke, or STEMI case if pathway supports it
     try {
       if (autoCaseCreationService.supportsAutoCaseCreation(ticket.pathway)) {
         // Get patient data for case creation
         const patient = await patientService.getPatientById(ticket.patientId);
         
-        // Create the appropriate case
+        // Create the appropriate case (without bed assignment - we'll handle that separately)
         const caseResult = await autoCaseCreationService.createCaseFromTicket(
           ticket,
           patient,
           {
             triageTime: data.triageTime,
             symptomOnsetTime: data.symptomOnsetTime
-          }
+          },
+          undefined 
         );
         
         if (caseResult.success) {
           console.log(`✅ Auto-created ${caseResult.caseType} case: ${caseResult.caseId}`);
+          caseId = caseResult.caseId;
+          const caseTypeMap: Record<string, 'TRAUMA' | 'STROKE' | 'STEMI'> = {
+            'trauma': 'TRAUMA',
+            'stroke': 'STROKE',
+            'stemi': 'STEMI',
+          };
+          caseType = caseResult.caseType ? caseTypeMap[caseResult.caseType] : undefined;
         } else {
           console.warn(`⚠️ Failed to auto-create case: ${caseResult.error}`);
         }
@@ -294,6 +435,21 @@ class TicketService {
     } catch (error) {
       // Don't fail ticket creation if case creation fails
       console.error('Error in automatic case creation:', error);
+    }
+    
+    if (data.bedAssignment && data.bedAssignment.bedId && ticket.patientId) {
+      try {
+        await bedService.assignBed(data.bedAssignment.bedId, {
+          patientId: ticket.patientId,
+          caseId: caseId,
+          caseType: caseType,
+          arrivalDate: data.bedAssignment.arrivalDate,
+        });
+        window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
+      } catch (bedError: any) {
+        console.error('Error assigning bed after ticket creation:', bedError);
+        console.warn(`⚠️ Bed assignment failed: ${bedError?.response?.data?.message || bedError?.message || 'Unknown error'}`);
+      }
     }
     
     return ticket;

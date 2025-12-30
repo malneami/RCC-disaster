@@ -7,6 +7,7 @@ import {
   HospitalSelectionStep,
   MedicalInfoStep,
   TransportInfoStep,
+  BedAssignmentStep,
   ReviewStep,
 } from './TicketFormSteps';
 import { useTicketForm } from '../hooks/useTicketForm';
@@ -129,6 +130,19 @@ const MultiStepTicketForm: React.FC<MultiStepTicketFormProps> = ({
         <TransportInfoStep
           formData={formData}
           onDataChange={onDataChange}
+        />
+      ),
+    },
+    {
+      label: 'Bed Assignment',
+      content: (
+        <BedAssignmentStep
+          formData={formData}
+          onDataChange={onDataChange}
+          patientId={formData.patientId}
+          mode="create"
+          originHospitalId={formData.originHospitalId}
+          destinationHospitalId={formData.destinationHospitalId}
         />
       ),
     },
