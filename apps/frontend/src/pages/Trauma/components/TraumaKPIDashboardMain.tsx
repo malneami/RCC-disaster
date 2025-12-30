@@ -2,436 +2,249 @@ import React from 'react';
 import {
   Box,
   Grid,
-  Card,
-  CardContent,
   Typography,
   CircularProgress,
-  Button,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  LinearProgress,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
-  TrendingUp,
-  TrendingDown,
-  Warning,
-  CheckCircle,
-  Schedule,
-  TransferWithinAStation,
   Assessment,
-  Refresh,
+  Warning,
+  TransferWithinAStation,
+  Schedule,
+  LocalHospital,
+  TrendingUp,
 } from '@mui/icons-material';
 
 import { TraumaKPIsResponse } from '../types/traumaTypes';
+import { UnifiedKPICard, kpiColors, kpiGradients, cardStyles } from '../../../components/Common/KPI';
 
 interface TraumaKPIDashboardMainProps {
   kpiSummary: TraumaKPIsResponse | null;
 }
 
-interface KPICardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  trend?: 'up' | 'down' | 'neutral';
-  trendValue?: string;
-  color?: string;
-  icon?: React.ReactNode;
-  loading?: boolean;
-}
-
-const KPICard: React.FC<KPICardProps> = ({
-  title,
-  value,
-  subtitle,
-  trend,
-  trendValue,
-  color = '#1976d2',
-  icon,
-  loading = false,
-}) => {
-  const getTrendIcon = () => {
-    switch (trend) {
-      case 'up':
-        return <TrendingUp color="success" />;
-      case 'down':
-        return <TrendingDown color="error" />;
-      default:
-        return null;
-    }
-  };
-
-  const getTrendColor = () => {
-    switch (trend) {
-      case 'up':
-        return 'success.main';
-      case 'down':
-        return 'error.main';
-      default:
-        return 'text.secondary';
-    }
-  };
-
-  return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-          <Box>
-            <Typography color="text.secondary" gutterBottom variant="h6">
-              {title}
-            </Typography>
-            {loading ? (
-              <CircularProgress size={24} />
-            ) : (
-              <Typography variant="h4" component="div" sx={{ color, fontWeight: 'bold' }}>
-                {value}
-              </Typography>
-            )}
-            {subtitle && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {subtitle}
-              </Typography>
-            )}
-          </Box>
-          {icon && (
-            <Box sx={{ color, opacity: 0.8 }}>
-              {icon}
-            </Box>
-          )}
-        </Box>
-        {trend && trendValue && (
-          <Box display="flex" alignItems="center" gap={1}>
-            {getTrendIcon()}
-            <Typography variant="body2" color={getTrendColor()}>
-              {trendValue}
-            </Typography>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
 const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSummary }) => {
-
   if (!kpiSummary) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress size={60} />
+        <CircularProgress size={60} sx={{ color: kpiColors.gradientStart }} />
       </Box>
     );
   }
 
+  // Calculate metrics
+  const criticalCaseRate = kpiSummary.totalCases > 0
+    ? (kpiSummary.criticalCases / kpiSummary.totalCases) * 100
+    : 0;
 
-  // Calculate additional metrics
-  const criticalCaseRate = kpiSummary.totalCases > 0 
-    ? ((kpiSummary.criticalCases / kpiSummary.totalCases) * 100).toFixed(1)
-    : '0.0';
+  const transferCaseRate = kpiSummary.totalCases > 0
+    ? (kpiSummary.transferCases / kpiSummary.totalCases) * 100
+    : 0;
 
-  const transferCaseRate = kpiSummary.totalCases > 0 
-    ? ((kpiSummary.transferCases / kpiSummary.totalCases) * 100).toFixed(1)
-    : '0.0';
-
-  const averageResponseTime = kpiSummary.averageResponseTime 
+  const averageResponseTime = kpiSummary.averageResponseTime
     ? Math.round(kpiSummary.averageResponseTime)
     : 0;
 
-  const mortalityRate = kpiSummary.mortalityRate 
-    ? kpiSummary.mortalityRate.toFixed(1)
-    : '0.0';
+  const mortalityRate = kpiSummary.mortalityRate
+    ? kpiSummary.mortalityRate
+    : 0;
 
-
-  // Performance indicators
-  const responseTimeStatus = averageResponseTime <= 15 ? 'excellent' : 
-                           averageResponseTime <= 30 ? 'good' : 
-                           averageResponseTime <= 60 ? 'fair' : 'poor';
-
-  const mortalityStatus = parseFloat(mortalityRate) <= 5 ? 'excellent' :
-                         parseFloat(mortalityRate) <= 10 ? 'good' :
-                         parseFloat(mortalityRate) <= 20 ? 'fair' : 'poor';
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'excellent': return '#4caf50';
-      case 'good': return '#8bc34a';
-      case 'fair': return '#ff9800';
-      case 'poor': return '#f44336';
-      default: return '#757575';
-    }
+  // Get response time status
+  const getResponseTimeStatus = (time: number) => {
+    if (time <= 15) return 'excellent';
+    if (time <= 30) return 'good';
+    if (time <= 60) return 'fair';
+    return 'poor';
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'excellent': return <CheckCircle color="success" />;
-      case 'good': return <CheckCircle color="success" />;
-      case 'fair': return <Warning color="warning" />;
-      case 'poor': return <Warning color="error" />;
-      default: return null;
-    }
+  const getMortalityStatus = (rate: number) => {
+    if (rate <= 5) return 'excellent';
+    if (rate <= 10) return 'good';
+    if (rate <= 20) return 'fair';
+    return 'poor';
   };
 
   return (
-    <Box>
+    <Box sx={{ ...cardStyles.page, minHeight: 'auto' }}>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Trauma KPI Dashboard
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Comprehensive performance metrics and analytics
-          </Typography>
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={() => window.location.reload()}
-        >
-          Refresh
-        </Button>
+      <Box mb={4}>
+        <Card sx={{
+          background: '#ffffff',
+          borderRadius: 4,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          border: `1px solid ${kpiColors.borderColor}`,
+          overflow: 'hidden',
+        }}>
+          <Box sx={{
+            height: 4,
+            background: kpiGradients.primary,
+          }} />
+          <CardContent sx={{ p: 4 }}>
+            <Box display="flex" alignItems="center" gap={3}>
+              <Box sx={{
+                width: 64,
+                height: 64,
+                borderRadius: 3,
+                background: kpiGradients.primary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 24px rgba(15, 76, 117, 0.3)',
+              }}>
+                <LocalHospital sx={{ color: 'white', fontSize: 32 }} />
+              </Box>
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: kpiColors.textPrimary, mb: 0.5 }}>
+                  Trauma Analytics Center
+                </Typography>
+                <Typography variant="body1" sx={{ color: kpiColors.textSecondary }}>
+                  Comprehensive performance monitoring and insights
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
 
-      {/* Main KPI Cards */}
+      {/* Primary KPI Cards */}
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+        Key Performance Metrics
+      </Typography>
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
-          <KPICard
+          <UnifiedKPICard
+            variant="primary"
             title="Total Cases"
             value={kpiSummary.totalCases}
             subtitle="All trauma cases"
             icon={<Assessment />}
-            color="#1976d2"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <KPICard
+          <UnifiedKPICard
+            variant="primary"
             title="Critical Cases"
             value={kpiSummary.criticalCases}
-            subtitle={`${criticalCaseRate}% of total`}
+            subtitle={`${criticalCaseRate.toFixed(1)}% of total`}
             icon={<Warning />}
-            color="#d32f2f"
+            percentage={criticalCaseRate}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <KPICard
+          <UnifiedKPICard
+            variant="primary"
             title="Transfer Cases"
             value={kpiSummary.transferCases}
-            subtitle={`${transferCaseRate}% of total`}
+            subtitle={`${transferCaseRate.toFixed(1)}% of total`}
             icon={<TransferWithinAStation />}
-            color="#ed6c02"
+            percentage={transferCaseRate}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <KPICard
+          <UnifiedKPICard
+            variant="primary"
             title="Avg Response Time"
             value={`${averageResponseTime} min`}
             subtitle="Time to arrival"
             icon={<Schedule />}
-            color={getStatusColor(responseTimeStatus)}
           />
         </Grid>
       </Grid>
 
-      {/* Performance Metrics */}
+      {/* Performance Indicators */}
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+        Performance Indicators
+      </Typography>
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Response Time Performance
-              </Typography>
-              <Box display="flex" alignItems="center" gap={2} mb={2}>
-                <Typography variant="h4" sx={{ color: getStatusColor(responseTimeStatus) }}>
-                  {averageResponseTime} min
-                </Typography>
-                {getStatusIcon(responseTimeStatus)}
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={Math.min((averageResponseTime / 60) * 100, 100)}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: 'grey.200',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: getStatusColor(responseTimeStatus),
-                  },
-                }}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Target: ≤15 min | Good: ≤30 min | Fair: ≤60 min
-              </Typography>
-            </CardContent>
-          </Card>
+          <UnifiedKPICard
+            variant="secondary"
+            title="Response Time Performance"
+            value={`${averageResponseTime} min`}
+            target="≤15 min"
+            percentage={Math.min((15 / Math.max(averageResponseTime, 1)) * 100, 100)}
+            status={getResponseTimeStatus(averageResponseTime)}
+            icon={<Schedule />}
+            casesInfo="Time from dispatch to arrival"
+          />
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Mortality Rate
-              </Typography>
-              <Box display="flex" alignItems="center" gap={2} mb={2}>
-                <Typography variant="h4" sx={{ color: getStatusColor(mortalityStatus) }}>
-                  {mortalityRate}%
-                </Typography>
-                {getStatusIcon(mortalityStatus)}
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={Math.min(parseFloat(mortalityRate), 100)}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: 'grey.200',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: getStatusColor(mortalityStatus),
-                  },
-                }}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Target: ≤5% | Good: ≤10% | Fair: ≤20%
-              </Typography>
-            </CardContent>
-          </Card>
+          <UnifiedKPICard
+            variant="secondary"
+            title="Mortality Rate"
+            value={`${mortalityRate.toFixed(1)}%`}
+            target="≤5%"
+            percentage={100 - Math.min(mortalityRate, 100)}
+            status={getMortalityStatus(mortalityRate)}
+            icon={<TrendingUp />}
+            casesInfo="Overall mortality"
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <UnifiedKPICard
+            variant="secondary"
+            title="Critical Case Rate"
+            value={`${criticalCaseRate.toFixed(1)}%`}
+            target="≤20%"
+            percentage={Math.min((20 / Math.max(criticalCaseRate, 1)) * 100, 100)}
+            status={criticalCaseRate <= 20 ? 'good' : 'fair'}
+            icon={<Warning />}
+            casesInfo={`${kpiSummary.criticalCases} of ${kpiSummary.totalCases} cases`}
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <UnifiedKPICard
+            variant="secondary"
+            title="Transfer Rate"
+            value={`${transferCaseRate.toFixed(1)}%`}
+            target="≤30%"
+            percentage={Math.min((30 / Math.max(transferCaseRate, 1)) * 100, 100)}
+            status={transferCaseRate <= 30 ? 'good' : 'fair'}
+            icon={<TransferWithinAStation />}
+            casesInfo={`${kpiSummary.transferCases} of ${kpiSummary.totalCases} cases`}
+          />
         </Grid>
       </Grid>
 
-      {/* Additional Metrics */}
-      <Grid container spacing={3} mb={4}>
+      {/* Additional Stats */}
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+        Additional Statistics
+      </Typography>
+      <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Average Glasgow Score
-              </Typography>
-              <Typography variant="h4" color="primary">
-                {kpiSummary.averageGlasgowScore ? kpiSummary.averageGlasgowScore.toFixed(1) : 'N/A'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Neurological assessment
-              </Typography>
-            </CardContent>
-          </Card>
+          <UnifiedKPICard
+            variant="compact"
+            title="Glasgow Score"
+            value={kpiSummary.averageGlasgowScore ? kpiSummary.averageGlasgowScore.toFixed(1) : 'N/A'}
+            subtitle="Avg neurological assessment"
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Cases This Month
-              </Typography>
-              <Typography variant="h4" color="primary">
-                {kpiSummary.casesThisMonth || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current month
-              </Typography>
-            </CardContent>
-          </Card>
+          <UnifiedKPICard
+            variant="compact"
+            title="Cases This Month"
+            value={kpiSummary.casesThisMonth || 0}
+            subtitle="Current month"
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Cases This Week
-              </Typography>
-              <Typography variant="h4" color="primary">
-                {kpiSummary.casesThisWeek || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current week
-              </Typography>
-            </CardContent>
-          </Card>
+          <UnifiedKPICard
+            variant="compact"
+            title="Cases This Week"
+            value={kpiSummary.casesThisWeek || 0}
+            subtitle="Current week"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <UnifiedKPICard
+            variant="compact"
+            title="Mortality Rate"
+            value={`${mortalityRate.toFixed(1)}%`}
+            subtitle="Overall outcome"
+            status={getMortalityStatus(mortalityRate)}
+          />
         </Grid>
       </Grid>
-
-      {/* Performance Summary Table */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Performance Summary
-          </Typography>
-          <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Metric</TableCell>
-                  <TableCell>Current Value</TableCell>
-                  <TableCell>Target</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Trend</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Response Time</TableCell>
-                  <TableCell>{averageResponseTime} min</TableCell>
-                  <TableCell>≤15 min</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={responseTimeStatus.toUpperCase()}
-                      color={responseTimeStatus === 'excellent' || responseTimeStatus === 'good' ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {averageResponseTime <= 15 ? <TrendingDown color="success" /> : <TrendingUp color="error" />}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Mortality Rate</TableCell>
-                  <TableCell>{mortalityRate}%</TableCell>
-                  <TableCell>≤5%</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={mortalityStatus.toUpperCase()}
-                      color={mortalityStatus === 'excellent' || mortalityStatus === 'good' ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {parseFloat(mortalityRate) <= 5 ? <TrendingDown color="success" /> : <TrendingUp color="error" />}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Critical Case Rate</TableCell>
-                  <TableCell>{criticalCaseRate}%</TableCell>
-                  <TableCell>≤20%</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={parseFloat(criticalCaseRate) <= 20 ? 'GOOD' : 'NEEDS ATTENTION'}
-                      color={parseFloat(criticalCaseRate) <= 20 ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {parseFloat(criticalCaseRate) <= 20 ? <TrendingDown color="success" /> : <TrendingUp color="error" />}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Transfer Rate</TableCell>
-                  <TableCell>{transferCaseRate}%</TableCell>
-                  <TableCell>≤30%</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={parseFloat(transferCaseRate) <= 30 ? 'GOOD' : 'HIGH'}
-                      color={parseFloat(transferCaseRate) <= 30 ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {parseFloat(transferCaseRate) <= 30 ? <TrendingDown color="success" /> : <TrendingUp color="error" />}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
     </Box>
   );
 };
