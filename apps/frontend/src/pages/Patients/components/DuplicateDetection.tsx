@@ -2,18 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   CircularProgress,
   Alert,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Chip,
   Dialog,
   DialogTitle,
@@ -23,6 +14,8 @@ import {
   IconButton,
   Tooltip,
   TextField,
+  Avatar,
+  Fade,
 } from '@mui/material';
 import {
   Merge,
@@ -30,9 +23,35 @@ import {
   Visibility,
   CheckCircle,
   Cancel,
+  Person,
+  Phone,
+  Email,
+  Badge,
+  CalendarToday,
 } from '@mui/icons-material';
 import { patientService, DuplicateGroup, DuplicateMatch } from '@/services/patientService';
 import { format } from 'date-fns';
+
+// Color scheme matching Statistics design
+const GRADIENT_COLORS = {
+  high: 'linear-gradient(135deg, #ff9a9a 0%, #ffb3b3 100%)', // Soft red for high confidence
+  medium: 'linear-gradient(135deg, #ffd54f 0%, #ffe082 100%)', // Soft yellow for medium confidence
+  low: 'linear-gradient(135deg, #a5d8ff 0%, #c5e3ff 100%)', // Soft blue for low confidence
+  primary: 'linear-gradient(135deg, #6ec6ff 0%, #a5d8ff 100%)', // Primary blue
+  success: 'linear-gradient(135deg, #8dd88f 0%, #b8e6b9 100%)', // Success green
+};
+
+const getConfidenceGradient = (confidence: number) => {
+  if (confidence > 0.9) return GRADIENT_COLORS.high;
+  if (confidence > 0.8) return GRADIENT_COLORS.medium;
+  return GRADIENT_COLORS.low;
+};
+
+const getConfidenceColor = (confidence: number) => {
+  if (confidence > 0.9) return '#ff9a9a';
+  if (confidence > 0.8) return '#ffd54f';
+  return '#a5d8ff';
+};
 
 const DuplicateDetection: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -112,333 +131,798 @@ const DuplicateDetection: React.FC = () => {
 
   if (loading && duplicateGroups.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: 400,
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #e3f2fd 100%)',
+          borderRadius: '16px',
+        }}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress
+            size={56}
+            thickness={4}
+            sx={{
+              color: '#6ec6ff',
+              mb: 2.5,
+            }}
+          />
+          <Box
+            sx={{
+              color: '#6ec6ff',
+              fontSize: '1rem',
+              fontWeight: 600,
+            }}
+          >
+            Loading duplicates...
+          </Box>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5">Duplicate Patient Detection</Typography>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <TextField
-              label="Confidence Threshold"
-              type="number"
-              value={confidenceThreshold}
-              onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value) || 0.8)}
-              inputProps={{ min: 0, max: 1, step: 0.1 }}
-              size="small"
-              sx={{ width: 200 }}
-            />
-            <Button variant="outlined" onClick={loadDuplicates}>
-              Refresh
-            </Button>
-          </Box>
-        </Box>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-      </Paper>
-
-      {/* Duplicate Groups */}
-      {duplicateGroups.length === 0 ? (
-        <Card>
-          <CardContent>
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
-              <Typography variant="h6" gutterBottom>
-                No Duplicates Found
-              </Typography>
-              <Typography color="textSecondary">
-                All patient records appear to be unique.
-              </Typography>
+    <Fade in={true} timeout={400}>
+      <Box sx={{ p: 2 }}>
+        {/* Modern Header */}
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)',
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)',
+            border: '1px solid rgba(110, 198, 255, 0.25)',
+            mb: 2,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 24px rgba(110, 198, 255, 0.2), 0 4px 8px rgba(0, 0, 0, 0.06)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: '#1a237e',
+                fontSize: '1.5rem',
+              }}
+            >
+              Duplicate Patient Detection
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <TextField
+                label="Confidence Threshold"
+                type="number"
+                value={confidenceThreshold}
+                onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value) || 0.8)}
+                inputProps={{ min: 0, max: 1, step: 0.1 }}
+                size="small"
+                sx={{
+                  width: 200,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    '&:hover': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#6ec6ff',
+                      },
+                    },
+                    '&.Mui-focused': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#6ec6ff',
+                        borderWidth: '2px',
+                      },
+                    },
+                  },
+                }}
+              />
+              <Button
+                variant="contained"
+                onClick={loadDuplicates}
+                sx={{
+                  background: GRADIENT_COLORS.primary,
+                  color: '#ffffff',
+                  borderRadius: '12px',
+                  padding: '8px 24px',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  boxShadow: '0 4px 12px rgba(110, 198, 255, 0.35)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #4db8ff 0%, #6ec6ff 100%)',
+                    boxShadow: '0 6px 16px rgba(110, 198, 255, 0.45)',
+                    transform: 'translateY(-2px)',
+                  },
+                }}
+              >
+                Refresh
+              </Button>
             </Box>
-          </CardContent>
-        </Card>
-      ) : (
-        <Grid container spacing={3}>
-          {duplicateGroups.map((group) => (
-            <Grid item xs={12} key={group.groupId}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="h6">
-                      Duplicate Group ({group.patients.length} patients)
-                    </Typography>
-                    <Box>
+          </Box>
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                mt: 2,
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
+              }}
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
+        </Box>
+
+        {/* Duplicate Groups */}
+        {duplicateGroups.length === 0 ? (
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)',
+              borderRadius: '16px',
+              padding: '60px 20px',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(110, 198, 255, 0.25)',
+              textAlign: 'center',
+            }}
+          >
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: GRADIENT_COLORS.success,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 24px',
+                boxShadow: '0 6px 20px rgba(141, 216, 143, 0.3)',
+              }}
+            >
+              <CheckCircle sx={{ fontSize: 48, color: '#ffffff' }} />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: '#424242',
+                mb: 1.5,
+              }}
+            >
+              No Duplicates Found
+            </Typography>
+            <Typography
+              sx={{
+                color: '#6ec6ff',
+                fontSize: '0.9375rem',
+                maxWidth: '400px',
+                margin: '0 auto',
+                fontWeight: 500,
+              }}
+            >
+              All patient records appear to be unique.
+            </Typography>
+          </Box>
+        ) : (
+          <Grid container spacing={2}>
+            {duplicateGroups.map((group, groupIndex) => (
+              <Grid item xs={12} key={group.groupId}>
+                <Box
+                  sx={{
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)',
+                    border: '1px solid rgba(110, 198, 255, 0.25)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 24px rgba(110, 198, 255, 0.2), 0 4px 8px rgba(0, 0, 0, 0.06)',
+                    },
+                  }}
+                >
+                  {/* Group Header */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 600,
+                          color: '#1a237e',
+                          fontSize: '1.125rem',
+                        }}
+                      >
+                        Duplicate Group ({group.patients.length} patients)
+                      </Typography>
                       <Chip
-                        label={`Confidence: ${(group.totalConfidence * 100).toFixed(0)}%`}
-                        color={group.totalConfidence > 0.9 ? 'error' : 'warning'}
-                        sx={{ mr: 1 }}
+                        label={`${(group.totalConfidence * 100).toFixed(0)}% Confidence`}
+                        sx={{
+                          background: getConfidenceGradient(group.totalConfidence),
+                          color: '#ffffff',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          height: '28px',
+                          boxShadow: `0 2px 8px ${getConfidenceColor(group.totalConfidence)}40`,
+                        }}
                       />
-                      <Tooltip title="View Comparison">
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Tooltip title="View Comparison" arrow>
                         <IconButton
                           size="small"
                           onClick={() => openComparisonDialog(group)}
-                          sx={{ mr: 1 }}
+                          sx={{
+                            color: '#6ec6ff',
+                            background: 'rgba(110, 198, 255, 0.1)',
+                            '&:hover': {
+                              background: 'rgba(110, 198, 255, 0.2)',
+                              transform: 'scale(1.1)',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
                         >
-                          <Visibility />
+                          <Visibility fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Merge Duplicates">
+                      <Tooltip title="Merge Duplicates" arrow>
                         <IconButton
                           size="small"
                           onClick={() => openMergeDialog(group)}
-                          color="primary"
-                          sx={{ mr: 1 }}
+                          sx={{
+                            color: '#8dd88f',
+                            background: 'rgba(141, 216, 143, 0.1)',
+                            '&:hover': {
+                              background: 'rgba(141, 216, 143, 0.2)',
+                              transform: 'scale(1.1)',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
                         >
-                          <Merge />
+                          <Merge fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Ignore">
+                      <Tooltip title="Ignore" arrow>
                         <IconButton
                           size="small"
                           onClick={() =>
                             handleIgnore(group.patients.map((p: DuplicateMatch & { patientId: string }) => p.patientId))
                           }
-                          color="default"
+                          sx={{
+                            color: '#ff9a9a',
+                            background: 'rgba(255, 154, 154, 0.1)',
+                            '&:hover': {
+                              background: 'rgba(255, 154, 154, 0.2)',
+                              transform: 'scale(1.1)',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
                         >
-                          <Cancel />
+                          <Cancel fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     </Box>
                   </Box>
 
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Patient Name</TableCell>
-                          <TableCell>MRN</TableCell>
-                          <TableCell>National ID</TableCell>
-                          <TableCell>Phone</TableCell>
-                          <TableCell>Created</TableCell>
-                          <TableCell>Match Reason</TableCell>
-                          <TableCell>Matched Fields</TableCell>
-                          <TableCell>Confidence</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {group.patients.map((match: DuplicateMatch & { patientId: string; patient?: any }) => (
-                          <TableRow key={match.patientId}>
-                            <TableCell>
-                              {match.patient?.firstName} {match.patient?.lastName}
-                              {match.patientId === group.primaryPatientId && (
-                                <Chip
-                                  label="Primary"
-                                  size="small"
-                                  color="primary"
-                                  sx={{ ml: 1 }}
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell>{match.patient?.mrn || 'N/A'}</TableCell>
-                            <TableCell>{match.patient?.nationalId || 'N/A'}</TableCell>
-                            <TableCell>{match.patient?.phoneNumber || 'N/A'}</TableCell>
-                            <TableCell>
-                              {match.patient?.createdAt
-                                ? format(new Date(match.patient.createdAt), 'MMM dd, yyyy')
-                                : 'N/A'}
-                            </TableCell>
-                            <TableCell>
+                  {/* Patient Cards */}
+                  <Grid container spacing={2}>
+                    {group.patients.map((match: DuplicateMatch & { patientId: string; patient?: any }, index: number) => {
+                      const isPrimary = match.patientId === group.primaryPatientId;
+                      return (
+                        <Grid item xs={12} md={6} key={match.patientId}>
+                          <Box
+                            sx={{
+                              background: isPrimary
+                                ? 'linear-gradient(135deg, #e8f5ff 0%, #d6e7ff 100%)'
+                                : 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
+                              borderRadius: '12px',
+                              padding: '16px',
+                              border: isPrimary
+                                ? '2px solid rgba(110, 198, 255, 0.4)'
+                                : '1px solid rgba(110, 198, 255, 0.15)',
+                              transition: 'all 0.3s ease',
+                              position: 'relative',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                              },
+                            }}
+                          >
+                            {isPrimary && (
                               <Chip
-                                label={match.matchReason}
+                                label="Primary"
                                 size="small"
-                                color={
-                                  match.confidence > 0.9
-                                    ? 'error'
-                                    : match.confidence > 0.8
-                                    ? 'warning'
-                                    : 'default'
-                                }
+                                sx={{
+                                  position: 'absolute',
+                                  top: 12,
+                                  right: 12,
+                                  background: GRADIENT_COLORS.primary,
+                                  color: '#ffffff',
+                                  fontWeight: 600,
+                                  fontSize: '0.7rem',
+                                  height: '22px',
+                                }}
                               />
-                            </TableCell>
-                            <TableCell>
-                              {match.matchedFields.length > 0 ? (
+                            )}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
+                              <Avatar
+                                sx={{
+                                  width: 48,
+                                  height: 48,
+                                  background: GRADIENT_COLORS.primary,
+                                  fontSize: '1.2rem',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {match.patient?.firstName?.charAt(0)?.toUpperCase() || 'P'}
+                                {match.patient?.lastName?.charAt(0)?.toUpperCase() || ''}
+                              </Avatar>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography
+                                  variant="subtitle1"
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: '#1a237e',
+                                    fontSize: '1rem',
+                                  }}
+                                >
+                                  {match.patient?.firstName} {match.patient?.lastName}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: '#666',
+                                    fontSize: '0.75rem',
+                                  }}
+                                >
+                                  Confidence: {(match.confidence * 100).toFixed(0)}%
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              {match.patient?.mrn && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Badge sx={{ fontSize: '14px', color: '#6ec6ff' }} />
+                                  <Typography variant="body2" sx={{ color: '#424242', fontSize: '0.8125rem' }}>
+                                    MRN: {match.patient.mrn}
+                                  </Typography>
+                                </Box>
+                              )}
+                              {match.patient?.nationalId && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Badge sx={{ fontSize: '14px', color: '#6ec6ff' }} />
+                                  <Typography variant="body2" sx={{ color: '#424242', fontSize: '0.8125rem' }}>
+                                    ID: {match.patient.nationalId}
+                                  </Typography>
+                                </Box>
+                              )}
+                              {match.patient?.phoneNumber && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Phone sx={{ fontSize: '14px', color: '#6ec6ff' }} />
+                                  <Typography variant="body2" sx={{ color: '#424242', fontSize: '0.8125rem' }}>
+                                    {match.patient.phoneNumber}
+                                  </Typography>
+                                </Box>
+                              )}
+                              {match.patient?.createdAt && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <CalendarToday sx={{ fontSize: '14px', color: '#6ec6ff' }} />
+                                  <Typography variant="body2" sx={{ color: '#424242', fontSize: '0.8125rem' }}>
+                                    {format(new Date(match.patient.createdAt), 'MMM dd, yyyy')}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
+                            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(110, 198, 255, 0.15)' }}>
+                              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                                <Chip
+                                  label={match.matchReason}
+                                  size="small"
+                                  sx={{
+                                    background: getConfidenceGradient(match.confidence),
+                                    color: '#ffffff',
+                                    fontWeight: 500,
+                                    fontSize: '0.7rem',
+                                    height: '20px',
+                                  }}
+                                />
+                              </Box>
+                              {match.matchedFields.length > 0 && (
                                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                                   {match.matchedFields.map((field: string) => (
-                                    <Chip key={field} label={field} size="small" />
+                                    <Chip
+                                      key={field}
+                                      label={field}
+                                      size="small"
+                                      sx={{
+                                        background: 'rgba(110, 198, 255, 0.1)',
+                                        color: '#6ec6ff',
+                                        fontSize: '0.65rem',
+                                        height: '18px',
+                                        border: '1px solid rgba(110, 198, 255, 0.2)',
+                                      }}
+                                    />
                                   ))}
                                 </Box>
-                              ) : (
-                                'N/A'
                               )}
-                            </TableCell>
-                            <TableCell>
-                              {(match.confidence * 100).toFixed(0)}%
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+                            </Box>
+                          </Box>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        )}
 
-      {/* Merge Dialog */}
-      <Dialog open={mergeDialogOpen} onClose={() => setMergeDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          Merge Duplicate Patients
-          <IconButton
-            aria-label="close"
-            onClick={() => setMergeDialogOpen(false)}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
+        {/* Modern Merge Dialog */}
+        <Dialog
+          open={mergeDialogOpen}
+          onClose={() => setMergeDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            },
+          }}
+        >
+          <Box
+            sx={{
+              background: GRADIENT_COLORS.primary,
+              padding: '20px 24px',
+              borderRadius: '16px 16px 0 0',
+            }}
           >
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {selectedGroup && (
-            <Box>
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                Merging will combine all duplicate records into the primary patient. This action
-                cannot be undone.
-              </Alert>
-              <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
-                Primary Patient (will be kept):
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  fontSize: '1.25rem',
+                }}
+              >
+                Merge Duplicate Patients
               </Typography>
-              {selectedGroup.patients
-                .filter((p: DuplicateMatch & { patientId: string }) => p.patientId === primaryPatientId)
-                .map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
-                  <Card key={p.patientId} sx={{ mb: 2, bgcolor: 'primary.light' }}>
-                    <CardContent>
-                      <Typography>
-                        {p.patient?.firstName} {p.patient?.lastName}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        MRN: {p.patient?.mrn || 'N/A'} | National ID:{' '}
-                        {p.patient?.nationalId || 'N/A'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                ))}
-              <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
-                Duplicates to merge (will be deleted):
-              </Typography>
-              {selectedGroup.patients
-                .filter((p: DuplicateMatch & { patientId: string }) => p.patientId !== primaryPatientId)
-                .map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
-                  <Card key={p.patientId} sx={{ mb: 1 }}>
-                    <CardContent>
-                      <Typography>
-                        {p.patient?.firstName} {p.patient?.lastName}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        MRN: {p.patient?.mrn || 'N/A'} | National ID:{' '}
-                        {p.patient?.nationalId || 'N/A'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                ))}
+              <IconButton
+                onClick={() => setMergeDialogOpen(false)}
+                sx={{
+                  color: '#ffffff',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.2)',
+                  },
+                }}
+              >
+                <Close />
+              </IconButton>
             </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setMergeDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleMerge}
-            variant="contained"
-            color="primary"
-            disabled={loading || !primaryPatientId || selectedDuplicates.length === 0}
-          >
-            Merge Patients
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </Box>
+          <DialogContent sx={{ p: 3 }}>
+            {selectedGroup && (
+              <Box>
+                <Alert
+                  severity="warning"
+                  sx={{
+                    mb: 3,
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
+                  }}
+                >
+                  Merging will combine all duplicate records into the primary patient. This action cannot be undone.
+                </Alert>
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                  sx={{
+                    mt: 2,
+                    mb: 1.5,
+                    fontWeight: 600,
+                    color: '#1a237e',
+                    fontSize: '0.9375rem',
+                  }}
+                >
+                  Primary Patient (will be kept):
+                </Typography>
+                {selectedGroup.patients
+                  .filter((p: DuplicateMatch & { patientId: string }) => p.patientId === primaryPatientId)
+                  .map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
+                    <Box
+                      key={p.patientId}
+                      sx={{
+                        background: 'linear-gradient(135deg, #e8f5ff 0%, #d6e7ff 100%)',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        mb: 2,
+                        border: '2px solid rgba(110, 198, 255, 0.4)',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            background: GRADIENT_COLORS.primary,
+                            fontSize: '1.2rem',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {p.patient?.firstName?.charAt(0)?.toUpperCase() || 'P'}
+                          {p.patient?.lastName?.charAt(0)?.toUpperCase() || ''}
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography sx={{ fontWeight: 600, color: '#1a237e', mb: 0.5 }}>
+                            {p.patient?.firstName} {p.patient?.lastName}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8125rem' }}>
+                            MRN: {p.patient?.mrn || 'N/A'} | National ID: {p.patient?.nationalId || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))}
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                  sx={{
+                    mt: 2,
+                    mb: 1.5,
+                    fontWeight: 600,
+                    color: '#1a237e',
+                    fontSize: '0.9375rem',
+                  }}
+                >
+                  Duplicates to merge (will be deleted):
+                </Typography>
+                {selectedGroup.patients
+                  .filter((p: DuplicateMatch & { patientId: string }) => p.patientId !== primaryPatientId)
+                  .map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
+                    <Box
+                      key={p.patientId}
+                      sx={{
+                        background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        mb: 1.5,
+                        border: '1px solid rgba(110, 198, 255, 0.15)',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            background: GRADIENT_COLORS.primary,
+                            fontSize: '1.2rem',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {p.patient?.firstName?.charAt(0)?.toUpperCase() || 'P'}
+                          {p.patient?.lastName?.charAt(0)?.toUpperCase() || ''}
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography sx={{ fontWeight: 600, color: '#1a237e', mb: 0.5 }}>
+                            {p.patient?.firstName} {p.patient?.lastName}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8125rem' }}>
+                            MRN: {p.patient?.mrn || 'N/A'} | National ID: {p.patient?.nationalId || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))}
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 2 }}>
+            <Button
+              onClick={() => setMergeDialogOpen(false)}
+              sx={{
+                color: '#666',
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                '&:hover': {
+                  background: 'rgba(0, 0, 0, 0.05)',
+                },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMerge}
+              variant="contained"
+              disabled={loading || !primaryPatientId || selectedDuplicates.length === 0}
+              sx={{
+                background: GRADIENT_COLORS.success,
+                color: '#ffffff',
+                borderRadius: '12px',
+                padding: '8px 24px',
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: '0 4px 12px rgba(141, 216, 143, 0.35)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #7bc87d 0%, #8dd88f 100%)',
+                  boxShadow: '0 6px 16px rgba(141, 216, 143, 0.45)',
+                },
+                '&:disabled': {
+                  background: 'rgba(0, 0, 0, 0.12)',
+                  color: 'rgba(0, 0, 0, 0.26)',
+                },
+              }}
+            >
+              Merge Patients
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      {/* Comparison Dialog */}
-      <Dialog
-        open={comparisonDialogOpen}
-        onClose={() => setComparisonDialogOpen(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle>
-          Patient Comparison
-          <IconButton
-            aria-label="close"
-            onClick={() => setComparisonDialogOpen(false)}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
+        {/* Modern Comparison Dialog */}
+        <Dialog
+          open={comparisonDialogOpen}
+          onClose={() => setComparisonDialogOpen(false)}
+          maxWidth="lg"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            },
+          }}
+        >
+          <Box
+            sx={{
+              background: GRADIENT_COLORS.primary,
+              padding: '20px 24px',
+              borderRadius: '16px 16px 0 0',
+            }}
           >
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {selectedGroup && (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Field</TableCell>
-                    {selectedGroup.patients.map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
-                      <TableCell key={p.patientId}>
-                        {p.patient?.firstName} {p.patient?.lastName}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  fontSize: '1.25rem',
+                }}
+              >
+                Patient Comparison
+              </Typography>
+              <IconButton
+                onClick={() => setComparisonDialogOpen(false)}
+                sx={{
+                  color: '#ffffff',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.2)',
+                  },
+                }}
+              >
+                <Close />
+              </IconButton>
+            </Box>
+          </Box>
+          <DialogContent sx={{ p: 3 }}>
+            {selectedGroup && (
+              <Grid container spacing={2}>
+                {selectedGroup.patients.map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
+                  <Grid item xs={12} md={6} key={p.patientId}>
+                    <Box
+                      sx={{
+                        background:
+                          p.patientId === selectedGroup.primaryPatientId
+                            ? 'linear-gradient(135deg, #e8f5ff 0%, #d6e7ff 100%)'
+                            : 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        border:
+                          p.patientId === selectedGroup.primaryPatientId
+                            ? '2px solid rgba(110, 198, 255, 0.4)'
+                            : '1px solid rgba(110, 198, 255, 0.15)',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            color: '#1a237e',
+                            fontSize: '1rem',
+                          }}
+                        >
+                          {p.patient?.firstName} {p.patient?.lastName}
+                        </Typography>
                         {p.patientId === selectedGroup.primaryPatientId && (
-                          <Chip label="Primary" size="small" color="primary" sx={{ ml: 1 }} />
+                          <Chip
+                            label="Primary"
+                            size="small"
+                            sx={{
+                              background: GRADIENT_COLORS.primary,
+                              color: '#ffffff',
+                              fontWeight: 600,
+                              fontSize: '0.7rem',
+                            }}
+                          />
                         )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>MRN</TableCell>
-                    {selectedGroup.patients.map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
-                      <TableCell key={p.patientId}>{p.patient?.mrn || 'N/A'}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>National ID</TableCell>
-                    {selectedGroup.patients.map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
-                      <TableCell key={p.patientId}>{p.patient?.nationalId || 'N/A'}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Phone</TableCell>
-                    {selectedGroup.patients.map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
-                      <TableCell key={p.patientId}>{p.patient?.phoneNumber || 'N/A'}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Created</TableCell>
-                    {selectedGroup.patients.map((p: any) => (
-                      <TableCell key={p.patientId}>
-                        {p.patient?.createdAt
-                          ? format(new Date(p.patient.createdAt), 'MMM dd, yyyy')
-                          : 'N/A'}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Created By</TableCell>
-                    {selectedGroup.patients.map((p: any) => (
-                      <TableCell key={p.patientId}>
-                        {p.patient?.createdBy
-                          ? `${p.patient.createdBy.firstName} ${p.patient.createdBy.lastName}`
-                          : 'N/A'}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setComparisonDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#666', fontSize: '0.75rem', fontWeight: 500 }}>
+                            MRN
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#424242', mt: 0.5 }}>
+                            {p.patient?.mrn || 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#666', fontSize: '0.75rem', fontWeight: 500 }}>
+                            National ID
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#424242', mt: 0.5 }}>
+                            {p.patient?.nationalId || 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#666', fontSize: '0.75rem', fontWeight: 500 }}>
+                            Phone
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#424242', mt: 0.5 }}>
+                            {p.patient?.phoneNumber || 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#666', fontSize: '0.75rem', fontWeight: 500 }}>
+                            Created
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#424242', mt: 0.5 }}>
+                            {p.patient?.createdAt
+                              ? format(new Date(p.patient.createdAt), 'MMM dd, yyyy')
+                              : 'N/A'}
+                          </Typography>
+                        </Box>
+                        {p.patient?.createdBy && (
+                          <Box>
+                            <Typography variant="caption" sx={{ color: '#666', fontSize: '0.75rem', fontWeight: 500 }}>
+                              Created By
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#424242', mt: 0.5 }}>
+                              {p.patient.createdBy.firstName} {p.patient.createdBy.lastName}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 2 }}>
+            <Button
+              onClick={() => setComparisonDialogOpen(false)}
+              sx={{
+                background: GRADIENT_COLORS.primary,
+                color: '#ffffff',
+                borderRadius: '12px',
+                padding: '8px 24px',
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: '0 4px 12px rgba(110, 198, 255, 0.35)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #4db8ff 0%, #6ec6ff 100%)',
+                  boxShadow: '0 6px 16px rgba(110, 198, 255, 0.45)',
+                },
+              }}
+            >
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </Fade>
   );
 };
 
