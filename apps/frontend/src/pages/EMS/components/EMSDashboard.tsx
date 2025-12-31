@@ -231,7 +231,7 @@ const EMSDashboard: React.FC = () => {
                                 primary={
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Typography variant="body2" fontWeight="medium">
-                                      {assignment.patientName}
+                                      {assignment.ticketNumber ? `Ticket #${assignment.ticketNumber}` : 'Emergency Mission'}
                                     </Typography>
                                     <Chip
                                       label={assignment.status.replace('_', ' ')}
@@ -310,7 +310,7 @@ const EMSDashboard: React.FC = () => {
           </>
         )}
       </CardContent>
-    </Card>
+    </Card >
   );
 };
 

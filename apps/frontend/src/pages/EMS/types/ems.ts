@@ -204,10 +204,11 @@ export interface EMSDashboardData {
     ticketNumber?: string;
     status: string;
     assignedAt: Date | string;
-    patientName: string;
     ambulanceCallSign?: string;
     driverName?: string | null;
     priority?: string;
+    origin?: string;
+    destination?: string;
   }>;
   upcomingSchedules?: Array<{
     id: string;

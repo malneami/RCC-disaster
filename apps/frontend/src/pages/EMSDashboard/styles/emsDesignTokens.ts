@@ -65,14 +65,54 @@ export const glassEffect = {
 };
 
 // Shadow System
+export const colors = {
+    primary: '#4F46E5',
+    secondary: '#10B981',
+    navy: {
+        50: '#F8FAFC',
+        100: '#F1F5F9',
+        200: '#E2E8F0',
+        300: '#CBD5E1',
+        400: '#94A3B8',
+        500: '#64748B',
+        600: '#475569',
+        700: '#334155',
+        800: '#1E293B',
+        900: '#0F172A',
+    },
+    slate: {
+        50: '#F8FAFC',
+        100: '#F1F5F9',
+        200: '#E2E8F0',
+        300: '#CBD5E1',
+        400: '#94A3B8',
+        500: '#64748B',
+        600: '#475569',
+    },
+    status: {
+        success: '#10B981',
+        successLight: '#D1FAE5',
+        warning: '#F59E0B',
+        warningLight: '#FEF3C7',
+        error: '#EF4444',
+        errorLight: '#FEE2E2',
+        info: '#3B82F6',
+        infoLight: '#DBEAFE',
+    },
+    background: {
+        main: '#F3F4F6',
+        card: '#FFFFFF',
+    }
+};
+
 export const shadows = {
     soft: '0 4px 20px rgba(0, 0, 0, 0.08)',
     medium: '0 8px 32px rgba(0, 0, 0, 0.12)',
+    elevated: '0 10px 40px rgba(0, 0, 0, 0.15)',
     colored: (color: string) => `0 8px 32px ${color}40`,
     glow: (color: string) => `0 0 40px ${color}30`,
 };
 
-// Border Radius
 export const radius = {
     sm: 12,
     md: 16,
@@ -81,40 +121,57 @@ export const radius = {
     full: 9999,
 };
 
-// Typography
 export const typography = {
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    heading: {
-        fontSize: '2.5rem',
-        fontWeight: 800,
-        letterSpacing: '-0.02em',
+    size: {
+        xs: '0.75rem',
+        sm: '0.875rem',
+        base: '1rem',
+        lg: '1.125rem',
+        xl: '1.25rem',
+        '2xl': '1.5rem',
+        '3xl': '1.875rem',
     },
-    metric: {
-        fontSize: '2.25rem',
-        fontWeight: 700,
-        letterSpacing: '-0.01em',
-    },
-    label: {
-        fontSize: '0.875rem',
-        fontWeight: 600,
-        letterSpacing: '0.01em',
-    },
-    caption: {
-        fontSize: '0.75rem',
-        fontWeight: 500,
-        letterSpacing: '0.02em',
+    weight: {
+        normal: 400,
+        medium: 500,
+        semibold: 600,
+        bold: 700,
+        extrabold: 800,
     },
 };
 
-// Spacing
 export const spacing = {
     card: 24,
     section: 32,
     grid: 20,
 };
 
+export const EMS_TOKENS = {
+    colors,
+    shadows,
+    radius,
+    typography,
+    spacing,
+};
+
+export const cardStyles = {
+    base: {
+        backgroundColor: colors.background.card,
+        borderRadius: radius.md,
+        boxShadow: shadows.soft,
+    },
+    hover: {
+        transform: 'translateY(-4px)',
+        boxShadow: shadows.medium,
+        transition: 'all 0.3s ease',
+    },
+};
+
 export default {
     EMS_GRADIENTS,
+    EMS_TOKENS,
+    cardStyles,
     glassEffect,
     shadows,
     radius,

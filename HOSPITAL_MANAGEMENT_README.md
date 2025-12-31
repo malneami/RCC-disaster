@@ -8,7 +8,6 @@ A comprehensive hospital management system for tracking resources and capacity i
 - **Hospital CRUD Operations**: Create, read, update, and delete hospitals with comprehensive validation
 - **Real-time Capacity Tracking**: Monitor bed availability across different types (ICU, PICU, NICU, male/female standard)
 - **Resource Availability Dashboard**: Visual representation of hospital capacity with charts and metrics
-- **Automated Alerts**: System alerts for low capacity thresholds (warning and critical levels)
 - **Bulk Update Capabilities**: Update multiple hospitals' capacity simultaneously
 - **Integration Endpoints**: API endpoints for hospital systems integration
 - **Historical Capacity Reporting**: Track capacity changes over time with detailed history

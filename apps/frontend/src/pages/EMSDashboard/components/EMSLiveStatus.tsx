@@ -3,13 +3,20 @@ import { Box, Typography, Grid, Chip, LinearProgress } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeartbeat, faClock, faAmbulance, faCheckCircle, faBolt, faUserMd } from '@fortawesome/free-solid-svg-icons';
 
-// Vibrant Solid Colors - No Gradients
+// Professional muted color palette
 const COLORS = {
-  skyBlue: '#0EA5E9',
-  emerald: '#10B981',
-  amber: '#F59E0B',
-  violet: '#8B5CF6',
-  slate: '#64748B',
+  primary: '#2563EB',      // Blue-600
+  success: '#059669',      // Emerald-600
+  warning: '#D97706',      // Amber-600
+  accent: '#7C3AED',       // Violet-600
+  slate: {
+    50: '#F8FAFC',
+    100: '#F1F5F9',
+    200: '#E2E8F0',
+    500: '#64748B',
+    700: '#334155',
+    900: '#0F172A',
+  },
 };
 
 interface LiveStatusData {
@@ -27,7 +34,6 @@ interface EMSLiveStatusProps {
   isLoading?: boolean;
 }
 
-// Vibrant Stat Card - Solid Colors
 interface StatCardProps {
   value: number;
   label: string;
@@ -39,30 +45,31 @@ const StatCard: React.FC<StatCardProps> = ({ value, label, color, icon }) => (
   <Box
     sx={{
       bgcolor: color,
-      borderRadius: 4,
-      p: 3,
+      borderRadius: 2,
+      p: 2.5,
       color: '#fff',
-      boxShadow: `0 8px 24px ${color}50`,
-      transition: 'all 0.3s ease',
-      '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 12px 32px ${color}60` },
+      transition: 'transform 0.2s ease',
+      '&:hover': { transform: 'translateY(-2px)' },
     }}
   >
-    <Box sx={{ width: 44, height: 44, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2, fontSize: '1.1rem' }}>
-      {icon}
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {icon}
+      </Box>
     </Box>
-    <Typography sx={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1 }}>{value}</Typography>
-    <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.9, mt: 0.5 }}>{label}</Typography>
+    <Typography sx={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1 }}>{value}</Typography>
+    <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, opacity: 0.9, mt: 0.5 }}>{label}</Typography>
   </Box>
 );
 
 const EMSLiveStatus: React.FC<EMSLiveStatusProps> = ({ data, isLoading }) => {
   if (isLoading) {
     return (
-      <Box sx={{ bgcolor: '#E0F2FE', borderRadius: 4, p: 4 }}>
-        <Typography sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1.5, color: COLORS.skyBlue }}>
+      <Box sx={{ bgcolor: COLORS.slate[100], borderRadius: 2, p: 3 }}>
+        <Typography sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1.5, color: COLORS.primary }}>
           <FontAwesomeIcon icon={faHeartbeat} /> Live Status
         </Typography>
-        <LinearProgress sx={{ borderRadius: 2 }} />
+        <LinearProgress sx={{ borderRadius: 1 }} />
       </Box>
     );
   }
@@ -73,51 +80,51 @@ const EMSLiveStatus: React.FC<EMSLiveStatusProps> = ({ data, isLoading }) => {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-        <Box sx={{ width: 44, height: 44, borderRadius: 3, bgcolor: COLORS.skyBlue, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: `0 6px 20px ${COLORS.skyBlue}40` }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+        <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: COLORS.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
           <FontAwesomeIcon icon={faHeartbeat} />
         </Box>
-        <Typography sx={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A' }}>Live Status</Typography>
+        <Typography sx={{ fontSize: '1.125rem', fontWeight: 700, color: COLORS.slate[900] }}>Live Status</Typography>
       </Box>
 
-      {/* Stat Cards - Vibrant Solid Colors */}
-      <Grid container spacing={3}>
+      {/* Stat Cards */}
+      <Grid container spacing={2}>
         <Grid item xs={6} md={3}>
-          <StatCard value={s.totalAmbulances} label="Total Ambulances" color={COLORS.skyBlue} icon={<FontAwesomeIcon icon={faAmbulance} />} />
+          <StatCard value={s.totalAmbulances} label="Total Ambulances" color={COLORS.primary} icon={<FontAwesomeIcon icon={faAmbulance} />} />
         </Grid>
         <Grid item xs={6} md={3}>
-          <StatCard value={s.availableAmbulances} label="Available" color={COLORS.emerald} icon={<FontAwesomeIcon icon={faCheckCircle} />} />
+          <StatCard value={s.availableAmbulances} label="Available" color={COLORS.success} icon={<FontAwesomeIcon icon={faCheckCircle} />} />
         </Grid>
         <Grid item xs={6} md={3}>
-          <StatCard value={s.inUseAmbulances} label="In Use" color={COLORS.amber} icon={<FontAwesomeIcon icon={faBolt} />} />
+          <StatCard value={s.inUseAmbulances} label="In Use" color={COLORS.warning} icon={<FontAwesomeIcon icon={faBolt} />} />
         </Grid>
         <Grid item xs={6} md={3}>
-          <StatCard value={s.activeAssignments} label="Active Assignments" color={COLORS.violet} icon={<FontAwesomeIcon icon={faUserMd} />} />
+          <StatCard value={s.activeAssignments} label="Active Assignments" color={COLORS.accent} icon={<FontAwesomeIcon icon={faUserMd} />} />
         </Grid>
       </Grid>
 
       {/* Availability & Response Time */}
-      <Box sx={{ mt: 4, bgcolor: '#fff', borderRadius: 4, p: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
-        <Grid container spacing={4} alignItems="center">
+      <Box sx={{ mt: 3, bgcolor: '#fff', borderRadius: 2, p: 3, border: `1px solid ${COLORS.slate[200]}` }}>
+        <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography sx={{ fontWeight: 700, color: '#334155' }}>Fleet Availability</Typography>
-              <Chip label={`${pct}%`} sx={{ fontWeight: 800, bgcolor: COLORS.emerald, color: '#fff' }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+              <Typography sx={{ fontWeight: 600, color: COLORS.slate[700], fontSize: '0.875rem' }}>Fleet Availability</Typography>
+              <Chip label={`${pct}%`} size="small" sx={{ fontWeight: 700, bgcolor: COLORS.success, color: '#fff', height: 24 }} />
             </Box>
-            <LinearProgress variant="determinate" value={pct} sx={{ height: 12, borderRadius: 6, bgcolor: '#E2E8F0', '& .MuiLinearProgress-bar': { borderRadius: 6, bgcolor: COLORS.emerald } }} />
+            <LinearProgress variant="determinate" value={pct} sx={{ height: 8, borderRadius: 1, bgcolor: COLORS.slate[200], '& .MuiLinearProgress-bar': { borderRadius: 1, bgcolor: COLORS.success } }} />
           </Grid>
           <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3, borderRadius: 4, bgcolor: '#E0F2FE' }}>
-              <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: COLORS.skyBlue, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.2rem', boxShadow: `0 6px 20px ${COLORS.skyBlue}40` }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, bgcolor: COLORS.slate[50] }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: 2, bgcolor: COLORS.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                 <FontAwesomeIcon icon={faClock} />
               </Box>
               <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontSize: '0.8rem', color: COLORS.skyBlue, fontWeight: 700 }}>Current Response Time</Typography>
-                <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A' }}>{s.responseTime} min</Typography>
+                <Typography sx={{ fontSize: '0.7rem', color: COLORS.slate[500], fontWeight: 600, textTransform: 'uppercase' }}>Current Response</Typography>
+                <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: COLORS.slate[900] }}>{s.responseTime} min</Typography>
               </Box>
               <Box sx={{ textAlign: 'right' }}>
-                <Typography sx={{ fontSize: '0.8rem', color: COLORS.skyBlue, fontWeight: 700 }}>Avg Today</Typography>
-                <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A' }}>{s.averageResponseTime} min</Typography>
+                <Typography sx={{ fontSize: '0.7rem', color: COLORS.slate[500], fontWeight: 600, textTransform: 'uppercase' }}>Avg Today</Typography>
+                <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: COLORS.slate[900] }}>{s.averageResponseTime} min</Typography>
               </Box>
             </Box>
           </Grid>

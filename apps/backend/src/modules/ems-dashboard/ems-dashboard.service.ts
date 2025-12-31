@@ -57,14 +57,16 @@ export class EmsDashboardService {
       // Recent assignments (last 10, including active and completed)
       this.prisma.eMSAssignment.findMany({
         where: { deletedAt: null },
-        orderBy: { assignedAt: 'desc' },
+        orderBy: { updatedAt: 'desc' },
         take: 10,
         include: {
           ticket: {
             select: {
               ticketNumber: true,
               priority: true,
-              patient: { select: { firstName: true, lastName: true } },
+              // patient: { select: { firstName: true, lastName: true } }, // Privacy protection
+              originHospital: { select: { name: true } },
+              destinationHospital: { select: { name: true } },
             },
           },
           ambulance: { select: { callSign: true } },
@@ -165,12 +167,14 @@ export class EmsDashboardService {
         totalCompletedAssignments, // NEW
       },
       recentAlerts,
-      recentAssignments: recentAssignments.map(a => ({
+      recentAssignments: (recentAssignments as any[]).map(a => ({
         id: a.id,
         ticketNumber: a.ticket?.ticketNumber,
         status: a.status,
         assignedAt: a.assignedAt,
-        patientName: a.ticket?.patient ? `${a.ticket.patient.firstName} ${a.ticket.patient.lastName}` : 'Unknown',
+        // patientName: a.ticket?.patient ? `${a.ticket.patient.firstName} ${a.ticket.patient.lastName}` : 'Unknown', // Privacy protection
+        origin: a.ticket?.originHospital?.name || 'Unknown',
+        destination: a.ticket?.destinationHospital?.name || 'Unknown',
         ambulanceCallSign: a.ambulance?.callSign,
         driverName: a.driver ? `${a.driver.firstName} ${a.driver.lastName}` : null,
         priority: a.ticket?.priority,
