@@ -77,7 +77,7 @@ const RelatedTicketsManager: React.FC<RelatedTicketsManagerProps> = ({
       filtered = filtered.filter(ticket => filters.type!.includes(ticket.type));
     }
     if (filters.pathway && filters.pathway.length > 0) {
-      filtered = filtered.filter(ticket => 
+      filtered = filtered.filter(ticket =>
         ticket.pathway && filters.pathway!.includes(ticket.pathway)
       );
     }
@@ -99,12 +99,12 @@ const RelatedTicketsManager: React.FC<RelatedTicketsManagerProps> = ({
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'priority_desc':
           const priorityOrder = { 'EMERGENCY': 5, 'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
-          return (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) - 
-                 (priorityOrder[a.priority as keyof typeof priorityOrder] || 0);
+          return (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) -
+            (priorityOrder[a.priority as keyof typeof priorityOrder] || 0);
         case 'priority_asc':
           const priorityOrderAsc = { 'EMERGENCY': 5, 'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
-          return (priorityOrderAsc[a.priority as keyof typeof priorityOrderAsc] || 0) - 
-                 (priorityOrderAsc[b.priority as keyof typeof priorityOrderAsc] || 0);
+          return (priorityOrderAsc[a.priority as keyof typeof priorityOrderAsc] || 0) -
+            (priorityOrderAsc[b.priority as keyof typeof priorityOrderAsc] || 0);
         case 'status_asc':
           return a.status.localeCompare(b.status);
         case 'status_desc':
@@ -176,17 +176,96 @@ const RelatedTicketsManager: React.FC<RelatedTicketsManagerProps> = ({
   return (
     <Box>
       {/* Header with Stats */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Box sx={{ mb: 4 }}>
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 700, color: '#0F172A', mb: 3 }}
+        >
           Related Tickets ({stats.total})
         </Typography>
-        
-        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-          <Chip label={`${stats.open} Open`} color="warning" size="small" />
-          <Chip label={`${stats.completed} Completed`} color="success" size="small" />
-          <Chip label={`${stats.transfer} Transfer`} color="primary" size="small" />
-          <Chip label={`${stats.hospital} Hospital`} color="secondary" size="small" />
-        </Stack>
+
+        {/* Stats Cards Grid */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {/* Open */}
+          <Grid item xs={6} sm={3}>
+            <Box
+              sx={{
+                p: 2,
+                backgroundColor: '#FEF3C7',
+                borderRadius: '12px',
+                border: '1px solid #FCD34D',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h4" sx={{ fontWeight: 700, color: '#D97706', lineHeight: 1 }}>
+                {stats.open}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#92400E', mt: 0.5 }}>
+                Open
+              </Typography>
+            </Box>
+          </Grid>
+
+          {/* Completed */}
+          <Grid item xs={6} sm={3}>
+            <Box
+              sx={{
+                p: 2,
+                backgroundColor: '#D1FAE5',
+                borderRadius: '12px',
+                border: '1px solid #6EE7B7',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h4" sx={{ fontWeight: 700, color: '#059669', lineHeight: 1 }}>
+                {stats.completed}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#065F46', mt: 0.5 }}>
+                Completed
+              </Typography>
+            </Box>
+          </Grid>
+
+          {/* Transfer */}
+          <Grid item xs={6} sm={3}>
+            <Box
+              sx={{
+                p: 2,
+                backgroundColor: '#E0F2FE',
+                borderRadius: '12px',
+                border: '1px solid #7DD3FC',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h4" sx={{ fontWeight: 700, color: '#0284C7', lineHeight: 1 }}>
+                {stats.transfer}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#075985', mt: 0.5 }}>
+                Transfer
+              </Typography>
+            </Box>
+          </Grid>
+
+          {/* Hospital */}
+          <Grid item xs={6} sm={3}>
+            <Box
+              sx={{
+                p: 2,
+                backgroundColor: '#F3E8FF',
+                borderRadius: '12px',
+                border: '1px solid #C4B5FD',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h4" sx={{ fontWeight: 700, color: '#7C3AED', lineHeight: 1 }}>
+                {stats.hospital}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#5B21B6', mt: 0.5 }}>
+                Hospital
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
       </Box>
 
       {/* Controls */}
@@ -411,7 +490,7 @@ const RelatedTicketsManager: React.FC<RelatedTicketsManagerProps> = ({
       {/* Tickets Display */}
       {filteredAndSortedTickets.length === 0 ? (
         <Alert severity="info">
-          {unifiedTickets.length === 0 
+          {unifiedTickets.length === 0
             ? 'No tickets found for this hospital.'
             : 'No tickets match the current filters.'
           }

@@ -17,6 +17,7 @@ import {
   Breadcrumbs,
   Link,
   Button,
+  alpha,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -24,6 +25,18 @@ import {
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faExclamationTriangle,
+  faTicketAlt,
+  faBed,
+  faMedkit,
+} from '@fortawesome/free-solid-svg-icons';
+import {
+  skyBlue,
+  shadows,
+  spacing,
+} from './styles/hospitalDashboardTokens';
 import { useFullscreen } from '../../contexts/FullscreenContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -47,7 +60,7 @@ const HospitalDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hasLoadedRef = useRef(false);
-  
+
   const [bedFilters, setBedFilters] = useState<{
     hospitalId?: string;
     unitId: string;
@@ -59,15 +72,15 @@ const HospitalDashboardPage: React.FC = () => {
 
   const loadHospitalData = useCallback(async (isInitialLoad = false) => {
     if (!hospitalId) return;
-    
+
     const shouldShowLoading = isInitialLoad || !hasLoadedRef.current;
-    
+
     try {
       if (shouldShowLoading) {
         setLoading(true);
       }
       setError(null);
-      
+
       const hospitalData = await hospitalService.getHospitalById(hospitalId);
       setHospital(hospitalData);
 
@@ -79,10 +92,10 @@ const HospitalDashboardPage: React.FC = () => {
       setCriticalCases(criticalCasesData);
       setRelatedTickets([]);
       setTransferTickets(Array.isArray(transferTicketsData) ? transferTicketsData : []);
-      
+
       // Refetch beds data using React Query
       queryClient.invalidateQueries(['beds', hospitalId]);
-      
+
       hasLoadedRef.current = true;
     } catch (err) {
       setError('Failed to load hospital data');
@@ -109,7 +122,7 @@ const HospitalDashboardPage: React.FC = () => {
   useEffect(() => {
     if (hospitalId) {
       const interval = setInterval(() => {
-        loadHospitalData(false); 
+        loadHospitalData(false);
       }, 30000); // Refresh every 30 seconds
 
       return () => clearInterval(interval);
@@ -157,14 +170,14 @@ const HospitalDashboardPage: React.FC = () => {
   };
 
   const getAvailabilityPercentage = (hospital: Hospital) => {
-    const totalBeds = (hospital.icuBeds || 0) + (hospital.picuBeds || 0) + 
-                     (hospital.maleBeds || 0) + (hospital.femaleBeds || 0) + 
-                     (hospital.pediatricBeds || 0) + (hospital.standardBeds || 0) + 
-                     (hospital.nicuBeds || 0);
-    const availableBeds = (hospital.icuBedsAvailable || 0) + (hospital.picuBedsAvailable || 0) + 
-                         (hospital.maleBedsAvailable || 0) + (hospital.femaleBedsAvailable || 0) + 
-                         (hospital.pediatricBedsAvailable || 0) + (hospital.standardBedsAvailable || 0) + 
-                         (hospital.nicuBedsAvailable || 0);
+    const totalBeds = (hospital.icuBeds || 0) + (hospital.picuBeds || 0) +
+      (hospital.maleBeds || 0) + (hospital.femaleBeds || 0) +
+      (hospital.pediatricBeds || 0) + (hospital.standardBeds || 0) +
+      (hospital.nicuBeds || 0);
+    const availableBeds = (hospital.icuBedsAvailable || 0) + (hospital.picuBedsAvailable || 0) +
+      (hospital.maleBedsAvailable || 0) + (hospital.femaleBedsAvailable || 0) +
+      (hospital.pediatricBedsAvailable || 0) + (hospital.standardBedsAvailable || 0) +
+      (hospital.nicuBedsAvailable || 0);
     return totalBeds > 0 ? Math.round((availableBeds / totalBeds) * 100) : 0;
   };
 
@@ -200,8 +213,8 @@ const HospitalDashboardPage: React.FC = () => {
         <Alert severity="error" sx={{ mb: 2 }}>
           {error || 'Hospital not found'}
         </Alert>
-        <Button 
-          variant="outlined" 
+        <Button
+          variant="outlined"
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate('/hospitals')}
         >
@@ -280,99 +293,267 @@ const HospitalDashboardPage: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Summary Cards */}
-        <Grid container spacing={3} mb={3}>
+        {/* Summary Cards - Unified Sky Blue Theme */}
+        <Grid container spacing={3} mb={4}>
+          {/* Critical Cases Card */}
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Critical Cases
-                </Typography>
-                <Typography variant="h4" color="error.main">
+            <Card
+              elevation={0}
+              sx={{
+                backgroundColor: skyBlue[50],
+                borderRadius: spacing.borderRadius.lg,
+                border: `1px solid ${skyBlue[100]}`,
+                boxShadow: shadows.card,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: shadows.cardHover,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: spacing.borderRadius.md,
+                      backgroundColor: alpha(skyBlue[600], 0.15),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faExclamationTriangle} style={{ fontSize: 22, color: skyBlue[700] }} />
+                  </Box>
+                </Box>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    color: skyBlue[600],
+                    fontSize: '2.5rem',
+                    lineHeight: 1,
+                    mb: 1,
+                  }}
+                >
                   {loading ? (
-                    <CircularProgress size={24} />
+                    <CircularProgress size={32} sx={{ color: skyBlue[600] }} />
                   ) : (
                     (() => {
-                      // Count critical cases from both sources
-                      const criticalCasesCount = criticalCases?.filter(c => 
+                      const criticalCasesCount = criticalCases?.filter(c =>
                         c.severity === 'CRITICAL' || c.severity === 'URGENT'
                       ).length || 0;
-                      
-                      // Count STEMI/Stroke cases from transfer tickets
-                      const stemiStrokeCount = transferTickets?.filter(t => 
-                        (t.pathway === 'STEMI' || t.pathway === 'STROKE') && 
+                      const stemiStrokeCount = transferTickets?.filter(t =>
+                        (t.pathway === 'STEMI' || t.pathway === 'STROKE') &&
                         (t.status === 'PENDING' || t.status === 'ASSIGNED' || t.status === 'IN_TRANSPORT')
                       ).length || 0;
-                      
                       return criticalCasesCount + stemiStrokeCount;
                     })()
                   )}
                 </Typography>
-                <Typography variant="body2" color="textSecondary">
+                <Typography
+                  sx={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: '#64748B',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Critical Cases
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#94A3B8', mt: 0.5 }}>
                   Active critical cases
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
+
+          {/* Open Tickets Card */}
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Open Tickets
-                </Typography>
-                <Typography variant="h4" color="warning.main">
+            <Card
+              elevation={0}
+              sx={{
+                backgroundColor: skyBlue[50],
+                borderRadius: spacing.borderRadius.lg,
+                border: `1px solid ${skyBlue[100]}`,
+                boxShadow: shadows.card,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: shadows.cardHover,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: spacing.borderRadius.md,
+                      backgroundColor: alpha(skyBlue[600], 0.15),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faTicketAlt} style={{ fontSize: 22, color: skyBlue[700] }} />
+                  </Box>
+                </Box>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    color: skyBlue[600],
+                    fontSize: '2.5rem',
+                    lineHeight: 1,
+                    mb: 1,
+                  }}
+                >
                   {loading ? (
-                    <CircularProgress size={24} />
+                    <CircularProgress size={32} sx={{ color: skyBlue[600] }} />
                   ) : (
                     (() => {
-                      // Count open hospital tickets
-                      const openHospitalTickets = relatedTickets?.filter(t => 
+                      const openHospitalTickets = relatedTickets?.filter(t =>
                         t.status === 'OPEN' || t.status === 'IN_PROGRESS'
                       ).length || 0;
-                      
-                      // Count open transfer tickets
-                      const openTransferTickets = transferTickets?.filter(t => 
+                      const openTransferTickets = transferTickets?.filter(t =>
                         t.status === 'PENDING' || t.status === 'ASSIGNED' || t.status === 'IN_TRANSPORT'
                       ).length || 0;
-                      
                       return openHospitalTickets + openTransferTickets;
                     })()
                   )}
                 </Typography>
-                <Typography variant="body2" color="textSecondary">
+                <Typography
+                  sx={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: '#64748B',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Open Tickets
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#94A3B8', mt: 0.5 }}>
                   Pending resolution
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
+
+          {/* Bed Availability Card */}
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
+            <Card
+              elevation={0}
+              sx={{
+                backgroundColor: skyBlue[50],
+                borderRadius: spacing.borderRadius.lg,
+                border: `1px solid ${skyBlue[100]}`,
+                boxShadow: shadows.card,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: shadows.cardHover,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: spacing.borderRadius.md,
+                      backgroundColor: alpha(skyBlue[600], 0.15),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faBed} style={{ fontSize: 22, color: skyBlue[700] }} />
+                  </Box>
+                </Box>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    color: skyBlue[600],
+                    fontSize: '2.5rem',
+                    lineHeight: 1,
+                    mb: 1,
+                  }}
+                >
+                  {loading ? (
+                    <CircularProgress size={32} sx={{ color: skyBlue[600] }} />
+                  ) : (
+                    `${hospital ? getAvailabilityPercentage(hospital) : 0}%`
+                  )}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: '#64748B',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
                   Bed Availability
                 </Typography>
-                <Typography variant="h4" color="primary.main">
-                  {loading ? (
-                    <CircularProgress size={24} />
-                  ) : (
-                    hospital ? getAvailabilityPercentage(hospital) : 0
-                  )}%
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
+                <Typography sx={{ fontSize: '0.75rem', color: '#94A3B8', mt: 0.5 }}>
                   Current capacity
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
+
+          {/* Services Card */}
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Services
-                </Typography>
-                <Typography variant="h4" color="success.main">
+            <Card
+              elevation={0}
+              sx={{
+                backgroundColor: skyBlue[50],
+                borderRadius: spacing.borderRadius.lg,
+                border: `1px solid ${skyBlue[100]}`,
+                boxShadow: shadows.card,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: shadows.cardHover,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: spacing.borderRadius.md,
+                      backgroundColor: alpha(skyBlue[600], 0.15),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faMedkit} style={{ fontSize: 22, color: skyBlue[700] }} />
+                  </Box>
+                </Box>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    color: skyBlue[600],
+                    fontSize: '2.5rem',
+                    lineHeight: 1,
+                    mb: 1,
+                  }}
+                >
                   {loading ? (
-                    <CircularProgress size={24} />
+                    <CircularProgress size={32} sx={{ color: skyBlue[600] }} />
                   ) : (
                     hospital ? [
                       hospital.hasStemiService,
@@ -385,7 +566,18 @@ const HospitalDashboardPage: React.FC = () => {
                     ].filter(Boolean).length : 0
                   )}
                 </Typography>
-                <Typography variant="body2" color="textSecondary">
+                <Typography
+                  sx={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: '#64748B',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Services
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#94A3B8', mt: 0.5 }}>
                   Specialized services
                 </Typography>
               </CardContent>
@@ -393,18 +585,64 @@ const HospitalDashboardPage: React.FC = () => {
           </Grid>
         </Grid>
 
-        {/* Tabs */}
-        <Paper sx={{ width: '100%' }}>
-          <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
-            <Tab label="Critical Cases" />
-            <Tab label="Related Tickets" />
-            <Tab label="Hospital Details" />
-            <Tab label="Hospital Beds" />
-          </Tabs>
+        {/* Tabs - Segmented Control Style */}
+        <Paper
+          elevation={0}
+          sx={{
+            width: '100%',
+            borderRadius: spacing.borderRadius.lg,
+            overflow: 'hidden',
+            boxShadow: shadows.elevated,
+            border: '1px solid rgba(0, 0, 0, 0.04)',
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: '#F8FAFC',
+              p: 1.5,
+              borderBottom: '1px solid #E2E8F0',
+            }}
+          >
+            <Tabs
+              value={tabValue}
+              onChange={(_, newValue) => setTabValue(newValue)}
+              sx={{
+                minHeight: 'auto',
+                '& .MuiTabs-indicator': {
+                  display: 'none',
+                },
+                '& .MuiTabs-flexContainer': {
+                  gap: '8px',
+                },
+              }}
+            >
+              {['Critical Cases', 'Related Tickets', 'Hospital Details', 'Hospital Beds'].map((label, index) => (
+                <Tab
+                  key={label}
+                  label={label}
+                  sx={{
+                    minHeight: '44px',
+                    padding: '8px 20px',
+                    borderRadius: spacing.borderRadius.md,
+                    textTransform: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: tabValue === index ? 700 : 500,
+                    color: tabValue === index ? '#0F172A' : '#64748B',
+                    backgroundColor: tabValue === index ? '#FFFFFF' : 'transparent',
+                    boxShadow: tabValue === index ? shadows.tabActive : 'none',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: tabValue === index ? '#FFFFFF' : alpha('#FFFFFF', 0.5),
+                    },
+                  }}
+                />
+              ))}
+            </Tabs>
+          </Box>
 
           {/* Critical Cases Tab */}
           {tabValue === 0 && (
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: '#FAFBFC' }}>
               {/* Real-Time Critical Case Tracker */}
               <Box sx={{ mb: 4 }}>
                 <HospitalCriticalCaseTracker hospitalId={hospitalId!} />
@@ -414,10 +652,10 @@ const HospitalDashboardPage: React.FC = () => {
 
           {/* Related Tickets Tab */}
           {tabValue === 1 && (
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: '#FAFBFC' }}>
               <RelatedTicketsManager
                 hospitalTickets={relatedTickets}
-                transferTickets={transferTickets}                
+                transferTickets={transferTickets}
                 onRefresh={() => loadHospitalData(false)}
                 onViewTicket={handleViewTicket}
                 onEditTicket={handleEditTicket}
@@ -428,105 +666,326 @@ const HospitalDashboardPage: React.FC = () => {
 
           {/* Hospital Details Tab */}
           {tabValue === 2 && (
-            <Box sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+            <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: '#FAFBFC' }}>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 600,
+                  color: '#0F172A',
+                  mb: 3,
+                }}
+              >
                 Hospital Details
               </Typography>
 
               {/* Hospital Coordinates Editor */}
-              <HospitalCoordinatesEditor 
-                hospital={hospital} 
-                onHospitalUpdate={handleHospitalUpdate} 
+              <HospitalCoordinatesEditor
+                hospital={hospital}
+                onHospitalUpdate={handleHospitalUpdate}
               />
 
               <Grid container spacing={3}>
+                {/* Contact Information Card */}
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Contact Information
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Phone: {hospital.contactPhone || 'Not provided'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Email: {hospital.contactEmail || 'Not provided'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Emergency Dept: {hospital.emergencyDeptStatus || 'Unknown'}
-                  </Typography>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: spacing.borderRadius.lg,
+                      boxShadow: shadows.elevated,
+                      border: '1px solid rgba(0, 0, 0, 0.04)',
+                      p: 3,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '10px',
+                          backgroundColor: alpha('#0284C7', 0.1),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mr: 2,
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faTicketAlt} style={{ color: '#0284C7', fontSize: 20 }} />
+                      </Box>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 700, color: '#0F172A' }}
+                      >
+                        Contact Information
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {/* Phone */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          p: 2,
+                          backgroundColor: '#F0F9FF',
+                          borderRadius: '12px',
+                          border: '1px solid #E0F2FE',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '8px',
+                            backgroundColor: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 2,
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: '#10B981', fontSize: 16 }} />
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 500 }}>Phone</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#0F172A' }}>
+                            {hospital.contactPhone || 'Not provided'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {/* Email */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          p: 2,
+                          backgroundColor: '#F0FDF4',
+                          borderRadius: '12px',
+                          border: '1px solid #D1FAE5',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '8px',
+                            backgroundColor: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 2,
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faMedkit} style={{ color: '#0284C7', fontSize: 16 }} />
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 500 }}>Email</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#0F172A' }}>
+                            {hospital.contactEmail || 'Not provided'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {/* Emergency Dept */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          p: 2,
+                          backgroundColor: hospital.emergencyDeptStatus === 'available' ? '#F0FDF4' : '#FEF2F2',
+                          borderRadius: '12px',
+                          border: `1px solid ${hospital.emergencyDeptStatus === 'available' ? '#D1FAE5' : '#FECACA'}`,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '8px',
+                            backgroundColor: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 2,
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          }}
+                        >
+                          <FontAwesomeIcon
+                            icon={faBed}
+                            style={{
+                              color: hospital.emergencyDeptStatus === 'available' ? '#10B981' : '#DC2626',
+                              fontSize: 16
+                            }}
+                          />
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 500 }}>Emergency Dept</Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              color: hospital.emergencyDeptStatus === 'available' ? '#059669' : '#DC2626',
+                            }}
+                          >
+                            {hospital.emergencyDeptStatus || 'Unknown'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Card>
                 </Grid>
 
+                {/* Services Card */}
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Services Available
-                  </Typography>
-                  <Box display="flex" flexDirection="column" gap={1}>
-                    <Chip
-                      label="STEMI Service"
-                      color={hospital.hasStemiService ? 'success' : 'default'}
-                      size="small"
-                    />
-                    <Chip
-                      label="Stroke Service"
-                      color={hospital.hasStrokeService ? 'success' : 'default'}
-                      size="small"
-                    />
-                    <Chip
-                      label="Trauma Service"
-                      color={hospital.hasTraumaService ? 'success' : 'default'}
-                      size="small"
-                    />
-                    <Chip
-                      label="Stroke Unit"
-                      color={hospital.hasStrokeUnit ? 'success' : 'default'}
-                      size="small"
-                    />
-                    <Chip
-                      label="Cardiology Center"
-                      color={hospital.hasCardiologyCenter ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </Box>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: spacing.borderRadius.lg,
+                      boxShadow: shadows.elevated,
+                      border: '1px solid rgba(0, 0, 0, 0.04)',
+                      p: 3,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 600, color: '#0F172A', mb: 2 }}
+                    >
+                      Services Available
+                    </Typography>
+                    <Box display="flex" flexWrap="wrap" gap={1}>
+                      <Chip
+                        label="STEMI Service"
+                        sx={{
+                          backgroundColor: hospital.hasStemiService ? '#D1FAE5' : '#F1F5F9',
+                          color: hospital.hasStemiService ? '#059669' : '#64748B',
+                          fontWeight: 600,
+                          borderRadius: '16px',
+                        }}
+                        size="small"
+                      />
+                      <Chip
+                        label="Stroke Service"
+                        sx={{
+                          backgroundColor: hospital.hasStrokeService ? '#D1FAE5' : '#F1F5F9',
+                          color: hospital.hasStrokeService ? '#059669' : '#64748B',
+                          fontWeight: 600,
+                          borderRadius: '16px',
+                        }}
+                        size="small"
+                      />
+                      <Chip
+                        label="Trauma Service"
+                        sx={{
+                          backgroundColor: hospital.hasTraumaService ? '#D1FAE5' : '#F1F5F9',
+                          color: hospital.hasTraumaService ? '#059669' : '#64748B',
+                          fontWeight: 600,
+                          borderRadius: '16px',
+                        }}
+                        size="small"
+                      />
+                      <Chip
+                        label="Stroke Unit"
+                        sx={{
+                          backgroundColor: hospital.hasStrokeUnit ? '#D1FAE5' : '#F1F5F9',
+                          color: hospital.hasStrokeUnit ? '#059669' : '#64748B',
+                          fontWeight: 600,
+                          borderRadius: '16px',
+                        }}
+                        size="small"
+                      />
+                      <Chip
+                        label="Cardiology Center"
+                        sx={{
+                          backgroundColor: hospital.hasCardiologyCenter ? '#D1FAE5' : '#F1F5F9',
+                          color: hospital.hasCardiologyCenter ? '#059669' : '#64748B',
+                          fontWeight: 600,
+                          borderRadius: '16px',
+                        }}
+                        size="small"
+                      />
+                    </Box>
+                  </Card>
                 </Grid>
 
+                {/* Bed Capacity Card */}
                 <Grid item xs={12}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Bed Capacity
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        ICU Beds
-                      </Typography>
-                      <Typography variant="h6">
-                        {hospital.icuBedsAvailable}/{hospital.icuBeds}
-                      </Typography>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: spacing.borderRadius.lg,
+                      boxShadow: shadows.elevated,
+                      border: '1px solid rgba(0, 0, 0, 0.04)',
+                      p: 3,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 600, color: '#0F172A', mb: 3 }}
+                    >
+                      Bed Capacity
+                    </Typography>
+                    <Grid container spacing={3}>
+                      <Grid item xs={6} sm={4} md={2}>
+                        <Box
+                          sx={{
+                            textAlign: 'center',
+                            p: 2,
+                            backgroundColor: skyBlue[50],
+                            borderRadius: spacing.borderRadius.md,
+                          }}
+                        >
+                          <Typography variant="body2" color="#64748B" sx={{ mb: 1 }}>ICU Beds</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: skyBlue[600] }}>
+                            {hospital.icuBedsAvailable}/{hospital.icuBeds}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6} sm={4} md={2}>
+                        <Box
+                          sx={{
+                            textAlign: 'center',
+                            p: 2,
+                            backgroundColor: skyBlue[50],
+                            borderRadius: spacing.borderRadius.md,
+                          }}
+                        >
+                          <Typography variant="body2" color="#64748B" sx={{ mb: 1 }}>PICU Beds</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: skyBlue[600] }}>
+                            {hospital.picuBedsAvailable}/{hospital.picuBeds}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6} sm={4} md={2}>
+                        <Box
+                          sx={{
+                            textAlign: 'center',
+                            p: 2,
+                            backgroundColor: skyBlue[50],
+                            borderRadius: spacing.borderRadius.md,
+                          }}
+                        >
+                          <Typography variant="body2" color="#64748B" sx={{ mb: 1 }}>NICU Beds</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: skyBlue[600] }}>
+                            {hospital.nicuBedsAvailable}/{hospital.nicuBeds}
+                          </Typography>
+                        </Box>
+                      </Grid>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        PICU Beds
-                      </Typography>
-                      <Typography variant="h6">
-                        {hospital.picuBedsAvailable}/{hospital.picuBeds}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        NICU Beds
-                      </Typography>
-                      <Typography variant="h6">
-                        {hospital.nicuBedsAvailable}/{hospital.nicuBeds}
-                      </Typography>
-                    </Grid>
-                  </Grid>
+                  </Card>
                 </Grid>
               </Grid>
             </Box>
           )}
 
+          {/* Hospital Beds Tab */}
           {tabValue === 3 && (
-            <Box sx={{ p: 3 }}>
-              <HospitalBedsTab 
-                hospitalId={hospitalId!} 
+            <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: '#FAFBFC' }}>
+              <HospitalBedsTab
+                hospitalId={hospitalId!}
                 filters={bedFilters}
                 onFiltersChange={setBedFilters}
               />

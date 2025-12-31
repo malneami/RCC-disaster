@@ -12,7 +12,7 @@ import {
   Chip,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
+import {
   faExclamationTriangle,
   faRedo,
   faHeart,
@@ -42,22 +42,22 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     if (case_.pathway !== 'STEMI' && case_.pathway !== 'STROKE') {
       return false;
     }
-    
+
     // Exclude completed cases
     if (case_.status === 'COMPLETED') {
       return false;
     }
-    
+
     // Exclude acknowledged cases
     if (case_.acknowledgedAt) {
       return false;
     }
-    
+
     // Exclude cases older than 24 hours
     const creationTime = new Date(case_.createdAt).getTime();
     const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     const isWithin24Hours = (Date.now() - creationTime) < twentyFourHours;
-    
+
     return isWithin24Hours;
   }) || [];
 
@@ -67,22 +67,22 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     if (case_.pathway === 'STEMI' || case_.pathway === 'STROKE') {
       return false;
     }
-    
+
     // Must have CRITICAL or EMERGENCY priority
     if (case_.priority !== 'CRITICAL' && case_.priority !== 'EMERGENCY') {
       return false;
     }
-    
+
     // Exclude completed cases
     if (case_.status === 'COMPLETED') {
       return false;
     }
-    
+
     // Exclude acknowledged cases
     if (case_.acknowledgedAt) {
       return false;
     }
-    
+
     return true;
   }) || [];
 
@@ -93,9 +93,9 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     if (stemiStrokeCases.length > 0) {
       const criticalCases = stemiStrokeCases.filter(case_ => {
         const elapsed = Date.now() - new Date(case_.createdAt).getTime();
-        const timeLimit = case_.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000; 
+        const timeLimit = case_.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000;
         const percentage = Math.min(100, (elapsed / timeLimit) * 100);
-        
+
         // Play alert only when deadline is missed (100%)
         return percentage >= 100;
       });
@@ -109,7 +109,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
   const CriticalCaseCard = ({ criticalCase }: { criticalCase: any }) => {
     // Determine if this case should show a timer (STEMI or STROKE)
     const showTimer = criticalCase.pathway === 'STEMI' || criticalCase.pathway === 'STROKE';
-    
+
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
     const [progressPercentage, setProgressPercentage] = useState<number>(0);
     const [isCritical, setIsCritical] = useState<boolean>(false);
@@ -146,13 +146,13 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
         }
 
         const elapsed = Date.now() - creationTime;
-        const timeLimit = criticalCase.pathway === 'STEMI' 
+        const timeLimit = criticalCase.pathway === 'STEMI'
           ? 120 * 60 * 1000  // 120 minutes
           : 4.5 * 60 * 60 * 1000; // 4.5 hours
-        
+
         const remaining = Math.max(0, timeLimit - elapsed);
         const percentage = Math.min(100, (elapsed / timeLimit) * 100);
-        
+
         setTimeRemaining(remaining);
         setProgressPercentage(percentage);
         setIsCritical(percentage >= 100); // Critical only when deadline is missed
@@ -222,33 +222,34 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     return (
       <Card
         sx={{
-          borderRadius: 2,
-          border: isCritical 
-            ? '2px solid #d32f2f' 
-            : '1px solid rgba(0,0,0,0.08)',
-          backgroundColor: isCritical 
-            ? alpha('#d32f2f', 0.05) 
-            : 'white',
-          transition: 'all 0.3s ease-in-out',
+          borderRadius: '16px',
+          border: isCritical
+            ? '2px solid #DC2626'
+            : '1px solid rgba(0,0,0,0.04)',
+          backgroundColor: isCritical
+            ? alpha('#DC2626', 0.03)
+            : '#FFFFFF',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+          transition: 'all 0.2s ease-in-out',
           '&:hover': {
-            boxShadow: isCritical 
-              ? '0 8px 25px rgba(211, 47, 47, 0.3)' 
-              : '0 4px 12px rgba(0,0,0,0.15)',
+            boxShadow: isCritical
+              ? '0 8px 24px rgba(220, 38, 38, 0.2)'
+              : '0 8px 24px rgba(2, 132, 199, 0.12)',
             transform: 'translateY(-2px)',
           },
         }}
       >
-        <CardContent sx={{ p: 2 }}>
+        <CardContent sx={{ p: 3 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-              <FontAwesomeIcon 
-                icon={getPathwayIcon()} 
-                style={{ 
-                  color: getPathwayColor(), 
-                  marginRight: '12px', 
-                  fontSize: '20px' 
-                }} 
+              <FontAwesomeIcon
+                icon={getPathwayIcon()}
+                style={{
+                  color: getPathwayColor(),
+                  marginRight: '12px',
+                  fontSize: '20px'
+                }}
               />
               <Box sx={{ flex: 1 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
@@ -260,7 +261,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
                 </Typography>
               </Box>
             </Box>
-            
+
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Chip
                 label={criticalCase.priority}
@@ -296,9 +297,9 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
                 />
               )}
               {isCritical && (
-                <FontAwesomeIcon 
-                  icon={faExclamationTriangle} 
-                  style={{ color: '#d32f2f', fontSize: '16px' }} 
+                <FontAwesomeIcon
+                  icon={faExclamationTriangle}
+                  style={{ color: '#d32f2f', fontSize: '16px' }}
                 />
               )}
             </Box>
@@ -311,50 +312,50 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
               {showTimer && (
                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <FontAwesomeIcon 
-                      icon={faClock} 
-                      style={{ 
-                        color: isCritical ? '#d32f2f' : '#666', 
+                    <FontAwesomeIcon
+                      icon={faClock}
+                      style={{
+                        color: isCritical ? '#d32f2f' : '#666',
                         marginRight: '8px',
                         fontSize: '14px'
-                      }} 
+                      }}
                     />
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
+                    <Typography
+                      variant="h6"
+                      sx={{
                         fontWeight: 600,
                         color: isCritical ? '#d32f2f' : 'inherit'
                       }}
                     >
-                      {criticalCase.status === 'COMPLETED' 
-                        ? 'COMPLETED' 
-                        : timeRemaining > 0 
-                          ? formatTime(timeRemaining) 
+                      {criticalCase.status === 'COMPLETED'
+                        ? 'COMPLETED'
+                        : timeRemaining > 0
+                          ? formatTime(timeRemaining)
                           : 'TIME EXPIRED'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                      {criticalCase.status === 'COMPLETED' 
-                        ? '' 
-                        : timeRemaining > 0 
-                          ? 'remaining' 
+                      {criticalCase.status === 'COMPLETED'
+                        ? ''
+                        : timeRemaining > 0
+                          ? 'remaining'
                           : ''}
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                    {criticalCase.status === 'COMPLETED' 
-                      ? 'Case completed successfully' 
+                    {criticalCase.status === 'COMPLETED'
+                      ? 'Case completed successfully'
                       : `${Math.round(progressPercentage)}% of time limit elapsed`}
                   </Typography>
                 </Box>
               )}
-              
+
               {/* Middle - Route Information */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mx: showTimer ? 2 : 0 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                    <FontAwesomeIcon 
-                      icon={faMapMarkerAlt} 
-                      style={{ color: '#666', marginRight: '8px', fontSize: '14px' }} 
+                    <FontAwesomeIcon
+                      icon={faMapMarkerAlt}
+                      style={{ color: '#666', marginRight: '8px', fontSize: '14px' }}
                     />
                     <Typography variant="body2" color="text.secondary">
                       From: {criticalCase.originHospital?.name}
@@ -384,7 +385,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
                   />
                 </Box>
               </Box>
-              
+
               {/* Right side - Circular Progress Bar (only for STEMI/STROKE) */}
               {showTimer && (
                 <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -438,8 +439,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
               <Button
                 variant="contained"
-                color="primary"
-                size="small"
+                size="medium"
                 onClick={async () => {
                   try {
                     await ticketService.acknowledgeTicket(criticalCase.id);
@@ -450,10 +450,17 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
                   }
                 }}
                 sx={{
-                  backgroundColor: '#4caf50',
-                  color: 'white',
+                  backgroundColor: '#10B981',
+                  color: '#FFFFFF',
+                  fontWeight: 600,
+                  padding: '10px 28px',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
+                  textTransform: 'none',
+                  fontSize: '0.875rem',
                   '&:hover': {
-                    backgroundColor: '#45a049',
+                    backgroundColor: '#059669',
+                    boxShadow: '0 4px 8px rgba(16, 185, 129, 0.3)',
                   },
                 }}
               >
@@ -499,9 +506,9 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
         <CardContent sx={{ p: 3 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <FontAwesomeIcon 
-              icon={faExclamationTriangle} 
-              style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }} 
+            <FontAwesomeIcon
+              icon={faExclamationTriangle}
+              style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }}
             />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 600, color: '#d32f2f' }}>
@@ -514,16 +521,16 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
           </Box>
 
           {/* Error Card */}
-          <Card sx={{ 
-            borderRadius: 2, 
+          <Card sx={{
+            borderRadius: 2,
             border: '1px solid rgba(211, 47, 47, 0.3)',
             backgroundColor: alpha('#d32f2f', 0.05),
           }}>
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <FontAwesomeIcon 
-                  icon={faExclamationTriangle} 
-                  style={{ color: '#d32f2f', marginRight: '8px' }} 
+                <FontAwesomeIcon
+                  icon={faExclamationTriangle}
+                  style={{ color: '#d32f2f', marginRight: '8px' }}
                 />
                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#d32f2f' }}>
                   Error Loading Alerts
@@ -555,59 +562,220 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
   }
 
   return (
-    <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
-      <CardContent sx={{ p: 3 }}>
+    <Card
+      sx={{
+        borderRadius: '16px',
+        border: '1px solid rgba(0, 0, 0, 0.04)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+        backgroundColor: '#FFFFFF',
+      }}
+    >
+      <CardContent sx={{ p: { xs: 2, md: 4 } }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <FontAwesomeIcon 
-            icon={faExclamationTriangle} 
-            style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }} 
-          />
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '12px',
+              backgroundColor: alpha('#DC2626', 0.1),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mr: 2,
+            }}
+          >
+            <FontAwesomeIcon
+              icon={faExclamationTriangle}
+              style={{ color: '#DC2626', fontSize: '22px' }}
+            />
+          </Box>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#d32f2f' }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: '#0F172A' }}>
               Real-Time Critical Case Tracker
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#64748B' }}>
               Live countdown tracking for STEMI (120 min) and Stroke (4.5 hr) cases with hospital routes and progress monitoring.
             </Typography>
           </Box>
         </Box>
         {/* Summary Stats */}
         {allCriticalCases.length > 0 && (
-          <Box sx={{ mb: 3, p: 2, backgroundColor: alpha('#d32f2f', 0.05), borderRadius: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          <Box
+            sx={{
+              mb: 4,
+              p: 3,
+              backgroundColor: alpha('#DC2626', 0.05),
+              borderRadius: '16px',
+              border: '1px solid',
+              borderColor: alpha('#DC2626', 0.15),
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#0F172A' }}>
               Unacknowledged Critical Cases Summary
             </Typography>
-            <Stack direction="row" spacing={3} sx={{ mb: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <FontAwesomeIcon icon={faHeart} style={{ color: '#d32f2f', marginRight: '8px' }} />
-                <Typography variant="body2">
-                  STEMI: {stemiStrokeCases.filter(c => c.pathway === 'STEMI').length}
-                </Typography>
+
+            {/* Main Stats Grid */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ mb: 3 }}>
+              {/* STEMI Card */}
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  p: 2.5,
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                  border: '1px solid rgba(0, 0, 0, 0.04)',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '12px',
+                    backgroundColor: alpha('#DC2626', 0.1),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                  }}
+                >
+                  <FontAwesomeIcon icon={faHeart} style={{ color: '#DC2626', fontSize: '24px' }} />
+                </Box>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>
+                    {stemiStrokeCases.filter(c => c.pathway === 'STEMI').length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#64748B', mt: 0.5 }}>
+                    STEMI Cases
+                  </Typography>
+                </Box>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <FontAwesomeIcon icon={faBrain} style={{ color: '#d32f2f', marginRight: '8px' }} />
-                <Typography variant="body2">
-                  Stroke: {stemiStrokeCases.filter(c => c.pathway === 'STROKE').length}
-                </Typography>
+
+              {/* Stroke Card */}
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  p: 2.5,
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                  border: '1px solid rgba(0, 0, 0, 0.04)',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '12px',
+                    backgroundColor: alpha('#9333EA', 0.1),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                  }}
+                >
+                  <FontAwesomeIcon icon={faBrain} style={{ color: '#9333EA', fontSize: '24px' }} />
+                </Box>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#9333EA', lineHeight: 1 }}>
+                    {stemiStrokeCases.filter(c => c.pathway === 'STROKE').length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#64748B', mt: 0.5 }}>
+                    Stroke Cases
+                  </Typography>
+                </Box>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: '#d32f2f', marginRight: '8px' }} />
-                <Typography variant="body2">
-                  Other Critical: {otherCriticalCases.length}
-                </Typography>
+
+              {/* Other Critical Card */}
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  p: 2.5,
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                  border: '1px solid rgba(0, 0, 0, 0.04)',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '12px',
+                    backgroundColor: alpha('#F59E0B', 0.1),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                  }}
+                >
+                  <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: '#F59E0B', fontSize: '24px' }} />
+                </Box>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B', lineHeight: 1 }}>
+                    {otherCriticalCases.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#64748B', mt: 0.5 }}>
+                    Other Critical
+                  </Typography>
+                </Box>
               </Box>
             </Stack>
-            <Stack direction="row" spacing={3}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Chip label="INCOMING" size="small" sx={{ backgroundColor: '#4caf50', color: 'white', mr: 1 }} />
-                <Typography variant="body2">
+
+            {/* Direction Stats */}
+            <Stack direction="row" spacing={2}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 2,
+                  py: 1,
+                  backgroundColor: alpha('#10B981', 0.1),
+                  borderRadius: '8px',
+                }}
+              >
+                <Chip
+                  label="INCOMING"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#10B981',
+                    color: 'white',
+                    fontWeight: 600,
+                    mr: 1.5,
+                  }}
+                />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#10B981' }}>
                   {allCriticalCases.filter(c => c.originHospital?.id !== hospitalId).length}
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Chip label="OUTGOING" size="small" sx={{ backgroundColor: '#ff9800', color: 'white', mr: 1 }} />
-                <Typography variant="body2">
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 2,
+                  py: 1,
+                  backgroundColor: alpha('#F59E0B', 0.1),
+                  borderRadius: '8px',
+                }}
+              >
+                <Chip
+                  label="OUTGOING"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#F59E0B',
+                    color: 'white',
+                    fontWeight: 600,
+                    mr: 1.5,
+                  }}
+                />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#F59E0B' }}>
                   {allCriticalCases.filter(c => c.originHospital?.id === hospitalId).length}
                 </Typography>
               </Box>
@@ -616,7 +784,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
         )}
         {/* Cases Display */}
         {allCriticalCases.length === 0 ? (
-          <Alert severity="success" sx={{ borderRadius: 2 }}>
+          <Alert severity="success" sx={{ borderRadius: '12px' }}>
             No unacknowledged critical cases requiring tracking.
           </Alert>
         ) : (

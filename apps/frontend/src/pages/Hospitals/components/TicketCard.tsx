@@ -9,6 +9,7 @@ import {
   Tooltip,
   Stack,
   Divider,
+  alpha,
 } from '@mui/material';
 import {
   Assignment as TicketIcon,
@@ -36,46 +37,46 @@ const TicketCard: React.FC<TicketCardProps> = ({
   onEdit,
   showActions = true,
 }) => {
-  const getPriorityColor = (priority: string) => {
+  const getPriorityStyles = (priority: string) => {
     switch (priority) {
       case 'CRITICAL':
       case 'EMERGENCY':
-        return 'error';
+        return { bg: '#FEE2E2', color: '#DC2626', border: '#FECACA' };
       case 'HIGH':
-        return 'warning';
+        return { bg: '#FEF3C7', color: '#D97706', border: '#FCD34D' };
       case 'MEDIUM':
-        return 'info';
+        return { bg: '#E0F2FE', color: '#0284C7', border: '#7DD3FC' };
       case 'LOW':
-        return 'success';
+        return { bg: '#D1FAE5', color: '#059669', border: '#6EE7B7' };
       default:
-        return 'default';
+        return { bg: '#F1F5F9', color: '#64748B', border: '#E2E8F0' };
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyles = (status: string) => {
     switch (status) {
       case 'PENDING':
       case 'OPEN':
-        return 'error';
+        return { bg: '#FEE2E2', color: '#DC2626' };
       case 'ASSIGNED':
       case 'IN_PROGRESS':
-        return 'warning';
+        return { bg: '#FEF3C7', color: '#D97706' };
       case 'COMPLETED':
       case 'CLOSED':
       case 'RESOLVED':
-        return 'success';
+        return { bg: '#D1FAE5', color: '#059669' };
       case 'CANCELLED':
-        return 'default';
+        return { bg: '#F1F5F9', color: '#64748B' };
       default:
-        return 'default';
+        return { bg: '#F1F5F9', color: '#64748B' };
     }
   };
 
   const getTicketIcon = () => {
     if (ticket.type === 'TRANSFER') {
-      return <TransferIcon color="primary" />;
+      return <TransferIcon sx={{ color: '#0284C7', fontSize: 24 }} />;
     }
-    return <TicketIcon color="primary" />;
+    return <TicketIcon sx={{ color: '#7C3AED', fontSize: 24 }} />;
   };
 
   const formatDate = (dateString: string) => {
@@ -101,46 +102,88 @@ const TicketCard: React.FC<TicketCardProps> = ({
     return ticket.hospitalId ? 'Internal Hospital Ticket' : 'Hospital ticket';
   };
 
+  const priorityStyles = getPriorityStyles(ticket.priority);
+  const statusStyles = getStatusStyles(ticket.status);
+
   return (
     <Card
       sx={{
-        borderRadius: 2,
-        border: '1px solid rgba(0,0,0,0.08)',
+        borderRadius: '16px',
+        border: '1px solid rgba(0, 0, 0, 0.04)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+        backgroundColor: '#FFFFFF',
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          boxShadow: '0 8px 24px rgba(2, 132, 199, 0.12)',
           transform: 'translateY(-2px)',
         },
       }}
     >
-      <CardContent sx={{ p: 2 }}>
-        {/* Header */}
+      <CardContent sx={{ p: 3 }}>
+        {/* Header Section */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-            {getTicketIcon()}
-            <Box sx={{ ml: 1, flex: 1 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                backgroundColor: ticket.type === 'TRANSFER' ? alpha('#0284C7', 0.1) : alpha('#7C3AED', 0.1),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {getTicketIcon()}
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  mb: 0.5,
+                  lineHeight: 1.3,
+                }}
+              >
                 {ticket.title}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{ color: '#64748B', fontWeight: 500 }}
+              >
                 {ticket.type === 'TRANSFER' ? ticket.ticketNumber : `#${ticket.id.slice(-8)}`}
               </Typography>
             </Box>
           </Box>
-          
+
           {showActions && (
             <Box sx={{ display: 'flex', gap: 0.5 }}>
               {onView && (
                 <Tooltip title="View Details">
-                  <IconButton size="small" onClick={() => onView(ticket)}>
-                    <ViewIcon fontSize="small" />
+                  <IconButton
+                    size="small"
+                    onClick={() => onView(ticket)}
+                    sx={{
+                      backgroundColor: alpha('#0284C7', 0.1),
+                      '&:hover': { backgroundColor: alpha('#0284C7', 0.2) },
+                    }}
+                  >
+                    <ViewIcon fontSize="small" sx={{ color: '#0284C7' }} />
                   </IconButton>
                 </Tooltip>
               )}
               {onEdit && (
                 <Tooltip title="Edit Ticket">
-                  <IconButton size="small" onClick={() => onEdit(ticket)}>
-                    <EditIcon fontSize="small" />
+                  <IconButton
+                    size="small"
+                    onClick={() => onEdit(ticket)}
+                    sx={{
+                      backgroundColor: alpha('#7C3AED', 0.1),
+                      '&:hover': { backgroundColor: alpha('#7C3AED', 0.2) },
+                    }}
+                  >
+                    <EditIcon fontSize="small" sx={{ color: '#7C3AED' }} />
                   </IconButton>
                 </Tooltip>
               )}
@@ -149,17 +192,27 @@ const TicketCard: React.FC<TicketCardProps> = ({
         </Box>
 
         {/* Status and Priority Chips */}
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
           <Chip
             label={ticket.priority}
             size="small"
-            color={getPriorityColor(ticket.priority) as any}
-            variant="outlined"
+            sx={{
+              backgroundColor: priorityStyles.bg,
+              color: priorityStyles.color,
+              fontWeight: 600,
+              borderRadius: '8px',
+              border: `1px solid ${priorityStyles.border}`,
+            }}
           />
           <Chip
             label={ticket.status}
             size="small"
-            color={getStatusColor(ticket.status) as any}
+            sx={{
+              backgroundColor: statusStyles.bg,
+              color: statusStyles.color,
+              fontWeight: 600,
+              borderRadius: '8px',
+            }}
           />
           {ticket.emsAssignmentStatus && (
             <Chip
@@ -168,45 +221,70 @@ const TicketCard: React.FC<TicketCardProps> = ({
               sx={{
                 backgroundColor: getEMSStatusColor(ticket.emsAssignmentStatus),
                 color: 'white',
-                fontWeight: 500,
+                fontWeight: 600,
+                borderRadius: '8px',
               }}
             />
           )}
           {ticket.isEmergency && (
             <Chip
               label="Life Saving"
-              color="error"
               size="small"
-              icon={<EmergencyIcon />}
+              sx={{
+                backgroundColor: '#DC2626',
+                color: 'white',
+                fontWeight: 600,
+                borderRadius: '8px',
+              }}
+              icon={<EmergencyIcon sx={{ color: 'white !important', fontSize: 16 }} />}
             />
           )}
           <Chip
             label={ticket.type}
             size="small"
-            variant="outlined"
-            color="primary"
+            sx={{
+              backgroundColor: ticket.type === 'TRANSFER' ? '#E0F2FE' : '#F3E8FF',
+              color: ticket.type === 'TRANSFER' ? '#0284C7' : '#7C3AED',
+              fontWeight: 600,
+              borderRadius: '8px',
+            }}
           />
         </Stack>
 
         {/* Description */}
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: '#475569',
+            mb: 2,
+            lineHeight: 1.6,
+          }}
+        >
           {ticket.description}
         </Typography>
 
-        <Divider sx={{ my: 1 }} />
+        <Divider sx={{ my: 2, borderColor: '#E2E8F0' }} />
 
-        {/* Additional Information */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Location & Time Section */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <HospitalIcon fontSize="small" color="action" />
-            <Typography variant="caption" color="text.secondary">
+            <HospitalIcon sx={{ fontSize: 18, color: '#0284C7' }} />
+            <Typography variant="body2" sx={{ color: '#475569', fontWeight: 500 }}>
               {getLocationInfo()}
             </Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TimeIcon fontSize="small" color="action" />
-            <Typography variant="caption" color="text.secondary">
+            <TimeIcon sx={{ fontSize: 18, color: '#0284C7' }} />
+            <Typography variant="body2" sx={{ color: '#475569', fontWeight: 500 }}>
               {getTimeInfo()}
             </Typography>
           </Box>
@@ -215,10 +293,10 @@ const TicketCard: React.FC<TicketCardProps> = ({
         {/* Patient Information (for transfer tickets) */}
         {ticket.type === 'TRANSFER' && ticket.patient && (
           <>
-            <Divider sx={{ my: 1 }} />
+            <Divider sx={{ my: 2, borderColor: '#E2E8F0' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PatientIcon fontSize="small" color="action" />
-              <Typography variant="caption" color="text.secondary">
+              <PatientIcon sx={{ fontSize: 18, color: '#10B981' }} />
+              <Typography variant="body2" sx={{ color: '#475569', fontWeight: 500 }}>
                 Patient: {ticket.patient.firstName} {ticket.patient.lastName}
                 {ticket.patient.mrn && ` (MRN: ${ticket.patient.mrn})`}
               </Typography>
@@ -228,12 +306,19 @@ const TicketCard: React.FC<TicketCardProps> = ({
 
         {/* Pathway Information (for transfer tickets) */}
         {ticket.type === 'TRANSFER' && ticket.pathway && (
-          <Box sx={{ mt: 1 }}>
+          <Box sx={{ mt: 2 }}>
             <Chip
               label={ticket.pathway}
               size="small"
-              variant="outlined"
-              color="secondary"
+              sx={{
+                backgroundColor: ticket.pathway === 'STEMI' ? '#FEE2E2' :
+                  ticket.pathway === 'STROKE' ? '#F3E8FF' : '#FEF3C7',
+                color: ticket.pathway === 'STEMI' ? '#DC2626' :
+                  ticket.pathway === 'STROKE' ? '#7C3AED' : '#D97706',
+                fontWeight: 700,
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+              }}
             />
           </Box>
         )}

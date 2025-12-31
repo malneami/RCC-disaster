@@ -114,9 +114,9 @@ const BedsTable: React.FC<BedsTableProps> = ({
         const patientName = bed.currentPatientName?.toLowerCase() || '';
 
         return bedNumber.includes(query) ||
-               unitName.includes(query) ||
-               hospitalName.includes(query) ||
-               patientName.includes(query);
+          unitName.includes(query) ||
+          hospitalName.includes(query) ||
+          patientName.includes(query);
       });
     }
 
@@ -219,11 +219,34 @@ const BedsTable: React.FC<BedsTableProps> = ({
         </Box>
       </Box>
 
-      <Card elevation={0}>
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: '16px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+          border: '1px solid rgba(0, 0, 0, 0.04)',
+        }}
+      >
         <TableContainer component={Paper} elevation={0}>
           <Table>
             <BedsTableHeader />
-            <TableBody>
+            <TableBody
+              sx={{
+                '& .MuiTableRow-root': {
+                  transition: 'background-color 0.15s ease-in-out',
+                },
+                '& .MuiTableRow-root:nth-of-type(odd)': {
+                  backgroundColor: '#F8FAFC',
+                },
+                '& .MuiTableRow-root:nth-of-type(even)': {
+                  backgroundColor: '#FFFFFF',
+                },
+                '& .MuiTableRow-root:hover': {
+                  backgroundColor: '#E0F2FE !important',
+                },
+              }}
+            >
               {paginatedBeds.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>

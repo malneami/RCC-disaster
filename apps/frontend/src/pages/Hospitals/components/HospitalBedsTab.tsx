@@ -29,31 +29,31 @@ interface HospitalBedsTabProps {
   }) => void;
 }
 
-const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({ 
-  hospitalId, 
+const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({
+  hospitalId,
   filters: externalFilters,
-  onFiltersChange 
+  onFiltersChange
 }) => {
   const { user } = useAuth();
-  
+
   // Check if user can create/delete beds
-  const canManageBeds = user?.role === 'HOSPITAL_USER' || 
-                        user?.role === 'ED_NURSE' || 
-                        user?.role === 'UNIT_NURSE' || 
-                        user?.role === 'ADMIN' || 
-                        user?.role === 'RCC';
-  
+  const canManageBeds = user?.role === 'HOSPITAL_USER' ||
+    user?.role === 'ED_NURSE' ||
+    user?.role === 'UNIT_NURSE' ||
+    user?.role === 'ADMIN' ||
+    user?.role === 'RCC';
+
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
-  
+
   const defaultFilters = {
     unitId: '',
     status: '',
   };
-  
+
   const [localFilters, setLocalFilters] = useState(defaultFilters);
-  
+
   const appliedFilters = externalFilters !== undefined ? externalFilters : localFilters;
-  
+
   const setAppliedFilters = (filters: typeof defaultFilters) => {
     if (onFiltersChange) {
       onFiltersChange(filters);
@@ -79,20 +79,20 @@ const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({
     const filters: GetBedsParams = {
       hospitalId,
     };
-    
+
     if (appliedFilters.unitId) {
       filters.unitId = appliedFilters.unitId;
     }
-    
+
     if (appliedFilters.status) {
       filters.status = appliedFilters.status as BedStatus;
     }
-    
+
     return filters;
   }, [hospitalId, appliedFilters.unitId, appliedFilters.status]);
 
   const { beds, loading: bedsLoading } = useBeds(bedFilters);
-  
+
   const { deleteBed, deleteBedLoading } = useBedMutations(bedFilters);
 
   useEffect(() => {
@@ -193,6 +193,19 @@ const HospitalBedsTab: React.FC<HospitalBedsTabProps> = ({
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setAddBedDialogOpen(true)}
+              sx={{
+                backgroundColor: '#10B981',
+                color: '#FFFFFF',
+                fontWeight: 600,
+                padding: '10px 24px',
+                borderRadius: '12px',
+                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: '#059669',
+                  boxShadow: '0 4px 8px rgba(16, 185, 129, 0.3)',
+                },
+              }}
             >
               Add Bed
             </Button>
