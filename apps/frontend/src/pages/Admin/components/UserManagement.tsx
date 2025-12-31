@@ -9,8 +9,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Chip,
   Button,
   Dialog,
   DialogTitle,
@@ -20,28 +18,24 @@ import {
   Alert,
   CircularProgress,
   IconButton,
-  Tooltip,
+
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Pagination,
-  Grid,
-  FormControlLabel,
   alpha,
 } from '@mui/material';
 import {
   Refresh,
-  LockReset,
   Edit,
   Email,
   Business,
-  Delete,
   ContentCopy,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-import { userManagementService, User, UpdateUserDto } from '../../../services/userManagementService';
-import { userRegistrationService, Hospital } from '../../../services/userRegistrationService';
+import { userManagementService, User } from '../../../services/userManagementService';
+import { userRegistrationService } from '../../../services/userRegistrationService';
 import AdminStatsGrid from './AdminStatsGrid';
 import UserDetailDrawer from './UserDetailDrawer';
 
@@ -115,24 +109,7 @@ const UserManagement: React.FC = () => {
     loadUsers();
   }, [page, roleFilter]);
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'ADMIN':
-        return 'error';
-      case 'RCC':
-        return 'primary';
-      case 'EMS':
-        return 'success';
-      case 'DATA_COLLECTOR':
-        return 'warning';
-      case 'CATH_LAB_USER':
-        return 'info';
-      case 'HOSPITAL_USER':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -167,11 +144,7 @@ const UserManagement: React.FC = () => {
     setDrawerOpen(true);
   };
 
-  const handleDeleteUser = (user: User) => {
-    setUserToDelete(user);
-    setDeleteDialog(true);
-    setError(null);
-  };
+
 
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Card, Typography, Grid, useTheme, alpha } from '@mui/material';
+import { Box, Card, Typography, Grid, alpha } from '@mui/material';
 import {
     PeopleAlt as PeopleIcon,
     HowToReg as RequestsIcon,

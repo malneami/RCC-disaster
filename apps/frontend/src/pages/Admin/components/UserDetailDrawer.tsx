@@ -13,18 +13,15 @@ import {
     Autocomplete,
     Divider,
     Stack,
-    Chip,
     alpha,
     CircularProgress,
-    Alert,
 } from '@mui/material';
 import {
     Close,
     Person,
     Email,
     Phone,
-    Business,
-    Security,
+
     VpnKey,
     Block,
     CheckCircle,
@@ -32,7 +29,7 @@ import {
     Fingerprint,
     ContentCopy,
 } from '@mui/icons-material';
-import { User, UpdateUserDto, userManagementService } from '../../../services/userManagementService';
+import { User, userManagementService } from '../../../services/userManagementService';
 import { UserRegistrationRequest, userRegistrationService } from '../../../services/userRegistrationService';
 import { hospitalService, Hospital } from '../../../services/hospitalService';
 import { useSnackbar } from 'notistack';
@@ -65,7 +62,6 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
     const [adminComments, setAdminComments] = useState('');
 
     const isRequest = !!registrationRequest;
-    const targetId = isRequest ? registrationRequest?.id : user?.id;
     const displayName = isRequest
         ? `${registrationRequest?.firstName} ${registrationRequest?.lastName}`
         : `${user?.firstName} ${user?.lastName}`;

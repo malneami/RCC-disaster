@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
-  CardContent,
   Typography,
   Table,
   TableBody,
@@ -10,31 +9,20 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Chip,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   Alert,
   CircularProgress,
   Tabs,
   Tab,
-  Grid,
   IconButton,
-  Tooltip,
   alpha,
 } from '@mui/material';
 import {
   CheckCircle,
-  Cancel,
   Visibility,
   Email,
-  Phone,
   Business,
-  Schedule,
   Refresh,
   ContentCopy,
 } from '@mui/icons-material';
@@ -43,31 +31,7 @@ import { userRegistrationService, UserRegistrationRequest, RegistrationRequestSt
 import AdminStatsGrid from './AdminStatsGrid';
 import UserDetailDrawer from './UserDetailDrawer';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`registration-tabpanel-${index}`}
-      aria-labelledby={`registration-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
 
 const UserRegistrationRequests: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
