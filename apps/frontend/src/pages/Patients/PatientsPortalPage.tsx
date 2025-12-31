@@ -8,6 +8,7 @@ import PortalSkeleton, { PortalStep, KPICard } from '../../components/Common/Por
 import PortalPatientSearch from '../../components/Common/PortalPatientSearch';
 import TimelineView, { TimelineEvent } from '../../components/Common/TimelineView';
 import { Patient, PatientWithDetails, patientService } from '../../services/patientService';
+import ModernPatientList from './components/ModernPatientList';
 // import { useAuth } from '../../contexts/AuthContext'; // For future admin functionality
 
 interface TabPanelProps {
@@ -321,43 +322,27 @@ const PatientsPortalPage: React.FC = () => {
           
           {/* Recent Patients */}
           <Box sx={{ mt: 4 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 3,
+                fontWeight: 600,
+                color: '#1a237e',
+              }}
+            >
               Recent Patients
             </Typography>
-            <Grid container spacing={2}>
-              {patients.slice(0, 6).map((patient) => (
-                <Grid item xs={12} sm={6} md={4} key={patient.id}>
-                  <Card 
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': {
-                        boxShadow: 3,
-                        transform: 'translateY(-2px)',
-                      },
-                      transition: 'all 0.2s ease-in-out',
-                    }}
-                    onClick={() => handlePatientSelect(patient)}
-                  >
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Person sx={{ color: '#7b1fa2' }} />
-                        <Box>
-                          <Typography variant="subtitle2" fontWeight="medium">
-                            {patient.firstName} {patient.lastName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            MRN: {patient.mrn}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Created: {new Date(patient.createdAt).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            <ModernPatientList
+              patients={patients.slice(0, 10)}
+              loading={false}
+              emptyMessage="No recent patients found"
+              onViewPatient={handleViewPatient}
+              onEditPatient={(patient) => navigate(`/patients/${patient.id}?edit=true`)}
+              onExportPatient={(patient) => {
+                // Export functionality can be added here if needed
+                console.log('Export patient:', patient);
+              }}
+            />
           </Box>
         </TabPanel>
 

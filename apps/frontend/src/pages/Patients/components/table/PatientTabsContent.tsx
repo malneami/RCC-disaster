@@ -1,10 +1,9 @@
 import { Patient } from '../../../../services/patientService';
-import DataTable from '../../../../components/Common/DataTable';
 import Pagination from '../../../../components/Common/Pagination';
 import PatientStatistics from '../PatientStatistics';
 import DuplicateDetection from '../DuplicateDetection';
 import PatientAccessLogsTab from '../PatientAccessLogsTab';
-import { usePatientTableColumns } from './PatientTableColumns';
+import ModernPatientList from '../ModernPatientList';
 import { useAuth } from '../../../../contexts/AuthContext';
 
 interface PatientTabsContentProps {
@@ -29,11 +28,6 @@ export const usePatientTabsContent = ({
   onExportPatient,
 }: PatientTabsContentProps) => {
   const { user } = useAuth();
-  const patientColumns = usePatientTableColumns({
-    onViewPatient,
-    onEditPatient,
-    onExportPatient,
-  });
 
   // Check if user has admin or RCC role
   const canViewAccessLogs = user?.role === 'ADMIN' || user?.role === 'RCC';
@@ -43,11 +37,13 @@ export const usePatientTabsContent = ({
       label: 'Patients',
       content: (
         <>
-          <DataTable
-            data={patients}
-            columns={patientColumns}
+          <ModernPatientList
+            patients={patients}
             loading={loading}
             emptyMessage="No patients found"
+            onViewPatient={onViewPatient}
+            onEditPatient={onEditPatient}
+            onExportPatient={onExportPatient}
           />
           <Pagination
             currentPage={currentPage}
