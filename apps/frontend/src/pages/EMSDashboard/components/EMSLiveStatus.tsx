@@ -1,10 +1,16 @@
 import React from 'react';
-import { Box, Card, CardContent, Typography, Grid, Chip, LinearProgress } from '@mui/material';
+import { Box, Typography, Grid, Chip, LinearProgress } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faAmbulance,
-  faClock,
-} from '@fortawesome/free-solid-svg-icons';
+import { faHeartbeat, faClock, faAmbulance, faCheckCircle, faBolt, faUserMd } from '@fortawesome/free-solid-svg-icons';
+
+// Vibrant Solid Colors - No Gradients
+const COLORS = {
+  skyBlue: '#0EA5E9',
+  emerald: '#10B981',
+  amber: '#F59E0B',
+  violet: '#8B5CF6',
+  slate: '#64748B',
+};
 
 interface LiveStatusData {
   totalAmbulances: number;
@@ -21,149 +27,103 @@ interface EMSLiveStatusProps {
   isLoading?: boolean;
 }
 
+// Vibrant Stat Card - Solid Colors
+interface StatCardProps {
+  value: number;
+  label: string;
+  color: string;
+  icon: React.ReactNode;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ value, label, color, icon }) => (
+  <Box
+    sx={{
+      bgcolor: color,
+      borderRadius: 4,
+      p: 3,
+      color: '#fff',
+      boxShadow: `0 8px 24px ${color}50`,
+      transition: 'all 0.3s ease',
+      '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 12px 32px ${color}60` },
+    }}
+  >
+    <Box sx={{ width: 44, height: 44, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2, fontSize: '1.1rem' }}>
+      {icon}
+    </Box>
+    <Typography sx={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1 }}>{value}</Typography>
+    <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.9, mt: 0.5 }}>{label}</Typography>
+  </Box>
+);
+
 const EMSLiveStatus: React.FC<EMSLiveStatusProps> = ({ data, isLoading }) => {
   if (isLoading) {
     return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Live Status
-          </Typography>
-          <LinearProgress />
-        </CardContent>
-      </Card>
+      <Box sx={{ bgcolor: '#E0F2FE', borderRadius: 4, p: 4 }}>
+        <Typography sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1.5, color: COLORS.skyBlue }}>
+          <FontAwesomeIcon icon={faHeartbeat} /> Live Status
+        </Typography>
+        <LinearProgress sx={{ borderRadius: 2 }} />
+      </Box>
     );
   }
 
-  const statusData = data || {
-    totalAmbulances: 0,
-    activeAmbulances: 0,
-    availableAmbulances: 0,
-    inUseAmbulances: 0,
-    activeAssignments: 0,
-    responseTime: 0,
-    averageResponseTime: 0,
-  };
-
-  const availabilityPercentage = statusData.totalAmbulances > 0 
-    ? Math.round((statusData.availableAmbulances / statusData.totalAmbulances) * 100)
-    : 0;
-
-  const getStatusColor = (percentage: number) => {
-    if (percentage >= 80) return '#2e7d32';
-    if (percentage >= 60) return '#ed6c02';
-    return '#d32f2f';
-  };
+  const s = data || { totalAmbulances: 0, activeAmbulances: 0, availableAmbulances: 0, inUseAmbulances: 0, activeAssignments: 0, responseTime: 0, averageResponseTime: 0 };
+  const pct = s.totalAmbulances > 0 ? Math.round((s.availableAmbulances / s.totalAmbulances) * 100) : 0;
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FontAwesomeIcon icon={faAmbulance} />
-          Live Status
-        </Typography>
-        
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                {statusData.totalAmbulances}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Ambulances
-              </Typography>
+    <Box>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box sx={{ width: 44, height: 44, borderRadius: 3, bgcolor: COLORS.skyBlue, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: `0 6px 20px ${COLORS.skyBlue}40` }}>
+          <FontAwesomeIcon icon={faHeartbeat} />
+        </Box>
+        <Typography sx={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A' }}>Live Status</Typography>
+      </Box>
+
+      {/* Stat Cards - Vibrant Solid Colors */}
+      <Grid container spacing={3}>
+        <Grid item xs={6} md={3}>
+          <StatCard value={s.totalAmbulances} label="Total Ambulances" color={COLORS.skyBlue} icon={<FontAwesomeIcon icon={faAmbulance} />} />
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <StatCard value={s.availableAmbulances} label="Available" color={COLORS.emerald} icon={<FontAwesomeIcon icon={faCheckCircle} />} />
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <StatCard value={s.inUseAmbulances} label="In Use" color={COLORS.amber} icon={<FontAwesomeIcon icon={faBolt} />} />
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <StatCard value={s.activeAssignments} label="Active Assignments" color={COLORS.violet} icon={<FontAwesomeIcon icon={faUserMd} />} />
+        </Grid>
+      </Grid>
+
+      {/* Availability & Response Time */}
+      <Box sx={{ mt: 4, bgcolor: '#fff', borderRadius: 4, p: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
+        <Grid container spacing={4} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography sx={{ fontWeight: 700, color: '#334155' }}>Fleet Availability</Typography>
+              <Chip label={`${pct}%`} sx={{ fontWeight: 800, bgcolor: COLORS.emerald, color: '#fff' }} />
             </Box>
+            <LinearProgress variant="determinate" value={pct} sx={{ height: 12, borderRadius: 6, bgcolor: '#E2E8F0', '& .MuiLinearProgress-bar': { borderRadius: 6, bgcolor: COLORS.emerald } }} />
           </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
-                {statusData.availableAmbulances}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Available
-              </Typography>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#ed6c02' }}>
-                {statusData.inUseAmbulances}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                In Use
-              </Typography>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#9c27b0' }}>
-                {statusData.activeAssignments}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Active Assignments
-              </Typography>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Box sx={{ mt: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Fleet Availability
-                </Typography>
-                <Chip
-                  label={`${availabilityPercentage}%`}
-                  size="small"
-                  sx={{ 
-                    backgroundColor: getStatusColor(availabilityPercentage),
-                    color: 'white',
-                    fontWeight: 'bold',
-                  }}
-                />
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3, borderRadius: 4, bgcolor: '#E0F2FE' }}>
+              <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: COLORS.skyBlue, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.2rem', boxShadow: `0 6px 20px ${COLORS.skyBlue}40` }}>
+                <FontAwesomeIcon icon={faClock} />
               </Box>
-              <LinearProgress
-                variant="determinate"
-                value={availabilityPercentage}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: '#e0e0e0',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: getStatusColor(availabilityPercentage),
-                    borderRadius: 4,
-                  },
-                }}
-              />
-            </Box>
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-              <FontAwesomeIcon icon={faClock} color="#1976d2" />
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Current Response Time
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                  {statusData.responseTime} minutes
-                </Typography>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: '0.8rem', color: COLORS.skyBlue, fontWeight: 700 }}>Current Response Time</Typography>
+                <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A' }}>{s.responseTime} min</Typography>
               </Box>
-              <Box sx={{ ml: 'auto' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Average Today
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                  {statusData.averageResponseTime} min
-                </Typography>
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography sx={{ fontSize: '0.8rem', color: COLORS.skyBlue, fontWeight: 700 }}>Avg Today</Typography>
+                <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A' }}>{s.averageResponseTime} min</Typography>
               </Box>
             </Box>
           </Grid>
         </Grid>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 
