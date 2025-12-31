@@ -6,6 +6,7 @@ import {
   CircularProgress,
   Card,
   CardContent,
+  Alert,
 } from '@mui/material';
 import {
   Assessment,
@@ -17,17 +18,39 @@ import {
 } from '@mui/icons-material';
 
 import { TraumaKPIsResponse } from '../types/traumaTypes';
-import { UnifiedKPICard, kpiColors, kpiGradients, cardStyles } from '../../../components/Common/KPI';
+import { UnifiedKPICard, getTheme, getGradients, cardStyles, PortalType } from '../../../components/Common/KPI';
+import KPIFilterBar from '../../../components/Common/KPI/KPIFilterBar';
 
 interface TraumaKPIDashboardMainProps {
   kpiSummary: TraumaKPIsResponse | null;
+  filters?: {
+    hospitalId?: string;
+    startDate?: string;
+    endDate?: string;
+  };
+  onFilterChange?: (key: string, value: string) => void;
+  onClearFilters?: () => void;
+  hospitals?: Array<{ id: string; name: string }>;
+  loading?: boolean;
+  portalType?: PortalType;
 }
 
-const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSummary }) => {
+const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({
+  kpiSummary,
+  filters = {},
+  onFilterChange,
+  onClearFilters,
+  hospitals = [],
+  loading = false,
+  portalType = 'trauma',
+}) => {
+  const kpiTheme = getTheme(portalType);
+  const kpiGradients = getGradients(kpiTheme);
+
   if (!kpiSummary) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress size={60} sx={{ color: kpiColors.gradientStart }} />
+        <CircularProgress size={60} sx={{ color: kpiTheme.gradientStart }} />
       </Box>
     );
   }
@@ -67,37 +90,29 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
   return (
     <Box sx={{ ...cardStyles.page, minHeight: 'auto' }}>
       {/* Header */}
-      <Box mb={4}>
-        <Card sx={{
-          background: '#ffffff',
-          borderRadius: 4,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          border: `1px solid ${kpiColors.borderColor}`,
-          overflow: 'hidden',
-        }}>
-          <Box sx={{
-            height: 4,
-            background: kpiGradients.primary,
-          }} />
-          <CardContent sx={{ p: 4 }}>
+      <Box mb={3}>
+        <Card sx={cardStyles.primary}>
+          <Box sx={{ height: 4, background: kpiGradients.primary }} />
+          <CardContent sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" gap={3}>
               <Box sx={{
-                width: 64,
-                height: 64,
-                borderRadius: 3,
-                background: kpiGradients.primary,
+                width: 56,
+                height: 56,
+                borderRadius: 2,
+                background: 'rgba(255,255,255,0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 8px 24px rgba(15, 76, 117, 0.3)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                backdropFilter: 'blur(10px)',
               }}>
-                <LocalHospital sx={{ color: 'white', fontSize: 32 }} />
+                <LocalHospital sx={{ color: 'white', fontSize: 28 }} />
               </Box>
               <Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: kpiColors.textPrimary, mb: 0.5 }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
                   Trauma Analytics Center
                 </Typography>
-                <Typography variant="body1" sx={{ color: kpiColors.textSecondary }}>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
                   Comprehensive performance monitoring and insights
                 </Typography>
               </Box>
@@ -106,8 +121,20 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
         </Card>
       </Box>
 
+      {/* Filter Bar */}
+      <Box mb={4}>
+        <KPIFilterBar
+          filters={filters}
+          onFilterChange={onFilterChange || (() => { })}
+          onClearFilters={onClearFilters || (() => { })}
+          hospitals={hospitals}
+          loading={loading}
+          portalType={portalType}
+        />
+      </Box>
+
       {/* Primary KPI Cards */}
-      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiTheme.textPrimary, mb: 3 }}>
         Key Performance Metrics
       </Typography>
       <Grid container spacing={3} mb={4}>
@@ -118,6 +145,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             value={kpiSummary.totalCases}
             subtitle="All trauma cases"
             icon={<Assessment />}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -128,6 +156,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             subtitle={`${criticalCaseRate.toFixed(1)}% of total`}
             icon={<Warning />}
             percentage={criticalCaseRate}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -138,6 +167,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             subtitle={`${transferCaseRate.toFixed(1)}% of total`}
             icon={<TransferWithinAStation />}
             percentage={transferCaseRate}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -147,12 +177,13 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             value={`${averageResponseTime} min`}
             subtitle="Time to arrival"
             icon={<Schedule />}
+            portalType={portalType}
           />
         </Grid>
       </Grid>
 
       {/* Performance Indicators */}
-      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiTheme.textPrimary, mb: 3 }}>
         Performance Indicators
       </Typography>
       <Grid container spacing={3} mb={4}>
@@ -166,6 +197,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             status={getResponseTimeStatus(averageResponseTime)}
             icon={<Schedule />}
             casesInfo="Time from dispatch to arrival"
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} md={6}>
@@ -178,6 +210,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             status={getMortalityStatus(mortalityRate)}
             icon={<TrendingUp />}
             casesInfo="Overall mortality"
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} md={6}>
@@ -190,6 +223,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             status={criticalCaseRate <= 20 ? 'good' : 'fair'}
             icon={<Warning />}
             casesInfo={`${kpiSummary.criticalCases} of ${kpiSummary.totalCases} cases`}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} md={6}>
@@ -202,12 +236,13 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             status={transferCaseRate <= 30 ? 'good' : 'fair'}
             icon={<TransferWithinAStation />}
             casesInfo={`${kpiSummary.transferCases} of ${kpiSummary.totalCases} cases`}
+            portalType={portalType}
           />
         </Grid>
       </Grid>
 
       {/* Additional Stats */}
-      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiTheme.textPrimary, mb: 3 }}>
         Additional Statistics
       </Typography>
       <Grid container spacing={3}>
@@ -217,6 +252,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             title="Glasgow Score"
             value={kpiSummary.averageGlasgowScore ? kpiSummary.averageGlasgowScore.toFixed(1) : 'N/A'}
             subtitle="Avg neurological assessment"
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -225,6 +261,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             title="Cases This Month"
             value={kpiSummary.casesThisMonth || 0}
             subtitle="Current month"
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -233,6 +270,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             title="Cases This Week"
             value={kpiSummary.casesThisWeek || 0}
             subtitle="Current week"
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -242,6 +280,7 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({ kpiSumm
             value={`${mortalityRate.toFixed(1)}%`}
             subtitle="Overall outcome"
             status={getMortalityStatus(mortalityRate)}
+            portalType={portalType}
           />
         </Grid>
       </Grid>

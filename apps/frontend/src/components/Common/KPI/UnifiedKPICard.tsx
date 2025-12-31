@@ -14,8 +14,10 @@ import {
     Warning,
 } from '@mui/icons-material';
 import {
-    kpiColors,
-    cardStyles,
+    PortalType,
+    getTheme,
+    getCardStyles,
+    getGradients,
     progressBarStyles,
     getStatusColor,
 } from './kpiStyles';
@@ -32,6 +34,7 @@ export interface UnifiedKPICardProps {
     trend?: 'up' | 'down' | 'neutral';
     trendLabel?: string;
     casesInfo?: string;
+    portalType?: PortalType;
 }
 
 const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
@@ -46,11 +49,15 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
     trend,
     trendLabel,
     casesInfo,
+    portalType = 'default',
 }) => {
+    const theme = getTheme(portalType);
+    const styles = getCardStyles(theme);
+
     const renderTrendIcon = () => {
         if (!trend) return null;
-        if (trend === 'up') return <TrendingUp sx={{ fontSize: 18, color: kpiColors.statusExcellent }} />;
-        if (trend === 'down') return <TrendingDown sx={{ fontSize: 18, color: kpiColors.statusPoor }} />;
+        if (trend === 'up') return <TrendingUp sx={{ fontSize: 18, color: theme.statusExcellent }} />;
+        if (trend === 'down') return <TrendingDown sx={{ fontSize: 18, color: theme.statusPoor }} />;
         return null;
     };
 
@@ -66,7 +73,7 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
     // Primary variant - Large gradient card
     if (variant === 'primary') {
         return (
-            <Card sx={cardStyles.primary}>
+            <Card sx={styles.primary}>
                 <CardContent sx={{ p: 3 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                         <Typography
@@ -142,10 +149,10 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
 
     // Secondary variant - White card with progress bar
     if (variant === 'secondary') {
-        const statusColor = status ? getStatusColor(status) : kpiColors.accent;
+        const statusColor = status ? getStatusColor(status) : theme.accent;
 
         return (
-            <Card sx={cardStyles.secondary}>
+            <Card sx={styles.secondary}>
                 <CardContent sx={{ p: 3 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                         <Box display="flex" alignItems="center" gap={1.5}>
@@ -168,12 +175,12 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
                             <Box>
                                 <Typography
                                     variant="subtitle1"
-                                    sx={{ fontWeight: 600, color: kpiColors.textPrimary }}
+                                    sx={{ fontWeight: 600, color: theme.textPrimary }}
                                 >
                                     {title}
                                 </Typography>
                                 {target && (
-                                    <Typography variant="caption" sx={{ color: kpiColors.textSecondary }}>
+                                    <Typography variant="caption" sx={{ color: theme.textSecondary }}>
                                         Target: {target}
                                     </Typography>
                                 )}
@@ -208,11 +215,11 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
                         <Box>
                             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                                 {casesInfo && (
-                                    <Typography variant="caption" sx={{ color: kpiColors.textSecondary }}>
+                                    <Typography variant="caption" sx={{ color: theme.textSecondary }}>
                                         {casesInfo}
                                     </Typography>
                                 )}
-                                <Typography variant="caption" sx={{ color: kpiColors.textSecondary, fontWeight: 500 }}>
+                                <Typography variant="caption" sx={{ color: theme.textSecondary, fontWeight: 500 }}>
                                     {percentage.toFixed(1)}%
                                 </Typography>
                             </Box>
@@ -220,9 +227,11 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
                                 variant="determinate"
                                 value={Math.min(percentage, 100)}
                                 sx={{
-                                    ...progressBarStyles,
+                                    height: 6,
+                                    borderRadius: 3,
+                                    backgroundColor: '#e2e8f0',
                                     '& .MuiLinearProgress-bar': {
-                                        ...progressBarStyles['& .MuiLinearProgress-bar'],
+                                        borderRadius: 3,
                                         background: `linear-gradient(90deg, ${statusColor} 0%, ${statusColor}CC 100%)`,
                                     },
                                 }}
@@ -231,7 +240,7 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
                     )}
 
                     {subtitle && !percentage && (
-                        <Typography variant="body2" sx={{ color: kpiColors.textSecondary, mt: 1 }}>
+                        <Typography variant="body2" sx={{ color: theme.textSecondary, mt: 1 }}>
                             {subtitle}
                         </Typography>
                     )}
@@ -242,12 +251,12 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
 
     // Compact variant - Minimal card
     return (
-        <Card sx={cardStyles.secondary}>
+        <Card sx={styles.secondary}>
             <CardContent sx={{ p: 2.5 }}>
                 <Typography
                     variant="caption"
                     sx={{
-                        color: kpiColors.textSecondary,
+                        color: theme.textSecondary,
                         fontWeight: 500,
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
@@ -258,14 +267,14 @@ const UnifiedKPICard: React.FC<UnifiedKPICardProps> = ({
                 <Box display="flex" alignItems="center" gap={1} mt={0.5}>
                     <Typography
                         variant="h5"
-                        sx={{ fontWeight: 700, color: kpiColors.textPrimary }}
+                        sx={{ fontWeight: 700, color: theme.textPrimary }}
                     >
                         {value}
                     </Typography>
                     {renderStatusIcon()}
                 </Box>
                 {subtitle && (
-                    <Typography variant="caption" sx={{ color: kpiColors.textMuted }}>
+                    <Typography variant="caption" sx={{ color: theme.textMuted }}>
                         {subtitle}
                     </Typography>
                 )}

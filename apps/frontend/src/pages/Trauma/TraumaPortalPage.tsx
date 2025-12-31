@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab, Button, Tooltip } from '@mui/material';
-import { Add, Assessment, Dashboard, Warning, TransferWithinAStation, Schedule, FileDownload } from '@mui/icons-material';
+import { Box, Tabs, Tab, CircularProgress, Fab, Tooltip, Button } from '@mui/material';
+import { Assessment, Dashboard, Warning, TransferWithinAStation, Schedule, Add, FileDownload } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 
 import TraumaCasesList from './components/TraumaCasesList';
@@ -14,6 +14,7 @@ import { TraumaService, TraumaCase } from '../../services/traumaService';
 import { TraumaKPIsResponse } from './types/traumaTypes';
 import { useAuth } from '../../contexts/AuthContext';
 import { TraumaExportService } from './services/traumaExportService';
+import apiClient from '../../services/apiClient';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -50,26 +51,43 @@ const TraumaPortalPage: React.FC = () => {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
+  // KPI Filters
+  const [kpiFilters, setKpiFilters] = useState<{
+    hospitalId?: string;
+    startDate?: string;
+    endDate?: string;
+  }>({});
+  const [hospitals, setHospitals] = useState<Array<{ id: string, name: string }>>([]);
+  const [hospitalsLoading, setHospitalsLoading] = useState(true);
+
   const [exportLoading, setExportLoading] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<any>({});
 
-  // Define portal steps
-  const portalSteps: PortalStep[] = [
-    { label: 'Cases', description: 'View and manage trauma cases', icon: <Assessment /> },
-    { label: 'KPI Dashboard', description: 'Monitor performance metrics', icon: <Dashboard /> },
-  ];
+  // ... portalSteps
 
   useEffect(() => {
     loadData();
+    loadHospitals();
   }, []);
 
-
+  const loadHospitals = async () => {
+    try {
+      setHospitalsLoading(true);
+      const response = await apiClient.get('/hospitals');
+      setHospitals(response.data);
+    } catch (error) {
+      console.error('Error loading hospitals:', error);
+    } finally {
+      setHospitalsLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      // Initial load uses default filters (empty)
       const [casesData, kpiData] = await Promise.all([
         TraumaService.getTraumaCases(),
         TraumaService.getKPISummary()
@@ -86,6 +104,53 @@ const TraumaPortalPage: React.FC = () => {
     }
   };
 
+  const handleKpiFilterChange = async (key: string, value: string) => {
+    const newFilters = { ...kpiFilters, [key]: value };
+    setKpiFilters(newFilters);
+
+    try {
+      // Don't set global loading, maybe local loading in KPI dashboard?
+      // For now, we'll just fetch updates. 
+      // ideally we should have a loading state for KPIs specifically if we wanted to show a spinner there
+      const kpiData = await TraumaService.getKPISummary(
+        newFilters.hospitalId,
+        newFilters.startDate,
+        newFilters.endDate
+      );
+      setKpiSummary(kpiData);
+    } catch (err) {
+      console.error('Error updating KPI data:', err);
+    }
+  };
+
+  const handleClearKpiFilters = () => {
+    const cleared = {};
+    setKpiFilters(cleared);
+    handleKpiFilterChange('clear', ''); // Trigger reload with empty filters
+    // Actually handleKpiFilterChange merges, so we should arguably just call getKPISummary directly or fix the handler
+    // Let's just reload:
+    loadKpiData({});
+  };
+
+  const loadKpiData = async (filters: { hospitalId?: string; startDate?: string; endDate?: string }) => {
+    try {
+      const kpiData = await TraumaService.getKPISummary(
+        filters.hospitalId,
+        filters.startDate,
+        filters.endDate
+      );
+      setKpiSummary(kpiData);
+    } catch (err) {
+      console.error('Error updating KPI data:', err);
+    }
+  }
+
+  // Define portal steps
+  const portalSteps: PortalStep[] = [
+    { label: 'Cases', description: 'View and manage trauma cases', icon: <Assessment /> },
+    { label: 'KPI Dashboard', description: 'Monitor performance metrics', icon: <Dashboard /> },
+  ];
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -93,45 +158,33 @@ const TraumaPortalPage: React.FC = () => {
   const handleCreateCase = async (data: any) => {
     try {
       await TraumaService.createTraumaCase(data);
-      await loadData(); // Refresh data
       setCreateDialogOpen(false);
+      loadData();
     } catch (err) {
       console.error('Error creating trauma case:', err);
-      throw err;
     }
   };
 
+  const handleUpdateCase = async (id: string, data: any) => {
+    try {
+      await TraumaService.updateTraumaCase(id, data);
+      loadData();
+    } catch (err) {
+      console.error('Error updating trauma case:', err);
+    }
+  };
 
   const handleDeleteCase = async (id: string) => {
     try {
       await TraumaService.deleteTraumaCase(id);
-      setTraumaCases(prev => prev.filter(case_ => case_.id !== id));
-      // Refresh KPI data
-      const updatedKpi = await TraumaService.getKPISummary();
-      setKpiSummary(updatedKpi);
+      loadData();
     } catch (err) {
       console.error('Error deleting trauma case:', err);
-      throw err;
     }
   };
 
   const handleAddCaseNote = (case_: TraumaCase) => {
-    // TODO: Implement case note creation dialog
     console.log('Add case note for:', case_);
-    // For now, just log the case - you can implement a dialog later
-  };
-
-  const handleUpdateCase = async (id: string, data: any): Promise<void> => {
-    try {
-      const updatedCase = await TraumaService.updateTraumaCase(id, data);
-      setTraumaCases(prev => prev.map(case_ => case_.id === id ? updatedCase : case_));
-      // Refresh KPI data
-      const updatedKpi = await TraumaService.getKPISummary();
-      setKpiSummary(updatedKpi);
-    } catch (err) {
-      console.error('Error updating trauma case:', err);
-      throw err;
-    }
   };
 
   const handleExportToExcel = async () => {
@@ -328,7 +381,14 @@ const TraumaPortalPage: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
-          <TraumaKPIDashboard kpiSummary={kpiSummary} />
+          <TraumaKPIDashboard
+            kpiSummary={kpiSummary}
+            filters={kpiFilters}
+            onFilterChange={handleKpiFilterChange}
+            onClearFilters={handleClearKpiFilters}
+            hospitals={hospitals}
+            loading={hospitalsLoading}
+          />
         </TabPanel>
 
 

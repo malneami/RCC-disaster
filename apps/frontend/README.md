@@ -96,7 +96,7 @@ The base URL for WebSocket/Socket.IO connections.
 - Production: `https://api.example.com`
 
 **Usage:**
-- Used for Socket.IO connections (notifications, real-time updates, video calls)
+- Used for Socket.IO connections (notifications, real-time updates, Communication)
 - Socket.IO automatically appends `/socket.io` path
 - Used by `socketUtils.ts` and WebSocket services
 - Used by Vite proxy configuration to forward `/socket.io` requests

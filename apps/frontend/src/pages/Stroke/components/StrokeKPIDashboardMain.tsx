@@ -16,30 +16,46 @@ import {
 } from '@mui/icons-material';
 
 import { StrokeKPISummary } from '../../../services/strokeService';
-import { UnifiedKPICard, kpiColors, kpiGradients, cardStyles, getPercentageStatus } from '../../../components/Common/KPI';
+import { UnifiedKPICard, getTheme, getGradients, cardStyles, getPercentageStatus, PortalType } from '../../../components/Common/KPI';
+import KPIFilterBar from '../../../components/Common/KPI/KPIFilterBar';
 
 interface StrokeKPIDashboardProps {
   kpiSummary: StrokeKPISummary | null;
+  filters?: {
+    hospitalId?: string;
+    startDate?: string;
+    endDate?: string;
+  };
+  onFilterChange?: (key: string, value: string) => void;
+  onClearFilters?: () => void;
+  hospitals?: Array<{ id: string; name: string }>;
+  loading?: boolean;
+  portalType?: PortalType;
 }
 
-const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) => {
+const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({
+  kpiSummary,
+  filters = {},
+  onFilterChange,
+  onClearFilters,
+  hospitals = [],
+  loading = false,
+  portalType = 'stroke',
+}) => {
+  const kpiTheme = getTheme(portalType);
+  const kpiGradients = getGradients(kpiTheme);
+
   if (!kpiSummary) {
     return (
-      <Box sx={{
-        ...cardStyles.page,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+      <Box sx={{ ...cardStyles.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Alert severity="info" sx={{
           background: 'white',
-          borderRadius: 3,
+          borderRadius: 2,
           p: 4,
-          fontSize: '1.1rem',
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          border: `1px solid ${kpiColors.borderColor}`
+          border: `1px solid ${kpiTheme.borderColor}`
         }}>
-          No KPI data available. Please ensure stroke cases have been created.
+          No KPI data available
         </Alert>
       </Box>
     );
@@ -67,37 +83,29 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
   return (
     <Box sx={{ ...cardStyles.page, minHeight: 'auto' }}>
       {/* Header */}
-      <Box mb={4}>
-        <Card sx={{
-          background: '#ffffff',
-          borderRadius: 4,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          border: `1px solid ${kpiColors.borderColor}`,
-          overflow: 'hidden',
-        }}>
-          <Box sx={{
-            height: 4,
-            background: kpiGradients.primary,
-          }} />
-          <CardContent sx={{ p: 4 }}>
+      <Box mb={3}>
+        <Card sx={cardStyles.primary}>
+          <Box sx={{ height: 4, background: kpiGradients.header }} />
+          <CardContent sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" gap={3}>
               <Box sx={{
-                width: 64,
-                height: 64,
-                borderRadius: 3,
-                background: kpiGradients.primary,
+                width: 56,
+                height: 56,
+                borderRadius: 2,
+                background: 'rgba(255,255,255,0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 8px 24px rgba(15, 76, 117, 0.3)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                backdropFilter: 'blur(10px)',
               }}>
-                <Assessment sx={{ color: 'white', fontSize: 32 }} />
+                <Assessment sx={{ color: 'white', fontSize: 28 }} />
               </Box>
               <Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: kpiColors.textPrimary, mb: 0.5 }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
                   Stroke Analytics Center
                 </Typography>
-                <Typography variant="body1" sx={{ color: kpiColors.textSecondary }}>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
                   Comprehensive performance monitoring and insights
                 </Typography>
               </Box>
@@ -106,8 +114,20 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
         </Card>
       </Box>
 
+      {/* Filter Bar */}
+      <Box mb={4}>
+        <KPIFilterBar
+          filters={filters}
+          onFilterChange={onFilterChange || (() => { })}
+          onClearFilters={onClearFilters || (() => { })}
+          hospitals={hospitals}
+          loading={loading}
+          portalType={portalType}
+        />
+      </Box>
+
       {/* Primary KPI Cards */}
-      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiTheme.textPrimary, mb: 3 }}>
         Key Performance Metrics
       </Typography>
       <Grid container spacing={3} mb={4}>
@@ -118,6 +138,7 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
             value={kpiSummary.totalCases}
             subtitle="All stroke cases processed"
             icon={<Assessment />}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -128,6 +149,7 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
             subtitle="KPI1 compliance"
             icon={<TrendingUp />}
             percentage={kpi1Percentage}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -137,6 +159,7 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
             value={`${kpiSummary.averageTimings?.doorToPhysician?.toFixed(0) || 'N/A'}m`}
             subtitle="Target: ≤15 min"
             icon={<AccessTime />}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -147,12 +170,13 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
             subtitle="Treatment outcomes"
             icon={<CheckCircle />}
             percentage={kpiSummary.outcomes?.successRate || 0}
+            portalType={portalType}
           />
         </Grid>
       </Grid>
 
       {/* Performance Indicators */}
-      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiTheme.textPrimary, mb: 3 }}>
         Performance Indicators
       </Typography>
       <Grid container spacing={3} mb={4}>
@@ -171,6 +195,7 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
                 status={getPercentageStatus(kpiData.percentage)}
                 icon={<Speed />}
                 casesInfo={`${kpiData.met} of ${kpiData.total} cases`}
+                portalType={portalType}
               />
             </Grid>
           );
@@ -178,7 +203,7 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
       </Grid>
 
       {/* Stroke Type Distribution */}
-      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiColors.textPrimary, mb: 3 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, color: kpiTheme.textPrimary, mb: 3 }}>
         Stroke Type Distribution
       </Typography>
       <Grid container spacing={3}>
@@ -190,6 +215,7 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
             subtitle={`${kpiSummary.strokeTypeBreakdown?.ischemic && kpiSummary.totalCases
               ? ((kpiSummary.strokeTypeBreakdown.ischemic / kpiSummary.totalCases) * 100).toFixed(1)
               : '0.0'}% of total`}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} md={4}>
@@ -200,6 +226,7 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
             subtitle={`${kpiSummary.strokeTypeBreakdown?.hemorrhagic && kpiSummary.totalCases
               ? ((kpiSummary.strokeTypeBreakdown.hemorrhagic / kpiSummary.totalCases) * 100).toFixed(1)
               : '0.0'}% of total`}
+            portalType={portalType}
           />
         </Grid>
         <Grid item xs={12} md={4}>
@@ -210,6 +237,7 @@ const StrokeKPIDashboard: React.FC<StrokeKPIDashboardProps> = ({ kpiSummary }) =
             subtitle={`${kpiSummary.strokeTypeBreakdown?.tia && kpiSummary.totalCases
               ? ((kpiSummary.strokeTypeBreakdown.tia / kpiSummary.totalCases) * 100).toFixed(1)
               : '0.0'}% of total`}
+            portalType={portalType}
           />
         </Grid>
       </Grid>

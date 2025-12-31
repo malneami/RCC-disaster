@@ -51,7 +51,7 @@ const VideoCallPage: React.FC = () => {
   const { socket: contextSocket, isConnected: contextIsConnected, connectionError: contextError } = useVideoCallSocketContext();
 
   const { socket: localSocket, isConnected: localIsConnected, connectionError: localError } = useWebSocket(contextSocket ? undefined : 'video-calls');
-  
+
   const socket = contextSocket || localSocket;
   const isConnected = contextIsConnected || localIsConnected;
   const connectionError = contextError || localError;
@@ -190,7 +190,7 @@ const VideoCallPage: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
-        Video Calls
+        Communication
       </Typography>
 
       {connectionError && (

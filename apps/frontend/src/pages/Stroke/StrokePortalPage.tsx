@@ -58,7 +58,15 @@ const StrokePortalPage: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [exportLoading, setExportLoading] = useState(false);
   const [hospitals, setHospitals] = useState<Array<{ id: string; name: string }>>([]);
+  const [hospitalsLoading, setHospitalsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // KPI Filters
+  const [kpiFilters, setKpiFilters] = useState<{
+    hospitalId?: string;
+    startDate?: string;
+    endDate?: string;
+  }>({});
 
   // Define portal steps
   const portalSteps: PortalStep[] = [
@@ -73,10 +81,13 @@ const StrokePortalPage: React.FC = () => {
   useEffect(() => {
     const loadHospitals = async () => {
       try {
+        setHospitalsLoading(true);
         const response = await apiClient.get('/hospitals');
         setHospitals(response.data);
       } catch (error) {
         console.error('Error loading hospitals:', error);
+      } finally {
+        setHospitalsLoading(false);
       }
     };
 
@@ -104,7 +115,7 @@ const StrokePortalPage: React.FC = () => {
           limit: rowsPerPage,
           offset: page * rowsPerPage,
         }),
-        StrokeService.getKPISummary()
+        StrokeService.getKPISummary({})
       ]);
 
       if (casesResult.status === 'fulfilled') {
@@ -212,7 +223,33 @@ const StrokePortalPage: React.FC = () => {
     // For now, just log the case - you can implement a dialog later
   };
 
+  const handleKpiFilterChange = async (key: string, value: string) => {
+    const newFilters = { ...kpiFilters, [key]: value };
+    setKpiFilters(newFilters);
+
+    try {
+      const kpiData = await StrokeService.getKPISummary({
+        hospitalId: newFilters.hospitalId,
+        startDate: newFilters.startDate,
+        endDate: newFilters.endDate
+      });
+      setKpiSummary(kpiData);
+    } catch (err) {
+      console.error('Error updating KPI data:', err);
+    }
+  };
+
+  const handleClearKpiFilters = () => {
+    const cleared = {};
+    setKpiFilters(cleared);
+    // Reload with empty filters
+    StrokeService.getKPISummary({}).then(setKpiSummary).catch(console.error);
+  };
+
+  // ... create/update case handlers ...
+
   const handleExportToExcel = async () => {
+    // ... existing export code
     try {
       setExportLoading(true);
       const exportFilters: StrokeCaseFilters = {};
@@ -236,7 +273,7 @@ const StrokePortalPage: React.FC = () => {
     }
   };
 
-  // Check if user is admin
+  // ... existing admin check ...
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'RCC';
 
   if (loading) {
@@ -274,29 +311,32 @@ const StrokePortalPage: React.FC = () => {
     },
     {
       title: 'Avg Registration to CT',
-      value: kpiSummary?.averageTimings.registrationToCt ?
+      value: kpiSummary?.averageTimings?.registrationToCt ?
         `${Math.round(kpiSummary.averageTimings.registrationToCt)} min` : 'N/A',
       icon: <Timeline />,
       color: '#ed6c02',
     },
     {
       title: 'KPI 1 Performance',
-      value: kpiSummary?.kpiPerformance.kpi1.percentage ?
+      value: kpiSummary?.kpiPerformance?.kpi1?.percentage ?
         `${Math.round(kpiSummary.kpiPerformance.kpi1.percentage)}%` : 'N/A',
       icon: <Dashboard />,
       color: '#2e7d32',
     },
     {
       title: 'Success Rate',
-      value: kpiSummary?.outcomes.successRate ?
+      value: kpiSummary?.outcomes?.successRate ?
         `${Math.round(kpiSummary.outcomes.successRate)}%` : 'N/A',
       icon: <Assessment />,
       color: '#d32f2f',
     },
   ];
 
+  // ... existing return ...
+
   return (
     <>
+      {/* ... existing Helmet and PortalSkeleton ... */}
       <Helmet>
         <title>Stroke Portal - RCC Healthcare Platform</title>
       </Helmet>
@@ -311,6 +351,7 @@ const StrokePortalPage: React.FC = () => {
         headerActions={headerActions}
         kpiCards={kpiCards}
       >
+        {/* ... error display ... */}
         {error && (
           <Box sx={{ p: 3, pb: 0 }}>
             <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
@@ -319,10 +360,10 @@ const StrokePortalPage: React.FC = () => {
           </Box>
         )}
 
-        {/* Main Content Tabs */}
-        <Box sx={{ 
-          borderBottom: 1, 
-          borderColor: 'divider', 
+        {/* ... Main Content Tabs ... */}
+        <Box sx={{
+          borderBottom: 1,
+          borderColor: 'divider',
           mb: 1,
           position: 'sticky',
           top: 0,
@@ -415,7 +456,14 @@ const StrokePortalPage: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
-          <StrokeKPIDashboard kpiSummary={kpiSummary} />
+          <StrokeKPIDashboard
+            kpiSummary={kpiSummary}
+            filters={kpiFilters}
+            onFilterChange={handleKpiFilterChange}
+            onClearFilters={handleClearKpiFilters}
+            hospitals={hospitals}
+            loading={hospitalsLoading}
+          />
         </TabPanel>
 
 
