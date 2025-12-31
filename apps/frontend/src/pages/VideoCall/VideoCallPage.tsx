@@ -201,7 +201,7 @@ const VideoCallPage: React.FC = () => {
 
       {!isConnected && !connectionError && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Connecting to video call service...
+          Connecting to Communication service...
         </Alert>
       )}
 

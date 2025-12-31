@@ -58,7 +58,7 @@ export const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({
           {callerInfo?.name || 'Someone'}
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.9 }}>
-          Incoming video call...
+          Incoming Communication...
         </Typography>
       </Box>
       <DialogActions

@@ -106,7 +106,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
         this.emailToSocketId.set(user.email.toLowerCase(), client.id);
       }
 
-      this.logger.log(`Video calls client connected: ${client.id} - User: ${user.email || userId}`);
+      this.logger.log(`Communications client connected: ${client.id} - User: ${user.email || userId}`);
 
       // Send connection info to client
       client.emit('me', {

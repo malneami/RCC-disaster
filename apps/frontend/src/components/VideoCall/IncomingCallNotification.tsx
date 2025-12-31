@@ -26,7 +26,7 @@ const IncomingCallNotification: React.FC = () => {
   const { socket, isConnected } = useVideoCallSocket();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  
+
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(null);
   const [isAnswering, setIsAnswering] = useState(false);
   const [activeCallIds, setActiveCallIds] = useState<Set<string>>(new Set());
@@ -77,7 +77,7 @@ const IncomingCallNotification: React.FC = () => {
 
     const handleIncomingCall = (data: IncomingCallData) => {
       console.log('[IncomingCallNotification] Received incoming call:', data);
-      
+
       // Ignore if this is from ourselves (shouldn't happen, but safety check)
       if (data.from === mySocketId || data.from === socket.id) {
         console.log('[IncomingCallNotification] Ignoring call from self');
@@ -103,9 +103,9 @@ const IncomingCallNotification: React.FC = () => {
         return;
       }
 
-      // Don't show notification if we're on the video call page - let VideoCallPage handle it
+      // Don't show notification if we're on the Communication page - let VideoCallPage handle it
       if (window.location.pathname === '/video-call' || window.location.pathname.startsWith('/video-call')) {
-        console.log('[IncomingCallNotification] On video call page, letting VideoCallPage handle the call');
+        console.log('[IncomingCallNotification] On Communication page, letting VideoCallPage handle the call');
         return;
       }
 
@@ -114,7 +114,7 @@ const IncomingCallNotification: React.FC = () => {
 
     const handleCallEnded = (data: { from: string; userId?: string; callId?: string }) => {
       console.log('[IncomingCallNotification] Call ended event:', data);
-      
+
       // Remove callId from active calls
       if (data.callId) {
         setActiveCallIds(prev => {
@@ -143,7 +143,7 @@ const IncomingCallNotification: React.FC = () => {
           return newSet;
         });
       }
-      
+
       // Close incoming call notification if it matches (shouldn't happen, but safety check)
       if (incomingCall && data.callId === incomingCall.callId) {
         console.log('[IncomingCallNotification] Call accepted, closing notification');
@@ -178,7 +178,7 @@ const IncomingCallNotification: React.FC = () => {
       signal: incomingCall.signal,
     }));
 
-    
+
     navigate('/video-call');
     setIncomingCall(null);
     setIsAnswering(false);
@@ -213,7 +213,7 @@ const IncomingCallNotification: React.FC = () => {
     >
       <DialogContent>
         <Typography variant="body1" align="center" sx={{ mt: 2 }}>
-          Incoming video call... Checkout who is calling you.
+          Incoming Communication... Checkout who is calling you.
         </Typography>
       </DialogContent>
       <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 2 }}>

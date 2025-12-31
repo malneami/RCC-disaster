@@ -8,7 +8,7 @@ export class VideoCallsService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Get user information for video calls
+   * Get user information for Communication
    */
   async getUserInfo(userId: string) {
     try {

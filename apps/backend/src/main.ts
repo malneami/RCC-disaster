@@ -120,7 +120,7 @@ async function bootstrap() {
   // Make io available globally
   (global as any).socketIoServer = io;
 
-  // === VIDEO CALLS NAMESPACE ===
+  // === Communication NAMESPACE ===
   const videoCallsNsp = io.of('/video-calls');
   const connectedUsers = new Map<string, { socketId: string; userInfo: any }>();
   const userIdToSocketId = new Map<string, string>();

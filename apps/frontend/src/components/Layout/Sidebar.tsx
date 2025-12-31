@@ -14,7 +14,7 @@ import {
   Badge,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
+import {
   faTachometerAlt,
   faFileAlt,
   faUsers,
@@ -44,19 +44,19 @@ const Sidebar: React.FC = () => {
       loadUnreadCount();
       // Refresh unread count every 30 seconds
       const interval = setInterval(loadUnreadCount, 30000);
-      
+
       // Listen for notification events
       const handleNotificationRead = () => {
         loadUnreadCount();
       };
-      
+
       const handleNotificationDeleted = () => {
         loadUnreadCount();
       };
-      
+
       window.addEventListener('notificationRead', handleNotificationRead);
       window.addEventListener('notificationDeleted', handleNotificationDeleted);
-      
+
       return () => {
         clearInterval(interval);
         window.removeEventListener('notificationRead', handleNotificationRead);
@@ -107,7 +107,7 @@ const Sidebar: React.FC = () => {
       roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER', 'HOSPITAL_USER'],
     },
     {
-      text: 'Video Calls',
+      text: 'Communication',
       icon: <FontAwesomeIcon icon={faVideo} />,
       path: '/video-call',
       roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER', 'HOSPITAL_USER'],
@@ -210,7 +210,7 @@ const Sidebar: React.FC = () => {
           RCC Healthcare
         </Typography>
       </Toolbar>
-      
+
       <Box sx={{ px: 2, py: 1 }}>
         <Chip
           label={`${user?.role?.replace('_', ' ')}`}
@@ -270,7 +270,7 @@ const Sidebar: React.FC = () => {
           </Typography>
         </>
       )}
-      
+
       <List>
         {dashboardItems
           .filter(item => hasRole(item.roles))
@@ -313,7 +313,7 @@ const Sidebar: React.FC = () => {
           </Typography>
         </>
       )}
-      
+
       <List>
         {portalItems
           .filter(item => hasRole(item.roles))
