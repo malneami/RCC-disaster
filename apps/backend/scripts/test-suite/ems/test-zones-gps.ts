@@ -61,7 +61,6 @@ async function runModule1() {
       nationalId: '1000000001',
       dateOfBirth: new Date('1990-01-01'),
       gender: PatientGender.MALE,
-      age: 30,
       bloodType: 'O_POS', 
       phoneNumber: '0500000000',
       createdById: testUser.id

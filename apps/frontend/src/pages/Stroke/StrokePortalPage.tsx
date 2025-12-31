@@ -320,7 +320,15 @@ const StrokePortalPage: React.FC = () => {
         )}
 
         {/* Main Content Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
+        <Box sx={{ 
+          borderBottom: 1, 
+          borderColor: 'divider', 
+          mb: 1,
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          backgroundColor: '#f8f9fa'
+        }}>
           <Tabs
             value={activeTab}
             onChange={handleTabChange}

@@ -3,28 +3,29 @@ import {
   Box,
   Grid,
   TextField,
+  Button,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Button,
+  Card,
+  CardHeader,
+  CardContent,
   Alert,
   CircularProgress,
   FormControlLabel,
   Checkbox,
-  Card,
-  CardContent,
-  CardHeader,
 } from '@mui/material';
-import { Patient, CreatePatientData, patientService } from '../../services/patientService';
+import { patientService, CreatePatientData } from '../../services/patientService';
+import { calculateAge, calculateDoBFromAge, formatDateToLocalInput, formatAge } from '../../utils/ageCalculator';
 
 interface PatientFormProps {
-  patient?: Patient | null;
-  onPatientCreated?: (patient: Patient) => void;
-  onPatientUpdated?: (patient: Patient) => void;
-  onCancel: () => void;
-  compact?: boolean; // For use in modals/dialogs
-  showActions?: boolean; // Whether to show action buttons
+  patient?: any;
+  onPatientCreated?: (patient: any) => void;
+  onPatientUpdated?: (patient: any) => void;
+  onCancel?: () => void;
+  compact?: boolean;
+  showActions?: boolean;
 }
 
 const PatientForm: React.FC<PatientFormProps> = ({
@@ -38,6 +39,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
   const [formData, setFormData] = useState<CreatePatientData>({
     firstName: '',
     lastName: '',
+    dateOfBirth: '', // Initialize dateOfBirth
     age: undefined,
     gender: 'MALE',
     privacyLevel: 'PRIVATE',
@@ -45,16 +47,26 @@ const PatientForm: React.FC<PatientFormProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ageDisplay, setAgeDisplay] = useState<string>('');
 
   // Initialize form with patient data if editing
   useEffect(() => {
     if (patient) {
+      let dob = patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '';
+
+      // If no DOB but Age exists (legacy), estimate DOB
+      if (!dob && patient.age) {
+        const estimatedDob = calculateDoBFromAge(patient.age, 0, 0);
+        dob = formatDateToLocalInput(estimatedDob);
+      }
+
       setFormData({
         mrn: patient.mrn || '',
         nationalId: patient.nationalId || '',
         firstName: patient.firstName,
         lastName: patient.lastName,
         middleName: patient.middleName || '',
+        dateOfBirth: dob,
         age: patient.age || undefined,
         gender: patient.gender,
         maritalStatus: patient.maritalStatus || 'UNKNOWN',
@@ -89,12 +101,27 @@ const PatientForm: React.FC<PatientFormProps> = ({
     }
   }, [patient]);
 
+  // Update calculated age display whenever dateOfBirth changes
+  useEffect(() => {
+    if (formData.dateOfBirth) {
+      const age = calculateAge(formData.dateOfBirth);
+      setAgeDisplay(formatAge(age));
+      // Optionally update formData.age for legacy support or backend requirements?
+      // user wants to remove age usage, but keeping it in state might still be useful for now
+      // but we shouldn't rely on it for input.
+      setFormData(prev => ({ ...prev, age: age.years }));
+    } else {
+      setAgeDisplay('');
+      setFormData(prev => ({ ...prev, age: undefined }));
+    }
+  }, [formData.dateOfBirth]);
+
   const handleInputChange = (field: keyof CreatePatientData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (error) {
       setError(null);
@@ -110,8 +137,9 @@ const PatientForm: React.FC<PatientFormProps> = ({
       setError('Last name is required');
       return false;
     }
-    if (!formData.age || formData.age < 0 || formData.age > 150) {
-      setError('Age is required and must be between 0 and 150');
+    // Validate DOB instead of Age
+    if (!formData.dateOfBirth) {
+      setError('Date of Birth is required');
       return false;
     }
     return true;
@@ -130,6 +158,8 @@ const PatientForm: React.FC<PatientFormProps> = ({
       const formDataForSubmission = {
         ...formData,
         insuranceExpiry: formData.insuranceExpiry ? new Date(formData.insuranceExpiry).toISOString() : undefined,
+        // Ensure dateOfBirth is sent. Age is auto-calculated by backend or just derived.
+        // We send dateOfBirth.
       };
 
       if (patient) {
@@ -149,7 +179,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
     }
   };
 
-    const renderBasicInfo = () => (
+  const renderBasicInfo = () => (
     <Card>
       <CardHeader title="Basic Information" />
       <CardContent>
@@ -183,12 +213,13 @@ const PatientForm: React.FC<PatientFormProps> = ({
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Age *"
-              type="number"
-              value={formData.age || ''}
-              onChange={(e) => handleInputChange('age', parseInt(e.target.value) || undefined)}
-              inputProps={{ min: 0, max: 150 }}
+              label="Date of Birth *"
+              type="date"
+              value={formData.dateOfBirth || ''}
+              onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+              InputLabelProps={{ shrink: true }}
               required
+              helperText={ageDisplay ? `Age: ${ageDisplay}` : ''}
             />
           </Grid>
           <Grid item xs={12} md={6}>

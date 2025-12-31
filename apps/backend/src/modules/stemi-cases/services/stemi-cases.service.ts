@@ -256,7 +256,7 @@ export class StemiCasesService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             phoneNumber: true,
             address: true,

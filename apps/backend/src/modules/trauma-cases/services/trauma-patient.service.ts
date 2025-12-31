@@ -5,21 +5,39 @@ import { PatientGender } from '@prisma/client';
 import { AccessLogService, EntityType } from '../../../common/services/access-log.service';
 
 export interface PatientInfo {
+  mrn?: string;
+  nationalId?: string;
   firstName: string;
   lastName: string;
-  nationalId?: string;
-  mrn?: string;
+  middleName?: string;
+  dateOfBirth?: string;
+  gender?: string;
   phoneNumber?: string;
   email?: string;
-  dateOfBirth?: string; // Will be removed after migration
-  age?: number; // Age in years
-  gender?: string;
   address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
-  medicalHistory?: string;
+  emergencyEmail?: string;
+  emergencyRelationship?: string;
+  insuranceProvider?: string;
+  insuranceNumber?: string;
+  insuranceGroup?: string;
+  insuranceExpiry?: string;
+  bloodType?: string;
+  rhFactor?: string;
   allergies?: string;
   medications?: string;
+  medicalHistory?: string;
+  riskFactors?: string;
+  chronicConditions?: string;
+  weight?: number;
+  height?: number;
+  privacyLevel?: string;
+  consentGiven?: boolean;
 }
 
 @Injectable()
@@ -33,7 +51,6 @@ export class TraumaPatientService {
   async processPatient(patientInfo: PatientInfo, userId: string): Promise<string> {
     console.log('=== PATIENT PROCESSING ===');
     console.log('Patient Info received:', JSON.stringify(patientInfo, null, 2));
-    console.log('Age:', patientInfo.age);
     console.log('Address:', patientInfo.address);
     console.log('Emergency Contact:', patientInfo.emergencyContact);
     console.log('Emergency Phone:', patientInfo.emergencyPhone);
@@ -95,7 +112,7 @@ export class TraumaPatientService {
         createdById: userId,
       };
       
-      // Handle age and dateOfBirth fields
+      // Handle dateOfBirth - single source of truth for age
       if (patientInfo.dateOfBirth) {
         patientData.dateOfBirth = new Date(patientInfo.dateOfBirth);
       } else {
@@ -103,22 +120,6 @@ export class TraumaPatientService {
         patientData.dateOfBirth = new Date('1900-01-01');
       }
 
-      if (patientInfo.age !== undefined && patientInfo.age !== null) {
-        patientData.age = patientInfo.age;
-      } else if (patientInfo.dateOfBirth) {
-        // Calculate age from dateOfBirth if age not provided
-        const today = new Date();
-        const birthDate = new Date(patientInfo.dateOfBirth);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
-        patientData.age = age;
-      } else {
-        // Default values if neither provided
-        patientData.age = 0; 
-      }
       
       if (patientInfo.gender) {
         patientData.gender = patientInfo.gender as PatientGender;
@@ -176,13 +177,8 @@ export class TraumaPatientService {
     console.log('=== UPDATING PATIENT INFO ===');
     console.log('Patient ID:', patientId);
     console.log('Patient Info received:', JSON.stringify(patientInfo, null, 2));
-    console.log('Age:', patientInfo.age);
     console.log('Address:', patientInfo.address);
-    console.log('Emergency Contact:', patientInfo.emergencyContact);
-    console.log('Emergency Phone:', patientInfo.emergencyPhone);
-    console.log('Medical History:', patientInfo.medicalHistory);
-    console.log('Allergies:', patientInfo.allergies);
-    console.log('Medications:', patientInfo.medications);
+    // ... (other logs)
     
     const patientUpdateData: any = {};
     
@@ -207,10 +203,7 @@ export class TraumaPatientService {
     if (patientInfo.dateOfBirth !== undefined) {
       patientUpdateData.dateOfBirth = patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth) : null;
     }
-    if (patientInfo.age !== undefined && patientInfo.age !== null) {
-      patientUpdateData.age = patientInfo.age;
-    }
-    if (patientInfo.gender !== undefined) {
+      if (patientInfo.gender !== undefined) {
       patientUpdateData.gender = patientInfo.gender ? patientInfo.gender as PatientGender : null;
     }
     if (patientInfo.address !== undefined) {

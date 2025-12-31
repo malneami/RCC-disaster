@@ -27,7 +27,7 @@ interface StemiCaseData {
     firstName: string;
     lastName: string;
     nationalId: string | null;
-    age: number | null;
+    dateOfBirth: Date | null;
     gender: string;
     phoneNumber: string | null;
     email: string | null;
@@ -81,7 +81,7 @@ export class StemiExportService {
               firstName: true,
               lastName: true,
               nationalId: true,
-              age: true,
+              dateOfBirth: true,
               gender: true,
               phoneNumber: true,
               email: true,
@@ -378,7 +378,7 @@ export class StemiExportService {
     const destinationHospital = case_.destinationHospital;
 
     // Get patient age
-    const age = patient?.age || 0;
+    const age = this.calculateAge(patient?.dateOfBirth);
 
     // Mode of arrival calculations
     const modeOfArrival = this.formatModeOfArrival(case_.modeOfArrival || '');
@@ -499,6 +499,18 @@ export class StemiExportService {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
+  }
+
+  private calculateAge(dateOfBirth: Date | string | null | undefined): number {
+    if (!dateOfBirth) return 0;
+    const birth = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
   }
 
   private formatTime(date: Date | null): string {

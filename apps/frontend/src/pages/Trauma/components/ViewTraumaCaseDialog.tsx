@@ -164,7 +164,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
           )}
         </Box>
       </DialogTitle>
-      
+
       <DialogContent>
         <Grid container spacing={3}>
           {/* Patient Information */}
@@ -176,7 +176,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                   Patient Information
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                
+
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableBody>
@@ -193,8 +193,8 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                         <TableCell>{traumaCase.patient?.mrn || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell><strong>Age</strong></TableCell>
-                        <TableCell>{traumaCase.patient?.age ? `${traumaCase.patient.age} years` : 'N/A'}</TableCell>
+                        <TableCell><strong>Date of Birth</strong></TableCell>
+                        <TableCell>{traumaCase.patient?.dateOfBirth ? new Date(traumaCase.patient.dateOfBirth).toLocaleDateString() : 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell><strong>Gender</strong></TableCell>
@@ -224,7 +224,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                   Hospital Information
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                
+
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableBody>
@@ -270,7 +270,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                   Incident Details
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                
+
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableBody>
@@ -328,7 +328,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                   Vitals Assessment
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                
+
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableBody>
@@ -337,7 +337,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                         <TableCell>
                           <Chip
                             label={`${traumaCase.glasgowComaScale || 'N/A'} - ${TraumaService.getGlasgowComaScaleLabel(traumaCase.glasgowComaScale || 15)}`}
-                            sx={{ 
+                            sx={{
                               backgroundColor: getGlasgowColor(traumaCase.glasgowComaScale),
                               color: 'white'
                             }}
@@ -373,7 +373,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                   Injury Assessment
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <TableContainer component={Paper} variant="outlined">
@@ -390,7 +390,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                             <TableCell>
                               <Chip
                                 label={traumaCase.headAndNeckInjury || 'N/A'}
-                                sx={{ 
+                                sx={{
                                   backgroundColor: getSeverityColor(traumaCase.headAndNeckInjury),
                                   color: 'white',
                                   fontSize: '0.75rem'
@@ -404,7 +404,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                             <TableCell>
                               <Chip
                                 label={traumaCase.faceInjury || 'N/A'}
-                                sx={{ 
+                                sx={{
                                   backgroundColor: getSeverityColor(traumaCase.faceInjury),
                                   color: 'white',
                                   fontSize: '0.75rem'
@@ -418,7 +418,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                             <TableCell>
                               <Chip
                                 label={traumaCase.chestInjury || 'N/A'}
-                                sx={{ 
+                                sx={{
                                   backgroundColor: getSeverityColor(traumaCase.chestInjury),
                                   color: 'white',
                                   fontSize: '0.75rem'
@@ -431,7 +431,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                       </Table>
                     </TableContainer>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <TableContainer component={Paper} variant="outlined">
                       <Table size="small">
@@ -447,7 +447,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                             <TableCell>
                               <Chip
                                 label={traumaCase.abdomenInjury || 'N/A'}
-                                sx={{ 
+                                sx={{
                                   backgroundColor: getSeverityColor(traumaCase.abdomenInjury),
                                   color: 'white',
                                   fontSize: '0.75rem'
@@ -461,7 +461,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                             <TableCell>
                               <Chip
                                 label={traumaCase.extremitiesInjury || 'N/A'}
-                                sx={{ 
+                                sx={{
                                   backgroundColor: getSeverityColor(traumaCase.extremitiesInjury),
                                   color: 'white',
                                   fontSize: '0.75rem'
@@ -475,7 +475,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                             <TableCell>
                               <Chip
                                 label={traumaCase.externalInjury || 'N/A'}
-                                sx={{ 
+                                sx={{
                                   backgroundColor: getSeverityColor(traumaCase.externalInjury),
                                   color: 'white',
                                   fontSize: '0.75rem'
@@ -513,7 +513,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                   Disposition
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                
+
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableBody>
@@ -552,7 +552,7 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                   <FontAwesomeIcon icon={faComment} />
                   <Typography variant="h6">Case Notes</Typography>
                 </Box>
-                
+
                 {/* Existing Case Notes */}
                 {loadingCaseNotes ? (
                   <Box display="flex" justifyContent="center" py={3}>
@@ -568,19 +568,18 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                             p: 2,
                             borderRadius: 1,
                             backgroundColor: alpha(theme.palette.primary.main, 0.05),
-                            borderLeft: `4px solid ${
-                              note.priority === 'HIGH' ? theme.palette.error.main :
-                              note.priority === 'MEDIUM' ? theme.palette.warning.main :
-                              theme.palette.success.main
-                            }`,
+                            borderLeft: `4px solid ${note.priority === 'HIGH' ? theme.palette.error.main :
+                                note.priority === 'MEDIUM' ? theme.palette.warning.main :
+                                  theme.palette.success.main
+                              }`,
                           }}
                         >
                           <Box display="flex" alignItems="flex-start" gap={2}>
-                            <Avatar 
-                              sx={{ 
+                            <Avatar
+                              sx={{
                                 bgcolor: note.priority === 'HIGH' ? 'error.main' :
-                                        note.priority === 'MEDIUM' ? 'warning.main' :
-                                        'success.main',
+                                  note.priority === 'MEDIUM' ? 'warning.main' :
+                                    'success.main',
                                 width: 32,
                                 height: 32
                               }}
@@ -594,13 +593,13 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                                 <Typography variant="subtitle2" fontWeight={600}>
                                   {note.createdBy.firstName} {note.createdBy.lastName}
                                 </Typography>
-                                <Chip 
-                                  label={note.priority} 
-                                  size="small" 
+                                <Chip
+                                  label={note.priority}
+                                  size="small"
                                   color={
                                     note.priority === 'HIGH' ? 'error' :
-                                    note.priority === 'MEDIUM' ? 'warning' :
-                                    'success'
+                                      note.priority === 'MEDIUM' ? 'warning' :
+                                        'success'
                                   }
                                   sx={{ height: 20, fontSize: '0.7rem' }}
                                 />
@@ -624,13 +623,13 @@ const ViewTraumaCaseDialog: React.FC<ViewTraumaCaseDialogProps> = ({
                     </Typography>
                   </Box>
                 )}
-                
+
                 <Divider sx={{ my: 2 }} />
-                
+
                 {/* Add Case Note Button */}
-                <Button 
-                  onClick={handleAddCaseNote} 
-                  variant="outlined" 
+                <Button
+                  onClick={handleAddCaseNote}
+                  variant="outlined"
                   startIcon={<FontAwesomeIcon icon={faComment} />}
                   fullWidth
                 >

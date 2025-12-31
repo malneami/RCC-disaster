@@ -92,7 +92,7 @@ export class StrokeCommandCenterService {
           select: {
             firstName: true,
             lastName: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
           },
         },
@@ -206,8 +206,8 @@ export class StrokeCommandCenterService {
     };
 
     cases.forEach(c => {
-      if (c.patient?.age) {
-        const age = c.patient.age;
+      if (c.patient?.dateOfBirth) {
+        const age = this.calculateAge(c.patient.dateOfBirth);
         if (age >= 18 && age <= 40) ageGroups['18-40']++;
         else if (age >= 41 && age <= 60) ageGroups['41-60']++;
         else if (age >= 61 && age <= 80) ageGroups['61-80']++;

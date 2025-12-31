@@ -21,7 +21,7 @@ export class StrokeExportService {
               lastName: true,
               nationalId: true,
               mrn: true,
-              age: true,
+              dateOfBirth: true,
               gender: true,
               phoneNumber: true,
               email: true,
@@ -336,7 +336,7 @@ export class StrokeExportService {
       'MRN': case_.patient?.mrn || '',
       'First Name': case_.patient?.firstName || '',
       'Last Name': case_.patient?.lastName || '',
-      'Age': case_.patient?.age || '',
+      'Age': this.calculateAge(case_.patient?.dateOfBirth) || '',
       'Gender': case_.patient?.gender || '',
       'Stroke Type': case_.strokeType || '',
       'Status': case_.currentStatus || '',
@@ -354,5 +354,17 @@ export class StrokeExportService {
         ? new Date(case_.updatedAt).toLocaleString() 
         : '',
     };
+  }
+
+  private calculateAge(dateOfBirth: Date | string | null | undefined): number {
+    if (!dateOfBirth) return 0;
+    const birth = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
   }
 }

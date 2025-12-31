@@ -8,8 +8,10 @@ async function seedEMSData() {
   try {
     // Create EMS users (drivers and dispatchers)
     const emsUsers = await Promise.all([
-      prisma.user.create({
-        data: {
+      prisma.user.upsert({
+        where: { email: 'driver1@ems.com' },
+        update: {},
+        create: {
           email: 'driver1@ems.com',
           firstName: 'Ahmed',
           lastName: 'Al-Rashid',
@@ -20,8 +22,10 @@ async function seedEMSData() {
           passwordHash: '$2b$10$example_hash_1', // In real app, use proper hashing
         },
       }),
-      prisma.user.create({
-        data: {
+      prisma.user.upsert({
+        where: { email: 'driver2@ems.com' },
+        update: {},
+        create: {
           email: 'driver2@ems.com',
           firstName: 'Fatima',
           lastName: 'Al-Zahra',
@@ -32,8 +36,10 @@ async function seedEMSData() {
           passwordHash: '$2b$10$example_hash_2',
         },
       }),
-      prisma.user.create({
-        data: {
+      prisma.user.upsert({
+        where: { email: 'dispatcher@ems.com' },
+        update: {},
+        create: {
           email: 'dispatcher@ems.com',
           firstName: 'Mohammed',
           lastName: 'Al-Sabah',
@@ -44,8 +50,10 @@ async function seedEMSData() {
           passwordHash: '$2b$10$example_hash_3',
         },
       }),
-      prisma.user.create({
-        data: {
+      prisma.user.upsert({
+        where: { email: 'technician@ems.com' },
+        update: {},
+        create: {
           email: 'technician@ems.com',
           firstName: 'Sara',
           lastName: 'Al-Mansouri',

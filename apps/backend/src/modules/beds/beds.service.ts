@@ -234,7 +234,7 @@ export class BedsService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -262,7 +262,7 @@ export class BedsService {
           id: bed.currentPatient.id,
           name: `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`,
           nationalId: bed.currentPatient.nationalId || undefined,
-          age: bed.currentPatient.age || undefined,
+          age: this.calculateAge(bed.currentPatient.dateOfBirth) || undefined,
           gender: bed.currentPatient.gender || undefined,
           mrn: bed.currentPatient.mrn || undefined,
         }
@@ -296,7 +296,7 @@ export class BedsService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -339,7 +339,7 @@ export class BedsService {
           id: bed.currentPatient.id,
           name: `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`,
           nationalId: bed.currentPatient.nationalId || undefined,
-          age: bed.currentPatient.age || undefined,
+          age: this.calculateAge(bed.currentPatient.dateOfBirth) || undefined,
           gender: bed.currentPatient.gender || undefined,
           mrn: bed.currentPatient.mrn || undefined,
         }
@@ -467,7 +467,7 @@ export class BedsService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -506,7 +506,7 @@ export class BedsService {
           id: updatedBed.currentPatient.id,
           name: `${updatedBed.currentPatient.firstName} ${updatedBed.currentPatient.lastName}`,
           nationalId: updatedBed.currentPatient.nationalId || undefined,
-          age: updatedBed.currentPatient.age || undefined,
+          age: this.calculateAge(updatedBed.currentPatient.dateOfBirth) || undefined,
           gender: updatedBed.currentPatient.gender || undefined,
           mrn: updatedBed.currentPatient.mrn || undefined,
         }
@@ -620,5 +620,17 @@ export class BedsService {
     await this.prisma.bed.delete({
       where: { id: bedId },
     });
+  }
+
+  private calculateAge(dateOfBirth: Date | string | null | undefined): number | undefined {
+    if (!dateOfBirth) return undefined;
+    const birth = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
   }
 }

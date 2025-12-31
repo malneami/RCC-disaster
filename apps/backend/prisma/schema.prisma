@@ -772,10 +772,7 @@ model Patient {
   firstName       String         @map("first_name")
   lastName        String         @map("last_name")
   middleName      String?        @map("middle_name")
-  dateOfBirth     DateTime?      @map("date_of_birth") // Will be removed after migration
-  age             Int?           // Age in years
-  ageMonths       Int?           @map("age_months") // Age in months (for precise age when manually entered)
-  ageDays         Int?           @map("age_days") // Age in days (for precise age when manually entered)
+  dateOfBirth     DateTime?      @map("date_of_birth") // Single source of truth for age
   gender          PatientGender
   maritalStatus   MaritalStatus? @map("marital_status")
   
@@ -862,7 +859,6 @@ model Patient {
   @@index([mrn])
   @@index([nationalId])
   @@index([lastName, firstName])
-  @@index([age])
   @@index([duplicateGroupId])
   @@index([createdAt])
   @@index([lastAccessedAt])
@@ -2008,7 +2004,7 @@ model GPSTrackingLog {
   createdAt               DateTime        @default(now()) @map("created_at")
   
   // Relations
-  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
+  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id], onDelete: Cascade)
   
   @@map("gps_tracking_logs")
   @@index([ambulanceId])

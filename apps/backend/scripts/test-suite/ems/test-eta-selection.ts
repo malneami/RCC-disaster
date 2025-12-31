@@ -164,7 +164,7 @@ async function runModule2() {
   
   // Create Ticket & Assignment
   const tPatient = await prisma.patient.upsert({
-    where: { nationalId: '999' }, update: {}, create: { nationalId: '999', firstName: 'T', lastName: 'T', dateOfBirth: new Date(), gender: PatientGender.MALE, age: 20, bloodType: 'O', phoneNumber: '1', createdById: testUser.id }
+    where: { nationalId: '999' }, update: {}, create: { nationalId: '999', firstName: 'T', lastName: 'T', dateOfBirth: new Date(), gender: PatientGender.MALE, bloodType: 'O', phoneNumber: '1', createdById: testUser.id }
   });
 
   const ticket = await prisma.ticket.create({

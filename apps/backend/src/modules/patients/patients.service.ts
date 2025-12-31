@@ -347,6 +347,10 @@ export class PatientsService {
       if (patientData.ageDays === undefined) {
         delete patientData.ageDays;
       }
+      // Remove age since it's not in the Prisma schema (calculated from DoB)
+      if (patientData.age !== undefined) {
+        delete patientData.age;
+      }
       
       const result = await this.prisma.patient.create({
         data: patientData,
@@ -852,25 +856,7 @@ export class PatientsService {
       }
     }
     
-    // If ageMonths or ageDays exist, show formatted age from stored values
-    if (patient.ageMonths !== undefined || patient.ageDays !== undefined) {
-      const parts: string[] = [];
-      if (patient.age !== undefined && patient.age !== null && patient.age > 0) {
-        parts.push(`${patient.age} ${patient.age === 1 ? 'year' : 'years'}`);
-      }
-      if (patient.ageMonths !== undefined && patient.ageMonths > 0) {
-        parts.push(`${patient.ageMonths} ${patient.ageMonths === 1 ? 'month' : 'months'}`);
-      }
-      if (patient.ageDays !== undefined && patient.ageDays > 0) {
-        parts.push(`${patient.ageDays} ${patient.ageDays === 1 ? 'day' : 'days'}`);
-      }
-      return parts.length > 0 ? parts.join(', ') : 'N/A';
-    }
-    
-    // If only age exists (no date of birth, no months/days), show years only
-    if (patient.age !== undefined && patient.age !== null) {
-      return `${patient.age} ${patient.age === 1 ? 'year' : 'years'}`;
-    }
+    return 'N/A';
     
     return 'N/A';
   }
@@ -1291,9 +1277,22 @@ export class PatientsService {
       // By age group
       this.prisma.patient.findMany({
         where: whereClause,
-        select: { age: true },
+        select: { dateOfBirth: true },
       }),
     ]);
+
+    // Helper to calculate age from DoB (duplicated here for scope access or make class method)
+    const calculateAge = (dob: Date | string | null): number | null => {
+        if (!dob) return null;
+        const birth = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
 
     // Process age groups
     const ageGroups = {
@@ -1306,15 +1305,17 @@ export class PatientsService {
     };
 
     byAgeGroup.forEach((patient) => {
-      if (!patient.age) {
+      const age = calculateAge(patient.dateOfBirth);
+      
+      if (age === null) {
         ageGroups.unknown++;
-      } else if (patient.age <= 17) {
+      } else if (age <= 17) {
         ageGroups['0-17']++;
-      } else if (patient.age <= 30) {
+      } else if (age <= 30) {
         ageGroups['18-30']++;
-      } else if (patient.age <= 50) {
+      } else if (age <= 50) {
         ageGroups['31-50']++;
-      } else if (patient.age <= 70) {
+      } else if (age <= 70) {
         ageGroups['51-70']++;
       } else {
         ageGroups['71+']++;

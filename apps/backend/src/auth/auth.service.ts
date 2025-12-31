@@ -62,41 +62,48 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, ipAddress: string, userAgent: string) {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
+    try {
+      const user = await this.validateUser(loginDto.email, loginDto.password);
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      hospitalId: user.hospitalId,
-    };
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        hospitalId: user.hospitalId,
+      };
 
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_REFRESH_SECRET'),
-      expiresIn: 0,
-    });
+      const accessToken = this.jwtService.sign(payload);
+      const refreshToken = this.jwtService.sign(payload, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+        expiresIn: '7d',
+      });
 
-    // Update user with refresh token and last login
-    await this.usersService.updateRefreshToken(user.id, refreshToken);
-    await this.usersService.updateLastLogin(user.id);
+      // Update user with refresh token and last login
+      await this.usersService.updateRefreshToken(user.id, refreshToken);
+      await this.usersService.updateLastLogin(user.id);
 
-    // Log activity
-    await this.activitiesService.create({
-      type: ActivityType.USER_LOGIN,
-      description: `User ${user.email} logged in successfully`,
-      userId: user.id,
-      ipAddress,
-      userAgent,
-    });
+      // Log activity
+      await this.activitiesService.create({
+        type: ActivityType.USER_LOGIN,
+        description: `User ${user.email} logged in successfully`,
+        userId: user.id,
+        ipAddress,
+        userAgent,
+      });
 
-    this.logger.log(`User ${user.email} logged in successfully`);
+      this.logger.log(`User ${user.email} logged in successfully`);
 
-    return {
-      user,
-      accessToken,
-      refreshToken,
-    };
+      return {
+        user,
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(`Login failed for email ${loginDto.email}: ${errorMessage}`, errorStack);
+      throw error;
+    }
   }
 
   async logout(userId: string, ipAddress: string, userAgent: string) {

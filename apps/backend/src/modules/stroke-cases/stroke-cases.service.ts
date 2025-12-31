@@ -51,144 +51,122 @@ export class StrokeCasesService {
       let patientId = createStrokeCaseDto.patientId;
       let ticketId = createStrokeCaseDto.ticketId;
 
-    // Auto-create patient if not provided but patientInfo is provided
-    if (!patientId && createStrokeCaseDto.patientInfo) {
-      console.log('=== PATIENT PROCESSING ===');
-      console.log('Patient Info:', createStrokeCaseDto.patientInfo);
-      
-      // Check for existing patient by National ID first (primary identifier)
-      if (createStrokeCaseDto.patientInfo.nationalId && createStrokeCaseDto.patientInfo.nationalId.trim()) {
-        console.log('Checking for existing patient by National ID:', createStrokeCaseDto.patientInfo.nationalId);
-        
-        try {
-          // Use patient merge service to find and merge duplicates
-          const existingPatientId = await this.patientMergeService.findAndMergeDuplicatesByNationalId(
-            createStrokeCaseDto.patientInfo.nationalId.trim()
-          );
+      // Only process patient info if it's provided
+      if (createStrokeCaseDto.patientInfo) {
+        if (createStrokeCaseDto.patientInfo.nationalId && createStrokeCaseDto.patientInfo.nationalId.trim()) {
+          console.log('Checking for existing patient by National ID:', createStrokeCaseDto.patientInfo.nationalId);
           
-          if (existingPatientId) {
-            console.log('Found existing patient (or merged duplicates):', existingPatientId);
-            patientId = existingPatientId;
-          } else {
-            console.log('No existing patient found with National ID, will create new patient');
-          }
-        } catch (error) {
-          console.error('Error checking for duplicate patients:', error);
-          // If there's an error with duplicate checking, try to find the patient directly
           try {
-            const existingPatient = await this.prisma.patient.findUnique({
-              where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
-            });
-            if (existingPatient) {
-              console.log('Found existing patient after error:', existingPatient.id);
-              patientId = existingPatient.id;
-            } else {
-              console.log('No existing patient found, will create new patient');
-            }
-          } catch (findError) {
-            console.error('Error finding patient directly:', findError);
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new BadRequestException(`Error checking for duplicate patients: ${errorMessage}`);
-          }
-        }
-      }
-      
-      // If no existing patient found, create new one
-      if (!patientId) {
-        console.log('Creating new patient...');
-        
-        // Validate required fields
-        if (!createStrokeCaseDto.patientInfo.firstName || !createStrokeCaseDto.patientInfo.lastName) {
-          throw new BadRequestException('Patient first name and last name are required');
-        }
-        
-        const patientData: any = {
-          firstName: createStrokeCaseDto.patientInfo.firstName.trim(),
-          lastName: createStrokeCaseDto.patientInfo.lastName.trim(),
-          age: createStrokeCaseDto.patientInfo.age || null,
-          nationalId: createStrokeCaseDto.patientInfo.nationalId?.trim() || null,
-          mrn: createStrokeCaseDto.patientInfo.mrn?.trim() || null,
-          phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber?.trim() || null,
-          email: createStrokeCaseDto.patientInfo.email?.trim() || null,
-          createdById: validUserId,
-        };
-        
-        // Handle age and dateOfBirth fields
-        if (createStrokeCaseDto.patientInfo.dateOfBirth) {
-            patientData.dateOfBirth = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
-        } else {
-            patientData.dateOfBirth = new Date('1900-01-01');
-        }
-
-        if (createStrokeCaseDto.patientInfo.age !== undefined && createStrokeCaseDto.patientInfo.age !== null) {
-          patientData.age = createStrokeCaseDto.patientInfo.age;
-        } else if (createStrokeCaseDto.patientInfo.dateOfBirth) {
-          // Calculate age from dateOfBirth if age not provided
-          const today = new Date();
-          const birthDate = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
-          let age = today.getFullYear() - birthDate.getFullYear();
-          const monthDiff = today.getMonth() - birthDate.getMonth();
-          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-          }
-          patientData.age = age;
-        } else {
-          // Default values if neither provided
-          patientData.age = 0; 
-        }
-        
-        if (createStrokeCaseDto.patientInfo.gender) {
-          patientData.gender = createStrokeCaseDto.patientInfo.gender as PatientGender;
-        } else {
-          patientData.gender = PatientGender.MALE; // Default gender
-        }
-        
-        console.log('Creating new patient with data:', patientData);
-        
-        try {
-          const patient = await this.prisma.patient.create({
-            data: patientData,
-          });
-          console.log('New patient created:', patient.id);
-          patientId = patient.id;
-        } catch (error: any) {
-          console.error('Error creating patient:', error);
-          
-          // If it's a unique constraint violation, try to find the existing patient
-          if (error.code === 'P2002') {
-            console.log('Unique constraint violation, attempting to find existing patient...');
+            // Use patient merge service to find and merge duplicates
+            const existingPatientId = await this.patientMergeService.findAndMergeDuplicatesByNationalId(
+              createStrokeCaseDto.patientInfo.nationalId.trim()
+            );
             
-            // Try to find by National ID first
-            if (createStrokeCaseDto.patientInfo.nationalId) {
+            if (existingPatientId) {
+              console.log('Found existing patient (or merged duplicates):', existingPatientId);
+              patientId = existingPatientId;
+            } else {
+              console.log('No existing patient found with National ID, will create new patient');
+            }
+          } catch (error) {
+            console.error('Error checking for duplicate patients:', error);
+            // If there's an error with duplicate checking, try to find the patient directly
+            try {
               const existingPatient = await this.prisma.patient.findUnique({
                 where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
               });
               if (existingPatient) {
-                console.log('Found existing patient after constraint violation:', existingPatient.id);
+                console.log('Found existing patient after error:', existingPatient.id);
                 patientId = existingPatient.id;
+              } else {
+                console.log('No existing patient found, will create new patient');
               }
+            } catch (findError) {
+              console.error('Error finding patient directly:', findError);
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              throw new BadRequestException(`Error checking for duplicate patients: ${errorMessage}`);
             }
-            
-            // If not found by National ID, try by MRN
-            if (!patientId && createStrokeCaseDto.patientInfo.mrn) {
-              const existingPatient = await this.prisma.patient.findUnique({
-                where: { mrn: createStrokeCaseDto.patientInfo.mrn.trim() }
-              });
-              if (existingPatient) {
-                console.log('Found existing patient by MRN after constraint violation:', existingPatient.id);
-                patientId = existingPatient.id;
-              }
-            }
-            
-            if (!patientId) {
-              throw new BadRequestException('Patient with this National ID or MRN already exists');
-            }
+          }
+        }
+        
+        // If no existing patient found, create new one
+        if (!patientId) {
+          console.log('Creating new patient...');
+          
+          // Validate required fields
+          if (!createStrokeCaseDto.patientInfo.firstName || !createStrokeCaseDto.patientInfo.lastName) {
+            throw new BadRequestException('Patient first name and last name are required');
+          }
+          
+          const patientData: any = {
+            firstName: createStrokeCaseDto.patientInfo.firstName.trim(),
+            lastName: createStrokeCaseDto.patientInfo.lastName.trim(),
+            nationalId: createStrokeCaseDto.patientInfo.nationalId?.trim() || null,
+            mrn: createStrokeCaseDto.patientInfo.mrn?.trim() || null,
+            phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber?.trim() || null,
+            email: createStrokeCaseDto.patientInfo.email?.trim() || null,
+            createdById: validUserId,
+          };
+          
+          // Handle dateOfBirth field - single source of truth for age
+          if (createStrokeCaseDto.patientInfo.dateOfBirth) {
+              patientData.dateOfBirth = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
           } else {
-            throw error;
+              patientData.dateOfBirth = new Date('1900-01-01');
+          }
+          
+          if (createStrokeCaseDto.patientInfo.gender) {
+            patientData.gender = createStrokeCaseDto.patientInfo.gender as PatientGender;
+          } else {
+            patientData.gender = PatientGender.MALE; // Default gender
+          }
+          
+          console.log('Creating new patient with data:', patientData);
+          
+          try {
+            const patient = await this.prisma.patient.create({
+              data: patientData,
+            });
+            console.log('New patient created:', patient.id);
+            patientId = patient.id;
+          } catch (error: any) {
+            console.error('Error creating patient:', error);
+            
+            // If it's a unique constraint violation, try to find the existing patient
+            if (error.code === 'P2002') {
+              console.log('Unique constraint violation, attempting to find existing patient...');
+              
+              // Try to find by National ID first
+              if (createStrokeCaseDto.patientInfo.nationalId) {
+                const existingPatient = await this.prisma.patient.findUnique({
+                  where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
+                });
+                if (existingPatient) {
+                  console.log('Found existing patient after constraint violation:', existingPatient.id);
+                  patientId = existingPatient.id;
+                }
+              }
+              
+              // If not found by National ID, try by MRN
+              if (!patientId && createStrokeCaseDto.patientInfo.mrn) {
+                const existingPatient = await this.prisma.patient.findUnique({
+                  where: { mrn: createStrokeCaseDto.patientInfo.mrn.trim() }
+                });
+                if (existingPatient) {
+                  console.log('Found existing patient by MRN after constraint violation:', existingPatient.id);
+                  patientId = existingPatient.id;
+                }
+              }
+              
+              if (!patientId) {
+                throw new BadRequestException('Patient with this National ID or MRN already exists');
+              }
+            } else {
+              throw error;
+            }
           }
         }
       }
-    }
 
     // Auto-create ticket if not provided AND destination hospital is specified
     if (!ticketId && patientId && createStrokeCaseDto.destinationHospitalId) {
@@ -345,7 +323,7 @@ export class StrokeCasesService {
             lastName: true,
             nationalId: true,
             mrn: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
           },
         },
@@ -438,7 +416,7 @@ export class StrokeCasesService {
             lastName: true,
             nationalId: true,
             mrn: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             phoneNumber: true,
             email: true,
@@ -517,7 +495,7 @@ export class StrokeCasesService {
             lastName: true,
             nationalId: true,
             mrn: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             phoneNumber: true,
             email: true,
@@ -672,7 +650,7 @@ export class StrokeCasesService {
             lastName: true,
             nationalId: true,
             mrn: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             phoneNumber: true,
             email: true,
@@ -782,9 +760,6 @@ export class StrokeCasesService {
         }
         if (patientInfo.lastName !== undefined) {
           patientUpdateData.lastName = patientInfo.lastName.trim();
-        }
-        if (patientInfo.age !== undefined) {
-          patientUpdateData.age = patientInfo.age || null;
         }
         if (patientInfo.gender !== undefined) {
           patientUpdateData.gender = patientInfo.gender;

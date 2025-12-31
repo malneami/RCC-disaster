@@ -30,12 +30,12 @@ export default defineConfig(({ mode }) => {
       host: env.VITE_HOST !== 'false',
       proxy: {
         '/api': {
-          target: 'http://10.138.40.24:3001',
+          target: 'http://127.0.0.1:3001',
           changeOrigin: true,
           secure: false, // Allow self-signed certs if backend used them (it doesn't, but safe to add)
         },
         '/socket.io': {
-          target: 'http://10.138.40.24:3001',
+          target: 'http://127.0.0.1:3001',
           changeOrigin: true,
           ws: true,
           secure: false,

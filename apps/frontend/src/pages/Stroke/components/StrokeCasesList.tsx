@@ -223,8 +223,8 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   };
 
   const handleClearFilters = () => {
-    setFilters({ 
-      strokeType: '', 
+    setFilters({
+      strokeType: '',
       status: '',
       originHospitalId: '',
       destinationHospitalId: '',
@@ -419,7 +419,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
       {/* Cases Table */}
       <Card elevation={0}>
         <TableContainer component={Paper} elevation={0}>
-          <Table>
+          <Table stickyHeader>
             <StrokeCasesTableHeader />
             <TableBody>
               {filteredCases.map((strokeCase) => (
@@ -505,9 +505,9 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
           <Button onClick={cancelDelete} disabled={deleting}>
             Cancel
           </Button>
-          <Button 
-            onClick={confirmDelete} 
-            color="error" 
+          <Button
+            onClick={confirmDelete}
+            color="error"
             variant="contained"
             disabled={deleting}
           >

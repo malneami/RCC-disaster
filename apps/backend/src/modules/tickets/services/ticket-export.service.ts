@@ -22,7 +22,7 @@ export class TicketExportService {
               lastName: true,
               nationalId: true,
               mrn: true,
-              age: true,
+              dateOfBirth: true,
               gender: true,
               phoneNumber: true,
               email: true,
@@ -95,7 +95,7 @@ export class TicketExportService {
           'Patient Name': ticket.patient ? `${ticket.patient.firstName} ${ticket.patient.lastName}` : '',
           'Patient ID (National ID)': ticket.patient?.nationalId || '',
           'MRN': ticket.patient?.mrn || '',
-          'Age': ticket.patient?.age || '',
+          'Age': ticket.patient?.dateOfBirth ? this.calculateAge(ticket.patient.dateOfBirth) : '',
           'Gender': ticket.patient?.gender || '',
           'Phone Number': ticket.patient?.phoneNumber || '',
           'Email': ticket.patient?.email || '',
@@ -348,5 +348,18 @@ export class TicketExportService {
     }
 
     return where;
+  }
+
+  private calculateAge(dateOfBirth: string | Date): number {
+    const birth = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
   }
 }

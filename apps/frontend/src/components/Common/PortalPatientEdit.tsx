@@ -131,8 +131,8 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
 
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            <strong>Portal-Specific Editing:</strong> You can only edit contact and emergency information 
-            from the {portalType.toUpperCase()} portal. Medical history, clinical data, and other sensitive 
+            <strong>Portal-Specific Editing:</strong> You can only edit contact and emergency information
+            from the {portalType.toUpperCase()} portal. Medical history, clinical data, and other sensitive
             information can only be modified by authorized medical staff.
           </Typography>
         </Alert>
@@ -183,6 +183,16 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
               value={formData.mrn || ''}
               onChange={(e) => handleInputChange('mrn', e.target.value)}
               disabled={isLoading}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Date of Birth"
+              value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString() : ''}
+              disabled
+              helperText="Date of Birth cannot be edited here"
             />
           </Grid>
 
@@ -358,7 +368,7 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
           {isLoading ? 'Saving...' : 'Save Changes'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </Dialog >
   );
 };
 

@@ -51,7 +51,7 @@ export class TraumaExportService {
               firstName: true,
               lastName: true,
               nationalId: true,
-              age: true,
+              dateOfBirth: true,
               gender: true,
               phoneNumber: true,
               email: true,
@@ -90,8 +90,8 @@ export class TraumaExportService {
         const destinationHospital = case_.destinationHospital;
 
 
-        // Get patient age
-        const age = patient.age;
+        // Calculate patient age from dateOfBirth
+        const age = patient.dateOfBirth ? this.calculateAge(patient.dateOfBirth) : null;
 
         // Parse vital signs if available
         let vitalSigns = null;
@@ -1477,7 +1477,7 @@ export class TraumaExportService {
     
     // Simplified survival probability calculation
     // Formula: 1/(1+EXP(-(b0 + b1*RTS + b2*ISS + b3*age)))
-    const age = case_.patient?.age || 30;
+    const age = this.calculateAge(case_.patient?.dateOfBirth) || 30;
     const b0 = 0.5;
     const b1 = 0.3;
     const b2 = -0.1;
@@ -1876,5 +1876,18 @@ export class TraumaExportService {
         prompt: 'Choose the ED disposition from the dropdown list.'
       };
     }
+  }
+
+  private calculateAge(dateOfBirth: string | Date): number {
+    const birth = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
   }
 }

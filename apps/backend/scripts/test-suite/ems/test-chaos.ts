@@ -28,7 +28,7 @@ async function runModule4() {
   const testPatient = await prisma.patient.upsert({
     where: { nationalId: '1000000001' },
     update: {},
-    create: { nationalId: '1000000001', firstName: 'John', lastName: 'Doe', dateOfBirth: new Date(), gender: PatientGender.MALE, age: 30, bloodType: 'O', phoneNumber: '050', createdById: testUser.id }
+    create: { nationalId: '1000000001', firstName: 'John', lastName: 'Doe', dateOfBirth: new Date(), gender: PatientGender.MALE, bloodType: 'O', phoneNumber: '050', createdById: testUser.id }
   });
 
   // --------------------------------------------------------------------------------

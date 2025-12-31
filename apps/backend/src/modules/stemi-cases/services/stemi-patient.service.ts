@@ -15,7 +15,6 @@ export class StemiPatientService {
       firstName,
       lastName,
       nationalId,
-      age,
       gender,
       phoneNumber,
       address,
@@ -25,6 +24,8 @@ export class StemiPatientService {
       allergies,
       medications,
     } = patientInfo;
+
+    // DoB is the single source of truth for age
 
     try {
       // Try to find existing patient by national ID
@@ -39,7 +40,6 @@ export class StemiPatientService {
           data: {
             firstName,
             lastName,
-            age: age || undefined,
             dateOfBirth: patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth) : undefined,
             gender,
             phoneNumber: phoneNumber || null,
@@ -73,7 +73,6 @@ export class StemiPatientService {
             firstName,
             lastName,
             nationalId,
-            age: age || undefined,
             dateOfBirth: patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth) : undefined,
             gender,
             phoneNumber: phoneNumber || null,
@@ -154,7 +153,6 @@ export class StemiPatientService {
       firstName,
       lastName,
       nationalId,
-      age,
       gender,
       phoneNumber,
       address,
@@ -164,6 +162,8 @@ export class StemiPatientService {
       allergies,
       medications,
     } = patientInfo;
+
+    // DoB is the single source of truth for age
 
     try {
       // First, get the current patient data for comparison
@@ -179,7 +179,6 @@ export class StemiPatientService {
       const updateData: any = {
         firstName,
         lastName,
-        age: age || undefined,
         dateOfBirth: patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth) : undefined,
         gender,
         phoneNumber: phoneNumber !== undefined ? (phoneNumber || null) : undefined,

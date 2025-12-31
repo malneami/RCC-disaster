@@ -8,6 +8,7 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+import { calculateAge, formatAge } from '../../../../utils/ageCalculator';
 
 interface PatientInformationSectionProps {
   formData: any;
@@ -22,6 +23,35 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
   isAdmin = false,
   validationErrors = {},
 }) => {
+  // Calculate age for display
+  const getAgeDisplay = () => {
+    if (formData.patientInfo?.dateOfBirth) {
+      const age = calculateAge(formData.patientInfo.dateOfBirth);
+      return formatAge(age);
+    }
+    if (formData.patientInfo?.age) {
+      return `${formData.patientInfo.age} years(Legacy)`;
+    }
+    return '';
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const dob = e.target.value;
+    const newPatientInfo = {
+      ...formData.patientInfo,
+      dateOfBirth: dob,
+    };
+
+    // Auto-calculate age for legacy field if needed, or just rely on display
+    if (dob) {
+      const ageDetails = calculateAge(dob);
+      newPatientInfo.age = ageDetails.years;
+    } else {
+      newPatientInfo.age = undefined;
+    }
+
+    handleInputChange('patientInfo', newPatientInfo);
+  };
 
   return (
     <>
@@ -30,7 +60,7 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
           Patient Information
         </Typography>
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -84,14 +114,12 @@ const PatientInformationSection: React.FC<PatientInformationSectionProps> = ({
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
-          label="Age"
-          type="number"
-          inputProps={{ min: 0, max: 150 }}
-          value={formData.patientInfo?.age || ''}
-          onChange={(e) => handleInputChange('patientInfo', {
-            ...formData.patientInfo,
-            age: parseInt(e.target.value) || undefined
-          })}
+          label="Date of Birth"
+          type="date"
+          InputLabelProps={{ shrink: true }}
+          value={formData.patientInfo?.dateOfBirth ? new Date(formData.patientInfo.dateOfBirth).toISOString().split('T')[0] : ''}
+          onChange={handleDateChange}
+          helperText={getAgeDisplay() ? `Age: ${getAgeDisplay()} ` : 'Please enter Date of Birth'}
         />
       </Grid>
 
