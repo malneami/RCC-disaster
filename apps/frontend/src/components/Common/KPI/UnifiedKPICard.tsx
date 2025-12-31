@@ -17,8 +17,6 @@ import {
     PortalType,
     getTheme,
     getCardStyles,
-    getGradients,
-    progressBarStyles,
     getStatusColor,
 } from './kpiStyles';
 

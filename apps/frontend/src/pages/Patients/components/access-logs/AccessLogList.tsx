@@ -3,7 +3,7 @@ import { Box, Typography, Avatar, Chip, Tooltip, IconButton } from '@mui/materia
 import { Visibility, CalendarToday, Person, Computer, Badge } from '@mui/icons-material';
 import { format, formatDistanceToNow } from 'date-fns';
 import { PatientAccessLog } from '@/services/patientService'; // Ensure this import path is correct relative to the new file
-import { GRADIENT_COLORS, getAccessTypeGradient, getAccessTypeColor } from './AccessLogConstants';
+import { getAccessTypeGradient, getAccessTypeColor } from './AccessLogConstants';
 import { getAccessTypeIcon } from './AccessLogUtils';
 
 interface AccessLogListProps {

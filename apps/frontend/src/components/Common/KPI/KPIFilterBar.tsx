@@ -8,7 +8,6 @@ import {
     InputAdornment,
 } from '@mui/material';
 import {
-    CalendarToday as CalendarIcon,
     LocationOn as LocationIcon,
     Clear as ClearIcon,
 } from '@mui/icons-material';

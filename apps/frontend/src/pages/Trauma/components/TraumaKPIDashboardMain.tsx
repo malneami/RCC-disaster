@@ -6,7 +6,6 @@ import {
   CircularProgress,
   Card,
   CardContent,
-  Alert,
 } from '@mui/material';
 import {
   Assessment,
