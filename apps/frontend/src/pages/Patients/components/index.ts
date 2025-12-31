@@ -22,4 +22,3 @@ export * from './PatientFormSteps';
 // Other components
 export { default as DuplicateDetection } from './DuplicateDetection';
 export { default as PatientDetails } from './PatientDetails';
-export { default as PatientStatistics } from './PatientStatistics';

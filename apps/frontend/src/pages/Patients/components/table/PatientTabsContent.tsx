@@ -1,6 +1,6 @@
 import { Patient } from '../../../../services/patientService';
 import Pagination from '../../../../components/Common/Pagination';
-import PatientStatistics from '../PatientStatistics';
+import ModernPatientStatistics from '../statistics/ModernPatientStatistics';
 import DuplicateDetection from '../DuplicateDetection';
 import PatientAccessLogsTab from '../PatientAccessLogsTab';
 import ModernPatientList from '../ModernPatientList';
@@ -55,7 +55,7 @@ export const usePatientTabsContent = ({
     },
     {
       label: 'Statistics',
-      content: <PatientStatistics />,
+      content: <ModernPatientStatistics />,
     },
     {
       label: 'Duplicates',
