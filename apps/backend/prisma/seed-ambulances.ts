@@ -1254,6 +1254,10 @@ async function seedAmbulances() {
     await prisma.maintenanceRecord.deleteMany({});
     console.log('Cleared existing maintenance records');
     
+    // Delete ambulance zone logs before deleting ambulances (foreign key constraint)
+    await prisma.ambulanceZoneLog.deleteMany({});
+    console.log('Cleared existing ambulance zone logs');
+    
     // Now clear existing ambulance data
     await prisma.ambulance.deleteMany({});
     console.log('Cleared existing ambulance data');

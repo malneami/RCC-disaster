@@ -4,6 +4,7 @@ import { seedUsers } from './seed-users';
 import { seedBeds } from './seed-beds';
 import seedAmbulances from './seed-ambulances';
 import seedEMSData from './seed-ems-data';
+import { seedPatients } from './seed-patients';
 
 const prisma = new PrismaClient();
 
@@ -29,6 +30,10 @@ async function main() {
   // Seed EMS data (drivers and other EMS-related data)
   console.log('🚨 Seeding EMS data...');
   await seedEMSData();
+
+  // Seed patients
+  console.log('👤 Seeding patients...');
+  await seedPatients();
 
   console.log('✅ Seeding completed successfully!');
 }
