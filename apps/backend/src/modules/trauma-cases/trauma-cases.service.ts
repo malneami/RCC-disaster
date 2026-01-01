@@ -283,7 +283,14 @@ export class TraumaCasesService {
     }
 
     // Remove patientInfo from the update data since we handle it separately
-    const { patientInfo, ...traumaCaseUpdateData } = updateTraumaCaseDto;
+    // Also exclude fields that should not be updated directly to avoid Prisma errors
+    const { 
+      patientInfo, 
+      patientId, 
+      ticketId, 
+      createdById,
+      ...traumaCaseUpdateData 
+    } = updateTraumaCaseDto as any;
 
     const updateData: any = {
       ...traumaCaseUpdateData,

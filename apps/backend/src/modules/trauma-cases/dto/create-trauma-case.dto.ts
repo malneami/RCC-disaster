@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, IsNumber, Min, Max, IsNotEmpty, ValidateNested, IsObject, IsEmail } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, IsNumber, Min, Max, IsNotEmpty, ValidateNested, IsObject, IsEmail, ValidateIf } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TraumaModeOfArrival, TraumaMechanismOfInjury, TraumaDispositionType } from '@prisma/client';
 
@@ -84,6 +84,7 @@ export class PatientInfoDto {
   phoneNumber?: string;
 
   @IsOptional()
+  @ValidateIf(o => o.email !== '' && o.email !== null)
   @IsEmail({}, { message: 'Please provide a valid email address' })
   email?: string;
 

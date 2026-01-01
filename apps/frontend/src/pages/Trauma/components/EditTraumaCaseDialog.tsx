@@ -110,6 +110,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       firstName: '',
       lastName: '',
       nationalId: '',
+      dateOfBirth: undefined as string | undefined,
       age: undefined as number | undefined,
       gender: 'MALE' as 'MALE' | 'FEMALE',
       phoneNumber: '',
@@ -197,13 +198,14 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       setValidationErrors({});
       setTimelineWarnings({});
       setOriginHospital(null);
-      
+
       // Convert trauma case data to form structure (exactly like creation form)
       setFormData({
         patientInfo: {
           firstName: traumaCase.patient?.firstName || '',
           lastName: traumaCase.patient?.lastName || '',
           nationalId: traumaCase.patient?.nationalId || '',
+          dateOfBirth: traumaCase.patient?.dateOfBirth ? new Date(traumaCase.patient.dateOfBirth).toISOString().split('T')[0] : undefined,
           age: traumaCase.patient?.age || undefined,
           gender: (traumaCase.patient?.gender as 'MALE' | 'FEMALE') || ('MALE' as 'MALE' | 'FEMALE'),
           phoneNumber: traumaCase.patient?.phoneNumber || '',
@@ -347,7 +349,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
 
   const handleStepDataChange = (stepData: any) => {
     setFormData(prev => ({ ...prev, ...stepData }));
-    
+
     // Clear validation errors for fields that are being changed
     if (stepData.patientInfo) {
       setValidationErrors((prev) => {
@@ -390,7 +392,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
   const handleNext = async () => {
     const errors = await validateStep(activeStep);
     setValidationErrors(errors);
-    
+
     // Only proceed if there are no validation errors
     if (Object.keys(errors).length === 0 && activeStep < TRAUMA_FORM_STEPS.length - 1) {
       setActiveStep(prev => prev + 1);
@@ -416,7 +418,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       const incidentErrors = await validateStep(1);
       const dispositionErrors = await validateStep(4);
       const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors };
-      
+
       if (Object.keys(allErrors).length > 0) {
         setValidationErrors(allErrors);
         const firstErrorKey = Object.keys(allErrors)[0];
@@ -434,7 +436,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         return;
       }
 
-      
+
       const validationErrors = validateTraumaCaseForm(formData);
       if (validationErrors.length > 0) {
         setError(validationErrors.join(', '));
@@ -488,7 +490,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
 
   const validateStep = async (stepIndex: number): Promise<Record<string, string>> => {
     const errors: Record<string, string> = {};
-    
+
     switch (stepIndex) {
       case 0: // Patient Info
         try {
@@ -500,7 +502,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
             });
           }
         }
-        
+
         if (originRequiresDestination && !formData.patientInfo.destinationHospitalId) {
           errors['patientInfo.destinationHospitalId'] = 'Destination Hospital is required because the selected origin hospital does not provide Trauma service.';
         }
@@ -556,7 +558,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         }
         break;
     }
-    
+
     return errors;
   };
 
@@ -627,12 +629,12 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
             <span>Edit Trauma Case - {traumaCase.patient?.firstName} {traumaCase.patient?.lastName}</span>
             {isAdmin && (
               <Box sx={{ ml: 'auto' }}>
-                <Box sx={{ 
-                  px: 1, 
-                  py: 0.5, 
-                  bgcolor: 'primary.main', 
-                  color: 'white', 
-                  borderRadius: 1, 
+                <Box sx={{
+                  px: 1,
+                  py: 0.5,
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  borderRadius: 1,
                   fontSize: '0.75rem',
                   fontWeight: 'bold'
                 }}>
@@ -642,7 +644,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
             )}
           </Box>
         </DialogTitle>
-        
+
         <DialogContent>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
