@@ -23,6 +23,7 @@ import '../styles/ambulance-tracking.css';
 interface GPSAmbulance {
   imei: string;
   name?: string;
+  callSign?: string; // From database ambulances
   [key: string]: any;
 }
 
@@ -47,7 +48,16 @@ const AmbulanceTrackingData: React.FC = () => {
 
         // Extract array of GPS data from API response
         if (allGPSData?.data && Array.isArray(allGPSData.data)) {
-          setAmbulances(allGPSData.data);
+          // Deduplicate by IMEI - keep the first occurrence (external API data takes priority)
+          const uniqueAmbulances = allGPSData.data.reduce((acc: GPSAmbulance[], current: GPSAmbulance) => {
+            const exists = acc.find(item => item.imei === current.imei);
+            if (!exists) {
+              acc.push(current);
+            }
+            return acc;
+          }, []);
+          console.log(`Loaded ${allGPSData.data.length} ambulances, ${uniqueAmbulances.length} unique`);
+          setAmbulances(uniqueAmbulances);
         } else {
           setError('Invalid GPS data format');
         }
@@ -88,15 +98,37 @@ const AmbulanceTrackingData: React.FC = () => {
   };
 
   const filteredAmbulances = useMemo(() => {
-    if (!ambulances || ambulances.length === 0) return [];
+    console.log('=== FILTER DEBUG ===');
+    console.log('searchQuery:', JSON.stringify(searchQuery));
+    console.log('ambulances count:', ambulances?.length || 0);
 
-    const query = searchQuery.toLowerCase();
-    return ambulances.filter((ambulance: GPSAmbulance) => {
-      return (
-        ambulance.imei?.toLowerCase().includes(query) ||
-        ambulance.name?.toLowerCase().includes(query)
-      );
+    if (!ambulances || ambulances.length === 0) {
+      console.log('No ambulances, returning empty array');
+      return [];
+    }
+
+    // If no search query, return all ambulances
+    if (!searchQuery.trim()) {
+      console.log('Empty search query, returning all ambulances:', ambulances.length);
+      return ambulances;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    console.log('Searching for:', query);
+
+    const results = ambulances.filter((ambulance: GPSAmbulance) => {
+      // Check IMEI
+      const imeiMatch = ambulance.imei?.toLowerCase().includes(query);
+      // Check name (from external GPS API)
+      const nameMatch = ambulance.name?.toLowerCase().includes(query);
+      // Check callSign (from database ambulances)
+      const callSignMatch = ambulance.callSign?.toLowerCase().includes(query);
+
+      return imeiMatch || nameMatch || callSignMatch;
     });
+
+    console.log('Filtered results count:', results.length);
+    return results;
   }, [ambulances, searchQuery]);
 
   if (isLoading) {
