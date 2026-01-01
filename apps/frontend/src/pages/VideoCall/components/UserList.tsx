@@ -49,20 +49,14 @@ const ROLE_ORDER = [
 
 interface UserListProps {
   users: User[];
-  emailToCall: string;
-  setEmailToCall: (email: string) => void;
   callUser: (targetUser?: User, email?: string) => void;
-  callUserByEmail: () => void;
   stream: MediaStream | null;
   socket: any;
 }
 
 export const UserList: React.FC<UserListProps> = ({
   users,
-  emailToCall,
-  setEmailToCall,
   callUser,
-  callUserByEmail,
   stream,
   socket,
 }) => {
@@ -120,46 +114,6 @@ export const UserList: React.FC<UserListProps> = ({
 
   return (
     <Box>
-      {/* Email calling section */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Call by Email
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-          <TextField
-            fullWidth
-            size="small"
-            variant="outlined"
-            value={emailToCall}
-            onChange={(e) => setEmailToCall(e.target.value)}
-            placeholder="Enter email address"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                callUserByEmail();
-              }
-            }}
-          />
-          <IconButton
-            onClick={callUserByEmail}
-            disabled={!stream || !socket || !emailToCall.trim()}
-            sx={{
-              background: 'linear-gradient(135deg, #00C853, #1DE9B6)',
-              color: 'white',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #00B848, #1AD1A3)',
-                boxShadow: '0 0 20px rgba(0, 200, 83, 0.5)',
-              },
-              '&.Mui-disabled': {
-                bgcolor: 'action.disabledBackground',
-                background: 'none',
-              },
-            }}
-            size="medium"
-          >
-            <PhoneIcon />
-          </IconButton>
-        </Box>
-      </Paper>
 
       {/* Search and Filter Section */}
       <Paper sx={{ p: 2, mb: 2 }}>
@@ -272,7 +226,12 @@ export const UserList: React.FC<UserListProps> = ({
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                    lg: 'repeat(4, 1fr)',
+                  },
                   gap: 1.5,
                   p: 1.5,
                 }}
@@ -283,11 +242,13 @@ export const UserList: React.FC<UserListProps> = ({
                     variant="outlined"
                     sx={{
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      p: 2.5,
-                      gap: 2,
-                      borderRadius: 1,
-                      minHeight: 100,
+                      textAlign: 'center',
+                      p: 2,
+                      gap: 1.5,
+                      borderRadius: 2,
+                      minHeight: 140,
                       '&:hover': {
                         bgcolor: 'action.hover',
                         borderColor: 'primary.light',
@@ -296,31 +257,36 @@ export const UserList: React.FC<UserListProps> = ({
                   >
                     <Avatar
                       sx={{
-                        width: 44,
-                        height: 44,
-                        fontSize: '1rem',
+                        width: 48,
+                        height: 48,
+                        fontSize: '1.1rem',
                         bgcolor: 'primary.main',
                       }}
                     >
                       {getUserInitials(user)}
                     </Avatar>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ width: '100%' }}>
                       <Typography
                         variant="body1"
                         fontWeight={600}
-                        noWrap
                         title={getUserDisplayName(user)}
-                        sx={{ fontSize: '1rem', mb: 0.5 }}
+                        sx={{
+                          fontSize: '0.9rem',
+                          mb: 0.25,
+                          wordBreak: 'break-word',
+                          lineHeight: 1.3,
+                        }}
                       >
                         {getUserDisplayName(user)}
                       </Typography>
                       <Typography
                         variant="body2"
                         color="text.secondary"
-                        noWrap
-                        display="block"
-                        title={user.email}
-                        sx={{ fontSize: '0.875rem' }}
+                        sx={{
+                          fontSize: '0.75rem',
+                          wordBreak: 'break-all',
+                          lineHeight: 1.2,
+                        }}
                       >
                         {user.email}
                       </Typography>

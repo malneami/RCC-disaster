@@ -43,7 +43,6 @@ const VideoCallPage: React.FC = () => {
   const [remoteMediaStates, setRemoteMediaStates] = useState<Record<string, { video: boolean; audio: boolean }>>({});
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [emailToCall, setEmailToCall] = useState<string>('');
 
   const stream = useMediaStream();
   const { peersRef, cleanupDestroyedPeers, removePeer, destroyAllPeers } = usePeerManagement();
@@ -153,14 +152,7 @@ const VideoCallPage: React.FC = () => {
     setAudioEnabled,
   });
 
-  const callUserByEmail = () => {
-    if (!emailToCall.trim()) {
-      enqueueSnackbar('Please enter an email address', { variant: 'warning' });
-      return;
-    }
-    callUser(undefined, emailToCall.trim());
-    setEmailToCall('');
-  };
+
 
   const handleDecline = () => {
     setReceivingCall(false);
@@ -228,10 +220,7 @@ const VideoCallPage: React.FC = () => {
           />
           <UserList
             users={users}
-            emailToCall={emailToCall}
-            setEmailToCall={setEmailToCall}
             callUser={callUser}
-            callUserByEmail={callUserByEmail}
             stream={stream}
             socket={socket}
           />
