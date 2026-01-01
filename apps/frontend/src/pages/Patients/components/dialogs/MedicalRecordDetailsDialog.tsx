@@ -5,19 +5,24 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Grid,
   Typography,
   Chip,
   Box,
-  Divider,
+  IconButton,
+  alpha,
 } from '@mui/material';
-import { Close, Edit, Delete, Security } from '@mui/icons-material';
+import { Close, Edit, Delete, Security, Description, MedicalServices, Science, History, Person, CalendarToday, AttachFile, Healing, LocalPharmacy } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { MedicalRecord, medicalRecordService } from '../../../../services/medicalRecordService';
-import { MEDICAL_RECORD_TYPES } from '../../config/medicalRecordFormSteps';
 import { useAuth } from '../../../../contexts/AuthContext';
 import GenericTabs from '../../../../components/Common/GenericTabs';
-import AccessLogsTab from '../../../../components/Common/AccessLogsTab';
+import MedicalRecordAccessLogsTab from './MedicalRecordAccessLogsTab';
+import {
+  getRecordTypeColor,
+  getRecordTypeIcon,
+  getRecordTypeLabel,
+} from '../../utils/medicalRecordTypeUtils';
+import { DetailField, SectionCard } from './MedicalRecordDetailsDialogComponents';
 
 interface MedicalRecordDetailsDialogProps {
   open: boolean;
@@ -40,9 +45,9 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
 
   if (!medicalRecord) return null;
 
-  const recordTypeLabel = MEDICAL_RECORD_TYPES.find(
-    type => type.value === medicalRecord.recordType
-  )?.label || medicalRecord.recordType;
+  const recordColor = getRecordTypeColor(medicalRecord.recordType);
+  const recordIcon = getRecordTypeIcon(medicalRecord.recordType);
+  const recordTypeLabel = getRecordTypeLabel(medicalRecord.recordType);
 
   const formatField = (value: string | null | undefined) => {
     if (!value || value.trim() === '') return 'Not specified';
@@ -58,130 +63,75 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
     {
       label: 'Details',
       content: (
-        <Grid container spacing={3} sx={{ pt: 2 }}>
-          {/* Header Information */}
-          <Grid item xs={12}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="h5" gutterBottom>
+        <Box sx={{ pt: 1 }}>
+          <Box
+            sx={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              border: `1px solid ${alpha(recordColor, 0.2)}`,
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+              padding: '20px 24px',
+              marginBottom: 2.5,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '14px',
+                background: `linear-gradient(135deg, ${recordColor} 0%, ${alpha(recordColor, 0.8)} 100%)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 2px 8px ${alpha(recordColor, 0.3)}`,
+                flexShrink: 0,
+              }}
+            >
+              <Box sx={{ color: '#ffffff', fontSize: '28px' }}>{recordIcon}</Box>
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 1.5, fontSize: '1.5rem' }}>
                 {medicalRecord.title}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                <Chip label={recordTypeLabel} color="primary" />
-                <Chip 
-                  label={format(new Date(medicalRecord.recordDate), 'PPP')} 
-                  variant="outlined" 
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  label={recordTypeLabel}
+                  sx={{ backgroundColor: alpha(recordColor, 0.1), color: recordColor, fontWeight: 600, fontSize: '0.8rem', height: '28px' }}
+                />
+                <Chip
+                  label={format(new Date(medicalRecord.recordDate), 'PPP')}
+                  sx={{ backgroundColor: alpha(recordColor, 0.05), color: 'text.secondary', fontWeight: 500, fontSize: '0.8rem', height: '28px', border: `1px solid ${alpha(recordColor, 0.2)}` }}
+                  variant="outlined"
                 />
               </Box>
             </Box>
-            <Divider sx={{ mb: 2 }} />
-          </Grid>
+          </Box>
 
-          {/* Basic Information */}
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Description
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {formatField(medicalRecord.description)}
-            </Typography>
-          </Grid>
+          <SectionCard icon={<Description sx={{ color: '#ffffff', fontSize: '20px' }} />} title="Basic Information" color={recordColor}>
+            <DetailField icon={<Description sx={{ color: recordColor, fontSize: '18px' }} />} label="Description" value={formatField(medicalRecord.description)} color={recordColor} fullWidth />
+            <DetailField icon={<Person sx={{ color: recordColor, fontSize: '18px' }} />} label="Created By" value={medicalRecord.createdBy ? `${medicalRecord.createdBy.firstName} ${medicalRecord.createdBy.lastName}` : 'Unknown'} color={recordColor} />
+            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Record Date" value={format(new Date(medicalRecord.recordDate), 'PPP')} color={recordColor} />
+          </SectionCard>
 
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Created By
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {medicalRecord.createdBy 
-                ? `${medicalRecord.createdBy.firstName} ${medicalRecord.createdBy.lastName}`
-                : 'Unknown'
-              }
-            </Typography>
-          </Grid>
+          <SectionCard icon={<MedicalServices sx={{ color: '#ffffff', fontSize: '20px' }} />} title="Clinical Information" color={recordColor}>
+            <DetailField icon={<Healing sx={{ color: recordColor, fontSize: '18px' }} />} label="Diagnosis" value={formatField(medicalRecord.diagnosis)} color={recordColor} fullWidth />
+            <DetailField icon={<MedicalServices sx={{ color: recordColor, fontSize: '18px' }} />} label="Treatment" value={formatField(medicalRecord.treatment)} color={recordColor} fullWidth />
+            <DetailField icon={<LocalPharmacy sx={{ color: recordColor, fontSize: '18px' }} />} label="Medications" value={formatField(medicalRecord.medications)} color={recordColor} fullWidth />
+          </SectionCard>
 
-          {/* Clinical Information */}
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-              Clinical Information
-            </Typography>
-          </Grid>
+          <SectionCard icon={<Science sx={{ color: '#ffffff', fontSize: '20px' }} />} title="Test Results & Attachments" color={recordColor}>
+            <DetailField icon={<Science sx={{ color: recordColor, fontSize: '18px' }} />} label="Test Results" value={formatField(medicalRecord.testResults)} color={recordColor} fullWidth />
+            <DetailField icon={<AttachFile sx={{ color: recordColor, fontSize: '18px' }} />} label="Attachments" value={formatField(medicalRecord.attachments)} color={recordColor} fullWidth />
+          </SectionCard>
 
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Diagnosis
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {formatField(medicalRecord.diagnosis)}
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Treatment
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {formatField(medicalRecord.treatment)}
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Medications
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {formatField(medicalRecord.medications)}
-            </Typography>
-          </Grid>
-
-          {/* Test Results & Attachments */}
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-              Test Results & Attachments
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Test Results
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {formatField(medicalRecord.testResults)}
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Attachments
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {formatField(medicalRecord.attachments)}
-            </Typography>
-          </Grid>
-
-          {/* System Information */}
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-              System Information
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Created At
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              {format(new Date(medicalRecord.createdAt), 'PPpp')}
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Last Updated
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              {format(new Date(medicalRecord.updatedAt), 'PPpp')}
-            </Typography>
-          </Grid>
-        </Grid>
+          <SectionCard icon={<History sx={{ color: '#ffffff', fontSize: '20px' }} />} title="System Information" color={recordColor}>
+            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Created At" value={format(new Date(medicalRecord.createdAt), 'PPpp')} color={recordColor} />
+            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Last Updated" value={format(new Date(medicalRecord.updatedAt), 'PPpp')} color={recordColor} />
+          </SectionCard>
+        </Box>
       ),
       icon: <Edit />,
     },
@@ -190,9 +140,8 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
           {
             label: 'Access Logs',
             content: (
-              <AccessLogsTab
+              <MedicalRecordAccessLogsTab
                 entityId={medicalRecord.id}
-                entityType="medical-record"
                 fetchLogs={medicalRecordService.getAccessLogs.bind(medicalRecordService)}
                 entityLabel={`Medical Record "${medicalRecord.title}" Access Logs`}
               />
@@ -204,13 +153,31 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
   ];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          background: `linear-gradient(135deg, ${alpha(recordColor, 0.1)} 0%, ${alpha(recordColor, 0.05)} 100%)`,
+          borderBottom: `1px solid ${alpha(recordColor, 0.2)}`,
+          pb: 2,
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Medical Record Details</Typography>
-          <Button onClick={onClose} disabled={false}>
+          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
+            Medical Record Details
+          </Typography>
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
             <Close />
-          </Button>
+          </IconButton>
         </Box>
       </DialogTitle>
 
@@ -231,6 +198,14 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
             variant="contained"
             startIcon={<Edit />}
             onClick={() => onEdit(medicalRecord)}
+            sx={{
+              background: `linear-gradient(135deg, ${recordColor} 0%, ${alpha(recordColor, 0.8)} 100%)`,
+              boxShadow: `0 2px 8px ${alpha(recordColor, 0.3)}`,
+              '&:hover': {
+                background: `linear-gradient(135deg, ${alpha(recordColor, 0.9)} 0%, ${alpha(recordColor, 0.7)} 100%)`,
+                boxShadow: `0 4px 12px ${alpha(recordColor, 0.4)}`,
+              },
+            }}
           >
             Edit Record
           </Button>

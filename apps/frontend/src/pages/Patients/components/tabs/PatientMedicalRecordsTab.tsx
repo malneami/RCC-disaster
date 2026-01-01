@@ -1,37 +1,26 @@
 import React, { useState } from 'react';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Box,
   Typography,
-  Chip,
-  IconButton,
-  Tooltip,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   DialogContentText,
+  alpha,
 } from '@mui/material';
 import {
-  Edit,
-  Visibility,
   Add,
-  Delete,
+  MedicalServices,
+  Inbox,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { MedicalRecord, medicalRecordService } from '../../../../services/medicalRecordService';
 import {
   MedicalRecordFormDialog,
   MedicalRecordDetailsDialog,
 } from '../dialogs';
+import MedicalRecordCard from './MedicalRecordCard';
 
 interface PatientMedicalRecordsTabProps {
   medicalRecords: MedicalRecord[];
@@ -48,8 +37,6 @@ const PatientMedicalRecordsTab: React.FC<PatientMedicalRecordsTabProps> = ({
   onMedicalRecordUpdated,
   onMedicalRecordDeleted
 }) => {
-  console.log('PatientMedicalRecordsTab - medicalRecords:', medicalRecords);
-  console.log('PatientMedicalRecordsTab - patientId:', patientId);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -116,82 +103,109 @@ const PatientMedicalRecordsTab: React.FC<PatientMedicalRecordsTabProps> = ({
     handleAddDialogClose();
   };
 
+  const cardColor = '#42a5f5';
+
   return (
-    <Card>
-      <CardHeader 
-        title="Medical Records" 
-        action={
-          <Button 
-            variant="contained" 
-            startIcon={<Add />}
-            onClick={handleAddRecord}
+    <Box>
+      {/* Header Section */}
+      <Box
+        sx={{
+          background: `linear-gradient(135deg, ${alpha(cardColor, 0.1)} 0%, ${alpha(cardColor, 0.05)} 100%)`,
+          borderRadius: '16px',
+          border: `1px solid ${alpha(cardColor, 0.2)}`,
+          padding: '18px 24px',
+          marginBottom: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            sx={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: `linear-gradient(135deg, ${cardColor} 0%, ${alpha(cardColor, 0.8)} 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: `0 2px 8px ${alpha(cardColor, 0.3)}`,
+            }}
           >
-            Add Record
-          </Button>
-        }
-      />
-      <CardContent>
-        {medicalRecords && medicalRecords.length > 0 ? (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Created By</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {medicalRecords.map((record: MedicalRecord) => (
-                  <TableRow key={record.id}>
-                    <TableCell>{format(new Date(record.recordDate), 'PP')}</TableCell>
-                    <TableCell>
-                      <Chip label={record.recordType} size="small" />
-                    </TableCell>
-                    <TableCell>{record.title}</TableCell>
-                    <TableCell>
-                      {record.createdBy?.firstName} {record.createdBy?.lastName}
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title="View Details">
-                        <IconButton 
-                          size="small"
-                          onClick={() => handleViewRecord(record)}
-                        >
-                          <Visibility />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit Record">
-                        <IconButton 
-                          size="small"
-                          onClick={() => handleEditRecord(record)}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Record">
-                        <IconButton 
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteRecord(record)}
-                        >
-                          <Delete />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-            No medical records found
+            <MedicalServices sx={{ color: '#ffffff', fontSize: '24px' }} />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '1.1rem' }}>
+              Medical Records
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem', mt: 0.25 }}>
+              {medicalRecords?.length || 0} record{medicalRecords?.length !== 1 ? 's' : ''} found
+            </Typography>
+          </Box>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={handleAddRecord}
+          sx={{
+            background: `linear-gradient(135deg, ${cardColor} 0%, ${alpha(cardColor, 0.8)} 100%)`,
+            boxShadow: `0 2px 8px ${alpha(cardColor, 0.3)}`,
+            '&:hover': {
+              background: `linear-gradient(135deg, ${alpha(cardColor, 0.9)} 0%, ${alpha(cardColor, 0.7)} 100%)`,
+              boxShadow: `0 4px 12px ${alpha(cardColor, 0.4)}`,
+            },
+          }}
+        >
+          Add Record
+        </Button>
+      </Box>
+
+      {/* Records List */}
+      {medicalRecords && medicalRecords.length > 0 ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {medicalRecords.map((record: MedicalRecord) => (
+            <MedicalRecordCard
+              key={record.id}
+              record={record}
+              onView={handleViewRecord}
+              onEdit={handleEditRecord}
+              onDelete={handleDeleteRecord}
+            />
+          ))}
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            border: `1px solid ${alpha(cardColor, 0.2)}`,
+            padding: '60px 24px',
+            textAlign: 'center',
+          }}
+        >
+          <Box
+            sx={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${alpha(cardColor, 0.1)} 0%, ${alpha(cardColor, 0.05)} 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <Inbox sx={{ color: cardColor, fontSize: '40px' }} />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+            No Medical Records
           </Typography>
-        )}
-      </CardContent>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Start by adding a new medical record for this patient
+          </Typography>
+        </Box>
+      )}
 
       {/* Medical Record Form Dialog */}
       <MedicalRecordFormDialog
@@ -235,7 +249,7 @@ const PatientMedicalRecordsTab: React.FC<PatientMedicalRecordsTabProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-    </Card>
+    </Box>
   );
 };
 
