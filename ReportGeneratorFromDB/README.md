@@ -1,12 +1,12 @@
 # Report Generator from DB
 
-A real-time database report generator using FastAPI, WebSockets, and OpenAI (via NVIDIA API).
+A database report generator using FastAPI REST API and OpenAI (via NVIDIA API).
 
 ## features
 - Natural language to SQL generation
 - Interactive data preview
 - Automated report generation
-- WebSocket-based real-time UI
+- REST API-based interface
 
 ## Prerequisites
 - Python 3.9+
@@ -61,13 +61,22 @@ The server will start at `http://127.0.0.1:8000`.
 ## Usage
 
 1. Open your browser and navigate to `http://127.0.0.1:8000`.
-2. Wait for the "Connected" status indicator.
+2. Wait for the "Ready" status indicator (the server will initialize automatically).
 3. Type your question about the database in the input box (e.g., "Show me the latest stroke cases").
-4. The system will:
+4. Click "Send" or press Enter.
+5. The system will:
    - Generate the appropriate SQL query.
    - Execute the query against your local database.
    - Show a preview of the data.
    - Generate a textual report summarizing the findings.
+
+## API Endpoints
+
+- `GET /api/initialize` - Initialize the retriever system
+- `POST /api/generate-report` - Generate a report from a natural language prompt
+  - Request body: `{"prompt": "your question here"}`
+  - Response: JSON with `sql`, `data`, `report`, `total_rows`, `preview_rows`
+- `GET /api/health` - Health check endpoint
 
 ## Troubleshooting
 

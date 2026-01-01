@@ -42,6 +42,7 @@ import { RepliesModule } from './modules/replies/replies.module';
 import { VideoCallsModule } from './modules/video-calls/video-calls.module';
 import { BedsModule } from './modules/beds/beds.module';
 import { SupportModule } from './modules/support/support.module';
+import { DataQualityModule } from './modules/data-quality/data-quality.module';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { SupportModule } from './modules/support/support.module';
     DashboardModule,
     BedsModule,
     SupportModule,
+    DataQualityModule,
   ],
   providers: [
     {

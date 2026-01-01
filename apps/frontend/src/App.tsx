@@ -33,6 +33,7 @@ import IncomingCallNotification from './components/VideoCall/IncomingCallNotific
 import { SupportTicketsPage } from './pages/Support/SupportTicketsPage';
 import { SupportTicketChatPage } from './pages/Support/SupportTicketChatPage';
 import { SupportPanelPage } from './pages/Support/SupportPanelPage';
+import DataQualityAuditDashboard from './pages/DataQuality/DataQualityAuditDashboard';
 
 function App() {
   const { user, isLoading } = useAuth();
@@ -161,7 +162,15 @@ function App() {
                 }
               />
 
-              {/* Admin Route */}
+              {/* Admin Routes */}
+              <Route
+                path="/data-quality/audit"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                    <DataQualityAuditDashboard />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin"
                 element={

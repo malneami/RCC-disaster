@@ -30,6 +30,7 @@ import {
   faBed,
   faHeadset,
   faTools,
+  faClipboardCheck,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -177,6 +178,12 @@ const Sidebar: React.FC = () => {
   ];
 
   const adminItems = [
+    {
+      text: 'Data Quality Audit',
+      icon: <FontAwesomeIcon icon={faClipboardCheck} />,
+      path: '/data-quality/audit',
+      roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
+    },
     {
       text: 'System Admin',
       icon: <FontAwesomeIcon icon={faUserCog} />,
@@ -502,67 +509,71 @@ const Sidebar: React.FC = () => {
         </>
       )}
 
-      {hasRole(['ADMIN']) && (
-        <>
-          <Divider sx={{ my: 1 }} />
-          <Typography 
-            variant="overline" 
-            sx={{ 
-              px: { xs: 2, md: 3 }, 
-              color: 'text.secondary',
-              fontSize: { xs: '0.7rem', md: '0.75rem' },
-            }}
-          >
-            Administration
-          </Typography>
-          <List>
-            {adminItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton
-                  selected={location.pathname === item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  sx={{
-                    mx: { xs: 0.5, md: 1 },
-                    borderRadius: 1,
-                    minHeight: 44,
-                    py: { xs: 1.25, md: 1 },
-                    transition: 'all 0.2s ease',
-                    '&:focus-visible': {
-                      outline: '2px solid',
-                      outlineColor: 'secondary.main',
-                      outlineOffset: 2,
-                    },
-                    '&.Mui-selected': {
-                      bgcolor: 'secondary.light',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'secondary.main',
-                      },
-                    },
-                  }}
-                >
-                  <ListItemIcon
+      {/* Administration Section - only show if user has access to admin items */}
+      {(() => {
+        const visibleAdminItems = adminItems.filter((item) => hasRole(item.roles));
+        return visibleAdminItems.length > 0 ? (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <Typography 
+              variant="overline" 
+              sx={{ 
+                px: { xs: 2, md: 3 }, 
+                color: 'text.secondary',
+                fontSize: { xs: '0.7rem', md: '0.75rem' },
+              }}
+            >
+              Administration
+            </Typography>
+            <List>
+              {visibleAdminItems.map((item) => (
+                <ListItem key={item.text} disablePadding>
+                  <ListItemButton
+                    selected={location.pathname === item.path}
+                    onClick={() => handleNavigation(item.path)}
                     sx={{
-                      color: location.pathname === item.path ? 'inherit' : 'text.secondary',
-                      minWidth: { xs: 40, md: 56 },
+                      mx: { xs: 0.5, md: 1 },
+                      borderRadius: 1,
+                      minHeight: 44,
+                      py: { xs: 1.25, md: 1 },
+                      transition: 'all 0.2s ease',
+                      '&:focus-visible': {
+                        outline: '2px solid',
+                        outlineColor: 'secondary.main',
+                        outlineOffset: 2,
+                      },
+                      '&.Mui-selected': {
+                        bgcolor: 'secondary.light',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'secondary.main',
+                        },
+                      },
                     }}
                   >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={item.text}
-                    primaryTypographyProps={{
-                      sx: {
-                        fontSize: { xs: '0.875rem', md: '1rem' },
-                      },
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </>
-      )}
+                    <ListItemIcon
+                      sx={{
+                        color: location.pathname === item.path ? 'inherit' : 'text.secondary',
+                        minWidth: { xs: 40, md: 56 },
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={item.text}
+                      primaryTypographyProps={{
+                        sx: {
+                          fontSize: { xs: '0.875rem', md: '1rem' },
+                        },
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </>
+        ) : null;
+      })()}
     </Box>
   );
 };

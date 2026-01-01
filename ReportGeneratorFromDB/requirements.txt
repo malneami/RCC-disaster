@@ -7,8 +7,6 @@ python-dotenv
 psycopg2-binary
 fastapi
 uvicorn
-websockets
-python-socketio
 sentence-transformers
 faiss-cpu
 

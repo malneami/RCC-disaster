@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-import socketio
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 import json
 import logging
 import pandas as pd
@@ -28,22 +30,27 @@ from embed_retrieve import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create a Socket.IO server (async mode for ASGI)
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
-
 # Create FastAPI app
-fast_api_app = FastAPI()
-fast_api_app.mount("/static", StaticFiles(directory="static"), name="static")
+app = FastAPI(title="Report Generator API")
 
-@fast_api_app.get("/")
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
 async def get():
     with open("static/index.html") as f:
         return HTMLResponse(f.read())
 
-app = socketio.ASGIApp(sio, fast_api_app)
-
 # =========================================================
-# Global state for retriever (initialized on first connection)
+# Global state for retriever (initialized on first use)
 # =========================================================
 _retriever_state = {
     "engine": None,
@@ -88,75 +95,99 @@ def initialize_retriever():
         return False
 
 
-@sio.event
-async def connect(sid, environ):
-    logger.info(f"Client connected: {sid}")
-    await sio.emit('status', {'message': 'Connecting to database...'}, room=sid)
-    
+# =========================================================
+# Pydantic Models for Request/Response
+# =========================================================
+class PromptRequest(BaseModel):
+    prompt: str
+
+
+class StatusResponse(BaseModel):
+    status: str
+    message: str
+
+
+class InitializeResponse(BaseModel):
+    success: bool
+    message: str
+
+
+class ReportResponse(BaseModel):
+    success: bool
+    sql: str
+    data: List[Dict[str, Any]]
+    report: str
+    total_rows: int
+    preview_rows: int
+    error: Optional[str] = None
+
+
+# =========================================================
+# API Endpoints
+# =========================================================
+
+@app.get("/api/initialize", response_model=InitializeResponse)
+async def initialize():
+    """Initialize the retriever system."""
     try:
         if not _retriever_state["initialized"]:
-            await sio.emit('status', {'message': 'Initializing retriever (first connection)...'}, room=sid)
             success = initialize_retriever()
             if not success:
-                await sio.emit('error', {'message': 'Failed to initialize retriever'}, room=sid)
-                return
+                raise HTTPException(status_code=500, detail="Failed to initialize retriever")
         
-        await sio.emit('status', {'message': 'Database connected. Ready for query.'}, room=sid)
+        return InitializeResponse(
+            success=True,
+            message="Database connected. Ready for query."
+        )
     except Exception as e:
         logger.error(f"Initialization error: {e}")
-        await sio.emit('error', {'message': f"Initialization failed: {str(e)}"}, room=sid)
+        raise HTTPException(status_code=500, detail=f"Initialization failed: {str(e)}")
 
 
-@sio.event
-async def disconnect(sid):
-    logger.info(f"Client disconnected: {sid}")
-
-
-@sio.event
-async def user_prompt(sid, data):
+@app.post("/api/generate-report", response_model=ReportResponse)
+async def generate_report_endpoint(request: PromptRequest):
     """
-    Handle incoming user prompts with retrieval and auto-repair.
+    Handle user prompts with retrieval and auto-repair.
+    Returns SQL, data preview, and generated report.
     """
-    user_text = data if isinstance(data, str) else data.get('prompt', '')
-    user_text = user_text.strip()
+    user_text = request.prompt.strip()
     
     if not user_text:
-        return
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
     try:
+        # Ensure retriever is initialized
+        if not _retriever_state["initialized"]:
+            success = initialize_retriever()
+            if not success:
+                raise HTTPException(status_code=500, detail="Server not initialized. Please initialize first.")
+
         engine = _retriever_state["engine"]
         catalog_df = _retriever_state["catalog_df"]
         schema_index = _retriever_state["schema_index"]
         embedder = _retriever_state["embedder"]
-        
-        if not _retriever_state["initialized"]:
-            await sio.emit('error', {'message': 'Server not initialized. Please refresh.'}, room=sid)
-            return
 
         # 1. Retrieve relevant tables
-        await sio.emit('status', {'message': 'Retrieving relevant tables...'}, room=sid)
+        logger.info(f"Retrieving tables for: {user_text[:50]}...")
         relevant_tables = retrieve_relevant_tables(user_text, catalog_df, schema_index, embedder)
-        logger.info(f"Retrieved tables for: {user_text[:50]}...")
         
         # Extract table names for sample data fetching
         table_lines = [line.strip() for line in relevant_tables.strip().split('\n') if line.strip()]
         
         # Fetch sample data
-        await sio.emit('status', {'message': 'Fetching sample data...'}, room=sid)
+        logger.info(f"Fetching sample data from {len(table_lines)} tables")
         sample_data = get_sample_data(engine, table_lines)
-        logger.info(f"Fetched sample data from {len(table_lines)} tables")
 
         # 2. Generate SQL
-        await sio.emit('status', {'message': 'Generating SQL...'}, room=sid)
+        logger.info("Generating SQL...")
         sql = generate_sql(user_text, relevant_tables, sample_data)
-        await sio.emit('sql', {'content': sql}, room=sid)
+        sql_safe = enforce_select_only(sql)
 
         # 3. Run Query with auto-repair loop
-        await sio.emit('status', {'message': 'Running Query...'}, room=sid)
-        sql_safe = enforce_select_only(sql)
-        
+        logger.info("Running query...")
         df = None
         last_error = None
+        final_sql = sql_safe
         
         for attempt in range(MAX_REPAIR_ATTEMPTS + 1):
             try:
@@ -169,17 +200,12 @@ async def user_prompt(sid, data):
                 # Check if it's a repairable error
                 if any(keyword in error_str.lower() for keyword in ['undefined', 'column', 'does not exist', 'relation']):
                     if attempt < MAX_REPAIR_ATTEMPTS:
-                        await sio.emit('status', {
-                            'message': f'SQL error detected. Repair attempt {attempt + 1}/{MAX_REPAIR_ATTEMPTS}...'
-                        }, room=sid)
                         logger.warning(f"Repair attempt {attempt + 1}: {error_str}")
                         
                         # Repair the SQL
                         repaired_sql = repair_sql(sql_safe, error_str, relevant_tables)
                         sql_safe = enforce_select_only(repaired_sql)
-                        
-                        # Update client with repaired SQL
-                        await sio.emit('sql', {'content': sql_safe}, room=sid)
+                        final_sql = sql_safe
                     else:
                         logger.error(f"Repair failed after {MAX_REPAIR_ATTEMPTS} attempts")
                         raise last_error
@@ -188,21 +214,50 @@ async def user_prompt(sid, data):
                     raise db_error
         
         if df is None:
-            raise last_error
+            raise last_error or Exception("Query execution failed")
         
         # Convert DF to JSON for transport
-        preview_rows = min(len(df), 30)
+        total_rows = len(df)
+        preview_rows = min(total_rows, 30)
         preview_data = json.loads(df.head(preview_rows).to_json(orient="records", date_format="iso"))
-        
-        await sio.emit('data', {'content': preview_data}, room=sid)
 
         # 4. Generate Report
-        await sio.emit('status', {'message': 'Generating Report...'}, room=sid)
-        report = generate_report(user_text, sql_safe, df)
-        await sio.emit('report', {'content': report}, room=sid)
+        logger.info("Generating report...")
+        report = generate_report(user_text, final_sql, df)
         
-        await sio.emit('status', {'message': 'Done.'}, room=sid)
+        logger.info("Report generation completed successfully")
+        
+        return ReportResponse(
+            success=True,
+            sql=final_sql,
+            data=preview_data,
+            report=report,
+            total_rows=total_rows,
+            preview_rows=preview_rows
+        )
 
     except Exception as e:
         logger.error(f"Processing error: {e}")
-        await sio.emit('error', {'message': str(e)}, room=sid)
+        return ReportResponse(
+            success=False,
+            sql="",
+            data=[],
+            report="",
+            total_rows=0,
+            preview_rows=0,
+            error=str(e)
+        )
+
+
+@app.get("/api/health")
+async def health():
+    """Health check endpoint."""
+    return {
+        "status": "ok",
+        "initialized": _retriever_state["initialized"]
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

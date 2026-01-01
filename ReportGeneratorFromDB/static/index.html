@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Generator (Socket.IO)</title>
+    <title>Report Generator API</title>
     <!-- Simple Google Fonts import -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -67,6 +67,11 @@
         .status-badge.disconnected {
             background-color: #fee2e2;
             color: #991b1b;
+        }
+
+        .status-badge.loading {
+            background-color: #fef3c7;
+            color: #92400e;
         }
 
         .input-section {
@@ -228,8 +233,6 @@
             color: var(--success-color);
         }
     </style>
-    <!-- Socket.IO Client Library -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 
 <body>
@@ -300,56 +303,37 @@
         const reportCard = document.getElementById('report-card');
         const reportContent = document.getElementById('report-content');
 
-        let socket;
+        let isInitialized = false;
 
-        function connect() {
-            log('System', 'Connecting to Socket.IO...', 'info');
+        async function initialize() {
+            try {
+                statusEl.textContent = 'Initializing...';
+                statusEl.className = 'status-badge loading';
+                sendBtn.disabled = true;
+                log('System', 'Initializing server...', 'info');
 
-            // Connect to the server
-            socket = io(); // Defaults to window.location
+                const response = await fetch('/api/initialize');
+                const data = await response.json();
 
-            socket.on('connect', () => {
-                statusEl.textContent = 'Connected';
-                statusEl.className = 'status-badge connected';
-                sendBtn.disabled = false;
-                log('System', 'Socket.IO connected.', 'success');
-            });
-
-            socket.on('disconnect', () => {
-                statusEl.textContent = 'Disconnected';
+                if (data.success) {
+                    statusEl.textContent = 'Ready';
+                    statusEl.className = 'status-badge connected';
+                    sendBtn.disabled = false;
+                    isInitialized = true;
+                    log('System', data.message, 'success');
+                } else {
+                    throw new Error(data.message || 'Initialization failed');
+                }
+            } catch (error) {
+                statusEl.textContent = 'Error';
                 statusEl.className = 'status-badge disconnected';
                 sendBtn.disabled = true;
-                log('System', 'Socket.IO disconnected.', 'error');
-            });
-
-            socket.on('connect_error', (err) => {
-                console.error('Connection Error', err);
-                log('System', 'Connection error: ' + err.message, 'error');
-            });
-
-            // Custom Events
-            socket.on('status', (data) => {
-                log('Server', data.message, 'info');
-            });
-
-            socket.on('error', (data) => {
-                log('Error', data.message, 'error');
-            });
-
-            socket.on('sql', (data) => {
-                showSql(data.content);
-            });
-
-            socket.on('data', (data) => {
-                showData(data.content);
-            });
-
-            socket.on('report', (data) => {
-                showReport(data.content);
-            });
+                isInitialized = false;
+                log('Error', error.message, 'error');
+            }
         }
 
-        function sendMessage() {
+        async function sendMessage() {
             const text = promptInput.value.trim();
             if (!text) return;
 
@@ -357,8 +341,53 @@
             resetUI();
 
             log('User', text, 'info');
-            // Emit user event
-            socket.emit('user_prompt', { prompt: text });
+
+            // Disable button during processing
+            const originalText = sendBtn.textContent;
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Processing...';
+
+            try {
+                log('Server', 'Processing request...', 'info');
+
+                const response = await fetch('/api/generate-report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: text })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || result.detail || 'Request failed');
+                }
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Report generation failed');
+                }
+
+                // Display results
+                log('Server', 'Retrieving relevant tables...', 'info');
+                log('Server', 'Fetching sample data...', 'info');
+                log('Server', 'Generating SQL...', 'info');
+                showSql(result.sql);
+
+                log('Server', 'Running query...', 'info');
+                showData(result.data);
+
+                log('Server', 'Generating report...', 'info');
+                showReport(result.report);
+
+                log('Server', `Done. (${result.total_rows} rows total, ${result.preview_rows} shown)`, 'success');
+
+            } catch (error) {
+                log('Error', error.message, 'error');
+            } finally {
+                sendBtn.disabled = !isInitialized;
+                sendBtn.textContent = originalText;
+            }
         }
 
         function resetUI() {
@@ -433,7 +462,7 @@
         });
 
         // Start
-        connect();
+        initialize();
 
     </script>
 </body>
