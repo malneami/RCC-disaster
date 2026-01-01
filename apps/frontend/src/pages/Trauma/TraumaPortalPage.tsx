@@ -21,6 +21,8 @@ import { TRAUMA_FILTER_FIELDS } from './constants/traumaConstants';
 
 import { TraumaCaseFilters } from './components/TraumaCasesList';
 
+import { TraumaCaseFilters } from './components/TraumaCasesList';
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -524,6 +526,8 @@ const TraumaPortalPage: React.FC = () => {
                 setEditDialogOpen(true);
               }}
               isAdmin={isAdmin}
+              onViewModeChange={setViewMode}
+              onFiltersChange={handleFiltersChange}
             />
           )}
         </TabPanel>
