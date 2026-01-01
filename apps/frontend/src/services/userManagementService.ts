@@ -44,9 +44,10 @@ export interface DeleteUserResponse {
 }
 
 class UserManagementService {
-  async getAllUsers(page = 1, limit = 10, role?: string): Promise<UsersResponse> {
+  async getAllUsers(page = 1, limit = 10, role?: string, search?: string): Promise<UsersResponse> {
     const params: any = { page, limit };
     if (role) params.role = role;
+    if (search) params.search = search;
     
     const response = await apiClient.get('/users', { params });
     return response.data;

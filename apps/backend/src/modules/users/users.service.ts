@@ -152,13 +152,22 @@ export class UsersService {
     });
   }
 
-  async findAll(page = 1, limit = 10, role?: UserRole) {
+  async findAll(page = 1, limit = 10, role?: UserRole, search?: string) {
     const skip = (page - 1) * limit;
     
-    const where = {
+    const where: any = {
       deletedAt: null,
       ...(role && { role }),
     };
+
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { id: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({

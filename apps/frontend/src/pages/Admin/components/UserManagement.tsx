@@ -18,6 +18,7 @@ import {
   Alert,
   CircularProgress,
   IconButton,
+  LinearProgress,
 
   FormControl,
   InputLabel,
@@ -82,7 +83,7 @@ const UserManagement: React.FC = () => {
       setLoading(true);
       setError(null);
       const [response, requests] = await Promise.all([
-        userManagementService.getAllUsers(page, 10, roleFilter || undefined),
+        userManagementService.getAllUsers(page, 10, roleFilter || undefined, searchQuery || undefined),
         userRegistrationService.getAllRegistrationRequests()
       ]);
       setUsers(response.data);
@@ -106,8 +107,12 @@ const UserManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    loadUsers();
-  }, [page, roleFilter]);
+    // Debounce search
+    const timer = setTimeout(() => {
+      loadUsers();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [page, roleFilter, searchQuery]);
 
 
 
@@ -176,13 +181,13 @@ const UserManagement: React.FC = () => {
     setDeleteResult(null);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+  //       <CircularProgress />
+  //     </Box>
+  //   );
+  // }
 
   return (
     <Box>
@@ -237,7 +242,10 @@ const UserManagement: React.FC = () => {
           placeholder="Search by name, email or ID..."
           size="small"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setPage(1);
+          }}
           sx={{
             flexGrow: 1,
             '& .MuiOutlinedInput-root': {
@@ -270,6 +278,7 @@ const UserManagement: React.FC = () => {
       </Box>
 
       <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', overflow: 'hidden', boxShadow: 'none' }}>
+        {loading && <LinearProgress />}
         <TableContainer>
           <Table size="small">
             <TableHead sx={{ bgcolor: alpha('#f8fafc', 0.5) }}>
@@ -283,128 +292,116 @@ const UserManagement: React.FC = () => {
                 <TableCell sx={{ py: 2, fontWeight: 700, color: 'text.secondary', textAlign: 'right' }}>ACTIONS</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
-              {users
-                .filter(u => {
-                  const firstName = u.firstName || '';
-                  const lastName = u.lastName || '';
-                  const email = u.email || '';
-                  const id = u.id || '';
-                  const query = (searchQuery || '').toLowerCase();
-                  return firstName.toLowerCase().includes(query) ||
-                    lastName.toLowerCase().includes(query) ||
-                    email.toLowerCase().includes(query) ||
-                    id.toLowerCase().includes(query);
-                })
-                .map((user) => (
-                  <TableRow
-                    key={user.id}
-                    hover
-                    onClick={() => handleOpenDrawer(user)}
-                    sx={{
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s',
-                      '&:hover': { bgcolor: alpha('#2563eb', 0.04) + ' !important' }
-                    }}
-                  >
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Box
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigator.clipboard.writeText(user.id);
-                          enqueueSnackbar('Full ID copied to clipboard', { variant: 'info' });
-                        }}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                          fontFamily: 'monospace',
-                          fontSize: '0.75rem',
-                          color: 'text.secondary',
-                          cursor: 'pointer',
-                          '&:hover': { color: 'primary.main' }
-                        }}
-                      >
-                        {user.id.slice(0, 8)}...
-                        <ContentCopy sx={{ fontSize: 12 }} />
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          bgcolor: alpha('#2563eb', 0.1),
-                          color: '#2563eb',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 700,
-                          fontSize: '0.75rem'
-                        }}>
-                          {(user.firstName?.[0] || '?')}{(user.lastName?.[0] || '')}
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                            {user.firstName} {user.lastName}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Email sx={{ fontSize: 12 }} /> {user.email}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
+            <TableBody sx={{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+              {users.map((user) => (
+                <TableRow
+                  key={user.id}
+                  hover
+                  onClick={() => handleOpenDrawer(user)}
+                  sx={{
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    '&:hover': { bgcolor: alpha('#2563eb', 0.04) + ' !important' }
+                  }}
+                >
+                  <TableCell sx={{ py: 1.5 }}>
+                    <Box
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(user.id);
+                        enqueueSnackbar('Full ID copied to clipboard', { variant: 'info' });
+                      }}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        fontFamily: 'monospace',
+                        fontSize: '0.75rem',
+                        color: 'text.secondary',
+                        cursor: 'pointer',
+                        '&:hover': { color: 'primary.main' }
+                      }}
+                    >
+                      {user.id.slice(0, 8)}...
+                      <ContentCopy sx={{ fontSize: 12 }} />
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ py: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Box sx={{
-                        display: 'inline-flex',
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: 1.5,
-                        fontSize: '0.7rem',
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        bgcolor: alpha('#2563eb', 0.1),
+                        color: '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         fontWeight: 700,
-                        ...getRoleBadgeStyles(user.role)
+                        fontSize: '0.75rem'
                       }}>
-                        {user.role}
+                        {(user.firstName?.[0] || '?')}{(user.lastName?.[0] || '')}
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getStatusColor(user.status) }} />
-                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                          {user.status}
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                          {user.firstName} {user.lastName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Email sx={{ fontSize: 12 }} /> {user.email}
                         </Typography>
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      {user.hospital ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Business sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                            {user.hospital.name}
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>Unassigned</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500, display: 'block' }}>
-                        {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{
+                      display: 'inline-flex',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      ...getRoleBadgeStyles(user.role)
+                    }}>
+                      {user.role}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getStatusColor(user.status) }} />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {user.status}
                       </Typography>
-                      {user.lastLogin && (
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {new Date(user.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    {user.hospital ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Business sx={{ fontSize: 16, color: 'text.secondary' }} />
+                        <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                          {user.hospital.name}
                         </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'right' }}>
-                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(user); }}>
-                        <Edit sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </Box>
+                    ) : (
+                      <Typography variant="caption" sx={{ color: 'text.disabled' }}>Unassigned</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500, display: 'block' }}>
+                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                    </Typography>
+                    {user.lastLogin && (
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {new Date(user.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'right' }}>
+                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(user); }}>
+                      <Edit sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
