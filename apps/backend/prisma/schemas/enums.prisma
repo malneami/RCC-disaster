@@ -9,6 +9,7 @@ enum UserRole {
   DATA_COLLECTOR
   CATH_LAB_USER
   HOSPITAL_USER
+  SUPPORT
 }
 
 enum UserStatus {
@@ -365,4 +366,24 @@ enum BedRequestPriority {
   HIGH
   CRITICAL
   EMERGENCY
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketCategory {
+  BUG
+  ENHANCEMENT
+  TECHNICAL_ISSUE
+  FEATURE_REQUEST
+  OTHER
+}
+
+enum MessageSenderType {
+  USER
+  SUPPORT
 }

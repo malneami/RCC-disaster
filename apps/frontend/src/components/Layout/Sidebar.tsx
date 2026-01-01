@@ -28,6 +28,8 @@ import {
   faChartLine,
   faVideo,
   faBed,
+  faHeadset,
+  faTools,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -180,6 +182,21 @@ const Sidebar: React.FC = () => {
       icon: <FontAwesomeIcon icon={faUserCog} />,
       path: '/admin',
       roles: ['ADMIN'],
+    },
+  ];
+
+  const supportItems = [
+    {
+      text: 'Support',
+      icon: <FontAwesomeIcon icon={faHeadset} />,
+      path: '/support',
+      roles: ['ADMIN', 'RCC', 'EMS', 'ED_NURSE', 'UNIT_NURSE', 'BED_COORDINATOR', 'DATA_COLLECTOR', 'CATH_LAB_USER', 'HOSPITAL_USER'],
+    },
+    {
+      text: 'Support Panel',
+      icon: <FontAwesomeIcon icon={faTools} />,
+      path: '/support-panel',
+      roles: ['SUPPORT'],
     },
   ];
 
@@ -346,6 +363,48 @@ const Sidebar: React.FC = () => {
             </ListItem>
           ))}
       </List>
+
+      {/* Support Section - visible to all users */}
+      {supportItems.filter(item => hasRole(item.roles)).length > 0 && (
+        <>
+          <Divider sx={{ my: 1 }} />
+          <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
+            Support
+          </Typography>
+          <List>
+            {supportItems
+              .filter(item => hasRole(item.roles))
+              .map((item) => (
+                <ListItem key={item.text} disablePadding>
+                  <ListItemButton
+                    selected={location.pathname === item.path}
+                    onClick={() => handleNavigation(item.path)}
+                    sx={{
+                      mx: 1,
+                      borderRadius: 1,
+                      '&.Mui-selected': {
+                        bgcolor: 'primary.light',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'primary.main',
+                        },
+                      },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        color: location.pathname === item.path ? 'inherit' : 'text.secondary',
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+          </List>
+        </>
+      )}
 
       {hasRole(['ADMIN']) && (
         <>

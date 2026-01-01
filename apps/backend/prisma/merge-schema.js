@@ -38,6 +38,8 @@ const SCHEMA_ORDER = [
   'stroke-rehabilitation.prisma',
   // Notification system
   'notifications.prisma',
+  // Support ticket system
+  'support-ticket.prisma',
   'unit.prisma',
   'bed.prisma',
   'bed-request.prisma',

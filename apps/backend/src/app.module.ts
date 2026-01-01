@@ -41,6 +41,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { RepliesModule } from './modules/replies/replies.module';
 import { VideoCallsModule } from './modules/video-calls/video-calls.module';
 import { BedsModule } from './modules/beds/beds.module';
+import { SupportModule } from './modules/support/support.module';
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { BedsModule } from './modules/beds/beds.module';
     StrokeCommandCenterModule,
     DashboardModule,
     BedsModule,
+    SupportModule,
   ],
   providers: [
     {

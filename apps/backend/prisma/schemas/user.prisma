@@ -94,6 +94,12 @@ model User {
   bedRequestAssigner BedRequest[] @relation("BedRequestAssigner")
   bedStatusChanger BedStatusHistory[] @relation("BedStatusChanger")
   
+  // Support Ticket Relations
+  createdSupportTickets SupportTicket[] @relation("SupportTicketCreator")
+  resolvedSupportTickets SupportTicket[] @relation("SupportTicketResolver")
+  supportMessages SupportMessage[] @relation("SupportMessageSender")
+  uploadedSupportAttachments SupportAttachment[] @relation("SupportAttachmentUploader")
+  
   @@map("users")
   @@index([email])
   @@index([role])

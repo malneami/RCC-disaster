@@ -272,6 +272,18 @@ export async function seedUsers() {
       passwordHash: passwordHash,
       hospitalId: pmnhId, // PMNH
     },
+    // Support Team
+    {
+      email: 'support@rcc-healthcare.com',
+      firstName: 'Support',
+      lastName: 'Team',
+      phoneNumber: '+966 50 000 0401',
+      role: UserRole.SUPPORT,
+      status: UserStatus.ACTIVE,
+      isEmailVerified: true,
+      passwordHash: passwordHash,
+      hospitalId: kfch.id, 
+    },
   ];
 
   for (const user of users) {

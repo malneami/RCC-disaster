@@ -72,6 +72,7 @@ export class TicketsService {
       [UserRole.ED_NURSE]: [TicketStatus.ASSIGNED, TicketStatus.IN_TRANSPORT, TicketStatus.COMPLETED],
       [UserRole.UNIT_NURSE]: [TicketStatus.ASSIGNED, TicketStatus.IN_TRANSPORT, TicketStatus.COMPLETED],
       [UserRole.BED_COORDINATOR]: [TicketStatus.ASSIGNED, TicketStatus.IN_TRANSPORT, TicketStatus.COMPLETED],
+      [UserRole.SUPPORT]: [], // Support role doesn't manage transfer tickets
     };
 
     return allowedTransitions[userRole]?.includes(newStatus) || false;

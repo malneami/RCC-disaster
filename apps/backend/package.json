@@ -26,6 +26,7 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:seed:users": "ts-node prisma/seed-users.ts",
     "db:seed:critical": "ts-node prisma/seed-critical-cases.ts",
     "db:clean:critical": "ts-node prisma/clean-critical-cases.ts",
     "analyze:zones": "python3 scripts/analyze_zone_entries.py",

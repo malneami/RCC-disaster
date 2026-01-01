@@ -20,6 +20,7 @@ enum UserRole {
   DATA_COLLECTOR
   CATH_LAB_USER
   HOSPITAL_USER
+  SUPPORT
 }
 
 enum UserStatus {
@@ -590,6 +591,12 @@ model User {
   bedRequestApprover BedRequest[] @relation("BedRequestApprover")
   bedRequestAssigner BedRequest[] @relation("BedRequestAssigner")
   bedStatusChanger BedStatusHistory[] @relation("BedStatusChanger")
+  
+  // Support Ticket Relations
+  createdSupportTickets SupportTicket[] @relation("SupportTicketCreator")
+  resolvedSupportTickets SupportTicket[] @relation("SupportTicketResolver")
+  supportMessages SupportMessage[] @relation("SupportMessageSender")
+  uploadedSupportAttachments SupportAttachment[] @relation("SupportAttachmentUploader")
   
   @@map("users")
   @@index([email])
@@ -2619,6 +2626,111 @@ model Reply {
   @@index([createdAt])
   @@index([deletedAt])
 }
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketCategory {
+  BUG
+  ENHANCEMENT
+  TECHNICAL_ISSUE
+  FEATURE_REQUEST
+  OTHER
+}
+
+enum MessageSenderType {
+  USER
+  SUPPORT
+}
+
+model SupportTicket {
+  id              String                @id @default(uuid())
+  ticketNumber    String                @unique @map("ticket_number")
+  
+  description     String                
+  category        SupportTicketCategory 
+  status          SupportTicketStatus   @default(OPEN)
+  
+  // Relations
+  createdBy       User                  @relation("SupportTicketCreator", fields: [createdById], references: [id])
+  createdById     String                @map("created_by_id")
+  
+  messages        SupportMessage[]
+  attachments     SupportAttachment[]
+  
+  // Audit Fields
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  resolvedAt      DateTime?             @map("resolved_at")
+  resolvedById    String?               @map("resolved_by_id")
+  resolvedBy      User?                 @relation("SupportTicketResolver", fields: [resolvedById], references: [id])
+  
+  @@map("support_tickets")
+  @@index([ticketNumber])
+  @@index([status])
+  @@index([category])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+// Support Message Model
+model SupportMessage {
+  id              String                @id @default(uuid())
+  ticketId        String                @map("ticket_id")
+  content         String               
+  senderType      MessageSenderType     @map("sender_type")
+  
+  // Relations
+  ticket          SupportTicket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender          User                  @relation("SupportMessageSender", fields: [senderId], references: [id])
+  senderId        String                @map("sender_id")
+  
+  attachments     SupportAttachment[]
+  
+  // Audit Fields
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  
+  @@map("support_messages")
+  @@index([ticketId])
+  @@index([senderId])
+  @@index([senderType])
+  @@index([createdAt])
+}
+
+// Support Attachment Model
+model SupportAttachment {
+  id              String                @id @default(uuid())
+  ticketId        String                @map("ticket_id")
+  messageId       String?               @map("message_id") 
+  
+  // File Details
+  fileName        String                @map("file_name")
+  mimeType        String                @map("mime_type")
+  fileSize        Int                   @map("file_size") 
+  fileData        String                @map("file_data") 
+  
+  // Relations
+  ticket          SupportTicket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  message         SupportMessage?       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  // Audit Fields
+  uploadedAt      DateTime              @default(now()) @map("uploaded_at")
+  uploadedBy      User                  @relation("SupportAttachmentUploader", fields: [uploadedById], references: [id])
+  uploadedById    String                @map("uploaded_by_id")
+  
+  @@map("support_attachments")
+  @@index([ticketId])
+  @@index([messageId])
+  @@index([uploadedById])
+  @@index([uploadedAt])
+}
+
+
 
 // unit.prisma
 model Unit {

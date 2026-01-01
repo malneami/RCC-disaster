@@ -30,6 +30,9 @@ import LoadingSpinner from './components/Common/LoadingSpinner';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import VideoCallPage from './pages/VideoCall/VideoCallPage';
 import IncomingCallNotification from './components/VideoCall/IncomingCallNotification';
+import { SupportTicketsPage } from './pages/Support/SupportTicketsPage';
+import { SupportTicketChatPage } from './pages/Support/SupportTicketChatPage';
+import { SupportPanelPage } from './pages/Support/SupportPanelPage';
 
 function App() {
   const { user, isLoading } = useAuth();
@@ -54,7 +57,15 @@ function App() {
           <Box sx={{ flexGrow: 1, p: 3 }}>
             <IncomingCallNotification />
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route 
+                path="/" 
+                element={
+                  <Navigate 
+                    to={user?.role === 'SUPPORT' ? '/support-panel' : '/dashboard'} 
+                    replace 
+                  />
+                } 
+              />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/tickets/:ticketId" element={<TicketViewPage />} />
@@ -76,6 +87,26 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['ADMIN', 'RCC']}>
                     <BedsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Support Routes */}
+              <Route path="/support" element={<SupportTicketsPage />} />
+              <Route path="/support/:ticketId" element={<SupportTicketChatPage />} />
+              <Route
+                path="/support-panel"
+                element={
+                  <ProtectedRoute allowedRoles={['SUPPORT']}>
+                    <SupportPanelPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/support-panel/:ticketId"
+                element={
+                  <ProtectedRoute allowedRoles={['SUPPORT']}>
+                    <SupportTicketChatPage />
                   </ProtectedRoute>
                 }
               />
@@ -140,7 +171,15 @@ function App() {
                 }
               />
 
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route 
+                path="*" 
+                element={
+                  <Navigate 
+                    to={user?.role === 'SUPPORT' ? '/support-panel' : '/dashboard'} 
+                    replace 
+                  />
+                } 
+              />
             </Routes>
           </Box>
         </Layout>
