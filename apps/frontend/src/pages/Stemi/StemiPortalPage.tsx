@@ -416,6 +416,8 @@ const StemiPortalPage: React.FC = () => {
           dischargeMedications: updatedData.dischargeMedications,
           followUpAppointmentDate: updatedData.followUpAppointmentDate,
           followUpAppointmentProvider: updatedData.followUpAppointmentProvider,
+          followUpCallCompleted: updatedData.followUpCallCompleted,
+          followUpCallDate: updatedData.followUpCallDate,
           outcomeFormCompleted: updatedData.outcomeFormCompleted,
           outcomeFormCompletionDate: updatedData.outcomeFormCompletionDate,
           outcomePercentageCompleteness: updatedData.outcomePercentageCompleteness,

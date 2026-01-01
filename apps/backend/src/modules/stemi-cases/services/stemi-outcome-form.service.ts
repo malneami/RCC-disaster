@@ -41,14 +41,7 @@ export class StemiOutcomeFormService {
 
     // Prepare update data with proper date conversion
     const updateData: any = {
-      ...outcomeFormDto,
-      // Exclude date fields that will be processed separately
-      cathLabActivationTime: undefined,
-      cathLabArrivalTime: undefined,
-      pciProcedureStartTime: undefined,
-      pciProcedureCompleteTime: undefined,
-      followUpAppointmentDate: undefined,
-      followUpCallDate: undefined,
+      // Always include these fields
       outcomeFormCompleted: completionDate ? true : false,
       outcomeFormCompletionDate: completionDate,
       outcomePercentageCompleteness: completenessPercentage,
@@ -73,6 +66,23 @@ export class StemiOutcomeFormService {
     }
     if (outcomeFormDto.followUpCallDate && outcomeFormDto.followUpCallDate.trim() !== '') {
       updateData.followUpCallDate = new Date(outcomeFormDto.followUpCallDate);
+    }
+
+    // Include non-date fields from DTO (only if they are defined)
+    if (outcomeFormDto.postPciComplications !== undefined) {
+      updateData.postPciComplications = outcomeFormDto.postPciComplications || null;
+    }
+    if (outcomeFormDto.dischargeStatus !== undefined) {
+      updateData.dischargeStatus = outcomeFormDto.dischargeStatus || null;
+    }
+    if (outcomeFormDto.dischargeMedications !== undefined) {
+      updateData.dischargeMedications = outcomeFormDto.dischargeMedications || null;
+    }
+    if (outcomeFormDto.followUpAppointmentProvider !== undefined) {
+      updateData.followUpAppointmentProvider = outcomeFormDto.followUpAppointmentProvider || null;
+    }
+    if (outcomeFormDto.followUpCallCompleted !== undefined) {
+      updateData.followUpCallCompleted = outcomeFormDto.followUpCallCompleted;
     }
 
     // Update the STEMI case

@@ -118,6 +118,22 @@ export class StemiQueryService {
           metKpi5: true,
           metKpi6: true,
           
+          // Outcome Form fields
+          cathLabActivationTime: true,
+          cathLabArrivalTime: true,
+          pciProcedureStartTime: true,
+          pciProcedureCompleteTime: true,
+          postPciComplications: true,
+          dischargeStatus: true,
+          dischargeMedications: true,
+          followUpAppointmentDate: true,
+          followUpAppointmentProvider: true,
+          followUpCallCompleted: true,
+          followUpCallDate: true,
+          outcomeFormCompleted: true,
+          outcomeFormCompletionDate: true,
+          outcomePercentageCompleteness: true,
+          
           // Additional notes
           additionalNotes: true,
           
