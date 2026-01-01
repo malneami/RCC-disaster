@@ -220,6 +220,7 @@ export class TraumaCasesService {
     transferCase?: boolean;
     startDate?: string;
     endDate?: string;
+    search?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ cases: TraumaCase[]; total: number }> {

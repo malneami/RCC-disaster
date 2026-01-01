@@ -12,6 +12,7 @@ export interface TraumaFilters {
   transferCase?: boolean;
   startDate?: string;
   endDate?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }
@@ -68,11 +69,39 @@ export class TraumaQueryService {
     if (filters?.startDate || filters?.endDate) {
       where.arrivalDateTime = {};
       if (filters.startDate) {
-        where.arrivalDateTime.gte = new Date(filters.startDate);
+        const from = new Date(filters.startDate);
+        from.setHours(0, 0, 0, 0);
+        where.arrivalDateTime.gte = from;
       }
       if (filters.endDate) {
-        where.arrivalDateTime.lte = new Date(filters.endDate);
+        const to = new Date(filters.endDate);
+        to.setHours(23, 59, 59, 999);
+        where.arrivalDateTime.lte = to;
       }
+    }
+
+    if (filters?.search && filters.search.trim()) {
+      const search = filters.search.trim();
+      if (!where.AND) {
+        where.AND = [];
+      }
+      where.AND.push({
+        OR: [
+          {
+            patient: {
+              OR: [
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { nationalId: { contains: search, mode: 'insensitive' } },
+                { mrn: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          },
+          {
+            chiefComplaint: { contains: search, mode: 'insensitive' },
+          },
+        ],
+      });
     }
 
     const [cases, total] = await Promise.all([

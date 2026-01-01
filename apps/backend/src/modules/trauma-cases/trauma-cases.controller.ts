@@ -52,6 +52,7 @@ export class TraumaCasesController {
     @Query('transferCase') transferCase?: boolean,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('search') search?: string,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number,
   ) {
@@ -65,6 +66,7 @@ export class TraumaCasesController {
       transferCase,
       startDate,
       endDate,
+      search,
       limit: limit ? Number(limit) : undefined,
       offset: offset ? Number(offset) : undefined,
     };
