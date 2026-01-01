@@ -32,6 +32,7 @@ interface HospitalsPageProps {
   onUpdateCapacity: (hospital: Hospital) => void;
   onViewDashboard: (hospitalId: string) => void;
   onCreateHospital: (hospitalData: any) => void;
+  onDeleteHospital: (hospitalId: string) => void;
   onUpdateCapacitySubmit: (hospitalId: string, capacityData: any) => void;
   onApplyFilters: (filters: HospitalFilters) => void;
   onResetFilters: () => void;
@@ -50,6 +51,7 @@ const HospitalsPage: React.FC<HospitalsPageProps> = ({
   onUpdateCapacity,
   onViewDashboard,
   onCreateHospital,
+  onDeleteHospital,
   onUpdateCapacitySubmit,
   onApplyFilters,
   onResetFilters,
@@ -153,6 +155,7 @@ const HospitalsPage: React.FC<HospitalsPageProps> = ({
                 hospital={hospital}
                 isSelected={selectedHospitalForDrawer?.id === hospital.id}
                 onClick={() => handleCardClick(hospital)}
+                onDelete={() => onDeleteHospital(hospital.id)}
               />
             ))
           )}

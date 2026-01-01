@@ -1,24 +1,48 @@
-import React from 'react';
-import { Box, Paper, Typography, Tooltip, useTheme, alpha } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Paper, Typography, Tooltip, useTheme, alpha, IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
     Favorite as StemiIcon,
     Psychology as StrokeIcon,
     LocalFireDepartment as TraumaIcon,
+    MoreVert as MoreIcon,
+    Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { Hospital } from '../../../../services/hospitalService';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 interface HospitalCardProps {
     hospital: Hospital;
     isSelected?: boolean;
     onClick: () => void;
+    onDelete?: () => void;
 }
 
 export const HospitalCard: React.FC<HospitalCardProps> = ({
     hospital,
     isSelected,
     onClick,
+    onDelete,
 }) => {
     const theme = useTheme();
+    const { user } = useAuth();
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+    const isAdminOrRCC = user?.role === 'ADMIN' || user?.role === 'RCC';
+
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleDelete = (event: React.MouseEvent) => {
+        event.stopPropagation();
+        handleMenuClose();
+        onDelete?.();
+    };
 
     const totalBeds = hospital.icuBeds + hospital.picuBeds + hospital.maleBeds +
         hospital.femaleBeds + hospital.pediatricBeds + hospital.standardBeds + (hospital.nicuBeds || 0);
@@ -161,6 +185,31 @@ export const HospitalCard: React.FC<HospitalCardProps> = ({
                         </Tooltip>
                     )}
                 </Box>
+
+                {isAdminOrRCC && (
+                    <Box>
+                        <IconButton
+                            size="small"
+                            onClick={handleMenuOpen}
+                            sx={{ ml: 1 }}
+                        >
+                            <MoreIcon fontSize="small" />
+                        </IconButton>
+                        <Menu
+                            anchorEl={anchorEl}
+                            open={Boolean(anchorEl)}
+                            onClose={handleMenuClose}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+                                <ListItemIcon>
+                                    <DeleteIcon fontSize="small" color="error" />
+                                </ListItemIcon>
+                                <ListItemText>Delete</ListItemText>
+                            </MenuItem>
+                        </Menu>
+                    </Box>
+                )}
             </Box>
         </Paper>
     );

@@ -136,7 +136,7 @@ export class HospitalsController {
   @ApiParam({ name: 'id', description: 'Hospital ID' })
   @ApiResponse({ status: 200, description: 'Hospital deleted successfully' })
   @ApiResponse({ status: 404, description: 'Hospital not found' })
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.RCC)
   async remove(@Param('id') id: string) {
     return this.hospitalsService.remove(id);
   }

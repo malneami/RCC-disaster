@@ -39,6 +39,20 @@ const HospitalsPage: React.FC = () => {
     }
   };
 
+  const handleDeleteHospital = async (hospitalId: string) => {
+    if (!window.confirm('Are you sure you want to delete this hospital? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await hospitalService.deleteHospital(hospitalId);
+      loadHospitals();
+    } catch (err) {
+      console.error('Error deleting hospital:', err);
+      alert('Failed to delete hospital');
+    }
+  };
+
   const handleUpdateCapacity = async (hospitalId: string, capacityData: any) => {
     try {
       await hospitalService.updateHospitalCapacity(hospitalId, capacityData);
@@ -111,6 +125,7 @@ const HospitalsPage: React.FC = () => {
       onUpdateCapacity={handleUpdateCapacityClick}
       onViewDashboard={handleViewDashboard}
       onCreateHospital={handleCreateHospital}
+      onDeleteHospital={handleDeleteHospital}
       onUpdateCapacitySubmit={handleUpdateCapacity}
       onApplyFilters={handleApplyFilters}
       onResetFilters={handleResetFilters}
