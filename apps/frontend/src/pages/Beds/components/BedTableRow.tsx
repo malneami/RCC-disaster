@@ -155,17 +155,6 @@ const BedTableRow: React.FC<BedTableRowProps> = ({
             {bed.hospital?.name || '-'}
           </Typography>
         </TableCell>
-        <TableCell>
-          {bed.currentPatientName ? (
-            <Typography variant="body2" fontWeight={500}>
-              {bed.currentPatientName}
-            </Typography>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              -
-            </Typography>
-          )}
-        </TableCell>
         <TableCell align="center">
           {bed.isOperational ? (
             <Chip label="Yes" color="success" size="small" />

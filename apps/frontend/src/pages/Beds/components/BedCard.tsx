@@ -49,16 +49,6 @@ export const BedCard: React.FC<BedCardProps> = ({ bed, onClick }) => {
           <BedStatusChip status={bed.status} />
         </Box>
 
-        {bed.currentPatient && (
-          <Box sx={{ mb: 1.5 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-              Patient:
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {bed.currentPatient.name}
-            </Typography>
-          </Box>
-        )}
 
         {bed.location && (
           <Box sx={{ mb: 1.5 }}>

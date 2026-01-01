@@ -111,12 +111,10 @@ const BedsTable: React.FC<BedsTableProps> = ({
         const bedNumber = bed.bedNumber.toLowerCase();
         const unitName = bed.unitName.toLowerCase();
         const hospitalName = bed.hospital?.name.toLowerCase() || '';
-        const patientName = bed.currentPatientName?.toLowerCase() || '';
 
         return bedNumber.includes(query) ||
           unitName.includes(query) ||
-          hospitalName.includes(query) ||
-          patientName.includes(query);
+          hospitalName.includes(query);
       });
     }
 

@@ -30,11 +30,6 @@ const BedsTableHeader: React.FC = () => {
             Hospital
           </Typography>
         </TableCell>
-        <TableCell>
-          <Typography variant="subtitle2" fontWeight="bold">
-            Patient
-          </Typography>
-        </TableCell>
         <TableCell align="center">
           <Typography variant="subtitle2" fontWeight="bold">
             Operational

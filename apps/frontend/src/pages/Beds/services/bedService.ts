@@ -46,6 +46,7 @@ export interface Bed {
     age?: number;
     gender?: string;
     mrn?: string;
+    dateOfBirth?: string;
   };
 }
 

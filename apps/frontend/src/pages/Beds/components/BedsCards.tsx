@@ -112,12 +112,10 @@ const BedsCards: React.FC<BedsCardsProps> = ({
         const bedNumber = bed.bedNumber.toLowerCase();
         const unitName = bed.unitName.toLowerCase();
         const hospitalName = bed.hospital?.name.toLowerCase() || '';
-        const patientName = bed.currentPatientName?.toLowerCase() || '';
 
         return bedNumber.includes(query) ||
                unitName.includes(query) ||
-               hospitalName.includes(query) ||
-               patientName.includes(query);
+               hospitalName.includes(query);
       });
     }
 
@@ -390,17 +388,6 @@ const BedsCards: React.FC<BedsCardsProps> = ({
                             </Typography>
                             <Typography variant="body1">
                               {bed.hospital.name}
-                            </Typography>
-                          </Box>
-                        )}
-
-                        {bed.currentPatientName && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                              Patient
-                            </Typography>
-                            <Typography variant="body1" fontWeight={500}>
-                              {bed.currentPatientName}
                             </Typography>
                           </Box>
                         )}

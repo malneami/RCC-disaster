@@ -266,6 +266,7 @@ export class BedsService {
           age: this.calculateAge(bed.currentPatient.dateOfBirth) || undefined,
           gender: bed.currentPatient.gender || undefined,
           mrn: bed.currentPatient.mrn || undefined,
+          dateOfBirth: bed.currentPatient.dateOfBirth ? bed.currentPatient.dateOfBirth.toISOString() : undefined,
         }
         : undefined,
     };
@@ -343,6 +344,7 @@ export class BedsService {
           age: this.calculateAge(bed.currentPatient.dateOfBirth) || undefined,
           gender: bed.currentPatient.gender || undefined,
           mrn: bed.currentPatient.mrn || undefined,
+          dateOfBirth: bed.currentPatient.dateOfBirth ? bed.currentPatient.dateOfBirth.toISOString() : undefined,
         }
         : undefined,
     };

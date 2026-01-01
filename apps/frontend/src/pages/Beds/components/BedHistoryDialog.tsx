@@ -166,9 +166,7 @@ const BedHistoryDialog: React.FC<BedHistoryDialogProps> = ({
                             Patient Information:
                           </Typography>
                         </Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {item.patient.name}
-                        </Typography>
+                        
                         {item.patient.nationalId && (
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                             National ID: {item.patient.nationalId}

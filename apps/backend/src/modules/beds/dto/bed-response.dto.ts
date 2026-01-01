@@ -38,6 +38,9 @@ export class PatientInfoDto {
 
   @ApiProperty({ required: false })
   mrn?: string;
+
+  @ApiProperty({ required: false })
+  dateOfBirth?: string;
 }
 
 export class BedListItemDto {

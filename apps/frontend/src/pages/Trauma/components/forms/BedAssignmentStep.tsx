@@ -220,7 +220,8 @@ const BedAssignmentStep: React.FC<BedAssignmentStepProps> = ({
                 value={hospitalType}
                 onChange={(e) => handleHospitalTypeChange(e.target.value as 'origin' | 'destination' | '')}
               >
-                {originHospitalId && (
+                {/* Only show origin option for direct tickets (no destination hospital) */}
+                {originHospitalId && !destinationHospitalId && (
                   <FormControlLabel
                     value="origin"
                     control={<Radio />}
