@@ -276,6 +276,8 @@ const StrokePortalPage: React.FC = () => {
   // ... existing admin check ...
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'RCC';
 
+  // Removed blocking loading check to prevent full page refresh on search/filter
+  /* 
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -283,6 +285,7 @@ const StrokePortalPage: React.FC = () => {
       </Box>
     );
   }
+  */
 
   // Create KPI cards data
   const kpiCards = [
@@ -412,6 +415,7 @@ const StrokePortalPage: React.FC = () => {
                 setSearchTerm(value);
                 setPage(0);
               }}
+              loading={loading}
             />
           ) : (
             <StrokeCasesCards

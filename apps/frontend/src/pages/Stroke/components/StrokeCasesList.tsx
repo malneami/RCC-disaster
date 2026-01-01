@@ -15,6 +15,7 @@ import {
   ToggleButtonGroup,
   TablePagination,
   Card,
+  LinearProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -68,6 +69,7 @@ interface StrokeCasesListProps {
   };
   searchValue: string;
   onSearchChange?: (value: string) => void;
+  loading?: boolean;
 }
 
 const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
@@ -88,6 +90,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   appliedFilters,
   searchValue,
   onSearchChange,
+  loading = false,
 }) => {
   const [selectedCase, setSelectedCase] = useState<StrokeCase | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -296,6 +299,17 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
     !!filters.dateFrom ||
     !!filters.dateTo;
 
+  if (loading && cases.length === 0) {
+    return (
+      <Box sx={{ width: '100%', mt: 4 }}>
+        <LinearProgress />
+        <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
+          Loading cases...
+        </Typography>
+      </Box>
+    );
+  }
+
   if (cases.length === 0 && !hasActiveFiltersOrSearch) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -418,6 +432,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
 
       {/* Cases Table */}
       <Card elevation={0}>
+        {loading && <LinearProgress />}
         <TableContainer component={Paper} elevation={0}>
           <Table stickyHeader>
             <StrokeCasesTableHeader />
