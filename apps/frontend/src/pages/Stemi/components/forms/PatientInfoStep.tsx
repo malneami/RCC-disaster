@@ -180,13 +180,18 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
               // Format DoB if it exists
               const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : undefined;
 
+              let age = patient.age;
+              if (age === undefined && dob) {
+                age = calculateAge(dob).years;
+              }
+
               onChange({
                 ...data,
                 firstName: patient.firstName,
                 lastName: patient.lastName,
                 nationalId: patient.nationalId || '',
                 dateOfBirth: dob,
-                age: patient.age || undefined,
+                age: age || undefined,
                 gender: patient.gender as 'MALE' | 'FEMALE',
                 phoneNumber: patient.phoneNumber || '',
                 address: patient.address || '',

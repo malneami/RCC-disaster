@@ -200,6 +200,11 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <Typography variant="body2">
                 <strong>National ID:</strong> {patientInfo.nationalId}
               </Typography>
+              {patientInfo.dateOfBirth && (
+                <Typography variant="body2">
+                  <strong>Date of Birth:</strong> {new Date(patientInfo.dateOfBirth).toLocaleDateString('en-US', { timeZone: 'UTC' })}
+                </Typography>
+              )}
               <Typography variant="body2">
                 <strong>Age:</strong> {patientInfo.age ? `${patientInfo.age} years` : 'N/A'}
               </Typography>
@@ -264,8 +269,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
           <Card
             sx={cardStyles(
               doorOutWarnings.length > 0 ||
-                balloonWarnings.length > 0 ||
-                thrombolyticWarnings.length > 0
+              balloonWarnings.length > 0 ||
+              thrombolyticWarnings.length > 0
             )}
           >
             <CardContent sx={cardContentStyles}>
@@ -379,10 +384,10 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                 Additional Information
               </Typography>
               <Typography variant="body2">
-                <strong>Current Status:</strong> 
-                <Chip 
-                  label={additionalData.currentStatus.replace(/_/g, ' ')} 
-                  size="small" 
+                <strong>Current Status:</strong>
+                <Chip
+                  label={additionalData.currentStatus.replace(/_/g, ' ')}
+                  size="small"
                   sx={{ ml: 1 }}
                 />
               </Typography>
