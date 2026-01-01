@@ -171,9 +171,25 @@ const PatientForm: React.FC<PatientFormProps> = ({
         const newPatient = await patientService.createPatient(formDataForSubmission);
         onPatientCreated?.(newPatient);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving patient:', error);
-      setError('Failed to save patient. Please try again.');
+
+      // Extract specific error message from backend response
+      let errorMessage = 'Failed to save patient. Please try again.';
+
+      if (error.response && error.response.data) {
+        const { message } = error.response.data;
+
+        if (Array.isArray(message)) {
+          // NestJS class-validator error array
+          errorMessage = message.join('\n');
+        } else if (typeof message === 'string') {
+          // Specific backend error message (e.g. ConflictException)
+          errorMessage = message;
+        }
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -604,7 +620,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
   return (
     <Box sx={{ py: compact ? 1 : 2 }}>
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, whiteSpace: 'pre-wrap' }}>
           {error}
         </Alert>
       )}

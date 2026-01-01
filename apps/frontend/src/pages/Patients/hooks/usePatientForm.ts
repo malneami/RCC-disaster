@@ -379,9 +379,25 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
         const newPatient = await patientService.createPatient(submitData);
         onPatientCreated(newPatient);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving patient:', err);
-      setError('Failed to save patient. Please try again.');
+      
+      // Extract specific error message from backend response
+      let errorMessage = 'Failed to save patient. Please try again.';
+      
+      if (err.response && err.response.data) {
+        const { message } = err.response.data;
+        
+        if (Array.isArray(message)) {
+          // NestJS class-validator error array
+          errorMessage = message.join('\n');
+        } else if (typeof message === 'string') {
+          // Specific backend error message (e.g. ConflictException)
+          errorMessage = message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

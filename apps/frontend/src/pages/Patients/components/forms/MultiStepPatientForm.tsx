@@ -27,14 +27,14 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
   onViewDuplicate,
 }) => {
   const [selectedPatient, setSelectedPatient] = React.useState<Patient | null>(patient || null);
-  
+
   // Reset selected patient when form opens/closes
   React.useEffect(() => {
     if (open) {
       setSelectedPatient(patient || null);
     }
   }, [open, patient]);
-  
+
   const { formData, error, handleDataChange, handleFieldBlur, handleComplete, loading, validationErrors, touched, validatePersonalInfoStep } = usePatientForm({
     patient: selectedPatient,
     open,
@@ -131,9 +131,9 @@ const MultiStepPatientForm: React.FC<MultiStepPatientFormProps> = ({
         maxWidth="lg"
         loading={loading}
       />
-      
+
       {error && (
-        <Alert severity="error" sx={{ position: 'fixed', top: 16, right: 16, zIndex: 9999 }}>
+        <Alert severity="error" sx={{ position: 'fixed', top: 16, right: 16, zIndex: 9999, whiteSpace: 'pre-wrap' }}>
           {error}
         </Alert>
       )}
