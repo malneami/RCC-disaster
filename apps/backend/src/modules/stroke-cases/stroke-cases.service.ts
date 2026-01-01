@@ -242,67 +242,90 @@ export class StrokeCasesService {
     console.log('Door to CT Report Minutes:', kpiData.doorToCtReportMinutes);
     console.log('Door to Thrombolysis Order Minutes:', kpiData.doorToThrombolysisOrderMinutes);
 
+    // Helper function to safely convert date strings to Date objects
+    const safeDateConvert = (dateString: string | undefined | null): Date | undefined => {
+      if (!dateString || dateString.trim() === '') {
+        return undefined;
+      }
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date string provided: ${dateString}`);
+        return undefined;
+      }
+      return date;
+    };
+
     // Extract only the fields that exist in the CreateStrokeCaseV2Dto
-    const strokeCaseData = {
+    const strokeCaseData: any = {
         ticketId: ticketId || null,
         patientId,
-        chiefComplaint: createStrokeCaseDto.chiefComplaint,
         originHospitalId: createStrokeCaseDto.originHospitalId,
-        destinationHospitalId: createStrokeCaseDto.destinationHospitalId,
         strokeType: createStrokeCaseDto.strokeType,
         currentStatus: createStrokeCaseDto.currentStatus,
-        selectedTreatment: createStrokeCaseDto.selectedTreatment,
         createdById: validUserId,
         
-        // Include all timing fields from the DTO
-        modeOfArrival: createStrokeCaseDto.modeOfArrival,
-        transferRequestDateTime: createStrokeCaseDto.transferRequestDateTime ? new Date(createStrokeCaseDto.transferRequestDateTime) : undefined,
-        transferArrivalDateTime: createStrokeCaseDto.transferArrivalDateTime ? new Date(createStrokeCaseDto.transferArrivalDateTime) : undefined,
-        srcaCallTime: createStrokeCaseDto.srcaCallTime ? new Date(createStrokeCaseDto.srcaCallTime) : undefined,
-        timeOfSymptomOnset: createStrokeCaseDto.timeOfSymptomOnset ? new Date(createStrokeCaseDto.timeOfSymptomOnset) : undefined,
-        lastKnownNormal: createStrokeCaseDto.lastKnownNormal ? new Date(createStrokeCaseDto.lastKnownNormal) : undefined,
-        dateOfAdmission: createStrokeCaseDto.dateOfAdmission ? new Date(createStrokeCaseDto.dateOfAdmission) : undefined,
-        timeOfTriage: createStrokeCaseDto.timeOfTriage ? new Date(createStrokeCaseDto.timeOfTriage) : undefined,
-        timeOfPhysicianAssessment: createStrokeCaseDto.timeOfPhysicianAssessment ? new Date(createStrokeCaseDto.timeOfPhysicianAssessment) : undefined,
+        // Only include optional fields if they are explicitly provided (not undefined)
+        ...(createStrokeCaseDto.chiefComplaint !== undefined && { chiefComplaint: createStrokeCaseDto.chiefComplaint }),
+        ...(createStrokeCaseDto.destinationHospitalId !== undefined && { destinationHospitalId: createStrokeCaseDto.destinationHospitalId }),
+        ...(createStrokeCaseDto.selectedTreatment !== undefined && { selectedTreatment: createStrokeCaseDto.selectedTreatment }),
+        ...(createStrokeCaseDto.modeOfArrival !== undefined && { modeOfArrival: createStrokeCaseDto.modeOfArrival }),
+        
+        // Include all timing fields from the DTO with safe date conversion
+        ...(createStrokeCaseDto.transferRequestDateTime !== undefined && { transferRequestDateTime: safeDateConvert(createStrokeCaseDto.transferRequestDateTime) }),
+        ...(createStrokeCaseDto.transferArrivalDateTime !== undefined && { transferArrivalDateTime: safeDateConvert(createStrokeCaseDto.transferArrivalDateTime) }),
+        ...(createStrokeCaseDto.srcaCallTime !== undefined && { srcaCallTime: safeDateConvert(createStrokeCaseDto.srcaCallTime) }),
+        ...(createStrokeCaseDto.timeOfSymptomOnset !== undefined && { timeOfSymptomOnset: safeDateConvert(createStrokeCaseDto.timeOfSymptomOnset) }),
+        ...(createStrokeCaseDto.lastKnownNormal !== undefined && { lastKnownNormal: safeDateConvert(createStrokeCaseDto.lastKnownNormal) }),
+        ...(createStrokeCaseDto.dateOfAdmission !== undefined && { dateOfAdmission: safeDateConvert(createStrokeCaseDto.dateOfAdmission) }),
+        ...(createStrokeCaseDto.timeOfTriage !== undefined && { timeOfTriage: safeDateConvert(createStrokeCaseDto.timeOfTriage) }),
+        ...(createStrokeCaseDto.timeOfPhysicianAssessment !== undefined && { timeOfPhysicianAssessment: safeDateConvert(createStrokeCaseDto.timeOfPhysicianAssessment) }),
         
         // Clinical Assessment & Diagnosis
-        strokeTypeDetailed: createStrokeCaseDto.strokeTypeDetailed,
-        swallowingScreeningPerformed: createStrokeCaseDto.swallowingScreeningPerformed,
-        timeOfSwallowingScreening: createStrokeCaseDto.timeOfSwallowingScreening ? new Date(createStrokeCaseDto.timeOfSwallowingScreening) : undefined,
-        swallowingScreeningResult: createStrokeCaseDto.swallowingScreeningResult,
-        ctScanPerformed: createStrokeCaseDto.ctScanPerformed,
-        timeOfCtScanStart: createStrokeCaseDto.timeOfCtScanStart ? new Date(createStrokeCaseDto.timeOfCtScanStart) : undefined,
-        timeOfCtReportFinal: createStrokeCaseDto.timeOfCtReportFinal ? new Date(createStrokeCaseDto.timeOfCtReportFinal) : undefined,
-        ctFindings: createStrokeCaseDto.ctFindings,
-        lvoDetected: createStrokeCaseDto.lvoDetected,
-        candidateForIVThrombolysis: createStrokeCaseDto.candidateForIVThrombolysis,
-        thrombolysisOrderTime: createStrokeCaseDto.thrombolysisOrderTime ? new Date(createStrokeCaseDto.thrombolysisOrderTime) : undefined,
-        ivThrombolysisAdministrationTime: createStrokeCaseDto.ivThrombolysisAdministrationTime ? new Date(createStrokeCaseDto.ivThrombolysisAdministrationTime) : undefined,
-        ivThrombolysisGiven: createStrokeCaseDto.ivThrombolysisGiven,
-        reasonForNotAdministeringIV: createStrokeCaseDto.reasonForNotAdministeringIV,
-        candidateForMechanicalThrombectomy: createStrokeCaseDto.candidateForMechanicalThrombectomy,
-        timeOfMechanicalThrombectomyPuncture: createStrokeCaseDto.timeOfMechanicalThrombectomyPuncture ? new Date(createStrokeCaseDto.timeOfMechanicalThrombectomyPuncture) : undefined,
-        mechanicalThrombectomyPerformed: createStrokeCaseDto.mechanicalThrombectomyPerformed,
-        timeOfThrombectomyComplete: createStrokeCaseDto.timeOfThrombectomyComplete ? new Date(createStrokeCaseDto.timeOfThrombectomyComplete) : undefined,
+        ...(createStrokeCaseDto.strokeTypeDetailed !== undefined && { strokeTypeDetailed: createStrokeCaseDto.strokeTypeDetailed }),
+        ...(createStrokeCaseDto.swallowingScreeningPerformed !== undefined && { swallowingScreeningPerformed: createStrokeCaseDto.swallowingScreeningPerformed }),
+        ...(createStrokeCaseDto.timeOfSwallowingScreening !== undefined && { timeOfSwallowingScreening: safeDateConvert(createStrokeCaseDto.timeOfSwallowingScreening) }),
+        ...(createStrokeCaseDto.swallowingScreeningResult !== undefined && { swallowingScreeningResult: createStrokeCaseDto.swallowingScreeningResult }),
+        ...(createStrokeCaseDto.ctScanPerformed !== undefined && { ctScanPerformed: createStrokeCaseDto.ctScanPerformed }),
+        ...(createStrokeCaseDto.timeOfCtScanStart !== undefined && { timeOfCtScanStart: safeDateConvert(createStrokeCaseDto.timeOfCtScanStart) }),
+        ...(createStrokeCaseDto.timeOfCtReportFinal !== undefined && { timeOfCtReportFinal: safeDateConvert(createStrokeCaseDto.timeOfCtReportFinal) }),
+        ...(createStrokeCaseDto.ctFindings !== undefined && { ctFindings: createStrokeCaseDto.ctFindings }),
+        ...(createStrokeCaseDto.lvoDetected !== undefined && { lvoDetected: createStrokeCaseDto.lvoDetected }),
+        ...(createStrokeCaseDto.candidateForIVThrombolysis !== undefined && { candidateForIVThrombolysis: createStrokeCaseDto.candidateForIVThrombolysis }),
+        ...(createStrokeCaseDto.thrombolysisOrderTime !== undefined && { thrombolysisOrderTime: safeDateConvert(createStrokeCaseDto.thrombolysisOrderTime) }),
+        ...(createStrokeCaseDto.ivThrombolysisAdministrationTime !== undefined && { ivThrombolysisAdministrationTime: safeDateConvert(createStrokeCaseDto.ivThrombolysisAdministrationTime) }),
+        ...(createStrokeCaseDto.ivThrombolysisGiven !== undefined && { ivThrombolysisGiven: createStrokeCaseDto.ivThrombolysisGiven }),
+        ...(createStrokeCaseDto.reasonForNotAdministeringIV !== undefined && { reasonForNotAdministeringIV: createStrokeCaseDto.reasonForNotAdministeringIV }),
+        ...(createStrokeCaseDto.candidateForMechanicalThrombectomy !== undefined && { candidateForMechanicalThrombectomy: createStrokeCaseDto.candidateForMechanicalThrombectomy }),
+        ...(createStrokeCaseDto.timeOfMechanicalThrombectomyPuncture !== undefined && { timeOfMechanicalThrombectomyPuncture: safeDateConvert(createStrokeCaseDto.timeOfMechanicalThrombectomyPuncture) }),
+        ...(createStrokeCaseDto.mechanicalThrombectomyPerformed !== undefined && { mechanicalThrombectomyPerformed: createStrokeCaseDto.mechanicalThrombectomyPerformed }),
+        ...(createStrokeCaseDto.timeOfThrombectomyComplete !== undefined && { timeOfThrombectomyComplete: safeDateConvert(createStrokeCaseDto.timeOfThrombectomyComplete) }),
         
         // Disposition & Transfer Decisions
-        facilityHasCt: createStrokeCaseDto.facilityHasCt,
-        transferToAnotherHospital: createStrokeCaseDto.transferToAnotherHospital,
-        timeOfTransferActivation: createStrokeCaseDto.timeOfTransferActivation ? new Date(createStrokeCaseDto.timeOfTransferActivation) : undefined,
-        timeOfTransferDeparture: createStrokeCaseDto.timeOfTransferDeparture ? new Date(createStrokeCaseDto.timeOfTransferDeparture) : undefined,
-        prehospitalNotificationBySrca: createStrokeCaseDto.prehospitalNotificationBySrca,
-        prehospitalNotificationByUccPhc: createStrokeCaseDto.prehospitalNotificationByUccPhc,
-        disposition: createStrokeCaseDto.disposition,
-        referralTo: createStrokeCaseDto.referralTo,
-        admittedToStrokeUnit: createStrokeCaseDto.admittedToStrokeUnit,
+        ...(createStrokeCaseDto.facilityHasCt !== undefined && { facilityHasCt: createStrokeCaseDto.facilityHasCt }),
+        ...(createStrokeCaseDto.transferToAnotherHospital !== undefined && { transferToAnotherHospital: createStrokeCaseDto.transferToAnotherHospital }),
+        ...(createStrokeCaseDto.timeOfTransferActivation !== undefined && { timeOfTransferActivation: safeDateConvert(createStrokeCaseDto.timeOfTransferActivation) }),
+        ...(createStrokeCaseDto.timeOfTransferDeparture !== undefined && { timeOfTransferDeparture: safeDateConvert(createStrokeCaseDto.timeOfTransferDeparture) }),
+        ...(createStrokeCaseDto.prehospitalNotificationBySrca !== undefined && { prehospitalNotificationBySrca: createStrokeCaseDto.prehospitalNotificationBySrca }),
+        ...(createStrokeCaseDto.prehospitalNotificationByUccPhc !== undefined && { prehospitalNotificationByUccPhc: createStrokeCaseDto.prehospitalNotificationByUccPhc }),
+        ...(createStrokeCaseDto.disposition !== undefined && { disposition: createStrokeCaseDto.disposition }),
+        ...(createStrokeCaseDto.referralTo !== undefined && { referralTo: createStrokeCaseDto.referralTo }),
+        ...(createStrokeCaseDto.admittedToStrokeUnit !== undefined && { admittedToStrokeUnit: createStrokeCaseDto.admittedToStrokeUnit }),
         
         // Follow-up & Outcome Tracking
-        followUpContactAttempted: createStrokeCaseDto.followUpContactAttempted,
-        modifiedRankinScaleAt90Days: createStrokeCaseDto.modifiedRankinScaleAt90Days,
+        ...(createStrokeCaseDto.followUpContactAttempted !== undefined && { followUpContactAttempted: createStrokeCaseDto.followUpContactAttempted }),
+        ...(createStrokeCaseDto.modifiedRankinScaleAt90Days !== undefined && { modifiedRankinScaleAt90Days: createStrokeCaseDto.modifiedRankinScaleAt90Days }),
         
         // Include calculated KPI data
         ...kpiData,
       };
+
+    // Remove undefined values to avoid Prisma issues
+    Object.keys(strokeCaseData).forEach(key => {
+      if (strokeCaseData[key] === undefined) {
+        delete strokeCaseData[key];
+      }
+    });
 
     console.log('Creating stroke case with data:', strokeCaseData);
     const strokeCase = await this.prisma.strokeCase.create({
@@ -756,10 +779,10 @@ export class StrokeCasesService {
 
         // Update fields only if provided
         if (patientInfo.firstName !== undefined) {
-          patientUpdateData.firstName = patientInfo.firstName.trim();
+          patientUpdateData.firstName = patientInfo.firstName ? patientInfo.firstName.trim() : null;
         }
         if (patientInfo.lastName !== undefined) {
-          patientUpdateData.lastName = patientInfo.lastName.trim();
+          patientUpdateData.lastName = patientInfo.lastName ? patientInfo.lastName.trim() : null;
         }
         if (patientInfo.gender !== undefined) {
           patientUpdateData.gender = patientInfo.gender;
@@ -781,10 +804,11 @@ export class StrokeCasesService {
             select: { nationalId: true }
           });
           
-          if (currentPatient && currentPatient.nationalId !== patientInfo.nationalId.trim()) {
-            patientUpdateData.nationalId = patientInfo.nationalId.trim();
-          } else if (!currentPatient?.nationalId && patientInfo.nationalId) {
-            patientUpdateData.nationalId = patientInfo.nationalId.trim();
+          const trimmedNationalId = patientInfo.nationalId ? patientInfo.nationalId.trim() : null;
+          if (currentPatient && currentPatient.nationalId !== trimmedNationalId) {
+            patientUpdateData.nationalId = trimmedNationalId;
+          } else if (!currentPatient?.nationalId && trimmedNationalId) {
+            patientUpdateData.nationalId = trimmedNationalId;
           }
         }
 
@@ -840,8 +864,43 @@ export class StrokeCasesService {
       const strokeCaseUpdateData = { ...strokeCaseData };
       console.log('Preparing update data...');
 
-      // Extract hospital IDs for relation handling
-      const { originHospitalId, destinationHospitalId, ...restUpdateData } = strokeCaseUpdateData;
+      // Helper function to safely convert date strings to Date objects
+      const safeDateConvert = (dateString: string | undefined | null): Date | undefined => {
+        if (!dateString || dateString.trim() === '') {
+          return undefined;
+        }
+        const date = new Date(dateString);
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          console.warn(`Invalid date string provided: ${dateString}`);
+          return undefined;
+        }
+        return date;
+      };
+
+      // Extract hospital IDs and date string fields for proper handling
+      const {
+        originHospitalId,
+        destinationHospitalId,
+        transferRequestDateTime,
+        transferArrivalDateTime,
+        srcaCallTime,
+        timeOfSymptomOnset,
+        lastKnownNormal,
+        dateOfAdmission,
+        timeOfTriage,
+        timeOfPhysicianAssessment,
+        timeOfSwallowingScreening,
+        timeOfCtScanStart,
+        timeOfCtReportFinal,
+        thrombolysisOrderTime,
+        ivThrombolysisAdministrationTime,
+        timeOfMechanicalThrombectomyPuncture,
+        timeOfThrombectomyComplete,
+        timeOfTransferActivation,
+        timeOfTransferDeparture,
+        ...restUpdateData
+      } = strokeCaseUpdateData;
 
       const updateData = {
         ...restUpdateData,
@@ -857,33 +916,62 @@ export class StrokeCasesService {
           } 
         }),
         // Convert date strings to Date objects for new fields
-        transferRequestDateTime: updateStrokeCaseDto.transferRequestDateTime ? new Date(updateStrokeCaseDto.transferRequestDateTime) : undefined,
-        transferArrivalDateTime: updateStrokeCaseDto.transferArrivalDateTime ? new Date(updateStrokeCaseDto.transferArrivalDateTime) : undefined,
-        srcaCallTime: updateStrokeCaseDto.srcaCallTime ? new Date(updateStrokeCaseDto.srcaCallTime) : undefined,
-        timeOfSymptomOnset: updateStrokeCaseDto.timeOfSymptomOnset ? new Date(updateStrokeCaseDto.timeOfSymptomOnset) : undefined,
-        lastKnownNormal: updateStrokeCaseDto.lastKnownNormal ? new Date(updateStrokeCaseDto.lastKnownNormal) : undefined,
-        dateOfAdmission: updateStrokeCaseDto.dateOfAdmission ? new Date(updateStrokeCaseDto.dateOfAdmission) : undefined,
-        timeOfTriage: updateStrokeCaseDto.timeOfTriage ? new Date(updateStrokeCaseDto.timeOfTriage) : undefined,
-        timeOfPhysicianAssessment: updateStrokeCaseDto.timeOfPhysicianAssessment ? new Date(updateStrokeCaseDto.timeOfPhysicianAssessment) : undefined,
-        timeOfSwallowingScreening: updateStrokeCaseDto.timeOfSwallowingScreening ? new Date(updateStrokeCaseDto.timeOfSwallowingScreening) : undefined,
-        timeOfCtScanStart: updateStrokeCaseDto.timeOfCtScanStart ? new Date(updateStrokeCaseDto.timeOfCtScanStart) : undefined,
-        timeOfCtReportFinal: updateStrokeCaseDto.timeOfCtReportFinal ? new Date(updateStrokeCaseDto.timeOfCtReportFinal) : undefined,
-        thrombolysisOrderTime: updateStrokeCaseDto.thrombolysisOrderTime ? new Date(updateStrokeCaseDto.thrombolysisOrderTime) : undefined,
-        ivThrombolysisAdministrationTime: updateStrokeCaseDto.ivThrombolysisAdministrationTime ? new Date(updateStrokeCaseDto.ivThrombolysisAdministrationTime) : undefined,
-        timeOfMechanicalThrombectomyPuncture: updateStrokeCaseDto.timeOfMechanicalThrombectomyPuncture ? new Date(updateStrokeCaseDto.timeOfMechanicalThrombectomyPuncture) : undefined,
-        timeOfThrombectomyComplete: updateStrokeCaseDto.timeOfThrombectomyComplete ? new Date(updateStrokeCaseDto.timeOfThrombectomyComplete) : undefined,
-        timeOfTransferActivation: updateStrokeCaseDto.timeOfTransferActivation ? new Date(updateStrokeCaseDto.timeOfTransferActivation) : undefined,
-        timeOfTransferDeparture: updateStrokeCaseDto.timeOfTransferDeparture ? new Date(updateStrokeCaseDto.timeOfTransferDeparture) : undefined,
+        ...(updateStrokeCaseDto.transferRequestDateTime !== undefined && { transferRequestDateTime: safeDateConvert(updateStrokeCaseDto.transferRequestDateTime) }),
+        ...(updateStrokeCaseDto.transferArrivalDateTime !== undefined && { transferArrivalDateTime: safeDateConvert(updateStrokeCaseDto.transferArrivalDateTime) }),
+        ...(updateStrokeCaseDto.srcaCallTime !== undefined && { srcaCallTime: safeDateConvert(updateStrokeCaseDto.srcaCallTime) }),
+        ...(updateStrokeCaseDto.timeOfSymptomOnset !== undefined && { timeOfSymptomOnset: safeDateConvert(updateStrokeCaseDto.timeOfSymptomOnset) }),
+        ...(updateStrokeCaseDto.lastKnownNormal !== undefined && { lastKnownNormal: safeDateConvert(updateStrokeCaseDto.lastKnownNormal) }),
+        ...(updateStrokeCaseDto.dateOfAdmission !== undefined && { dateOfAdmission: safeDateConvert(updateStrokeCaseDto.dateOfAdmission) }),
+        ...(updateStrokeCaseDto.timeOfTriage !== undefined && { timeOfTriage: safeDateConvert(updateStrokeCaseDto.timeOfTriage) }),
+        ...(updateStrokeCaseDto.timeOfPhysicianAssessment !== undefined && { timeOfPhysicianAssessment: safeDateConvert(updateStrokeCaseDto.timeOfPhysicianAssessment) }),
+        ...(updateStrokeCaseDto.timeOfSwallowingScreening !== undefined && { timeOfSwallowingScreening: safeDateConvert(updateStrokeCaseDto.timeOfSwallowingScreening) }),
+        ...(updateStrokeCaseDto.timeOfCtScanStart !== undefined && { timeOfCtScanStart: safeDateConvert(updateStrokeCaseDto.timeOfCtScanStart) }),
+        ...(updateStrokeCaseDto.timeOfCtReportFinal !== undefined && { timeOfCtReportFinal: safeDateConvert(updateStrokeCaseDto.timeOfCtReportFinal) }),
+        ...(updateStrokeCaseDto.thrombolysisOrderTime !== undefined && { thrombolysisOrderTime: safeDateConvert(updateStrokeCaseDto.thrombolysisOrderTime) }),
+        ...(updateStrokeCaseDto.ivThrombolysisAdministrationTime !== undefined && { ivThrombolysisAdministrationTime: safeDateConvert(updateStrokeCaseDto.ivThrombolysisAdministrationTime) }),
+        ...(updateStrokeCaseDto.timeOfMechanicalThrombectomyPuncture !== undefined && { timeOfMechanicalThrombectomyPuncture: safeDateConvert(updateStrokeCaseDto.timeOfMechanicalThrombectomyPuncture) }),
+        ...(updateStrokeCaseDto.timeOfThrombectomyComplete !== undefined && { timeOfThrombectomyComplete: safeDateConvert(updateStrokeCaseDto.timeOfThrombectomyComplete) }),
+        ...(updateStrokeCaseDto.timeOfTransferActivation !== undefined && { timeOfTransferActivation: safeDateConvert(updateStrokeCaseDto.timeOfTransferActivation) }),
+        ...(updateStrokeCaseDto.timeOfTransferDeparture !== undefined && { timeOfTransferDeparture: safeDateConvert(updateStrokeCaseDto.timeOfTransferDeparture) }),
         updatedAt: new Date(),
         ...kpiData,
       } as any; // Type assertion to handle Prisma's complex relation types
       
+      // Remove undefined values to avoid Prisma issues
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
+      
       console.log('Final update data:', JSON.stringify(updateData, null, 2));
       console.log('Performing database update...');
 
+      // Additional validation: ensure no invalid values are passed to Prisma
+      const sanitizedUpdateData: any = {};
+      for (const [key, value] of Object.entries(updateData)) {
+        // Skip undefined, null is allowed for optional fields
+        if (value === undefined) {
+          continue;
+        }
+        // Ensure dates are actually Date objects, not strings
+        if (value instanceof Date) {
+          // Validate the date is not invalid
+          if (isNaN(value.getTime())) {
+            console.warn(`Skipping invalid date for field ${key}: ${value}`);
+            continue;
+          }
+          sanitizedUpdateData[key] = value;
+        } else {
+          sanitizedUpdateData[key] = value;
+        }
+      }
+
+      console.log('Sanitized update data keys:', Object.keys(sanitizedUpdateData));
+      
       const result = await this.prisma.strokeCase.update({
         where: { id },
-        data: updateData,
+        data: sanitizedUpdateData,
         include: {
           ticket: true,
           patient: true,
@@ -903,6 +991,31 @@ export class StrokeCasesService {
       console.error('=== UPDATE ERROR ===');
       console.error('Error:', error);
       console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      // Provide more detailed error information
+      if (error instanceof Error) {
+        // If it's a Prisma error, extract the message
+        const errorMessage = error.message || 'Unknown error occurred';
+        console.error('Error message:', errorMessage);
+        
+        // Check for common Prisma errors
+        if (errorMessage.includes('Unique constraint')) {
+          throw new BadRequestException('A record with this information already exists. Please check for duplicates.');
+        }
+        if (errorMessage.includes('Record to update not found')) {
+          throw new NotFoundException('Stroke case not found');
+        }
+        if (errorMessage.includes('Foreign key constraint')) {
+          throw new BadRequestException('Invalid reference to related record. Please check hospital IDs and other references.');
+        }
+        if (errorMessage.includes('Invalid value')) {
+          throw new BadRequestException(`Invalid data provided: ${errorMessage}`);
+        }
+        
+        // Re-throw with original error message
+        throw new BadRequestException(`Failed to update stroke case: ${errorMessage}`);
+      }
+      
       throw error;
     }
   }
