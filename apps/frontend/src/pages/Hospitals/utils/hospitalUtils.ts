@@ -23,12 +23,14 @@ export const getStatusColor = (status: string) => {
  * Calculate availability percentage for a hospital
  */
 export const getAvailabilityPercentage = (hospital: Hospital) => {
-  const totalBeds = hospital.icuBeds + hospital.picuBeds + hospital.maleBeds + 
-                   hospital.femaleBeds + hospital.pediatricBeds + hospital.standardBeds;
-  const availableBeds = hospital.icuBedsAvailable + hospital.picuBedsAvailable + 
-                       hospital.maleBedsAvailable + hospital.femaleBedsAvailable + 
-                       hospital.pediatricBedsAvailable + hospital.standardBedsAvailable;
-  
+  const totalBeds = (hospital.icuBeds || 0) + (hospital.picuBeds || 0) +
+    (hospital.maleBeds || 0) + (hospital.femaleBeds || 0) +
+    (hospital.pediatricBeds || 0) + (hospital.standardBeds || 0) +
+    (hospital.nicuBeds || 0);
+  const availableBeds = (hospital.icuBedsAvailable || 0) + (hospital.picuBedsAvailable || 0) +
+    (hospital.maleBedsAvailable || 0) + (hospital.femaleBedsAvailable || 0) +
+    (hospital.pediatricBedsAvailable || 0) + (hospital.standardBedsAvailable || 0) +
+    (hospital.nicuBedsAvailable || 0);
   return totalBeds > 0 ? Math.round((availableBeds / totalBeds) * 100) : 0;
 };
 

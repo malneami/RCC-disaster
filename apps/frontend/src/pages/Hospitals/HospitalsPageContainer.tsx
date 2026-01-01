@@ -8,7 +8,6 @@ import HospitalsPageView from './HospitalsPageView';
 const HospitalsPage: React.FC = () => {
   const navigate = useNavigate();
   const {
-    alerts,
     loading,
     error,
     filters,
@@ -17,14 +16,13 @@ const HospitalsPage: React.FC = () => {
     setFilters,
     resetFilters,
   } = useHospitals();
-  
+
   const [tabValue, setTabValue] = useState(0);
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
-  
+
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [updateCapacityDialogOpen, setUpdateCapacityDialogOpen] = useState(false);
-  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -77,9 +75,6 @@ const HospitalsPage: React.FC = () => {
         setUpdateCapacityDialogOpen(false);
         setSelectedHospital(null);
         break;
-      case 'alert':
-        setAlertDialogOpen(false);
-        break;
       case 'filter':
         setFilterDialogOpen(false);
         break;
@@ -91,9 +86,6 @@ const HospitalsPage: React.FC = () => {
       case 'create':
         setCreateDialogOpen(true);
         break;
-      case 'alert':
-        setAlertDialogOpen(true);
-        break;
       case 'filter':
         setFilterDialogOpen(true);
         break;
@@ -103,14 +95,12 @@ const HospitalsPage: React.FC = () => {
   const dialogStates = {
     createDialogOpen,
     updateCapacityDialogOpen,
-    alertDialogOpen,
     filterDialogOpen,
   };
 
   return (
     <HospitalsPageView
       hospitals={filteredHospitals}
-      alerts={alerts}
       loading={loading}
       error={error}
       tabValue={tabValue}
