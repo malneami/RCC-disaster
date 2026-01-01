@@ -323,7 +323,10 @@ export class TraumaCasesService {
     }
 
     const updatedCase = await this.prisma.traumaCase.update({
-      where: { id },
+      where: { 
+        id,
+        deletedAt: null, 
+      },
       data: updateData,
       include: {
         patient: true,
@@ -338,11 +341,25 @@ export class TraumaCasesService {
 
   async remove(id: string): Promise<void> {
     const existingCase = await this.findOne(id);
+    
+    try {
+      await this.prisma.traumaCase.update({
+        where: { id },
+        data: { deletedAt: new Date() }
+      });
 
-    // Hard delete like stroke portal
-    await this.prisma.traumaCase.delete({
-      where: { id },
-    });
+      if (existingCase.ticketId) {
+        await this.prisma.ticket.update({
+          where: { id: existingCase.ticketId },
+          data: { deletedAt: new Date() }
+        });
+      }
+
+      return;
+    } catch (error) {
+      console.error('Error deleting trauma case:', error);
+      throw new BadRequestException('Failed to delete trauma case');
+    }
   }
 
   async getKPISummary(hospitalId?: string, startDate?: string, endDate?: string): Promise<any> {

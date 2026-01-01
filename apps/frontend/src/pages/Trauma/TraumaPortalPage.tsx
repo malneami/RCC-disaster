@@ -21,7 +21,6 @@ import { TRAUMA_FILTER_FIELDS } from './constants/traumaConstants';
 
 import { TraumaCaseFilters } from './components/TraumaCasesList';
 
-import { TraumaCaseFilters } from './components/TraumaCasesList';
 
 interface TabPanelProps {
   children?: React.ReactNode;
