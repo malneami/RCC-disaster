@@ -312,12 +312,41 @@ export class TicketsService {
                 ]
               }
             },
-            { chiefComplaint: { contains: filters.search, mode: 'insensitive' } },
+            // Search in related cases
+            {
+              traumaCases: {
+                some: {
+                  chiefComplaint: { contains: filters.search, mode: 'insensitive' }
+                }
+              }
+            },
+            {
+              strokeCases: {
+                some: {
+                  chiefComplaint: { contains: filters.search, mode: 'insensitive' }
+                }
+              }
+            },
+            {
+              stemiCases: {
+                some: {
+                  presentingSymptoms: { contains: filters.search, mode: 'insensitive' }
+                }
+              }
+            }
           ],
         };
 
         const hasOtherFilters = Object.keys(where).filter(k => k !== 'deletedAt' && k !== 'emsAssignments' && k !== 'OR').length > 0;
-        if (hasOtherFilters || where.emsAssignments) {
+        
+        // If we have an existing OR condition (e.g. from hospital filter), we need to handle it carefully
+        if (where.OR && Array.isArray(where.OR)) {
+          if (!where.AND) {
+            where.AND = [];
+          }
+          // Wrap the search condition in an AND with the existing constraints
+          where.AND.push(searchCondition);
+        } else if (hasOtherFilters || where.emsAssignments) {
           if (!where.AND) {
             where.AND = [];
           }
