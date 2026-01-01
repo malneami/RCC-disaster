@@ -325,8 +325,93 @@ export class DuplicateDetectionService {
    * Get duplicate groups
    * TODO: Implement once schema is updated
    */
-  async getDuplicateGroups(): Promise<DuplicateGroup[]> {
-    // TODO: Implement duplicate groups once schema is updated
-    return [];
+  /**
+   * Get duplicate groups
+   */
+  async getDuplicateGroups(confidenceThreshold: number = 0.8) {
+    const allPatients = await this.prisma.patient.findMany({
+      where: { deletedAt: null, isPrimaryRecord: true },
+      include: {
+        createdBy: {
+          select: { firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+
+    const duplicateGroups: any[] = [];
+    const processed = new Set<string>();
+
+    for (const patient of allPatients) {
+      if (processed.has(patient.id)) continue;
+
+      const duplicates = await this.prisma.patient.findMany({
+        where: {
+          deletedAt: null,
+          id: { not: patient.id },
+          OR: [
+            ...(patient.mrn ? [{ mrn: patient.mrn }] : []),
+            ...(patient.nationalId ? [{ nationalId: patient.nationalId }] : []),
+            ...(patient.phoneNumber ? [{ phoneNumber: patient.phoneNumber }] : []),
+          ],
+        },
+        include: {
+          createdBy: {
+            select: { firstName: true, lastName: true, email: true },
+          },
+        },
+      });
+
+      if (duplicates.length > 0) {
+        const group: any = {
+          groupId: `group-${patient.id}`,
+          primaryPatientId: patient.id,
+          patients: [
+            {
+              patientId: patient.id,
+              confidence: 1.0,
+              matchReason: 'Primary record',
+              matchedFields: [],
+              patient: {
+                id: patient.id,
+                firstName: patient.firstName,
+                lastName: patient.lastName,
+                mrn: patient.mrn,
+                nationalId: patient.nationalId,
+                phoneNumber: patient.phoneNumber,
+                createdAt: patient.createdAt,
+                createdBy: patient.createdBy,
+              },
+            },
+            ...duplicates.map((dup) => ({
+              patientId: dup.id,
+              confidence: 0.9,
+              matchReason: 'Potential duplicate',
+              matchedFields: [
+                ...(patient.mrn && dup.mrn === patient.mrn ? ['mrn'] : []),
+                ...(patient.nationalId && dup.nationalId === patient.nationalId ? ['nationalId'] : []),
+                ...(patient.phoneNumber && dup.phoneNumber === patient.phoneNumber ? ['phoneNumber'] : []),
+              ],
+              patient: {
+                id: dup.id,
+                firstName: dup.firstName,
+                lastName: dup.lastName,
+                mrn: dup.mrn,
+                nationalId: dup.nationalId,
+                phoneNumber: dup.phoneNumber,
+                createdAt: dup.createdAt,
+                createdBy: dup.createdBy,
+              },
+            })),
+          ],
+          totalConfidence: 0.95,
+        };
+
+        duplicateGroups.push(group);
+        processed.add(patient.id);
+        duplicates.forEach((d) => processed.add(d.id));
+      }
+    }
+
+    return duplicateGroups;
   }
 }
