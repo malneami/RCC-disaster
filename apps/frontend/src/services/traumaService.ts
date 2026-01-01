@@ -211,6 +211,7 @@ export interface TraumaCaseFilters {
   transferCase?: boolean;
   startDate?: string;
   endDate?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }
@@ -321,6 +322,7 @@ export class TraumaService {
       if (filters?.transferCase !== undefined) params.append('transferCase', filters.transferCase.toString());
       if (filters?.startDate) params.append('startDate', filters.startDate);
       if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.search) params.append('search', filters.search);
       if (filters?.limit) params.append('limit', filters.limit.toString());
       if (filters?.offset) params.append('offset', filters.offset.toString());
 

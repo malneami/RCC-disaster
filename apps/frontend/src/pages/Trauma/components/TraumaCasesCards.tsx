@@ -1,35 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
-  Typography,
-  Button,
-
   Grid,
-
-  TextField,
-  InputAdornment,
-  IconButton,
-  ToggleButton,
-  ToggleButtonGroup,
+  Typography,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Add as AddIcon,
-  FilterList as FilterIcon,
-  Search as SearchIcon,
-  Clear as ClearIcon,
-  ViewModule as CardsIcon,
-  TableChart as TableIcon,
   Comment as CommentIcon,
   AccessTime as AccessTimeIcon,
   MedicalServices as MedicalServicesIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
-import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
-import { MODE_OF_ARRIVAL_OPTIONS, MECHANISM_OF_INJURY_OPTIONS, DISPOSITION_OPTIONS } from '../constants/traumaConstants';
 import UnifiedCaseCard, {
   UnifiedCaseCardProps,
   PatientInfo,
@@ -49,8 +33,6 @@ interface TraumaCasesCardsProps {
   onViewDetails: (case_: TraumaCase) => void;
   onEditCase: (case_: TraumaCase) => void;
   isAdmin: boolean;
-  onViewModeChange?: (mode: 'table' | 'cards') => void;
-  onFiltersChange?: (filters: any) => void;
 }
 
 const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
@@ -60,154 +42,9 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   onDeleteCase,
   onViewDetails,
   onEditCase,
-  onViewModeChange,
-  onFiltersChange,
 }) => {
-  const [filteredCases, setFilteredCases] = useState<TraumaCase[]>(cases);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<{
-    search: string;
-    modeOfArrival: string;
-    mechanismOfInjury: string;
-    edDisposition: string;
-    criticalCase: boolean | string | null;
-    transferCase: boolean | string | null;
-    dateFrom: string;
-    dateTo: string;
-    hospitalId: string;
-  }>({
-    search: '',
-    modeOfArrival: '',
-    mechanismOfInjury: '',
-    edDisposition: '',
-    criticalCase: null,
-    transferCase: null,
-    dateFrom: '',
-    dateTo: '',
-    hospitalId: '',
-  });
-  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
   const [selectedCaseForNote, setSelectedCaseForNote] = useState<TraumaCase | null>(null);
-
-  useEffect(() => {
-    applyFiltersAndSearch();
-  }, [cases, filters]);
-
-  useEffect(() => {
-    if (onFiltersChange) {
-      onFiltersChange(filters);
-    }
-  }, [filters, onFiltersChange]);
-
-  const applyFiltersAndSearch = () => {
-    let filtered = cases.filter((case_) => {
-      // Search filter (use filters.search instead of searchQuery)
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch =
-          case_.patient?.firstName?.toLowerCase().includes(searchLower) ||
-          case_.patient?.lastName?.toLowerCase().includes(searchLower) ||
-          case_.patient?.nationalId?.toLowerCase().includes(searchLower) ||
-          case_.chiefComplaint?.toLowerCase().includes(searchLower) ||
-          case_.originHospital?.name?.toLowerCase().includes(searchLower);
-
-        if (!matchesSearch) return false;
-      }
-
-      // Other filters (matching table view logic)
-      if (filters.modeOfArrival && case_.modeOfArrival !== filters.modeOfArrival) return false;
-      if (filters.mechanismOfInjury && case_.mechanismOfInjury !== filters.mechanismOfInjury) return false;
-      if (filters.edDisposition && case_.edDisposition !== filters.edDisposition) return false;
-
-      // Boolean filters - convert string to boolean if needed
-      if (filters.criticalCase !== null && filters.criticalCase !== '') {
-        let criticalCaseValue: boolean;
-        if (typeof filters.criticalCase === 'string') {
-          criticalCaseValue = filters.criticalCase === 'true';
-        } else {
-          criticalCaseValue = filters.criticalCase as boolean;
-        }
-        if (case_.criticalCase !== criticalCaseValue) return false;
-      }
-      if (filters.transferCase !== null && filters.transferCase !== '') {
-        let transferCaseValue: boolean;
-        if (typeof filters.transferCase === 'string') {
-          transferCaseValue = filters.transferCase === 'true';
-        } else {
-          transferCaseValue = filters.transferCase as boolean;
-        }
-        if (case_.transferCase !== transferCaseValue) return false;
-      }
-
-      if (filters.hospitalId && case_.originHospitalId !== filters.hospitalId) return false;
-
-      // Date filters
-      if (filters.dateFrom) {
-        const caseDate = new Date(case_.arrivalDateTime);
-        const fromDate = new Date(filters.dateFrom);
-        if (caseDate < fromDate) return false;
-      }
-      if (filters.dateTo) {
-        const caseDate = new Date(case_.arrivalDateTime);
-        const toDate = new Date(filters.dateTo);
-        toDate.setHours(23, 59, 59, 999); // End of day
-        if (caseDate > toDate) return false;
-      }
-
-      return true;
-    });
-
-    setFilteredCases(filtered);
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      search: '',
-      modeOfArrival: '',
-      mechanismOfInjury: '',
-      edDisposition: '',
-      criticalCase: null,
-      transferCase: null,
-      dateFrom: '',
-      dateTo: '',
-      hospitalId: '',
-    });
-    setSearchQuery('');
-    applyFiltersAndSearch();
-  };
-
-  const handleFiltersChange = (newFilters: any) => {
-    // Convert string boolean values to actual booleans for criticalCase and transferCase
-    const processedFilters: any = { ...newFilters };
-    if (processedFilters.criticalCase !== undefined) {
-      if (typeof processedFilters.criticalCase === 'string') {
-        if (processedFilters.criticalCase === 'true') {
-          processedFilters.criticalCase = true;
-        } else if (processedFilters.criticalCase === 'false') {
-          processedFilters.criticalCase = false;
-        } else {
-          processedFilters.criticalCase = null; // Empty string or invalid value
-        }
-      }
-    }
-    if (processedFilters.transferCase !== undefined) {
-      if (typeof processedFilters.transferCase === 'string') {
-        if (processedFilters.transferCase === 'true') {
-          processedFilters.transferCase = true;
-        } else if (processedFilters.transferCase === 'false') {
-          processedFilters.transferCase = false;
-        } else {
-          processedFilters.transferCase = null; // Empty string or invalid value
-        }
-      }
-    }
-    setFilters(processedFilters);
-  };
 
   const handleAddCaseNote = (traumaCase: TraumaCase) => {
     setSelectedCaseForNote(traumaCase);
@@ -524,154 +361,20 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
     return `${days} days ago`;
   };
 
-  // Filter fields configuration (matching table view)
-  const filterFields = [
-    {
-      key: 'search',
-      label: 'Search',
-      type: 'text' as const,
-      placeholder: 'Search by patient name, ID, or complaint...',
-    },
-    {
-      key: 'modeOfArrival',
-      label: 'Mode of Arrival',
-      type: 'select' as const,
-      options: [...MODE_OF_ARRIVAL_OPTIONS],
-    },
-    {
-      key: 'mechanismOfInjury',
-      label: 'Mechanism of Injury',
-      type: 'select' as const,
-      options: [...MECHANISM_OF_INJURY_OPTIONS],
-    },
-    {
-      key: 'edDisposition',
-      label: 'ED Disposition',
-      type: 'select' as const,
-      options: [...DISPOSITION_OPTIONS],
-    },
-    {
-      key: 'criticalCase',
-      label: 'Critical Case',
-      type: 'select' as const,
-      options: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-    },
-    {
-      key: 'transferCase',
-      label: 'Transfer Case',
-      type: 'select' as const,
-      options: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-    },
-    {
-      key: 'dateFrom',
-      label: 'From Date',
-      type: 'date' as const,
-    },
-    {
-      key: 'dateTo',
-      label: 'To Date',
-      type: 'date' as const,
-    },
-  ];
-
   if (cases.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
         <Typography variant="h6" color="text.secondary" gutterBottom>
           No trauma cases found
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Create your first trauma case to get started
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={onCreateCase}
-        >
-          Create Trauma Case
-        </Button>
       </Box>
     );
   }
 
   return (
     <Box>
-      {/* Header and Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6">
-          TraumaCases ({filteredCases.length} / {totalCount || cases.length})
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<FilterIcon />}
-            onClick={() => setFilterDialogOpen(true)}
-          >
-            Filter
-          </Button>
-          {onViewModeChange && (
-            <ToggleButtonGroup
-              value="cards"
-              exclusive
-              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
-              size="small"
-            >
-              <ToggleButton value="table">
-                <TableIcon />
-              </ToggleButton>
-              <ToggleButton value="cards">
-                <CardsIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
-          )}
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={onCreateCase}
-          >
-            New Case
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Search Bar */}
-      <Box sx={{ mb: 3 }}>
-        <TextField
-          fullWidth
-          placeholder="Search by patient name, MRN, or National ID..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: searchQuery && (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="clear search"
-                  onClick={handleClearSearch}
-                  edge="end"
-                  size="small"
-                >
-                  <ClearIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-          size="small"
-        />
-      </Box>
-
       <Grid container spacing={2}>
-        {filteredCases.map((traumaCase) => {
+        {cases.map((traumaCase) => {
           const transformedCase = transformTraumaCase(traumaCase);
           return (
             <Grid item xs={12} md={6} lg={6} key={transformedCase.caseId}>
@@ -680,19 +383,6 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
           );
         })}
       </Grid>
-
-      {/* Filter Dialog */}
-      <GenericFilterDialog
-        open={filterDialogOpen}
-        onClose={() => setFilterDialogOpen(false)}
-        onApply={(newFilters) => {
-          handleFiltersChange(newFilters);
-          setFilterDialogOpen(false);
-        }}
-        onReset={handleClearFilters}
-        fields={filterFields}
-        values={filters}
-      />
 
       {/* Case Note Modal */}
       {selectedCaseForNote && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -10,8 +10,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
-  InputAdornment,
   Table,
   TableBody,
   TableCell,
@@ -31,30 +29,23 @@ import {
   MenuItem,
 } from '@mui/material';
 import {
-  Search,
-  FilterList,
   Delete,
   Visibility,
-  Add,
   Person,
   LocalHospital,
   Warning,
   TransferWithinAStation,
   Edit,
-  ViewModule as CardsIcon,
-  TableChart as TableIcon,
   MoreVert as MoreVertIcon,
   Comment as CommentIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
 import { TraumaCase, TraumaService } from '../../../services/traumaService';
-import GenericFilterDialog from '../../../components/Common/GenericFilterDialog';
 import EditTraumaCaseDialog from './EditTraumaCaseDialog';
 import ViewTraumaCaseDialog from './ViewTraumaCaseDialog';
 import CaseNoteModal from '../../../pages/NotificationCenter/components/CaseNoteModal';
 import { notificationService } from '../../../services/notificationService';
-import { MODE_OF_ARRIVAL_OPTIONS, MECHANISM_OF_INJURY_OPTIONS, DISPOSITION_OPTIONS } from '../constants/traumaConstants';
 
 interface TraumaCasesListProps {
   cases: TraumaCase[];
@@ -63,8 +54,7 @@ interface TraumaCasesListProps {
   onUpdateCase: (id: string, data: any) => Promise<void>;
   onAddCaseNote?: (case_: TraumaCase) => void;
   isAdmin: boolean;
-  onViewModeChange?: (mode: 'table' | 'cards') => void;
-  onFiltersChange?: (filters: FilterOptions) => void;
+  loading?: boolean;
 }
 
 interface FilterOptions {
@@ -74,6 +64,18 @@ interface FilterOptions {
   edDisposition: string;
   criticalCase: boolean | string | null;
   transferCase: boolean | string | null;
+  dateFrom: string;
+  dateTo: string;
+  hospitalId: string;
+}
+
+export interface TraumaCaseFilters {
+  search: string;
+  modeOfArrival: string;
+  mechanismOfInjury: string;
+  edDisposition: string;
+  criticalCase: boolean | null;
+  transferCase: boolean | null;
   dateFrom: string;
   dateTo: string;
   hospitalId: string;
@@ -91,8 +93,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   onUpdateCase,
   onAddCaseNote,
   isAdmin,
-  onViewModeChange,
-  onFiltersChange,
+  loading = false,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -100,95 +101,18 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     field: 'createdAt',
     direction: 'desc',
   });
-  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<TraumaCase | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedCaseForMenu, setSelectedCaseForMenu] = useState<TraumaCase | null>(null);
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
 
-  const [filters, setFilters] = useState<FilterOptions>({
-    search: '',
-    modeOfArrival: '',
-    mechanismOfInjury: '',
-    edDisposition: '',
-    criticalCase: null,
-    transferCase: null,
-    dateFrom: '',
-    dateTo: '',
-    hospitalId: '',
-  });
-
-  useEffect(() => {
-    if (onFiltersChange) {
-      onFiltersChange(filters);
-    }
-  }, [filters, onFiltersChange]);
-
-  // Filter and sort cases
-  const filteredAndSortedCases = useMemo(() => {
-    let filtered = cases.filter((case_) => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch = 
-          case_.patient?.firstName?.toLowerCase().includes(searchLower) ||
-          case_.patient?.lastName?.toLowerCase().includes(searchLower) ||
-          case_.patient?.nationalId?.toLowerCase().includes(searchLower) ||
-          case_.chiefComplaint?.toLowerCase().includes(searchLower) ||
-          case_.originHospital?.name?.toLowerCase().includes(searchLower);
-        
-        if (!matchesSearch) return false;
-      }
-
-      // Other filters
-      if (filters.modeOfArrival && case_.modeOfArrival !== filters.modeOfArrival) return false;
-      if (filters.mechanismOfInjury && case_.mechanismOfInjury !== filters.mechanismOfInjury) return false;
-      if (filters.edDisposition && case_.edDisposition !== filters.edDisposition) return false;
-      
-      if (filters.criticalCase !== null && filters.criticalCase !== '') {
-        let criticalCaseValue: boolean;
-        if (typeof filters.criticalCase === 'string') {
-          criticalCaseValue = filters.criticalCase === 'true';
-        } else {
-          criticalCaseValue = filters.criticalCase as boolean;
-        }
-        if (case_.criticalCase !== criticalCaseValue) return false;
-      }
-      if (filters.transferCase !== null && filters.transferCase !== '') {
-        let transferCaseValue: boolean;
-        if (typeof filters.transferCase === 'string') {
-          transferCaseValue = filters.transferCase === 'true';
-        } else {
-          transferCaseValue = filters.transferCase as boolean;
-        }
-        if (case_.transferCase !== transferCaseValue) return false;
-      }
-      
-      if (filters.hospitalId && case_.originHospitalId !== filters.hospitalId) return false;
-
-      // Date filters
-      if (filters.dateFrom) {
-        const caseDate = new Date(case_.arrivalDateTime);
-        const fromDate = new Date(filters.dateFrom);
-        if (caseDate < fromDate) return false;
-      }
-      if (filters.dateTo) {
-        const caseDate = new Date(case_.arrivalDateTime);
-        const toDate = new Date(filters.dateTo);
-        toDate.setHours(23, 59, 59, 999); // End of day
-        if (caseDate > toDate) return false;
-      }
-
-      return true;
-    });
-
-    // Sort
-    filtered.sort((a, b) => {
+  // Only sort cases (filtering is done on backend)
+  const sortedCases = useMemo(() => {
+    const sorted = [...cases].sort((a, b) => {
       const aValue = a[sortConfig.field];
       const bValue = b[sortConfig.field];
       
@@ -211,14 +135,25 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
           : bValue.getTime() - aValue.getTime();
       }
       
+      // Handle string dates
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const aDate = new Date(aValue);
+        const bDate = new Date(bValue);
+        if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+          return sortConfig.direction === 'asc' 
+            ? aDate.getTime() - bDate.getTime()
+            : bDate.getTime() - aDate.getTime();
+        }
+      }
+      
       return 0;
     });
 
-    return filtered;
-  }, [cases, filters, sortConfig]);
+    return sorted;
+  }, [cases, sortConfig]);
 
   // Pagination
-  const paginatedCases = filteredAndSortedCases.slice(
+  const paginatedCases = sortedCases.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -239,57 +174,16 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     setPage(0);
   };
 
-  const handleFilterChange = (newFilters: Partial<FilterOptions>) => {
-    const processedFilters: Partial<FilterOptions> = { ...newFilters };
-    if (processedFilters.criticalCase !== undefined) {
-      if (typeof processedFilters.criticalCase === 'string') {
-        if (processedFilters.criticalCase === 'true') {
-          processedFilters.criticalCase = true;
-        } else if (processedFilters.criticalCase === 'false') {
-          processedFilters.criticalCase = false;
-        } else {
-          processedFilters.criticalCase = null; // Empty string or invalid value
-        }
-      }
-    }
-    if (processedFilters.transferCase !== undefined) {
-      if (typeof processedFilters.transferCase === 'string') {
-        if (processedFilters.transferCase === 'true') {
-          processedFilters.transferCase = true;
-        } else if (processedFilters.transferCase === 'false') {
-          processedFilters.transferCase = false;
-        } else {
-          processedFilters.transferCase = null; // Empty string or invalid value
-        }
-      }
-    }
-    setFilters(prev => ({ ...prev, ...processedFilters }));
-    setPage(0);
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      search: '',
-      modeOfArrival: '',
-      mechanismOfInjury: '',
-      edDisposition: '',
-      criticalCase: null,
-      transferCase: null,
-      dateFrom: '',
-      dateTo: '',
-      hospitalId: '',
-    });
-    setPage(0);
-  };
 
   const handleViewDetails = (case_: TraumaCase) => {
     setSelectedCase(case_);
     setViewDialogOpen(true);
   };
 
+  const [deleting, setDeleting] = useState(false);
+
   const handleEditCase = async (case_: TraumaCase) => {
     try {
-      setLoading(true);
       // Fetch the latest case data directly from the API to ensure we have the most up-to-date data
       const latestCase = await TraumaService.getTraumaCaseById(case_.id);
       setSelectedCase(latestCase);
@@ -300,14 +194,11 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
       const fallbackCase = cases.find(c => c.id === case_.id) || case_;
       setSelectedCase(fallbackCase);
       setEditDialogOpen(true);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleUpdateCase = async (id: string, data: any) => {
     try {
-      setLoading(true);
       setError(null);
       await onUpdateCase(id, data);
       // Refresh the selected case by fetching it again from the API
@@ -323,8 +214,6 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     } catch (err) {
       setError('Failed to update trauma case');
       console.error('Error updating trauma case:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -337,7 +226,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     if (!selectedCase) return;
     
     try {
-      setLoading(true);
+      setDeleting(true);
       setError(null);
       await onDeleteCase(selectedCase.id);
       setDeleteDialogOpen(false);
@@ -345,7 +234,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
       setError('Failed to delete trauma case');
       console.error('Error deleting trauma case:', err);
     } finally {
-      setLoading(false);
+      setDeleting(false);
     }
   };
 
@@ -419,62 +308,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
 
 
 
-  const filterFields = [
-    {
-      key: 'search',
-      label: 'Search',
-      type: 'text' as const,
-      placeholder: 'Search by patient name, ID, or complaint...',
-    },
-    {
-      key: 'modeOfArrival',
-      label: 'Mode of Arrival',
-      type: 'select' as const,
-      options: [...MODE_OF_ARRIVAL_OPTIONS],
-    },
-    {
-      key: 'mechanismOfInjury',
-      label: 'Mechanism of Injury',
-      type: 'select' as const,
-      options: [...MECHANISM_OF_INJURY_OPTIONS],
-    },
-    {
-      key: 'edDisposition',
-      label: 'ED Disposition',
-      type: 'select' as const,
-      options: [...DISPOSITION_OPTIONS],
-    },
-    {
-      key: 'criticalCase',
-      label: 'Critical Case',
-      type: 'select' as const,
-      options: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-    },
-    {
-      key: 'transferCase',
-      label: 'Transfer Case',
-      type: 'select' as const,
-      options: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-    },
-    {
-      key: 'dateFrom',
-      label: 'From Date',
-      type: 'date' as const,
-    },
-    {
-      key: 'dateTo',
-      label: 'To Date',
-      type: 'date' as const,
-    },
-  ];
-
-  if (loading) {
+  if (loading && cases.length === 0) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress />
@@ -484,65 +318,6 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
 
   return (
     <Box>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Trauma Cases
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {filteredAndSortedCases.length} of {cases.length} cases
-          </Typography>
-        </Box>
-        <Box display="flex" gap={2}>
-          <Button
-            variant="outlined"
-            startIcon={<FilterList />}
-            onClick={() => setFilterDialogOpen(true)}
-          >
-            Filters
-          </Button>
-          {onViewModeChange && (
-            <ToggleButtonGroup
-              value="table"
-              exclusive
-              onChange={(_, newMode) => newMode && onViewModeChange(newMode)}
-              size="small"
-            >
-              <ToggleButton value="table">
-                <TableIcon />
-              </ToggleButton>
-              <ToggleButton value="cards">
-                <CardsIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
-          )}
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={onCreateCase}
-          >
-            Create Case
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Search Bar */}
-      <Box mb={3}>
-        <TextField
-          fullWidth
-          placeholder="Search trauma cases..."
-          value={filters.search}
-          onChange={(e) => handleFilterChange({ search: e.target.value })}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
 
       {/* Error Alert */}
       {error && (
@@ -699,7 +474,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
         <TablePagination
           rowsPerPageOptions={[5, 10, 15, 20]}
           component="div"
-          count={filteredAndSortedCases.length}
+          count={sortedCases.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -768,25 +543,14 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
             onClick={handleDeleteConfirm} 
             color="error" 
             variant="contained"
-            disabled={loading}
+            disabled={deleting || loading}
           >
-            {loading ? <CircularProgress size={20} /> : 'Delete'}
+            {deleting ? <CircularProgress size={20} /> : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Filter Dialog */}
-      <GenericFilterDialog
-        open={filterDialogOpen}
-        onClose={() => setFilterDialogOpen(false)}
-        onApply={(newFilters) => {
-          handleFilterChange(newFilters);
-          setFilterDialogOpen(false);
-        }}
-        onReset={handleClearFilters}
-        fields={filterFields}
-        values={filters}
-      />
 
       {/* Edit Dialog */}
       <EditTraumaCaseDialog

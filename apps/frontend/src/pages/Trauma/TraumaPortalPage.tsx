@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Fab, Tooltip } from '@mui/material';
-import { Add, Assessment, Dashboard, Warning, TransferWithinAStation, Schedule, FileDownload } from '@mui/icons-material';
+import { Box, Tabs, Tab, CircularProgress, Fab, Tooltip, Typography, Button, TextField, InputAdornment, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Add, Assessment, Dashboard, Warning, TransferWithinAStation, Schedule, FileDownload, FilterList, Search, ViewModule as CardsIcon, TableChart as TableIcon } from '@mui/icons-material';
 
 import { Helmet } from 'react-helmet-async';
 
@@ -11,11 +11,15 @@ import CreateTraumaCaseDialog from './components/CreateTraumaCaseDialog';
 import ViewTraumaCaseDialog from './components/ViewTraumaCaseDialog';
 import EditTraumaCaseDialog from './components/EditTraumaCaseDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
+import GenericFilterDialog from '../../components/Common/GenericFilterDialog';
 import { TraumaService, TraumaCase } from '../../services/traumaService';
 import { TraumaKPIsResponse } from './types/traumaTypes';
 import { useAuth } from '../../contexts/AuthContext';
 import { TraumaExportService } from './services/traumaExportService';
 import apiClient from '../../services/apiClient';
+import { TRAUMA_FILTER_FIELDS } from './constants/traumaConstants';
+
+import { TraumaCaseFilters } from './components/TraumaCasesList';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -63,7 +67,18 @@ const TraumaPortalPage: React.FC = () => {
   const [hospitalsLoading, setHospitalsLoading] = useState(true);
 
   const [exportLoading, setExportLoading] = useState(false);
-  const [currentFilters, setCurrentFilters] = useState<any>({});
+  const [appliedFilters, setAppliedFilters] = useState<TraumaCaseFilters>({
+    search: '',
+    modeOfArrival: '',
+    mechanismOfInjury: '',
+    edDisposition: '',
+    criticalCase: null,
+    transferCase: null,
+    dateFrom: '',
+    dateTo: '',
+    hospitalId: '',
+  });
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   // ... portalSteps
 
@@ -71,6 +86,10 @@ const TraumaPortalPage: React.FC = () => {
     loadData();
     loadHospitals();
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [appliedFilters]);
 
   const loadHospitals = async () => {
     try {
@@ -89,9 +108,23 @@ const TraumaPortalPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Initial load uses default filters (empty)
+      const filters: any = {};
+      
+      if (appliedFilters.modeOfArrival) filters.modeOfArrival = appliedFilters.modeOfArrival;
+      if (appliedFilters.mechanismOfInjury) filters.mechanismOfInjury = appliedFilters.mechanismOfInjury;
+      if (appliedFilters.criticalCase !== null && appliedFilters.criticalCase !== undefined) {
+        filters.criticalCase = appliedFilters.criticalCase === true || (typeof appliedFilters.criticalCase === 'string' && appliedFilters.criticalCase === 'true');
+      }
+      if (appliedFilters.transferCase !== null && appliedFilters.transferCase !== undefined) {
+        filters.transferCase = appliedFilters.transferCase === true || (typeof appliedFilters.transferCase === 'string' && appliedFilters.transferCase === 'true');
+      }
+      if (appliedFilters.dateFrom) filters.startDate = appliedFilters.dateFrom;
+      if (appliedFilters.dateTo) filters.endDate = appliedFilters.dateTo;
+      if (appliedFilters.hospitalId) filters.originHospitalId = appliedFilters.hospitalId;
+      if (appliedFilters.search) filters.search = appliedFilters.search;
+
       const [casesData, kpiData] = await Promise.all([
-        TraumaService.getTraumaCases(),
+        TraumaService.getTraumaCases(filters),
         TraumaService.getKPISummary()
       ]);
 
@@ -190,15 +223,81 @@ const TraumaPortalPage: React.FC = () => {
     console.log('Add case note for:', case_);
   };
 
+  const handleFiltersChange = (filters: TraumaCaseFilters) => {
+    setAppliedFilters((prev) => {
+      // Only update if filters have actually changed to prevent unnecessary re-renders
+      const hasChanged = 
+        prev.search !== filters.search ||
+        prev.modeOfArrival !== filters.modeOfArrival ||
+        prev.mechanismOfInjury !== filters.mechanismOfInjury ||
+        prev.edDisposition !== filters.edDisposition ||
+        prev.criticalCase !== filters.criticalCase ||
+        prev.transferCase !== filters.transferCase ||
+        prev.dateFrom !== filters.dateFrom ||
+        prev.dateTo !== filters.dateTo ||
+        prev.hospitalId !== filters.hospitalId;
+      
+      return hasChanged ? filters : prev;
+    });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setAppliedFilters((prev: TraumaCaseFilters) => ({ ...prev, search: value }));
+  };
+
+  const handleFilterDialogApply = (newFilters: any) => {
+    // Convert string boolean values to actual booleans for criticalCase and transferCase
+    const processedFilters: any = { ...newFilters };
+    if (processedFilters.criticalCase !== undefined) {
+      if (typeof processedFilters.criticalCase === 'string') {
+        if (processedFilters.criticalCase === 'true') {
+          processedFilters.criticalCase = true;
+        } else if (processedFilters.criticalCase === 'false') {
+          processedFilters.criticalCase = false;
+        } else {
+          processedFilters.criticalCase = null;
+        }
+      }
+    }
+    if (processedFilters.transferCase !== undefined) {
+      if (typeof processedFilters.transferCase === 'string') {
+        if (processedFilters.transferCase === 'true') {
+          processedFilters.transferCase = true;
+        } else if (processedFilters.transferCase === 'false') {
+          processedFilters.transferCase = false;
+        } else {
+          processedFilters.transferCase = null;
+        }
+      }
+    }
+    handleFiltersChange(processedFilters);
+    setFilterDialogOpen(false);
+  };
+
+  const handleClearFilters = () => {
+    const clearedFilters: TraumaCaseFilters = {
+      search: '',
+      modeOfArrival: '',
+      mechanismOfInjury: '',
+      edDisposition: '',
+      criticalCase: null,
+      transferCase: null,
+      dateFrom: '',
+      dateTo: '',
+      hospitalId: '',
+    };
+    handleFiltersChange(clearedFilters);
+  };
+
   const handleExportToExcel = async () => {
     try {
       setExportLoading(true);
       const exportFilters: any = {};
 
-      if (currentFilters.hospitalId) {
-        exportFilters.originHospitalId = currentFilters.hospitalId;
+      if (appliedFilters.hospitalId) {
+        exportFilters.originHospitalId = appliedFilters.hospitalId;
       } else {
-        Object.entries(currentFilters).forEach(([key, value]) => {
+        Object.entries(appliedFilters).forEach(([key, value]) => {
           if (key === 'hospitalId' || key === 'dateFrom' || key === 'dateTo' ||
             key === 'criticalCase' || key === 'transferCase' || key === 'search') {
             return;
@@ -210,22 +309,22 @@ const TraumaPortalPage: React.FC = () => {
         });
       }
 
-      if (currentFilters.criticalCase !== null && currentFilters.criticalCase !== '') {
-        exportFilters.criticalCase = currentFilters.criticalCase === true || currentFilters.criticalCase === 'true';
+      if (appliedFilters.criticalCase !== null && appliedFilters.criticalCase !== undefined) {
+        exportFilters.criticalCase = appliedFilters.criticalCase === true || (typeof appliedFilters.criticalCase === 'string' && appliedFilters.criticalCase === 'true');
       }
-      if (currentFilters.transferCase !== null && currentFilters.transferCase !== '') {
-        exportFilters.transferCase = currentFilters.transferCase === true || currentFilters.transferCase === 'true';
-      }
-
-      if (currentFilters.dateFrom) {
-        exportFilters.startDate = currentFilters.dateFrom;
-      }
-      if (currentFilters.dateTo) {
-        exportFilters.endDate = currentFilters.dateTo;
+      if (appliedFilters.transferCase !== null && appliedFilters.transferCase !== undefined) {
+        exportFilters.transferCase = appliedFilters.transferCase === true || (typeof appliedFilters.transferCase === 'string' && appliedFilters.transferCase === 'true');
       }
 
-      if (currentFilters.search && currentFilters.search.trim()) {
-        exportFilters.search = currentFilters.search.trim();
+      if (appliedFilters.dateFrom) {
+        exportFilters.startDate = appliedFilters.dateFrom;
+      }
+      if (appliedFilters.dateTo) {
+        exportFilters.endDate = appliedFilters.dateTo;
+      }
+
+      if (appliedFilters.search && appliedFilters.search.trim()) {
+        exportFilters.search = appliedFilters.search.trim();
       }
 
       await TraumaExportService.exportToExcel(exportFilters);
@@ -340,6 +439,65 @@ const TraumaPortalPage: React.FC = () => {
         </Box>
 
         <TabPanel value={activeTab} index={0}>
+          {/* Header */}
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box>
+              <Typography variant="h4" component="h1" gutterBottom>
+                Trauma Cases
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {traumaCases.length} {traumaCases.length === 1 ? 'case' : 'cases'}
+              </Typography>
+            </Box>
+            <Box display="flex" gap={2}>
+              <Button
+                variant="outlined"
+                startIcon={<FilterList />}
+                onClick={() => setFilterDialogOpen(true)}
+              >
+                Filters
+              </Button>
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, newMode) => newMode && setViewMode(newMode)}
+                size="small"
+              >
+                <ToggleButton value="table">
+                  <TableIcon />
+                </ToggleButton>
+                <ToggleButton value="cards">
+                  <CardsIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setCreateDialogOpen(true)}
+              >
+                Create Case
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Search Bar */}
+          <Box mb={3}>
+            <TextField
+              fullWidth
+              placeholder="Search trauma cases..."
+              value={appliedFilters.search || ''}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+
+          {/* Cases View */}
           {viewMode === 'table' ? (
             <TraumaCasesList
               cases={traumaCases}
@@ -348,8 +506,7 @@ const TraumaPortalPage: React.FC = () => {
               onUpdateCase={handleUpdateCase}
               onAddCaseNote={handleAddCaseNote}
               isAdmin={isAdmin}
-              onViewModeChange={setViewMode}
-              onFiltersChange={setCurrentFilters}
+              loading={loading}
             />
           ) : (
             <TraumaCasesCards
@@ -367,8 +524,6 @@ const TraumaPortalPage: React.FC = () => {
                 setEditDialogOpen(true);
               }}
               isAdmin={isAdmin}
-              onViewModeChange={setViewMode}
-              onFiltersChange={setCurrentFilters}
             />
           )}
         </TabPanel>
@@ -447,6 +602,16 @@ const TraumaPortalPage: React.FC = () => {
           onClose={() => setEditDialogOpen(false)}
           onSubmit={handleUpdateCase}
           traumaCase={selectedCase}
+        />
+
+        {/* Filter Dialog */}
+        <GenericFilterDialog
+          open={filterDialogOpen}
+          onClose={() => setFilterDialogOpen(false)}
+          onApply={handleFilterDialogApply}
+          onReset={handleClearFilters}
+          fields={TRAUMA_FILTER_FIELDS}
+          values={appliedFilters}
         />
       </PortalSkeleton>
     </>
