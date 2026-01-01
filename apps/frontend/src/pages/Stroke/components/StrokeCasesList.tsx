@@ -157,8 +157,8 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
       const fromDate = new Date(filters.dateFrom);
       fromDate.setHours(0, 0, 0, 0);
       filtered = filtered.filter(case_ => {
-        // Use timeOfTriage for "From Date" filter
-        const triageTime = case_.timeOfTriage ? new Date(case_.timeOfTriage) : null;
+        // Use dateOfAdmission for "From Date" filter
+        const triageTime = case_.dateOfAdmission ? new Date(case_.dateOfAdmission) : null;
         if (!triageTime) return false;
         triageTime.setHours(0, 0, 0, 0);
         return triageTime >= fromDate;
@@ -168,8 +168,8 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
       const toDate = new Date(filters.dateTo);
       toDate.setHours(23, 59, 59, 999);
       filtered = filtered.filter(case_ => {
-        // Use timeOfTriage for "To Date" filter
-        const triageTime = case_.timeOfTriage ? new Date(case_.timeOfTriage) : null;
+        // Use dateOfAdmission for "To Date" filter
+        const triageTime = case_.dateOfAdmission ? new Date(case_.dateOfAdmission) : null;
         if (!triageTime) return false;
         return triageTime <= toDate;
       });

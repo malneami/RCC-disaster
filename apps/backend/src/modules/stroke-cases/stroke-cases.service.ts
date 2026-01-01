@@ -754,21 +754,21 @@ export class StrokeCasesService {
     }
 
     if (filters?.dateFrom || filters?.dateTo) {
-      // Use timeOfTriage for date range filtering to better reflect clinical workflow
-      where.timeOfTriage = {};
+      // Use dateOfAdmission for date range filtering to better reflect clinical workflow
+      where.dateOfAdmission = {};
 
       if (filters.dateFrom) {
         // Ensure "from" date is treated as start of day (>= YYYY-MM-DD 00:00:00)
         const from = new Date(filters.dateFrom);
         from.setHours(0, 0, 0, 0);
-        where.timeOfTriage.gte = from;
+        where.dateOfAdmission.gte = from;
       }
 
       if (filters.dateTo) {
         // Ensure "to" date is treated as end of day (<= YYYY-MM-DD 23:59:59.999)
         const to = new Date(filters.dateTo);
         to.setHours(23, 59, 59, 999);
-        where.timeOfTriage.lte = to;
+        where.dateOfAdmission.lte = to;
       }
     }
 
