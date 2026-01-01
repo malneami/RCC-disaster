@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -14,7 +14,57 @@ import {
   Divider,
 } from '@mui/material';
 import { Save, Cancel, Person } from '@mui/icons-material';
+import * as yup from 'yup';
 import { patientService, Patient } from '../../services/patientService';
+
+// Regex patterns supporting Arabic characters (matching other forms)
+const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F-]+$/;
+const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
+const PHONE_REGEX = /^\+?\d{7,15}$/;
+
+const validationSchema = yup.object({
+  firstName: yup
+    .string()
+    .trim()
+    .matches(NAME_REGEX, 'First name can only include letters (including Arabic) and spaces.')
+    .required('First Name is required'),
+  lastName: yup
+    .string()
+    .trim()
+    .matches(NAME_REGEX, 'Last name can only include letters (including Arabic) and spaces.')
+    .required('Last Name is required'),
+  nationalId: yup
+    .string()
+    .trim()
+    .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
+    .required('National ID is required'),
+  phoneNumber: yup
+    .string()
+    .nullable()
+    .transform((value) => (value ? value.trim() : ''))
+    .test('valid-phone', 'Phone numbers can only include digits and may start with +', (value) => {
+      if (!value) return true;
+      return PHONE_REGEX.test(value);
+    }),
+  email: yup
+    .string()
+    .nullable()
+    .transform((value) => (value ? value.trim() : ''))
+    .email('Please enter a valid email address'),
+  emergencyPhone: yup
+    .string()
+    .nullable()
+    .transform((value) => (value ? value.trim() : ''))
+    .test('valid-emergency-phone', 'Emergency phone can only include digits and may start with +', (value) => {
+      if (!value) return true;
+      return PHONE_REGEX.test(value);
+    }),
+  emergencyEmail: yup
+    .string()
+    .nullable()
+    .transform((value) => (value ? value.trim() : ''))
+    .email('Please enter a valid emergency email address'),
+});
 
 interface PortalPatientEditProps {
   open: boolean;
@@ -34,8 +84,9 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
   const [formData, setFormData] = useState<Partial<Patient>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (patient) {
       setFormData({
         firstName: patient.firstName,
@@ -54,18 +105,69 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
         emergencyEmail: patient.emergencyEmail,
         emergencyRelationship: patient.emergencyRelationship,
       });
+      setValidationErrors({});
+      setError(null);
     }
-  }, [patient]);
+  }, [patient, open]);
+
+  // Fields that require validation
+  const propsForValidation = {
+    firstName: true,
+    lastName: true,
+    nationalId: true,
+    phoneNumber: true,
+    email: true,
+    emergencyPhone: true,
+    emergencyEmail: true,
+  };
+
+  const validateField = async (field: string, value: any) => {
+    try {
+      await validationSchema.validateAt(field, { [field]: value });
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    } catch (err: any) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [field]: err.message,
+      }));
+    }
+  };
 
   const handleInputChange = (field: keyof Patient, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
+
+    // Validate field on change if it requires validation
+    if (field in propsForValidation) {
+      validateField(field, value);
+    }
   };
 
   const handleSave = async () => {
     if (!patient) return;
+
+    // Validate all fields
+    try {
+      await validationSchema.validate(formData, { abortEarly: false });
+    } catch (err: any) {
+      const newErrors: Record<string, string> = {};
+      if (err.inner) {
+        err.inner.forEach((validationError: any) => {
+          if (validationError.path) {
+            newErrors[validationError.path] = validationError.message;
+          }
+        });
+      }
+      setValidationErrors(newErrors);
+      setError('Please correct the validation errors before saving.');
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -74,9 +176,11 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
       const updatedPatient = await patientService.updatePatient(patient.id, formData);
       onPatientUpdated(updatedPatient);
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating patient:', err);
-      setError('Failed to update patient information. Please try again.');
+      // Extract specific error message if available
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update patient information. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -153,6 +257,9 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
               value={formData.firstName || ''}
               onChange={(e) => handleInputChange('firstName', e.target.value)}
               disabled={isLoading}
+              error={!!validationErrors.firstName}
+              helperText={validationErrors.firstName}
+              required
             />
           </Grid>
 
@@ -163,6 +270,9 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
               value={formData.lastName || ''}
               onChange={(e) => handleInputChange('lastName', e.target.value)}
               disabled={isLoading}
+              error={!!validationErrors.lastName}
+              helperText={validationErrors.lastName}
+              required
             />
           </Grid>
 
@@ -173,6 +283,9 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
               value={formData.nationalId || ''}
               onChange={(e) => handleInputChange('nationalId', e.target.value)}
               disabled={isLoading}
+              error={!!validationErrors.nationalId}
+              helperText={validationErrors.nationalId}
+              required
             />
           </Grid>
 
@@ -211,6 +324,8 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
               value={formData.phoneNumber || ''}
               onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
               disabled={isLoading}
+              error={!!validationErrors.phoneNumber}
+              helperText={validationErrors.phoneNumber}
             />
           </Grid>
 
@@ -222,6 +337,8 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
               value={formData.email || ''}
               onChange={(e) => handleInputChange('email', e.target.value)}
               disabled={isLoading}
+              error={!!validationErrors.email}
+              helperText={validationErrors.email}
             />
           </Grid>
 
@@ -290,6 +407,8 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
               value={formData.emergencyPhone || ''}
               onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
               disabled={isLoading}
+              error={!!validationErrors.emergencyPhone}
+              helperText={validationErrors.emergencyPhone}
             />
           </Grid>
 
@@ -301,6 +420,8 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
               value={formData.emergencyEmail || ''}
               onChange={(e) => handleInputChange('emergencyEmail', e.target.value)}
               disabled={isLoading}
+              error={!!validationErrors.emergencyEmail}
+              helperText={validationErrors.emergencyEmail}
             />
           </Grid>
 

@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, ConflictException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { PatientMergeService } from './patient-merge.service';
 import { AccessLogService, EntityType } from '../../common/services/access-log.service';
@@ -396,6 +396,7 @@ export class PatientsService {
       if (nationalId) {
         nationalId = await this.ensureUniqueNationalId(nationalId, existingPatient.nationalId || undefined);
       }
+      
 
       // Prepare update data
       const updateData: any = {
@@ -697,6 +698,22 @@ export class PatientsService {
       const suffix = require('crypto').randomUUID().replace(/-/g, '').substring(26);
       return `00000000000000-${suffix}`;
     }
+
+    // Check for duplicates in the database (including deleted patients)
+    if (existingId && nationalId === existingId) {
+      return nationalId;
+    }
+
+    const duplicate = await this.prisma.patient.findFirst({
+      where: {
+        nationalId: nationalId,
+        // Check ALL patients (implicitly included as we don't filter deletedAt)
+      },
+    });
+
+    if (duplicate) {
+      throw new ConflictException('A patient with this National ID already exists (possibly deleted). Please use a different National ID.');
+    }
     
     return nationalId;
   }
@@ -715,8 +732,8 @@ export class PatientsService {
     
     // Remove transient/frontend-only fields
     delete data.age; // calculated from DoB
-    if (data.ageMonths === undefined) delete data.ageMonths;
-    if (data.ageDays === undefined) delete data.ageDays;
+    delete data.ageMonths;
+    delete data.ageDays;
   }
 
   private handlePatientError(error: any, action: string) {

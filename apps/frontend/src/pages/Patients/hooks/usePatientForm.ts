@@ -381,7 +381,6 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
       }
     } catch (err: any) {
       console.error('Error saving patient:', err);
-      
       // Extract specific error message from backend response
       let errorMessage = 'Failed to save patient. Please try again.';
       
@@ -396,7 +395,6 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
           errorMessage = message;
         }
       }
-      
       setError(errorMessage);
     } finally {
       setLoading(false);
