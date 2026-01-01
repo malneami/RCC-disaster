@@ -24,6 +24,7 @@ export interface UpdateUserDto {
   lastName?: string;
   phoneNumber?: string;
   adminComments?: string;
+  email?: string;
 }
 
 export interface UsersResponse {

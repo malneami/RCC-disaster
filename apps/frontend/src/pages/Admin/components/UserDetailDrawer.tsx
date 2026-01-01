@@ -56,6 +56,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
 
     // States for user management
     const [role, setRole] = useState('');
+    const [email, setEmail] = useState('');
     const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
 
     // States for registration requests
@@ -71,12 +72,14 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
             loadHospitals();
             if (user) {
                 setRole(user.role);
+                setEmail(user.email);
                 // Find hospital if current user has one
                 if (user.hospitalId) {
                     // We'll set this once hospitals are loaded
                 }
             } else if (registrationRequest) {
                 setRole(registrationRequest.requestedRole);
+                setEmail(registrationRequest.email);
                 setAdminComments('');
             }
         }
@@ -114,6 +117,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
             setLoading(true);
             await userManagementService.updateUser(user.id, {
                 role,
+                email,
                 hospitalId: selectedHospital?.id || null as any,
             });
             enqueueSnackbar('User updated successfully', { variant: 'success' });
@@ -238,11 +242,24 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
                                 Contact Information
                             </Typography>
                             <Stack spacing={2}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Email sx={{ color: 'text.disabled', fontSize: 20 }} />
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">Email Address</Typography>
-                                        <Typography variant="body1" sx={{ fontWeight: 600 }}>{isRequest ? registrationRequest?.email : user?.email}</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mt: 1 }}>
+                                    <Email sx={{ color: 'text.disabled', fontSize: 20, mt: 1 }} />
+                                    <Box sx={{ width: '100%' }}>
+                                        {isRequest ? (
+                                            <Box>
+                                                <Typography variant="body2" color="text.secondary">Email Address</Typography>
+                                                <Typography variant="body1" sx={{ fontWeight: 600 }}>{registrationRequest?.email}</Typography>
+                                            </Box>
+                                        ) : (
+                                            <TextField
+                                                fullWidth
+                                                label="Email Address"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                size="small"
+                                                variant="outlined"
+                                            />
+                                        )}
                                     </Box>
                                 </Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

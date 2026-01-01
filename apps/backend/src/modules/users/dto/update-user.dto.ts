@@ -1,10 +1,15 @@
-import { IsString, IsOptional, IsEnum, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsEnum, MaxLength, MinLength, IsEmail } from 'class-validator';
 import { UserRole } from '@prisma/client';
 
 export class UpdateUserDto {
   @IsOptional()
   @IsEnum(UserRole, { message: 'Please select a valid role' })
   role?: UserRole;
+  
+  @IsOptional()
+  @IsString()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
+  email?: string;
 
   @IsOptional()
   @IsString({ message: 'Hospital ID must be a string' })

@@ -278,6 +278,22 @@ export class UsersService {
     if (updateData.lastName) updatePayload.lastName = updateData.lastName;
     if (updateData.phoneNumber !== undefined) updatePayload.phoneNumber = updateData.phoneNumber;
 
+    // Handle email update with uniqueness check
+    if (updateData.email && updateData.email !== user.email) {
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          email: { equals: updateData.email, mode: 'insensitive' },
+          id: { not: userId },
+          deletedAt: null,
+        },
+      });
+
+      if (existingUser) {
+        throw new Error('Email is already in use by another user');
+      }
+      updatePayload.email = updateData.email;
+    }
+
     // Update user
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
