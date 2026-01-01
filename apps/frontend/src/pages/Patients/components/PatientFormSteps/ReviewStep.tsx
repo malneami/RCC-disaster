@@ -3,14 +3,17 @@ import {
   Grid,
   Typography,
   Box,
-  Card,
-  CardContent,
   Chip,
-  Divider,
-  Alert,
 } from '@mui/material';
+import {
+  Person as PersonIcon,
+  LocalHospital as MedicalIcon,
+  Phone as PhoneIcon,
+  ContactEmergency as EmergencyIcon,
+  HealthAndSafety as InsuranceIcon,
+  CheckCircle as CheckIcon,
+} from '@mui/icons-material';
 import { CreatePatientData } from '../../../../services/patientService';
-import { Info as InfoIcon } from '@mui/icons-material';
 import { formatAgeForDisplay } from '../../../../utils/ageCalculator';
 
 interface ReviewStepProps {
@@ -19,207 +22,239 @@ interface ReviewStepProps {
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({ formData, isEditing = false }) => {
+  const getPrivacyLevelColor = (privacyLevel: string) => {
+    switch (privacyLevel) {
+      case 'CONFIDENTIAL':
+        return { bg: 'linear-gradient(135deg, #ef5350 0%, #e57373 100%)', color: '#ffffff' };
+      case 'RESTRICTED':
+        return { bg: 'linear-gradient(135deg, #ffa726 0%, #ffb74d 100%)', color: '#ffffff' };
+      case 'PRIVATE':
+        return { bg: 'linear-gradient(135deg, #42a5f5 0%, #64b5f6 100%)', color: '#ffffff' };
+      case 'INTERNAL':
+        return { bg: 'linear-gradient(135deg, #66bb6a 0%, #81c784 100%)', color: '#ffffff' };
+      case 'PUBLIC':
+        return { bg: 'linear-gradient(135deg, #9e9e9e 0%, #bdbdbd 100%)', color: '#ffffff' };
+      default:
+        return { bg: 'linear-gradient(135deg, #9e9e9e 0%, #bdbdbd 100%)', color: '#ffffff' };
+    }
+  };
+
+  const privacyColors = getPrivacyLevelColor(formData.privacyLevel || 'PRIVATE');
+
+  const InfoCard: React.FC<{
+    title: string;
+    icon: React.ReactNode;
+    gradient: string;
+    children: React.ReactNode;
+  }> = ({ title, icon, gradient, children }) => (
+    <Box
+      sx={{
+        background: 'linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)',
+        borderRadius: '16px',
+        padding: '20px',
+        border: '1px solid rgba(66, 165, 245, 0.25)',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: '10px',
+            background: gradient,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#ffffff',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          }}
+        >
+          {icon}
+        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a237e', fontSize: '1.125rem' }}>
+          {title}
+        </Typography>
+      </Box>
+      <Box sx={{ flex: 1 }}>{children}</Box>
+    </Box>
+  );
+
+  const InfoRow: React.FC<{ label: string; value: string | React.ReactNode }> = ({ label, value }) => (
+    <Box sx={{ mb: 1.5 }}>
+      <Typography variant="caption" sx={{ color: '#999', fontSize: '0.7rem', fontWeight: 600, display: 'block', mb: 0.5 }}>
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ color: '#424242', fontSize: '0.875rem', fontWeight: 500 }}>
+        {value || 'Not provided'}
+      </Typography>
+    </Box>
+  );
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Review Patient Information
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Please review all the information before creating the patient record.
-      </Typography>
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)',
+          borderRadius: '16px',
+          padding: '24px',
+          border: '1px solid rgba(66, 165, 245, 0.25)',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+          mb: 3,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #66bb6a 0%, #81c784 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              boxShadow: '0 4px 12px rgba(102, 187, 106, 0.3)',
+            }}
+          >
+            <CheckIcon sx={{ fontSize: '24px' }} />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a237e', fontSize: '1.25rem' }}>
+              Review Patient Information
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#666', fontSize: '0.875rem', mt: 0.25 }}>
+              Please review all information before {isEditing ? 'updating' : 'creating'} the patient record
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
 
-      <Grid container spacing={3}>
-        {/* Personal Information */}
-        <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
-          <Card sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="h6" gutterBottom>
-                Personal Information
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Name</Typography>
-                <Typography variant="body1">
-                  {formData.firstName} {formData.middleName} {formData.lastName}
-                </Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Age</Typography>
-                <Typography variant="body1">{formatAgeForDisplay(formData.age, formData.dateOfBirth, formData.ageMonths, formData.ageDays)}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Gender</Typography>
-                <Typography variant="body1">{formData.gender}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Marital Status</Typography>
-                <Typography variant="body1">{formData.maritalStatus}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">National ID</Typography>
-                <Typography variant="body1">{formData.nationalId || 'Not provided'}</Typography>
-              </Box>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body2" color="text.secondary">MRN</Typography>
-                <Typography variant="body1">{formData.mrn || 'Not provided'}</Typography>
-              </Box>
-            </CardContent>
-          </Card>
+      <Grid container spacing={2.5}>
+        <Grid item xs={12} md={6}>
+          <InfoCard
+            title="Personal Information"
+            icon={<PersonIcon sx={{ fontSize: '20px' }} />}
+            gradient="linear-gradient(135deg, #42a5f5 0%, #64b5f6 100%)"
+          >
+            <InfoRow label="Name" value={`${formData.firstName || ''} ${formData.middleName || ''} ${formData.lastName || ''}`.trim()} />
+            <InfoRow label="Age" value={formatAgeForDisplay(formData.age, formData.dateOfBirth, formData.ageMonths, formData.ageDays)} />
+            <InfoRow label="Gender" value={formData.gender || ''} />
+            <InfoRow label="Marital Status" value={formData.maritalStatus || ''} />
+            <InfoRow label="National ID" value={formData.nationalId || ''} />
+            <InfoRow label="MRN" value={formData.mrn || ''} />
+          </InfoCard>
         </Grid>
 
-        {/* Medical Information - Moved next to Personal Information */}
-        <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
-          <Card sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="h6" gutterBottom>
-                Medical Information
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Blood Type</Typography>
-                <Typography variant="body1">{formData.bloodType || 'Not provided'}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">RH Factor</Typography>
-                <Typography variant="body1">{formData.rhFactor || 'Not provided'}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Weight</Typography>
-                <Typography variant="body1">{formData.weight ? `${formData.weight} kg` : 'Not provided'}</Typography>
-              </Box>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body2" color="text.secondary">Height</Typography>
-                <Typography variant="body1">{formData.height ? `${formData.height} cm` : 'Not provided'}</Typography>
-              </Box>
-            </CardContent>
-          </Card>
+        <Grid item xs={12} md={6}>
+          <InfoCard
+            title="Medical Information"
+            icon={<MedicalIcon sx={{ fontSize: '20px' }} />}
+            gradient="linear-gradient(135deg, #ef5350 0%, #e57373 100%)"
+          >
+            <InfoRow label="Blood Type" value={formData.bloodType || ''} />
+            <InfoRow label="RH Factor" value={formData.rhFactor || ''} />
+            <InfoRow label="Weight" value={formData.weight ? `${formData.weight} kg` : ''} />
+            <InfoRow label="Height" value={formData.height ? `${formData.height} cm` : ''} />
+            {formData.allergies && <InfoRow label="Allergies" value={formData.allergies} />}
+            {formData.medications && <InfoRow label="Medications" value={formData.medications} />}
+          </InfoCard>
         </Grid>
 
-        {/* Contact Information - Only show in edit mode */}
         {isEditing && (
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Contact Information
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Phone</Typography>
-                  <Typography variant="body1">{formData.phoneNumber || 'Not provided'}</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Email</Typography>
-                  <Typography variant="body1">{formData.email || 'Not provided'}</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Address</Typography>
-                  <Typography variant="body1">
-                    {formData.address ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}` : 'Not provided'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Country</Typography>
-                  <Typography variant="body1">{formData.country}</Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <>
+            <Grid item xs={12} md={6}>
+              <InfoCard
+                title="Contact Information"
+                icon={<PhoneIcon sx={{ fontSize: '20px' }} />}
+                gradient="linear-gradient(135deg, #42a5f5 0%, #64b5f6 100%)"
+              >
+                <InfoRow label="Phone" value={formData.phoneNumber || ''} />
+                <InfoRow label="Email" value={formData.email || ''} />
+                <InfoRow
+                  label="Address"
+                  value={
+                    formData.address
+                      ? `${formData.address}, ${formData.city || ''}, ${formData.state || ''} ${formData.zipCode || ''}`.trim()
+                      : ''
+                  }
+                />
+                <InfoRow label="Country" value={formData.country || ''} />
+              </InfoCard>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <InfoCard
+                title="Emergency Contact"
+                icon={<EmergencyIcon sx={{ fontSize: '20px' }} />}
+                gradient="linear-gradient(135deg, #ffa726 0%, #ffb74d 100%)"
+              >
+                <InfoRow label="Name" value={formData.emergencyContact || ''} />
+                <InfoRow label="Phone" value={formData.emergencyPhone || ''} />
+                <InfoRow label="Email" value={formData.emergencyEmail || ''} />
+                <InfoRow label="Relationship" value={formData.emergencyRelationship || ''} />
+              </InfoCard>
+            </Grid>
+          </>
         )}
 
-        {/* Emergency Contact - Only show in edit mode */}
-        {isEditing && (
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Emergency Contact
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Name</Typography>
-                  <Typography variant="body1">{formData.emergencyContact || 'Not provided'}</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Phone</Typography>
-                  <Typography variant="body1">{formData.emergencyPhone || 'Not provided'}</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Email</Typography>
-                  <Typography variant="body1">{formData.emergencyEmail || 'Not provided'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Relationship</Typography>
-                  <Typography variant="body1">{formData.emergencyRelationship || 'Not provided'}</Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Insurance & Privacy */}
         <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Insurance & Privacy
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Insurance Provider</Typography>
-                    <Typography variant="body1">{formData.insuranceProvider || 'Not provided'}</Typography>
-                  </Box>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Policy Number</Typography>
-                    <Typography variant="body1">{formData.insuranceNumber || 'Not provided'}</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Privacy Level</Typography>
-                    <Chip 
-                      label={formData.privacyLevel} 
-                      color={formData.privacyLevel === 'CONFIDENTIAL' ? 'error' : 'default'}
-                      size="small"
-                    />
-                  </Box>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Consent Given</Typography>
-                    <Typography variant="body1">
-                      {formData.consentGiven ? 'Yes' : 'No'}
-                    </Typography>
-                  </Box>
-                </Grid>
+          <InfoCard
+            title="Insurance & Privacy"
+            icon={<InsuranceIcon sx={{ fontSize: '20px' }} />}
+            gradient="linear-gradient(135deg, #66bb6a 0%, #81c784 100%)"
+          >
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <InfoRow label="Insurance Provider" value={formData.insuranceProvider || ''} />
+                <InfoRow label="Policy Number" value={formData.insuranceNumber || ''} />
+                <InfoRow label="Group Number" value={formData.insuranceGroup || ''} />
+                <InfoRow label="Expiry Date" value={formData.insuranceExpiry || ''} />
               </Grid>
-            </CardContent>
-          </Card>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography variant="caption" sx={{ color: '#999', fontSize: '0.7rem', fontWeight: 600, display: 'block', mb: 0.5 }}>
+                    Privacy Level
+                  </Typography>
+                  <Chip
+                    label={formData.privacyLevel || 'PRIVATE'}
+                    size="small"
+                    sx={{
+                      background: privacyColors.bg,
+                      color: privacyColors.color,
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      height: '24px',
+                    }}
+                  />
+                </Box>
+                <InfoRow label="Consent Given" value={formData.consentGiven ? 'Yes' : 'No'} />
+                {formData.dataRetentionPolicy && <InfoRow label="Data Retention" value={formData.dataRetentionPolicy} />}
+              </Grid>
+            </Grid>
+          </InfoCard>
         </Grid>
-
-        {/* Note for create mode - Moved below Insurance & Privacy */}
-        {!isEditing && (
-          <Grid item xs={12}>
-            <Alert 
-              icon={<InfoIcon />} 
-              severity="info"
-              sx={{ 
-                bgcolor: 'info.light',
-                '& .MuiAlert-icon': {
-                  color: 'info.main'
-                }
-              }}
-            >
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                Note: If you want to add contact information, go to edit after creating the patient.
-              </Typography>
-            </Alert>
-          </Grid>
-        )}
       </Grid>
 
-      <Divider sx={{ my: 3 }} />
-      
-      <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
-        <Typography variant="body2" color="success.contrastText">
-          <strong>Ready to Create:</strong> All required information has been provided. 
-          Click "Complete" to create the patient record.
+      <Box
+        sx={{
+          mt: 3,
+          p: 2.5,
+          background: 'linear-gradient(135deg, rgba(102, 187, 106, 0.08) 0%, rgba(129, 199, 132, 0.08) 100%)',
+          borderRadius: '12px',
+          border: '1px solid rgba(102, 187, 106, 0.25)',
+          boxShadow: '0 2px 8px rgba(102, 187, 106, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+        }}
+      >
+        <CheckIcon sx={{ color: '#66bb6a', fontSize: '24px' }} />
+        <Typography variant="body2" sx={{ color: '#2e7d32', fontSize: '0.875rem', lineHeight: 1.6 }}>
+          <strong>Ready to {isEditing ? 'Update' : 'Create'}:</strong> All required information has been provided. Click "Complete" to {isEditing ? 'update' : 'create'} the patient record.
         </Typography>
       </Box>
     </Box>

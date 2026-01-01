@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Alert,
@@ -25,6 +25,7 @@ import { ExportOptions } from '../../components/Common/ExportDialog';
 
 const PatientDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState<PatientWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -186,6 +187,7 @@ const PatientDetailsPage: React.FC = () => {
         onEdit={handleEdit}
         onPrint={handlePrint}
         onExport={handleExport}
+        colorIndex={searchParams.get('colorIndex') ? parseInt(searchParams.get('colorIndex') || '0', 10) : undefined}
       />
 
       {/* Tabs */}

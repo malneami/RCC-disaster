@@ -1,11 +1,10 @@
 import React from 'react';
 import { Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { Patient } from '../../../services/patientService';
-import PatientAvatar from './list-item/PatientAvatar';
-import PatientInfo from './list-item/PatientInfo';
-import PatientContactInfo from './list-item/PatientContactInfo';
-import PatientActions from './list-item/PatientActions';
-import { getPrivacyLevelColor, AVATAR_COLORS } from './list-item/ListItemConstants';
+import PatientInfoSection from './ModernPatientListItem/PatientInfoSection';
+import PatientActionButtons from './ModernPatientListItem/PatientActionButtons';
+import { getPrivacyLevelColor, avatarColors } from './ModernPatientListItem/utils';
 
 interface ModernPatientListItemProps {
   patient: Patient;
@@ -18,14 +17,19 @@ interface ModernPatientListItemProps {
 const ModernPatientListItem: React.FC<ModernPatientListItemProps> = ({
   patient,
   index,
-  onViewPatient,
   onEditPatient,
   onExportPatient,
 }) => {
+  const navigate = useNavigate();
   const privacyColors = getPrivacyLevelColor(patient.privacyLevel);
   const isEven = index % 2 === 0;
+  const avatarColor = avatarColors[index % avatarColors.length];
+  const colorIndex = index % avatarColors.length;
 
-  const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
+  const handleViewPatient = () => {
+    // Navigate with color index to match the list view color
+    navigate(`/patients/${patient.id}?colorIndex=${colorIndex}`);
+  };
 
   return (
     <Box
@@ -67,7 +71,7 @@ const ModernPatientListItem: React.FC<ModernPatientListItemProps> = ({
           width: '5px',
         },
       }}
-      onClick={() => onViewPatient(patient)}
+      onClick={handleViewPatient}
     >
       <Box
         sx={{
@@ -77,20 +81,14 @@ const ModernPatientListItem: React.FC<ModernPatientListItemProps> = ({
           gap: 3,
         }}
       >
-        {/* Left Section - Patient Info */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-          <PatientAvatar patient={patient} avatarColor={avatarColor} />
-
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <PatientInfo patient={patient} privacyColors={privacyColors} />
-            <PatientContactInfo patient={patient} />
-          </Box>
-        </Box>
-
-        {/* Right Section - Actions */}
-        <PatientActions
+        <PatientInfoSection
           patient={patient}
-          onViewPatient={onViewPatient}
+          avatarColor={avatarColor}
+          privacyColors={privacyColors}
+        />
+        <PatientActionButtons
+          patient={patient}
+          onViewPatient={handleViewPatient}
           onEditPatient={onEditPatient}
           onExportPatient={onExportPatient}
         />
