@@ -35,7 +35,7 @@ interface EditStemiCaseDialogProps {
 }
 
 const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = (props) => {
-  const { open, onClose, stemiCase } = props;
+  const { open, stemiCase } = props;
 
   const {
     activeStep,

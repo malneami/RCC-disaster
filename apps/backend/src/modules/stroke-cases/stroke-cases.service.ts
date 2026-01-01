@@ -899,6 +899,8 @@ export class StrokeCasesService {
         timeOfThrombectomyComplete,
         timeOfTransferActivation,
         timeOfTransferDeparture,
+        patientId, // Exclude from restUpdateData
+        ticketId,  // Exclude from restUpdateData
         ...restUpdateData
       } = strokeCaseUpdateData;
 
@@ -945,6 +947,13 @@ export class StrokeCasesService {
       });
       
       console.log('Final update data:', JSON.stringify(updateData, null, 2));
+
+      // Explicitly remove fields that should not be updated via this endpoint
+      // This is a safeguard even if destructuring above should have handled it
+      delete updateData.patientId;
+      delete updateData.ticketId;
+      delete updateData.createdById;
+
       console.log('Performing database update...');
 
       // Additional validation: ensure no invalid values are passed to Prisma

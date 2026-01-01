@@ -94,7 +94,7 @@ interface EditStrokeCaseDialogProps {
 
 const steps = [
   'Patient',
-  'Assessment', 
+  'Assessment',
   'Diagnosis',
   'Treatment',
   'Review & Submit'
@@ -380,19 +380,20 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         strokeType: strokeCase.strokeType,
         currentStatus: strokeCase.currentStatus,
         chiefComplaint: strokeCase.chiefComplaint || '',
-        
+
         // Patient Information
         patientInfo: {
           firstName: strokeCase.patient?.firstName || '',
           lastName: strokeCase.patient?.lastName || '',
           nationalId: strokeCase.patient?.nationalId || '',
           mrn: strokeCase.patient?.mrn || '',
+          dateOfBirth: strokeCase.patient?.dateOfBirth ? new Date(strokeCase.patient.dateOfBirth).toISOString().split('T')[0] : undefined,
           age: strokeCase.patient?.age || undefined,
           gender: (strokeCase.patient?.gender as 'MALE' | 'FEMALE') || 'MALE',
           phoneNumber: strokeCase.patient?.phoneNumber || '',
           email: strokeCase.patient?.email || '',
         },
-        
+
         // Patient Arrival & Timing
         modeOfArrival: strokeCase.modeOfArrival,
         transferRequestDateTime: strokeCase.transferRequestDateTime ? new Date(strokeCase.transferRequestDateTime).toISOString().slice(0, 16) : '',
@@ -403,7 +404,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         dateOfAdmission: strokeCase.dateOfAdmission,
         timeOfTriage: strokeCase.timeOfTriage,
         timeOfPhysicianAssessment: strokeCase.timeOfPhysicianAssessment,
-        
+
         // Clinical Assessment & Diagnosis
         strokeTypeDetailed: strokeCase.strokeTypeDetailed,
         swallowingScreeningPerformed: strokeCase.swallowingScreeningPerformed,
@@ -423,7 +424,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         timeOfMechanicalThrombectomyPuncture: strokeCase.timeOfMechanicalThrombectomyPuncture,
         mechanicalThrombectomyPerformed: strokeCase.mechanicalThrombectomyPerformed,
         timeOfThrombectomyComplete: strokeCase.timeOfThrombectomyComplete,
-        
+
         // Disposition & Transfer Decisions
         facilityHasCt: strokeCase.facilityHasCt,
         transferToAnotherHospital: strokeCase.transferToAnotherHospital,
@@ -434,7 +435,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         disposition: strokeCase.disposition,
         referralTo: strokeCase.referralTo,
         admittedToStrokeUnit: strokeCase.admittedToStrokeUnit,
-        
+
         // Follow-up & Outcome Tracking
         followUpContactAttempted: strokeCase.followUpContactAttempted,
         modifiedRankinScaleAt90Days: strokeCase.modifiedRankinScaleAt90Days,
@@ -451,11 +452,11 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
 
   const updateFormData = (field: keyof CreateStrokeCaseData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear validation errors for fields that are being changed
     setValidationErrors((prev) => {
       const newErrors = { ...prev };
-      
+
       if (field === 'patientInfo') {
         // Clear all patientInfo errors
         Object.keys(newErrors).forEach(key => {
@@ -473,7 +474,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       } else if (field === 'strokeType') {
         delete newErrors['strokeType'];
       }
-      
+
       return newErrors;
     });
   };
@@ -525,7 +526,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
 
   const validateStep = async (step: number): Promise<Record<string, string>> => {
     const errors: Record<string, string> = {};
-    
+
     switch (step) {
       case 0:
         // Validate patient info with Yup
@@ -540,15 +541,15 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
             }
           }
         }
-        
+
         if (!formData.originHospitalId) {
           errors['originHospitalId'] = 'Origin Hospital is required';
         }
-        
+
         if (originRequiresDestination && !formData.destinationHospitalId) {
           errors['destinationHospitalId'] = DESTINATION_REQUIRED_MESSAGE;
         }
-        
+
         if (!formData.modeOfArrival) {
           errors['modeOfArrival'] = 'Mode of Arrival is required';
         }
@@ -568,14 +569,14 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         // Review step
         break;
     }
-    
+
     return errors;
   };
 
   const handleNext = async () => {
     const errors = await validateStep(activeStep);
     setValidationErrors(errors);
-    
+
     // Only proceed if there are no validation errors
     if (Object.keys(errors).length === 0 && activeStep < steps.length - 1) {
       setActiveStep(prev => prev + 1);
@@ -598,12 +599,12 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       setLoading(true);
       setError(null);
       setSuccess(null);
-      
+
       // Validate all required steps before submission
       const patientErrors = await validateStep(0);
       const assessmentErrors = await validateStep(1);
       const combinedErrors = { ...patientErrors, ...assessmentErrors };
-      
+
       if (Object.keys(combinedErrors).length > 0) {
         setValidationErrors(combinedErrors);
         // Navigate to first step with error
@@ -619,10 +620,10 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         setLoading(false);
         return;
       }
-      
+
       // Prepare update data with patientInfo included
       const { patientInfo, ...otherData } = formData;
-      
+
       // Clean empty string values and convert them to undefined
       const cleanedData = Object.entries(otherData).reduce((acc, [key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
@@ -630,17 +631,17 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         }
         return acc;
       }, {} as any);
-      
+
       // Always include patientInfo in the update payload
       if (patientInfo) {
         cleanedData.patientInfo = patientInfo;
       }
-      
+
       console.log('Sending update data:', cleanedData);
       await onUpdate(strokeCase.id, cleanedData);
       setSuccess('Case updated successfully!');
       setError(null);
-      
+
       // Clear form and close dialog after a short delay to show success message
       setTimeout(() => {
         resetForm();

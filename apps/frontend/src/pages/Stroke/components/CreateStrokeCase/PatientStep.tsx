@@ -144,6 +144,11 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
 
     const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : undefined;
 
+    let age = patient.age;
+    if (age === undefined && dob) {
+      age = calculateAge(dob).years;
+    }
+
     updateFormData('patientId', patient.id);
     updateFormData('patientInfo', {
       firstName: patient.firstName,
@@ -151,7 +156,7 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
       nationalId: patient.nationalId,
       mrn: patient.mrn,
       dateOfBirth: dob,
-      age: patient.age || undefined,
+      age: age || undefined,
       gender: patient.gender,
       phoneNumber: patient.phoneNumber || '',
       email: patient.email || '',
@@ -163,13 +168,18 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
 
     const dob = updatedPatient.dateOfBirth ? new Date(updatedPatient.dateOfBirth).toISOString().split('T')[0] : undefined;
 
+    let age = updatedPatient.age;
+    if (age === undefined && dob) {
+      age = calculateAge(dob).years;
+    }
+
     updateFormData('patientInfo', {
       firstName: updatedPatient.firstName,
       lastName: updatedPatient.lastName,
       nationalId: updatedPatient.nationalId,
       mrn: updatedPatient.mrn,
       dateOfBirth: dob,
-      age: updatedPatient.age || undefined,
+      age: age || undefined,
       gender: updatedPatient.gender,
       phoneNumber: updatedPatient.phoneNumber || '',
       email: updatedPatient.email || '',

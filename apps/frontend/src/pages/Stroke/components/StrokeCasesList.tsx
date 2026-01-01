@@ -368,11 +368,11 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
           placeholder="Search stroke cases..."
           value={searchInput}
           onChange={(e) => {
-            setSearchInput(e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && onSearchChange) {
-              onSearchChange(searchInput.trim());
+            const value = e.target.value;
+            setSearchInput(value);
+            // Trigger search on every keystroke for hot reload
+            if (onSearchChange) {
+              onSearchChange(value.trim());
             }
           }}
           InputProps={{

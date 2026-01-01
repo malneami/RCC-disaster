@@ -64,7 +64,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
       'Transfer',
       'SRCA call',
     ];
-    
+
     const parts = text.split(/(\s+)/);
     return parts.map((part, index) => {
       const isKeyword = keywords.some(
@@ -128,11 +128,11 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
       sx={
         hasIssue
           ? {
-              display: 'inline-block',
-              fontWeight: 700,
-              color: 'warning.main',
-              ml: 0.5,
-            }
+            display: 'inline-block',
+            fontWeight: 700,
+            color: 'warning.main',
+            ml: 0.5,
+          }
           : { ml: 0.5 }
       }
     >
@@ -170,7 +170,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
       <Typography variant="h6" gutterBottom>
         Review Stroke Case Details
       </Typography>
-      
+
       {hasWarnings && (
         <Alert severity="warning" variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
           <Typography variant="body2" sx={{ fontWeight: 700, color: 'warning.dark' }}>
@@ -195,6 +195,14 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
                 <Typography variant="body2" color="text.secondary">National ID:</Typography>
                 <Typography variant="body1">{formData.patientInfo?.nationalId || 'Not provided'}</Typography>
               </Box>
+              {formData.patientInfo?.dateOfBirth && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Date of Birth:</Typography>
+                  <Typography variant="body1">
+                    {new Date(formData.patientInfo.dateOfBirth).toLocaleDateString('en-US', { timeZone: 'UTC' })}
+                  </Typography>
+                </Box>
+              )}
               <Box>
                 <Typography variant="body2" color="text.secondary">Age:</Typography>
                 <Typography variant="body1">{formData.patientInfo?.age ? `${formData.patientInfo.age} years` : 'Not provided'}</Typography>
