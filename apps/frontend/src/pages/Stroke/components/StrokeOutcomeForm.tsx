@@ -38,6 +38,7 @@ interface StrokeOutcomeFormData {
   mortality?: string;
   threeMonthFollowupComplete?: boolean;
   outcomeFormCompletionDate?: string;
+  dischargeDate?: string;
 }
 
 interface StrokeOutcomeFormProps {
@@ -45,7 +46,7 @@ interface StrokeOutcomeFormProps {
   onClose: () => void;
   strokeCaseId: string;
   strokeCaseData?: any;
-  onSuccess?: () => void;
+  onSuccess?: (data?: any) => void;
 }
 
 const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
@@ -80,6 +81,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
       mortality: '',
       threeMonthFollowupComplete: false,
       outcomeFormCompletionDate: '',
+      dischargeDate: '',
     },
   });
 
@@ -97,6 +99,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
       'closureReport',
       'functionalStatus',
       'mortality',
+      'dischargeDate',
     ];
 
     const completedFields = outcomeFields.filter(field => {
@@ -106,7 +109,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
 
     const percentage = Math.round((completedFields.length / outcomeFields.length) * 100);
     setCompleteness(percentage);
-    
+
     // Auto-set completion date when all fields are completed (100%)
     if (percentage === 100 && !completionDate && user) {
       const now = new Date().toISOString();
@@ -117,11 +120,11 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
   // Fetch outcome form data when dialog opens
   const fetchOutcomeFormData = async () => {
     if (!strokeCaseId) return;
-    
+
     setLoading(true);
     try {
       const data = await strokeOutcomeFormService.getOutcomeForm(strokeCaseId);
-      
+
       // Reset form with fetched data
       reset({
         dischargeType: data.dischargeType || '',
@@ -135,6 +138,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
         mortality: data.mortality || '',
         threeMonthFollowupComplete: data.threeMonthFollowupComplete || false,
         outcomeFormCompletionDate: data.outcomeFormCompletionDate || '',
+        dischargeDate: data.dischargeDate || '',
       });
       setCompletionDate(data.outcomeFormCompletionDate || null);
     } catch (error) {
@@ -153,6 +157,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
           mortality: strokeCaseData.mortality || '',
           threeMonthFollowupComplete: strokeCaseData.threeMonthFollowupComplete || false,
           outcomeFormCompletionDate: strokeCaseData.outcomeFormCompletionDate || '',
+          dischargeDate: strokeCaseData.dischargeDate || '',
         });
         setCompletionDate(strokeCaseData.outcomeFormCompletionDate || null);
       }
@@ -186,6 +191,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
       'closureReport',
       'functionalStatus',
       'mortality',
+      'dischargeDate',
     ];
 
     const completedFields = outcomeFields.filter(field => {
@@ -201,13 +207,13 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
     try {
       // Calculate completeness percentage
       const completenessPercentage = calculateCompleteness(data);
-      
+
       // Auto-set completion date if all fields are completed (100%) and not already set
       const shouldSetCompletionDate = completenessPercentage === 100 && !completionDate;
-      const finalCompletionDate = shouldSetCompletionDate 
-        ? new Date().toISOString() 
+      const finalCompletionDate = shouldSetCompletionDate
+        ? new Date().toISOString()
         : (completionDate || data.outcomeFormCompletionDate || undefined);
-      
+
       const result = await strokeOutcomeFormService.updateOutcomeForm(strokeCaseId, {
         ...data,
         outcomeFormCompletionDate: finalCompletionDate,
@@ -221,7 +227,7 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
       }
 
       console.log('Stroke outcome form updated successfully');
-      onSuccess?.();
+      onSuccess?.(result);
       onClose();
     } catch (error) {
       console.error('Error updating outcome form:', error);
@@ -274,261 +280,284 @@ const StrokeOutcomeForm: React.FC<StrokeOutcomeFormProps> = ({
             </Box>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)}>
-            <Grid container spacing={3}>
-              {/* Discharge Information */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Discharge Information
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="dischargeType"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Discharge Type</InputLabel>
-                      <Select {...field} label="Discharge Type">
-                        <MenuItem value="PLANNED">Planned</MenuItem>
-                        <MenuItem value="UNPLANNED">Unplanned</MenuItem>
-                        <MenuItem value="AGAINST_MEDICAL_ADVICE">Against Medical Advice</MenuItem>
-                        <MenuItem value="TRANSFER">Transfer</MenuItem>
-                        <MenuItem value="OTHER">Other</MenuItem>
-                      </Select>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="functionalStatus"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Functional Status</InputLabel>
-                      <Select {...field} label="Functional Status">
-                        <MenuItem value="INDEPENDENT">Independent</MenuItem>
-                        <MenuItem value="ASSISTANCE_REQUIRED">Assistance Required</MenuItem>
-                        <MenuItem value="DEPENDENT">Dependent</MenuItem>
-                        <MenuItem value="SEVERELY_DEPENDENT">Severely Dependent</MenuItem>
-                      </Select>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="dischargeModifiedRankinScale"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Discharge Modified Rankin Scale</InputLabel>
-                      <Select 
-                        {...field} 
-                        value={field.value ?? ''} 
-                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
-                        label="Discharge Modified Rankin Scale"
-                        MenuProps={{
-                          PaperProps: {
-                            style: {
-                              maxHeight: 150,
-                            },
-                          },
-                        }}
-                      >
-                        <MenuItem value="">None</MenuItem>
-                        <MenuItem value={0}>0 - No symptoms</MenuItem>
-                        <MenuItem value={1}>1 - No significant disability</MenuItem>
-                        <MenuItem value={2}>2 - Slight disability</MenuItem>
-                        <MenuItem value={3}>3 - Moderate disability</MenuItem>
-                        <MenuItem value={4}>4 - Moderately severe disability</MenuItem>
-                        <MenuItem value={5}>5 - Severe disability</MenuItem>
-                        <MenuItem value={6}>6 - Dead</MenuItem>
-                      </Select>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="mortality"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Mortality Status</InputLabel>
-                      <Select {...field} label="Mortality Status">
-                        <MenuItem value="ALIVE">Alive</MenuItem>
-                        <MenuItem value="DEAD">Dead</MenuItem>
-                        <MenuItem value="UNKNOWN">Unknown</MenuItem>
-                      </Select>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-
-              {/* Follow-up Information */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                  Follow-up Information
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="followUpType"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Follow-up Type</InputLabel>
-                      <Select {...field} label="Follow-up Type">
-                        <MenuItem value="PHONE">Phone</MenuItem>
-                        <MenuItem value="IN_PERSON">In Person</MenuItem>
-                        <MenuItem value="TELEHEALTH">Telehealth</MenuItem>
-                        <MenuItem value="MAIL">Mail</MenuItem>
-                        <MenuItem value="NOT_COMPLETED">Not Completed</MenuItem>
-                      </Select>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="followUpModifiedRankinScale"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Follow-up Modified Rankin Scale at 90 days</InputLabel>
-                      <Select 
-                        {...field} 
-                        value={field.value ?? ''} 
-                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
-                        label="Follow-up Modified Rankin Scale"
-                        MenuProps={{
-                          PaperProps: {
-                            style: {
-                              maxHeight: 150,
-                            },
-                          },
-                        }}
-                      >
-                        <MenuItem value="">None</MenuItem>
-                        <MenuItem value={0}>0 - No symptoms</MenuItem>
-                        <MenuItem value={1}>1 - No significant disability</MenuItem>
-                        <MenuItem value={2}>2 - Slight disability</MenuItem>
-                        <MenuItem value={3}>3 - Moderate disability</MenuItem>
-                        <MenuItem value={4}>4 - Moderately severe disability</MenuItem>
-                        <MenuItem value={5}>5 - Severe disability</MenuItem>
-                        <MenuItem value={6}>6 - Dead</MenuItem>
-                      </Select>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="threeMonthFollowupComplete"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={field.value || false}
-                          onChange={(e) => field.onChange(e.target.checked)}
-                        />
-                      }
-                      label="3-Month Follow-up Complete"
-                    />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Controller
-                  name="followUpNotCompletedReason"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Follow-up Not Completed Reason"
-                      multiline
-                      rows={2}
-                      helperText="If follow-up was not completed, specify the reason"
-                    />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Controller
-                  name="followUpSpecify"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Follow-up Details"
-                      multiline
-                      rows={3}
-                      helperText="Additional follow-up information or notes"
-                    />
-                  )}
-                />
-              </Grid>
-
-              {/* Closure Report */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                  Closure Information
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Controller
-                  name="closureReport"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Closure Report"
-                      multiline
-                      rows={4}
-                      helperText="Summary of case closure and final outcomes"
-                    />
-                  )}
-                />
-              </Grid>
-
-              {/* Completion Status */}
-              {completionDate && (
+              <Grid container spacing={3}>
+                {/* Discharge Information */}
                 <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      border: '2px solid',
-                      borderColor: 'success.main',
-                    }}
-                  >
-                    <Typography variant="body2" color="success.dark" fontWeight="high">
-                      ✓ Outcome form completed
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" fontWeight="medium" display="block" sx={{ mt: 0.5 }}>
-                      Completed on: {new Date(completionDate).toLocaleString()}
-                      {user && ` by ${user.firstName} ${user.lastName}`}
-                    </Typography>
-                  </Box>
+                  <Typography variant="h6" gutterBottom>
+                    Discharge Information
+                  </Typography>
                 </Grid>
-              )}
-            </Grid>
-          </form>
+
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="dischargeDate"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Discharge Date"
+                        type="datetime-local"
+                        InputLabelProps={{
+                          shrink: true,
+                        }}
+                        value={field.value ? new Date(field.value).toISOString().slice(0, 16) : ''}
+                        onChange={(e) => {
+                          const date = e.target.value ? new Date(e.target.value).toISOString() : '';
+                          field.onChange(date);
+                        }}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="dischargeType"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel>Discharge Type</InputLabel>
+                        <Select {...field} label="Discharge Type">
+                          <MenuItem value="PLANNED">Planned</MenuItem>
+                          <MenuItem value="UNPLANNED">Unplanned</MenuItem>
+                          <MenuItem value="AGAINST_MEDICAL_ADVICE">Against Medical Advice</MenuItem>
+                          <MenuItem value="TRANSFER">Transfer</MenuItem>
+                          <MenuItem value="OTHER">Other</MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="functionalStatus"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel>Functional Status</InputLabel>
+                        <Select {...field} label="Functional Status">
+                          <MenuItem value="INDEPENDENT">Independent</MenuItem>
+                          <MenuItem value="ASSISTANCE_REQUIRED">Assistance Required</MenuItem>
+                          <MenuItem value="DEPENDENT">Dependent</MenuItem>
+                          <MenuItem value="SEVERELY_DEPENDENT">Severely Dependent</MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="dischargeModifiedRankinScale"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel>Discharge Modified Rankin Scale</InputLabel>
+                        <Select
+                          {...field}
+                          value={field.value ?? ''}
+                          onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                          label="Discharge Modified Rankin Scale"
+                          MenuProps={{
+                            PaperProps: {
+                              style: {
+                                maxHeight: 150,
+                              },
+                            },
+                          }}
+                        >
+                          <MenuItem value="">None</MenuItem>
+                          <MenuItem value={0}>0 - No symptoms</MenuItem>
+                          <MenuItem value={1}>1 - No significant disability</MenuItem>
+                          <MenuItem value={2}>2 - Slight disability</MenuItem>
+                          <MenuItem value={3}>3 - Moderate disability</MenuItem>
+                          <MenuItem value={4}>4 - Moderately severe disability</MenuItem>
+                          <MenuItem value={5}>5 - Severe disability</MenuItem>
+                          <MenuItem value={6}>6 - Dead</MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="mortality"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel>Mortality Status</InputLabel>
+                        <Select {...field} label="Mortality Status">
+                          <MenuItem value="ALIVE">Alive</MenuItem>
+                          <MenuItem value="DEAD">Dead</MenuItem>
+                          <MenuItem value="UNKNOWN">Unknown</MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+
+                {/* Follow-up Information */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                    Follow-up Information
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="followUpType"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel>Follow-up Type</InputLabel>
+                        <Select {...field} label="Follow-up Type">
+                          <MenuItem value="PHONE">Phone</MenuItem>
+                          <MenuItem value="IN_PERSON">In Person</MenuItem>
+                          <MenuItem value="TELEHEALTH">Telehealth</MenuItem>
+                          <MenuItem value="MAIL">Mail</MenuItem>
+                          <MenuItem value="NOT_COMPLETED">Not Completed</MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="followUpModifiedRankinScale"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel>Follow-up Modified Rankin Scale at 90 days</InputLabel>
+                        <Select
+                          {...field}
+                          value={field.value ?? ''}
+                          onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                          label="Follow-up Modified Rankin Scale"
+                          MenuProps={{
+                            PaperProps: {
+                              style: {
+                                maxHeight: 150,
+                              },
+                            },
+                          }}
+                        >
+                          <MenuItem value="">None</MenuItem>
+                          <MenuItem value={0}>0 - No symptoms</MenuItem>
+                          <MenuItem value={1}>1 - No significant disability</MenuItem>
+                          <MenuItem value={2}>2 - Slight disability</MenuItem>
+                          <MenuItem value={3}>3 - Moderate disability</MenuItem>
+                          <MenuItem value={4}>4 - Moderately severe disability</MenuItem>
+                          <MenuItem value={5}>5 - Severe disability</MenuItem>
+                          <MenuItem value={6}>6 - Dead</MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="threeMonthFollowupComplete"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={field.value || false}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                          />
+                        }
+                        label="3-Month Follow-up Complete"
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Controller
+                    name="followUpNotCompletedReason"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Follow-up Not Completed Reason"
+                        multiline
+                        rows={2}
+                        helperText="If follow-up was not completed, specify the reason"
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Controller
+                    name="followUpSpecify"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Follow-up Details"
+                        multiline
+                        rows={3}
+                        helperText="Additional follow-up information or notes"
+                      />
+                    )}
+                  />
+                </Grid>
+
+                {/* Closure Report */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                    Closure Information
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Controller
+                    name="closureReport"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Closure Report"
+                        multiline
+                        rows={4}
+                        helperText="Summary of case closure and final outcomes"
+                      />
+                    )}
+                  />
+                </Grid>
+
+                {/* Completion Status */}
+                {completionDate && (
+                  <Grid item xs={12}>
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        border: '2px solid',
+                        borderColor: 'success.main',
+                      }}
+                    >
+                      <Typography variant="body2" color="success.dark" fontWeight="high">
+                        ✓ Outcome form completed
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" fontWeight="medium" display="block" sx={{ mt: 0.5 }}>
+                        Completed on: {new Date(completionDate).toLocaleString()}
+                        {user && ` by ${user.firstName} ${user.lastName}`}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
+              </Grid>
+            </form>
           )}
         </DialogContent>
 

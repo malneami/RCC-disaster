@@ -2,6 +2,7 @@ import { apiClient } from '../../../services/apiClient';
 
 export interface StrokeOutcomeFormData {
   dischargeType?: string;
+  dischargeDate?: string;
   followUpNotCompletedReason?: string;
   followUpSpecify?: string;
   followUpType?: string;

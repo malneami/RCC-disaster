@@ -60,6 +60,7 @@ export class StrokeOutcomeFormService {
       ...outcomeFormDto,
       outcomeFormCompleted: completionDate ? true : false,
       outcomeFormCompletionDate: completionDate,
+      dischargeDate: outcomeFormDto.dischargeDate ? new Date(outcomeFormDto.dischargeDate) : (outcomeFormDto.dischargeDate === null ? null : undefined),
       outcomePercentageCompleteness: completenessPercentage,
       updatedAt: new Date(),
     };

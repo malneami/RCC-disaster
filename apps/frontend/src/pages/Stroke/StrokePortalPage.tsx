@@ -488,9 +488,17 @@ const StrokePortalPage: React.FC = () => {
           onClose={() => setOutcomeFormDialogOpen(false)}
           strokeCaseId={selectedCase?.id || ''}
           strokeCaseData={selectedCase}
-          onSuccess={() => {
+          onSuccess={(updatedData) => {
             setOutcomeFormDialogOpen(false);
-            setSelectedCase(null);
+            if (updatedData && selectedCase) {
+              // Update the case in the list with the new outcome data
+              setStrokeCases(prev => prev.map(c => c.id === selectedCase.id ? { ...c, ...updatedData } : c));
+              setSelectedCase(null);
+              // Also refresh KPI summary as outcomes affect KPIs
+              StrokeService.getKPISummary({}).then(setKpiSummary).catch(console.error);
+            } else {
+              setSelectedCase(null);
+            }
           }}
         />
       </PortalSkeleton>

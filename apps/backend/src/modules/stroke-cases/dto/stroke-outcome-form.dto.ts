@@ -7,6 +7,10 @@ export class StrokeOutcomeFormDto {
   dischargeType?: string; // PLANNED, UNPLANNED, AGAINST_MEDICAL_ADVICE, etc.
 
   @IsOptional()
+  @IsDateString()
+  dischargeDate?: string;
+
+  @IsOptional()
   @IsString()
   followUpNotCompletedReason?: string;
 
@@ -68,6 +72,10 @@ export class UpdateStrokeOutcomeFormDto {
   @IsOptional()
   @IsString()
   dischargeType?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dischargeDate?: string;
 
   @IsOptional()
   @IsString()
