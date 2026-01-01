@@ -268,7 +268,7 @@ class PatientService {
   }
 
   async searchPatients(query: string): Promise<Patient[]> {
-    const response = await apiClient.get(`/patients/search?q=${encodeURIComponent(query)}`);
+    const response = await this.getPatients(1, 50, { search: query });
     return response.data;
   }
 

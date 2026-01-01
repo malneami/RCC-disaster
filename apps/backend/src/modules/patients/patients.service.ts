@@ -68,6 +68,16 @@ export class PatientsService {
     };
   }
 
+  private sanitizeSearchQuery(query: string): string {
+    if (!query) return '';
+    try {
+      const decoded = decodeURIComponent(query);
+      return decoded.trim();
+    } catch (error) {
+      return query.trim();
+    }
+  }
+
   private buildWhereClause(filters?: any): any {
     const whereClause: any = { deletedAt: null };
 
@@ -77,17 +87,46 @@ export class PatientsService {
 
     const andConditions: any[] = [];
 
-    // Search filter - creates OR condition that should be ANDed with other filters
     if (filters.search) {
-      andConditions.push({
-        OR: [
-          { firstName: { contains: filters.search, mode: 'insensitive' } },
-          { lastName: { contains: filters.search, mode: 'insensitive' } },
-          { mrn: { contains: filters.search, mode: 'insensitive' } },
-          { nationalId: { contains: filters.search, mode: 'insensitive' } },
-          { phoneNumber: { contains: filters.search, mode: 'insensitive' } },
-        ],
-      });
+      const sanitizedSearch = this.sanitizeSearchQuery(filters.search);
+      if (sanitizedSearch) {
+        const words = sanitizedSearch.split(/\s+/).filter(word => word.length > 0);
+        
+        if (words.length === 1) {
+          andConditions.push({
+            OR: [
+              { firstName: { contains: words[0], mode: 'insensitive' } },
+              { lastName: { contains: words[0], mode: 'insensitive' } },
+              { middleName: { contains: words[0], mode: 'insensitive' } },
+              { mrn: { contains: words[0], mode: 'insensitive' } },
+              { nationalId: { contains: words[0], mode: 'insensitive' } },
+              { phoneNumber: { contains: words[0], mode: 'insensitive' } },
+            ],
+          });
+        } else {
+          const wordConditions = words.map(word => ({
+            OR: [
+              { firstName: { contains: word, mode: 'insensitive' } },
+              { lastName: { contains: word, mode: 'insensitive' } },
+              { middleName: { contains: word, mode: 'insensitive' } },
+              { mrn: { contains: word, mode: 'insensitive' } },
+              { nationalId: { contains: word, mode: 'insensitive' } },
+              { phoneNumber: { contains: word, mode: 'insensitive' } },
+            ],
+          }));
+          andConditions.push({
+            OR: [
+              { AND: wordConditions },
+              { firstName: { contains: sanitizedSearch, mode: 'insensitive' } },
+              { lastName: { contains: sanitizedSearch, mode: 'insensitive' } },
+              { middleName: { contains: sanitizedSearch, mode: 'insensitive' } },
+              { mrn: { contains: sanitizedSearch, mode: 'insensitive' } },
+              { nationalId: { contains: sanitizedSearch, mode: 'insensitive' } },
+              { phoneNumber: { contains: sanitizedSearch, mode: 'insensitive' } },
+            ],
+          });
+        }
+      }
     }
 
     // Direct property filters
@@ -256,21 +295,51 @@ export class PatientsService {
   }
 
   async search(query: string) {
-    if (!query || query.length < 2) {
+    const sanitizedQuery = this.sanitizeSearchQuery(query);
+    
+    if (!sanitizedQuery || sanitizedQuery.length < 2) {
       return [];
     }
 
-    // Special handling for "00000000000000" - also search for variants with suffix
-    const searchConditions: any[] = [
-          { firstName: { contains: query, mode: 'insensitive' } },
-          { lastName: { contains: query, mode: 'insensitive' } },
-          { mrn: { contains: query, mode: 'insensitive' } },
-          { phoneNumber: { contains: query, mode: 'insensitive' } },
-          { nationalId: { contains: query, mode: 'insensitive' } },
-    ];
+    const words = sanitizedQuery.split(/\s+/).filter(word => word.length > 0);
+    const searchConditions: any[] = [];
 
-    // If searching for "00000000000000", also search for variants with suffix
-    if (query.trim() === '00000000000000' || query.includes('00000000000000')) {
+    if (words.length === 1) {
+     
+      searchConditions.push(
+        { firstName: { contains: words[0], mode: 'insensitive' } },
+        { lastName: { contains: words[0], mode: 'insensitive' } },
+        { middleName: { contains: words[0], mode: 'insensitive' } },
+        { mrn: { contains: words[0], mode: 'insensitive' } },
+        { phoneNumber: { contains: words[0], mode: 'insensitive' } },
+        { nationalId: { contains: words[0], mode: 'insensitive' } },
+      );
+    } else {
+    
+      const wordConditions = words.map(word => ({
+        OR: [
+          { firstName: { contains: word, mode: 'insensitive' } },
+          { lastName: { contains: word, mode: 'insensitive' } },
+          { middleName: { contains: word, mode: 'insensitive' } },
+          { mrn: { contains: word, mode: 'insensitive' } },
+          { nationalId: { contains: word, mode: 'insensitive' } },
+          { phoneNumber: { contains: word, mode: 'insensitive' } },
+        ],
+      }));
+      
+     
+      searchConditions.push(
+        { AND: wordConditions }, 
+        { firstName: { contains: sanitizedQuery, mode: 'insensitive' } },
+        { lastName: { contains: sanitizedQuery, mode: 'insensitive' } },
+        { middleName: { contains: sanitizedQuery, mode: 'insensitive' } },
+        { mrn: { contains: sanitizedQuery, mode: 'insensitive' } },
+        { nationalId: { contains: sanitizedQuery, mode: 'insensitive' } },
+        { phoneNumber: { contains: sanitizedQuery, mode: 'insensitive' } },
+      );
+    }
+
+    if (sanitizedQuery === '00000000000000' || sanitizedQuery.includes('00000000000000')) {
       searchConditions.push({
         nationalId: { startsWith: '00000000000000-', mode: 'insensitive' },
       });

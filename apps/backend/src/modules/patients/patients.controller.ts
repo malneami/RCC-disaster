@@ -53,7 +53,13 @@ export class PatientsController {
   ) {
     // Build filters object from individual query parameters
     const filters: any = {};
-    if (search) filters.search = search;
+    if (search) {
+      try {
+        filters.search = decodeURIComponent(search).trim();
+      } catch (error) {
+        filters.search = search.trim();
+      }
+    }
     if (gender) filters.gender = gender;
     if (maritalStatus) filters.maritalStatus = maritalStatus;
     if (privacyLevel) filters.privacyLevel = privacyLevel;
