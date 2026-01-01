@@ -15,6 +15,20 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get('for-communication')
+  @ApiOperation({ summary: 'Get all users for communication (all authenticated users)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async findAllForCommunication(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.usersService.findAll(
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 100,
+    );
+  }
+
   @Get()
   @Roles(UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Get all users with pagination' })

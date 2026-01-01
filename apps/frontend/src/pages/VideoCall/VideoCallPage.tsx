@@ -61,7 +61,7 @@ const VideoCallPage: React.FC = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await apiClient.get('/users?page=1&limit=100');
+        const response = await apiClient.get('/users/for-communication?page=1&limit=100');
         const allUsers = response.data.data || [];
         const otherUsers = allUsers.filter((u: User) => u.id !== currentUser?.id);
         setUsers(otherUsers);
