@@ -249,7 +249,10 @@ export class StemiCasesService {
 
   async getStemiCaseById(id: string) {
     const stemiCase = await this.prisma.stemiCase.findUnique({
-      where: { id },
+      where: { 
+        id,
+        deletedAt: null
+      },
       include: {
         ticket: {
           select: {
@@ -521,7 +524,10 @@ export class StemiCasesService {
 
       // Update STEMI case
       const updatedCase = await this.prisma.stemiCase.update({
-        where: { id },
+        where: { 
+          id,
+          deletedAt: null
+        },
         data: {
           ...updateData,
           
@@ -571,15 +577,15 @@ export class StemiCasesService {
     const existingCase = await this.getStemiCaseById(id);
     
     try {
-      // Delete STEMI case (this will cascade to timeline)
-      await this.prisma.stemiCase.delete({
-        where: { id }
+      await this.prisma.stemiCase.update({
+        where: { id },
+        data: { deletedAt: new Date() }
       });
 
-      // Delete associated ticket only if it exists
       if (existingCase.ticketId) {
-        await this.prisma.ticket.delete({
-          where: { id: existingCase.ticketId }
+        await this.prisma.ticket.update({
+          where: { id: existingCase.ticketId },
+          data: { deletedAt: new Date() }
         });
       }
 
@@ -605,7 +611,10 @@ export class StemiCasesService {
   private async calculateAndUpdateQualityMetrics(stemiCaseId: string) {
     try {
       const stemiCase = await this.prisma.stemiCase.findUnique({
-        where: { id: stemiCaseId }
+        where: { 
+          id: stemiCaseId,
+          deletedAt: null
+        }
       });
 
       if (!stemiCase) {
@@ -680,7 +689,10 @@ export class StemiCasesService {
       // Update the case with calculated metrics
       if (Object.keys(updateData).length > 0) {
         await this.prisma.stemiCase.update({
-          where: { id: stemiCaseId },
+          where: { 
+            id: stemiCaseId,
+            deletedAt: null
+          },
           data: updateData
         });
         console.log(`Updated quality metrics for STEMI case ${stemiCaseId}:`, updateData);

@@ -16,7 +16,10 @@ export class StemiOutcomeFormService {
   ) {
     // Check if STEMI case exists and get completion date
     const existingCaseCheck = await this.prisma.stemiCase.findUnique({
-      where: { id: stemiCaseId },
+      where: { 
+        id: stemiCaseId,
+        deletedAt: null
+      },
       select: {
         outcomeFormCompletionDate: true,
       },
@@ -87,7 +90,10 @@ export class StemiOutcomeFormService {
 
     // Update the STEMI case
     const updatedCase = await this.prisma.stemiCase.update({
-      where: { id: stemiCaseId },
+      where: { 
+        id: stemiCaseId,
+        deletedAt: null
+      },
       data: updateData,
       include: {
         patient: true,
@@ -105,7 +111,10 @@ export class StemiOutcomeFormService {
    */
   async getOutcomeForm(stemiCaseId: string) {
     const stemiCase = await this.prisma.stemiCase.findUnique({
-      where: { id: stemiCaseId },
+      where: { 
+        id: stemiCaseId,
+        deletedAt: null
+      },
       select: {
         id: true,
         patient: {

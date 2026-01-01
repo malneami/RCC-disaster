@@ -302,7 +302,9 @@ export class StemiExportService {
   }
 
   private buildWhereClause(filters: StemiFilterDto): any {
-    const where: any = {};
+    const where: any = {
+      deletedAt: null,
+    };
     const stringFilters: (keyof StemiFilterDto)[] = [
       'patientId',
       'originHospitalId',

@@ -41,9 +41,9 @@ export class StemiQueryService {
 
     // Date range filter
     if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt.gte = new Date(startDate);
-      if (endDate) where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
+      where.pathwayStarted = {};
+      if (startDate) where.pathwayStarted.gte = new Date(startDate);
+      if (endDate) where.pathwayStarted.lte = new Date(endDate + 'T23:59:59.999Z');
     }
 
     // Search filter
@@ -55,6 +55,7 @@ export class StemiQueryService {
         { presentingSymptoms: { contains: search, mode: 'insensitive' } },
       ];
     }
+    where.deletedAt = null;
 
     try {
       const total = await this.prisma.stemiCase.count({ where });

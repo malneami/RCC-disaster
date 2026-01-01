@@ -88,6 +88,7 @@ export class StemiKpiService {
       }
     }
 
+    where.deletedAt = null;
     // Get all cases for detailed calculations
     const allCases = await this.prisma.stemiCase.findMany({
       where,
