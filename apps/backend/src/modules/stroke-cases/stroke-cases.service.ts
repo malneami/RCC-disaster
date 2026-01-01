@@ -15,6 +15,18 @@ export class StrokeCasesService {
     private kpiCalculator: StrokeKPICalculatorService
   ) {}
 
+  private calculateAge(dob: Date | null | undefined): number | undefined {
+    if (!dob) return undefined;
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
   async create(createStrokeCaseDto: CreateStrokeCaseV2Dto, userId: string): Promise<StrokeCase> {
     try {
       console.log('=== STROKE CASE SERVICE CREATE ===');
@@ -497,7 +509,7 @@ export class StrokeCasesService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -530,7 +542,7 @@ export class StrokeCasesService {
             id: assignedBed.currentPatient.id,
             name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
             nationalId: assignedBed.currentPatient.nationalId || undefined,
-            age: assignedBed.currentPatient.age || undefined,
+            age: this.calculateAge(assignedBed.currentPatient.dateOfBirth),
             gender: assignedBed.currentPatient.gender || undefined,
             mrn: assignedBed.currentPatient.mrn || undefined,
           } : undefined,
@@ -646,7 +658,7 @@ export class StrokeCasesService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -679,7 +691,7 @@ export class StrokeCasesService {
             id: assignedBed.currentPatient.id,
             name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
             nationalId: assignedBed.currentPatient.nationalId || undefined,
-            age: assignedBed.currentPatient.age || undefined,
+            age: this.calculateAge(assignedBed.currentPatient.dateOfBirth),
             gender: assignedBed.currentPatient.gender || undefined,
             mrn: assignedBed.currentPatient.mrn || undefined,
           } : undefined,
@@ -915,7 +927,7 @@ export class StrokeCasesService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -946,7 +958,7 @@ export class StrokeCasesService {
           id: assignedBed.currentPatient.id,
           name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
           nationalId: assignedBed.currentPatient.nationalId || undefined,
-          age: assignedBed.currentPatient.age || undefined,
+          age: this.calculateAge(assignedBed.currentPatient.dateOfBirth),
           gender: assignedBed.currentPatient.gender || undefined,
           mrn: assignedBed.currentPatient.mrn || undefined,
         } : undefined,

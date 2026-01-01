@@ -604,7 +604,7 @@ export class TicketsService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -638,7 +638,7 @@ export class TicketsService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -647,6 +647,18 @@ export class TicketsService {
     });
 
     const caseBedMap = new Map(caseBeds.map(bed => [bed.caseId!, bed]));
+
+    const calculateAge = (dob: Date | null) => {
+        if (!dob) return undefined;
+        const today = new Date();
+        const birthDate = new Date(dob);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    };
 
     const enrichedTraumaCases = (ticket.traumaCases || []).map((case_: any) => {
       const assignedBed = caseBedMap.get(case_.id);
@@ -671,7 +683,7 @@ export class TicketsService {
             id: assignedBed.currentPatient.id,
             name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
             nationalId: assignedBed.currentPatient.nationalId || undefined,
-            age: assignedBed.currentPatient.age || undefined,
+            age: calculateAge(assignedBed.currentPatient.dateOfBirth),
             gender: assignedBed.currentPatient.gender || undefined,
             mrn: assignedBed.currentPatient.mrn || undefined,
           } : undefined,
@@ -702,7 +714,7 @@ export class TicketsService {
             id: assignedBed.currentPatient.id,
             name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
             nationalId: assignedBed.currentPatient.nationalId || undefined,
-            age: assignedBed.currentPatient.age || undefined,
+            age: calculateAge(assignedBed.currentPatient.dateOfBirth),
             gender: assignedBed.currentPatient.gender || undefined,
             mrn: assignedBed.currentPatient.mrn || undefined,
           } : undefined,
@@ -733,7 +745,7 @@ export class TicketsService {
             id: assignedBed.currentPatient.id,
             name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
             nationalId: assignedBed.currentPatient.nationalId || undefined,
-            age: assignedBed.currentPatient.age || undefined,
+            age: calculateAge(assignedBed.currentPatient.dateOfBirth),
             gender: assignedBed.currentPatient.gender || undefined,
             mrn: assignedBed.currentPatient.mrn || undefined,
           } : undefined,
@@ -760,7 +772,7 @@ export class TicketsService {
         id: bed.currentPatient.id,
         name: `${bed.currentPatient.firstName} ${bed.currentPatient.lastName}`,
         nationalId: bed.currentPatient.nationalId || undefined,
-        age: bed.currentPatient.age || undefined,
+        age: calculateAge(bed.currentPatient.dateOfBirth),
         gender: bed.currentPatient.gender || undefined,
         mrn: bed.currentPatient.mrn || undefined,
       } : undefined,

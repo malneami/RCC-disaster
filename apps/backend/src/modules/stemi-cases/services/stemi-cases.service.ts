@@ -15,6 +15,18 @@ export class StemiCasesService {
     private readonly stemiKpiService: StemiKpiService,
   ) {}
 
+  private calculateAge(dob: Date | null | undefined): number | undefined {
+    if (!dob) return undefined;
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
   private async getValidUserId(userId: string): Promise<string> {
     if (!userId || userId === '4600ecc0-c41b-4d99-8ddd-78ef909182cb') {
       let adminUser = await this.prisma.user.findFirst({
@@ -325,7 +337,7 @@ export class StemiCasesService {
             firstName: true,
             lastName: true,
             nationalId: true,
-            age: true,
+            dateOfBirth: true,
             gender: true,
             mrn: true,
           },
@@ -380,7 +392,7 @@ export class StemiCasesService {
           id: assignedBed.currentPatient.id,
           name: `${assignedBed.currentPatient.firstName} ${assignedBed.currentPatient.lastName}`,
           nationalId: assignedBed.currentPatient.nationalId || undefined,
-          age: assignedBed.currentPatient.age || undefined,
+          age: this.calculateAge(assignedBed.currentPatient.dateOfBirth),
           gender: assignedBed.currentPatient.gender || undefined,
           mrn: assignedBed.currentPatient.mrn || undefined,
         } : undefined,
