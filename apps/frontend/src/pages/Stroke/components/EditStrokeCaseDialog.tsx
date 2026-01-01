@@ -26,7 +26,7 @@ const DESTINATION_REQUIRED_MESSAGE =
   'Please select a destination hospital because the selected origin hospital does not provide Stroke service.';
 
 // Regex patterns supporting Arabic characters
-const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F]+$/;
+const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F-]+$/;
 // Text regex for general text fields (allows Arabic, English, numbers, common punctuation)
 const TEXT_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z0-9\s\u00C0-\u017F.,;:!?'"()\-_/]+$/;
 const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;

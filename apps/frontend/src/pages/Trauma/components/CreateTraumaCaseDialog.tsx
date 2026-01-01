@@ -35,7 +35,7 @@ import { CreateTraumaCaseData } from '../../../services/traumaService';
 import { TRAUMA_FORM_STEPS } from '../constants/traumaConstants';
 import { Hospital } from '../../../services/hospitalService';
 
-const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F]+$/;
+const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F-]+$/;
 const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
 const PHONE_REGEX = /^\+?\d{7,15}$/;
 
@@ -268,7 +268,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
 
   const handleStepDataChange = (stepData: any) => {
     setFormData(prev => ({ ...prev, ...stepData }));
-    
+
     // Clear validation errors for fields that are being changed
     if (stepData.patientInfo) {
       setValidationErrors((prev) => {
@@ -392,10 +392,10 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         const incidentErrors = await validateStep(1);
         const dispositionErrors = await validateStep(4);
         const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors };
-        
+
         setValidationErrors(allErrors);
       };
-      
+
       validateAllSteps();
     }
   }, [activeStep]);
@@ -403,44 +403,44 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
   // Track which steps have issues
   const stepIssues = useMemo(() => {
     const issues = [false, false, false, false, false, false];
-    
+
     // Step 0 (Patient) - check validation errors
     if (Object.keys(validationErrors).some(key => key.startsWith('patientInfo.') || key === 'originHospitalId' || key === 'destinationHospitalId')) {
       issues[0] = true;
     }
-    
+
     // Step 1 (Incident Details) - check validation errors and timeline warnings
-    if (Object.keys(validationErrors).some(key => key.startsWith('incidentDetails.')) || 
-        Object.keys(timelineWarnings).some(key => key.startsWith('incidentDetails.'))) {
+    if (Object.keys(validationErrors).some(key => key.startsWith('incidentDetails.')) ||
+      Object.keys(timelineWarnings).some(key => key.startsWith('incidentDetails.'))) {
       issues[1] = true;
     }
-    
+
     // Step 2 (Vitals) - check validation errors
     if (Object.keys(validationErrors).some(key => key.startsWith('vitalsAssessment.'))) {
       issues[2] = true;
     }
-    
+
     // Step 3 (Injury) - check validation errors
     if (Object.keys(validationErrors).some(key => key.startsWith('injuryAssessment.'))) {
       issues[3] = true;
     }
-    
+
     // Step 4 (Disposition) - check validation errors
     if (Object.keys(validationErrors).some(key => key.startsWith('disposition.'))) {
       issues[4] = true;
     }
-    
+
     // Step 5 (Review) - check timeline warnings and validation errors
     if (hasTimelineWarnings || hasValidationErrors) {
       issues[5] = true;
     }
-    
+
     return issues;
   }, [validationErrors, timelineWarnings, hasTimelineWarnings, hasValidationErrors]);
 
   const validateStep = async (stepIndex: number): Promise<Record<string, string>> => {
     const errors: Record<string, string> = {};
-    
+
     switch (stepIndex) {
       case 0: // Patient Info
         try {
@@ -452,7 +452,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             });
           }
         }
-        
+
         // Check destination hospital requirement
         if (originRequiresDestination && !formData.patientInfo.destinationHospitalId) {
           errors['patientInfo.destinationHospitalId'] = 'Destination Hospital is required because the selected origin hospital does not provide Trauma service.';
@@ -489,14 +489,14 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         }
         break;
     }
-    
+
     return errors;
   };
 
   const handleNext = async () => {
     const errors = await validateStep(activeStep);
     setValidationErrors(errors);
-    
+
     // If on last step before review, validate all required steps first
     if (activeStep === TRAUMA_FORM_STEPS.length - 1) {
       // Validate all required steps before going to review
@@ -504,9 +504,9 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       const incidentErrors = await validateStep(1);
       const dispositionErrors = await validateStep(4);
       const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors };
-      
+
       setValidationErrors(allErrors);
-      
+
       // If there are validation errors, navigate to first step with error
       if (Object.keys(allErrors).length > 0) {
         const firstErrorKey = Object.keys(allErrors)[0];
@@ -522,7 +522,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         setError('Please correct the highlighted information before proceeding.');
         return;
       }
-      
+
       // If there are timeline warnings, go to review step
       if (hasTimelineWarnings) {
         setActiveStep(TRAUMA_FORM_STEPS.length as any); // Go to review step
@@ -530,13 +530,13 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         setError(firstWarning || 'Please review the timeline warnings before submitting.');
         return;
       }
-      
+
       // No errors or warnings, proceed to review
       setActiveStep(TRAUMA_FORM_STEPS.length as any);
       setError(null);
       return;
     }
-    
+
     // Only proceed if there are no validation errors
     if (Object.keys(errors).length === 0 && activeStep < TRAUMA_FORM_STEPS.length) {
       setActiveStep(prev => prev + 1);
@@ -571,32 +571,32 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
     // Update validation errors state
     setValidationErrors(combinedErrors);
 
-      // If there are validation errors, navigate to the first step with errors and show message
-      if (Object.keys(combinedErrors).length > 0) {
-        // Determine which step has the first error
-        const firstErrorKey = Object.keys(combinedErrors)[0];
-        let targetStep: number = TRAUMA_FORM_STEPS.length; // Default to review step
-        
-        if (firstErrorKey.startsWith('patientInfo.')) {
-          targetStep = 0;
-        } else if (firstErrorKey.startsWith('incidentDetails.')) {
-          targetStep = 1;
-        } else if (firstErrorKey.startsWith('disposition.')) {
-          targetStep = 4;
-        }
-        
-        setActiveStep(targetStep as any);
-        setError('Please correct the highlighted information before submitting.');
-        return;
+    // If there are validation errors, navigate to the first step with errors and show message
+    if (Object.keys(combinedErrors).length > 0) {
+      // Determine which step has the first error
+      const firstErrorKey = Object.keys(combinedErrors)[0];
+      let targetStep: number = TRAUMA_FORM_STEPS.length; // Default to review step
+
+      if (firstErrorKey.startsWith('patientInfo.')) {
+        targetStep = 0;
+      } else if (firstErrorKey.startsWith('incidentDetails.')) {
+        targetStep = 1;
+      } else if (firstErrorKey.startsWith('disposition.')) {
+        targetStep = 4;
       }
 
-      // If there are timeline warnings, stay on review step and show message
-      if (hasTimelineWarnings) {
-        setActiveStep(TRAUMA_FORM_STEPS.length as any);
-        const firstWarning = timelineWarnings[Object.keys(timelineWarnings)[0]]?.[0];
-        setError(firstWarning || 'Please review the timeline warnings before submitting.');
-        return;
-      }
+      setActiveStep(targetStep as any);
+      setError('Please correct the highlighted information before submitting.');
+      return;
+    }
+
+    // If there are timeline warnings, stay on review step and show message
+    if (hasTimelineWarnings) {
+      setActiveStep(TRAUMA_FORM_STEPS.length as any);
+      const firstWarning = timelineWarnings[Object.keys(timelineWarnings)[0]]?.[0];
+      setError(firstWarning || 'Please review the timeline warnings before submitting.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -612,7 +612,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       console.log('Medical History:', formData.patientInfo.medicalHistory);
       console.log('Allergies:', formData.patientInfo.allergies);
       console.log('Medications:', formData.patientInfo.medications);
-      
+
       const submitData: CreateTraumaCaseData = {
         patientInfo: formData.patientInfo,
         originHospitalId: formData.patientInfo.originHospitalId,
@@ -645,15 +645,15 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       handleClose();
     } catch (err: any) {
       console.error('Error creating trauma case:', err);
-      
+
       // Extract meaningful error message
       let errorMessage = 'Failed to create trauma case';
-      
+
       if (err?.response?.data) {
         const errorData = err.response.data;
         if (errorData.message) {
-          errorMessage = Array.isArray(errorData.message) 
-            ? errorData.message.join(', ') 
+          errorMessage = Array.isArray(errorData.message)
+            ? errorData.message.join(', ')
             : errorData.message;
         } else if (errorData.error) {
           errorMessage = errorData.error;
@@ -663,7 +663,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       } else if (err?.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -742,7 +742,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             Complete all steps to create a new trauma case
           </Typography>
         </DialogTitle>
-        
+
         <DialogContent>
           <Box sx={{ mb: 3 }}>
             <Stepper activeStep={activeStep} alternativeLabel nonLinear>

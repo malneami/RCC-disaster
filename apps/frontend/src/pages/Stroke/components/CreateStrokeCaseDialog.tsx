@@ -31,7 +31,7 @@ interface CreateStrokeCaseDialogProps {
 
 const steps = [
   'Patient',
-  'Assessment', 
+  'Assessment',
   'Diagnosis',
   'Treatment',
   'Review & Submit'
@@ -41,7 +41,7 @@ const DESTINATION_REQUIRED_MESSAGE =
   'Please select a destination hospital because the selected origin hospital does not provide Stroke service.';
 
 // Regex patterns supporting Arabic characters
-const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F]+$/;
+const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F-]+$/;
 // Text regex for general text fields (allows Arabic, English, numbers, common punctuation)
 const TEXT_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z0-9\s\u00C0-\u017F.,;:!?'"()\-_/]+$/;
 const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
@@ -164,7 +164,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   const updateFormData = useCallback((field: keyof CreateStrokeCaseData, value: any) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
-      
+
       // Clear validation errors for nested patientInfo fields
       if (field === 'patientInfo' && validationErrors) {
         setValidationErrors((prevErrors) => {
@@ -183,7 +183,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           return newErrors;
         });
       }
-      
+
       return updated;
     });
   }, [validationErrors]);
@@ -425,60 +425,60 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   // Track which steps have issues
   const stepIssues = useMemo(() => {
     const issues = [false, false, false, false, false];
-    
+
     // Step 0 (Patient) - check validation errors and transfer warnings
     if (Object.keys(validationErrors).some(key => key.startsWith('patientInfo.') || key === 'originHospitalId' || key === 'destinationHospitalId' || key === 'modeOfArrival') ||
-        Object.keys(timelineWarnings).some(key => 
-          key.includes('transferRequestDateTime') ||
-          key.includes('transferArrivalDateTime')
-        )) {
+      Object.keys(timelineWarnings).some(key =>
+        key.includes('transferRequestDateTime') ||
+        key.includes('transferArrivalDateTime')
+      )) {
       issues[0] = true;
     }
-    
+
     // Step 1 (Assessment) - check validation errors and timeline warnings
-    if (validationErrors['strokeType'] || 
-        Object.keys(timelineWarnings).some(key => 
-          key.includes('timeOfSymptomOnset') || 
-          key.includes('dateOfAdmission') || 
-          key.includes('timeOfTriage') || 
-          key.includes('timeOfPhysicianAssessment') ||
-          key.includes('srcaCallTime')
-        )) {
+    if (validationErrors['strokeType'] ||
+      Object.keys(timelineWarnings).some(key =>
+        key.includes('timeOfSymptomOnset') ||
+        key.includes('dateOfAdmission') ||
+        key.includes('timeOfTriage') ||
+        key.includes('timeOfPhysicianAssessment') ||
+        key.includes('srcaCallTime')
+      )) {
       issues[1] = true;
     }
-    
+
     // Step 2 (Diagnosis) - check timeline warnings
-    if (Object.keys(timelineWarnings).some(key => 
-          key.includes('timeOfCtScanStart') || 
-          key.includes('timeOfCtReportFinal') || 
-          key.includes('timeOfSwallowingScreening')
-        )) {
+    if (Object.keys(timelineWarnings).some(key =>
+      key.includes('timeOfCtScanStart') ||
+      key.includes('timeOfCtReportFinal') ||
+      key.includes('timeOfSwallowingScreening')
+    )) {
       issues[2] = true;
     }
-    
+
     // Step 3 (Treatment) - check timeline warnings
-    if (Object.keys(timelineWarnings).some(key => 
-          key.includes('thrombolysisOrderTime') || 
-          key.includes('ivThrombolysisAdministrationTime') || 
-          key.includes('timeOfMechanicalThrombectomyPuncture') ||
-          key.includes('timeOfThrombectomyComplete') ||
-          key.includes('timeOfTransferActivation') ||
-          key.includes('timeOfTransferDeparture')
-        )) {
+    if (Object.keys(timelineWarnings).some(key =>
+      key.includes('thrombolysisOrderTime') ||
+      key.includes('ivThrombolysisAdministrationTime') ||
+      key.includes('timeOfMechanicalThrombectomyPuncture') ||
+      key.includes('timeOfThrombectomyComplete') ||
+      key.includes('timeOfTransferActivation') ||
+      key.includes('timeOfTransferDeparture')
+    )) {
       issues[3] = true;
     }
-    
+
     // Step 4 (Review) - has timeline warnings
     if (hasTimelineWarnings) {
       issues[4] = true;
     }
-    
+
     return issues;
   }, [validationErrors, timelineWarnings, hasTimelineWarnings]);
 
   const validateStep = async (step: number): Promise<Record<string, string>> => {
     const errors: Record<string, string> = {};
-    
+
     switch (step) {
       case 0:
         // Validate patient info with Yup
@@ -493,15 +493,15 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
             }
           }
         }
-        
+
         if (!formData.originHospitalId) {
           errors['originHospitalId'] = 'Origin Hospital is required';
         }
-        
+
         if (originRequiresDestination && !formData.destinationHospitalId) {
           errors['destinationHospitalId'] = DESTINATION_REQUIRED_MESSAGE;
         }
-        
+
         if (!formData.modeOfArrival) {
           errors['modeOfArrival'] = 'Mode of Arrival is required';
         }
@@ -521,14 +521,14 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
         // Review step
         break;
     }
-    
+
     return errors;
   };
 
   const handleNext = async () => {
     const errors = await validateStep(activeStep);
     setValidationErrors(errors);
-    
+
     // Only proceed if there are no validation errors
     if (Object.keys(errors).length === 0 && activeStep < steps.length - 1) {
       setActiveStep(prev => prev + 1);
@@ -569,16 +569,16 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       handleClose();
     } catch (err: any) {
       console.error('Error creating stroke case:', err);
-      
+
       // Extract meaningful error message
       let errorMessage = 'Failed to create stroke case';
-      
+
       if (err?.response?.data) {
         // Backend validation error
         const errorData = err.response.data;
         if (errorData.message) {
-          errorMessage = Array.isArray(errorData.message) 
-            ? errorData.message.join(', ') 
+          errorMessage = Array.isArray(errorData.message)
+            ? errorData.message.join(', ')
             : errorData.message;
         } else if (errorData.error) {
           errorMessage = errorData.error;
@@ -588,7 +588,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       } else if (err?.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -605,7 +605,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           Complete all steps to create a new stroke case
         </Typography>
       </DialogTitle>
-      
+
       <DialogContent>
         <Box sx={{ mb: 3 }}>
           <Stepper activeStep={activeStep} alternativeLabel nonLinear>
@@ -654,14 +654,14 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
         <Button onClick={handleClose} disabled={loading}>
           Cancel
         </Button>
-        
+
         <Button
           onClick={handleBack}
           disabled={activeStep === 0 || loading}
         >
           Back
         </Button>
-        
+
         {activeStep < steps.length - 1 ? (
           <Button
             onClick={handleNext}

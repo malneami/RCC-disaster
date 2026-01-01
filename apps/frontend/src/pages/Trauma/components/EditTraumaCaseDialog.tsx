@@ -30,7 +30,7 @@ import { validateTraumaCaseForm } from '../helpers/traumaHelpers';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Hospital, hospitalService } from '../../../services/hospitalService';
 
-const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F]+$/;
+const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F-]+$/;
 const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
 const PHONE_REGEX = /^\+?\d{7,15}$/;
 
