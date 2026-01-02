@@ -3,6 +3,8 @@ import {
   Box,
   Grid,
   Typography,
+  TablePagination,
+  Paper,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -26,7 +28,11 @@ import { notificationService } from '../../../services/notificationService';
 
 interface TraumaCasesCardsProps {
   cases: TraumaCase[];
-  totalCount?: number;
+  totalCount: number;
+  page: number;
+  rowsPerPage: number;
+  onPageChange: (page: number) => void;
+  onRowsPerPageChange: (rowsPerPage: number) => void;
   onCreateCase: () => void;
   onDeleteCase: (id: string) => Promise<void>;
   onUpdateCase: (id: string, data: any) => Promise<void>;
@@ -38,7 +44,10 @@ interface TraumaCasesCardsProps {
 const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   cases,
   totalCount,
-  onCreateCase,
+  page,
+  rowsPerPage,
+  onPageChange,
+  onRowsPerPageChange,
   onDeleteCase,
   onViewDetails,
   onEditCase,
@@ -361,6 +370,16 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
     return `${days} days ago`;
   };
 
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    onPageChange(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
+    onRowsPerPageChange(newRowsPerPage);
+    onPageChange(0);
+  };
+
   if (cases.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -383,6 +402,22 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
           );
         })}
       </Grid>
+
+      {/* Pagination */}
+      <Box sx={{ mt: 3 }}>
+        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+          <TablePagination
+            rowsPerPageOptions={[10, 20, 30, 50]}
+            component="div"
+            count={totalCount}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Cards per page:"
+          />
+        </Paper>
+      </Box>
 
       {/* Case Note Modal */}
       {selectedCaseForNote && (

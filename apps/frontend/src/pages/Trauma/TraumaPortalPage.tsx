@@ -53,6 +53,8 @@ const TraumaPortalPage: React.FC = () => {
   const [kpiSummary, setKpiSummary] = useState<TraumaKPIsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<TraumaCase | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -90,7 +92,7 @@ const TraumaPortalPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [appliedFilters]);
+  }, [appliedFilters, page, rowsPerPage]);
 
   const loadHospitals = async () => {
     try {
@@ -123,6 +125,9 @@ const TraumaPortalPage: React.FC = () => {
       if (appliedFilters.dateTo) filters.endDate = appliedFilters.dateTo;
       if (appliedFilters.hospitalId) filters.originHospitalId = appliedFilters.hospitalId;
       if (appliedFilters.search) filters.search = appliedFilters.search;
+
+      filters.limit = rowsPerPage;
+      filters.offset = page * rowsPerPage;
 
       const [casesData, kpiData] = await Promise.all([
         TraumaService.getTraumaCases(filters),
@@ -238,6 +243,10 @@ const TraumaPortalPage: React.FC = () => {
         prev.dateTo !== filters.dateTo ||
         prev.hospitalId !== filters.hospitalId;
       
+      if (hasChanged) {
+        setPage(0); 
+      }
+      
       return hasChanged ? filters : prev;
     });
   };
@@ -287,6 +296,7 @@ const TraumaPortalPage: React.FC = () => {
       dateTo: '',
       hospitalId: '',
     };
+    setPage(0); // Reset to first page when clearing filters
     handleFiltersChange(clearedFilters);
   };
 
@@ -447,7 +457,7 @@ const TraumaPortalPage: React.FC = () => {
                 Trauma Cases
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                {traumaCases.length} {traumaCases.length === 1 ? 'case' : 'cases'}
+                {traumaCases.length} of {totalCases} cases
               </Typography>
             </Box>
             <Box display="flex" gap={2}>
@@ -502,6 +512,11 @@ const TraumaPortalPage: React.FC = () => {
           {viewMode === 'table' ? (
             <TraumaCasesList
               cases={traumaCases}
+              totalCount={totalCases}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={setPage}
+              onRowsPerPageChange={setRowsPerPage}
               onCreateCase={() => setCreateDialogOpen(true)}
               onDeleteCase={handleDeleteCase}
               onUpdateCase={handleUpdateCase}
@@ -513,6 +528,10 @@ const TraumaPortalPage: React.FC = () => {
             <TraumaCasesCards
               cases={traumaCases}
               totalCount={totalCases}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={setPage}
+              onRowsPerPageChange={setRowsPerPage}
               onCreateCase={() => setCreateDialogOpen(true)}
               onDeleteCase={handleDeleteCase}
               onUpdateCase={handleUpdateCase}
@@ -525,8 +544,6 @@ const TraumaPortalPage: React.FC = () => {
                 setEditDialogOpen(true);
               }}
               isAdmin={isAdmin}
-              onViewModeChange={setViewMode}
-              onFiltersChange={handleFiltersChange}
             />
           )}
         </TabPanel>
@@ -613,7 +630,7 @@ const TraumaPortalPage: React.FC = () => {
           onClose={() => setFilterDialogOpen(false)}
           onApply={handleFilterDialogApply}
           onReset={handleClearFilters}
-          fields={TRAUMA_FILTER_FIELDS}
+          fields={TRAUMA_FILTER_FIELDS as any}
           values={appliedFilters}
         />
       </PortalSkeleton>

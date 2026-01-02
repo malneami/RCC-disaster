@@ -47,6 +47,11 @@ import { notificationService } from '../../../services/notificationService';
 
 interface TraumaCasesListProps {
   cases: TraumaCase[];
+  totalCount: number;
+  page: number;
+  rowsPerPage: number;
+  onPageChange: (page: number) => void;
+  onRowsPerPageChange: (rowsPerPage: number) => void;
   onCreateCase: () => void;
   onDeleteCase: (id: string) => Promise<void>;
   onUpdateCase: (id: string, data: any) => Promise<void>;
@@ -55,17 +60,6 @@ interface TraumaCasesListProps {
   loading?: boolean;
 }
 
-interface FilterOptions {
-  search: string;
-  modeOfArrival: string;
-  mechanismOfInjury: string;
-  edDisposition: string;
-  criticalCase: boolean | string | null;
-  transferCase: boolean | string | null;
-  dateFrom: string;
-  dateTo: string;
-  hospitalId: string;
-}
 
 export interface TraumaCaseFilters {
   search: string;
@@ -86,15 +80,17 @@ interface SortConfig {
 
 const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   cases,
-  onCreateCase,
+  totalCount,
+  page,
+  rowsPerPage,
+  onPageChange,
+  onRowsPerPageChange,
   onDeleteCase,
   onUpdateCase,
   onAddCaseNote,
   isAdmin,
   loading = false,
 }) => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: 'createdAt',
     direction: 'desc',
@@ -150,12 +146,6 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     return sorted;
   }, [cases, sortConfig]);
 
-  // Pagination
-  const paginatedCases = sortedCases.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
   const handleSort = (field: keyof TraumaCase) => {
     setSortConfig(prev => ({
       field,
@@ -164,12 +154,13 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
   };
 
   const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
+    onPageChange(newPage);
   };
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    const newRowsPerPage = parseInt(event.target.value, 10);
+    onRowsPerPageChange(newRowsPerPage);
+    onPageChange(0);
   };
 
 
@@ -357,7 +348,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedCases.map((case_) => (
+              {sortedCases.map((case_) => (
                 <TableRow key={case_.id} hover>
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={1} justifyContent="space-between">
@@ -470,9 +461,9 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
         </TableContainer>
         
         <TablePagination
-          rowsPerPageOptions={[5, 10, 15, 20]}
+          rowsPerPageOptions={[5, 10, 15, 20, 50]}
           component="div"
-          count={sortedCases.length}
+          count={totalCount}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
