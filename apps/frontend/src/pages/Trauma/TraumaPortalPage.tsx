@@ -156,9 +156,9 @@ const TraumaPortalPage: React.FC = () => {
     setActiveTab(newValue);
   };
 
-  const handleCreateCase = async (data: any) => {
+  const handleCreateCase = async (_data: any) => {
     try {
-      await TraumaService.createTraumaCase(data);
+      // The case is already created in the dialog
       setCreateDialogOpen(false);
       loadData();
     } catch (err) {
