@@ -9,7 +9,7 @@ import StemiKPIDashboard from './components/StemiKPIDashboard';
 import CreateStemiCaseDialog from './components/CreateStemiCaseDialog';
 import EditStemiCaseDialog from './components/EditStemiCaseDialog';
 import ViewStemiCaseDialog from './components/ViewStemiCaseDialog';
-import LiveFilterDialog from './components/LiveFilterDialog';
+import StemiCasesFilters from './components/StemiCasesFilters';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
 
 import FloatingScrollbar from '../../components/Common/FloatingScrollbar';
@@ -659,9 +659,9 @@ const StemiPortalPage: React.FC = () => {
             </Box>
             <Box display="flex" gap={2}>
               <Button
-                variant="outlined"
+                variant={filterDialogOpen ? "contained" : "outlined"}
                 startIcon={<FilterIcon />}
-                onClick={() => setFilterDialogOpen(true)}
+                onClick={() => setFilterDialogOpen(!filterDialogOpen)}
               >
                 Filters
               </Button>
@@ -704,6 +704,28 @@ const StemiPortalPage: React.FC = () => {
               }}
             />
           </Box>
+
+          {/* Filters Popup */}
+          <StemiCasesFilters
+            open={filterDialogOpen}
+            onClose={() => setFilterDialogOpen(false)}
+            fields={filterFields}
+            values={{ ...unifiedFilters, search: searchInput }}
+            onFiltersChange={(newValues) => {
+              const { search, ...filters } = newValues;
+              setUnifiedFilters(filters as StemiFilterParams);
+              if (search !== undefined) {
+                setSearchInput(search);
+              }
+            }}
+            onApplyFilters={() => {
+              handleFilterChange({ ...unifiedFilters, search: searchInput } as StemiFilterParams);
+            }}
+            onClearFilters={() => {
+              handleClearFilters();
+              setSearchInput('');
+            }}
+          />
 
           {dataLoading && (
             <Box mb={3}>
@@ -846,19 +868,6 @@ const StemiPortalPage: React.FC = () => {
         stemiCase={selectedCase}
       />
 
-      {/* Unified Filter Dialog */}
-      <LiveFilterDialog
-        open={filterDialogOpen}
-        onClose={() => setFilterDialogOpen(false)}
-        onApply={(newFilters) => {
-          handleFilterChange(newFilters);
-          setFilterDialogOpen(false);
-        }}
-        onReset={handleClearFilters}
-        fields={filterFields}
-        values={{ ...unifiedFilters, search: searchInput }}
-        resetButtonText="Reset All"
-      />
 
       {/* Floating Horizontal Scrollbar */}
       <FloatingScrollbar />
