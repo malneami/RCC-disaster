@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateNotificationDto, NotificationFilterDto, MarkNotificationReadDto } from './dto/create-notification.dto';
-import { NotificationType, NotificationPriority, CaseType, DeliveryStatus, DeliveryMethod } from '@prisma/client';
+import { NotificationType, NotificationPriority, CaseType, DeliveryStatus, DeliveryMethod, NotificationCategory } from '@prisma/client';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class NotificationsService {
       this.logger.log('createNotificationDto:', JSON.stringify(createNotificationDto, null, 2));
       this.logger.log('createdById:', createdById);
 
-      const { recipientUserIds, ...notificationData } = createNotificationDto;
+      const { recipientUserIds, category, ...notificationData } = createNotificationDto;
 
       // Enhanced validation
       await this.validateNotificationData(notificationData, recipientUserIds || [], createdById);
@@ -33,6 +33,7 @@ export class NotificationsService {
         const notification = await tx.notification.create({
       data: {
         ...notificationData,
+        category: category || NotificationCategory.PATIENTS,
         createdById,
         recipients: recipientUserIds && recipientUserIds.length > 0 ? {
           create: recipientUserIds.map(userId => ({

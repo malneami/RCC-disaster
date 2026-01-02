@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateCaseNoteDto } from './dto/create-notification.dto';
-import { NotificationPriority, CaseType, DeliveryStatus, DeliveryMethod, NotificationType } from '@prisma/client';
+import { NotificationPriority, CaseType, DeliveryStatus, DeliveryMethod, NotificationType, NotificationCategory } from '@prisma/client';
 import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
@@ -171,6 +171,7 @@ export class CaseNotesService {
           patientId: caseNote.patientId,
           patientName: caseNote.patientName,
           createdById,
+          category: NotificationCategory.PATIENTS,
           metadata: JSON.stringify({ caseNoteId: caseNote.id }),
           recipients: recipientUserIds.length > 0 ? {
             create: recipientUserIds.map((userId: string) => ({
