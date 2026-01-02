@@ -15,17 +15,20 @@ import {
 import { InterventionsAndTreatments } from '../../services/stemiService';
 import { StemiDatetimeService } from '../../services/stemiDatetimeService';
 import { hospitalService, Hospital } from '../../../../services/hospitalService';
+import { KpiViolation } from '../../../../utils/kpiValidationUtils';
 
 interface InterventionsAndTreatmentsStepProps {
   data: InterventionsAndTreatments;
   onChange: (data: InterventionsAndTreatments) => void;
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, KpiViolation>;
 }
 
 const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepProps> = ({
   data,
   onChange,
   timelineWarnings = {},
+  kpiViolations = {},
 }) => {
   const [hospitalsWithStemi, setHospitalsWithStemi] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
@@ -75,8 +78,8 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
     });
   };
 
-  const buildHelperText = (defaultText: string, warnings?: string[]) => {
-    if (!warnings || warnings.length === 0) {
+  const buildHelperText = (defaultText: string, warnings?: string[], kpiViolation?: KpiViolation) => {
+    if ((!warnings || warnings.length === 0) && !kpiViolation) {
       return defaultText;
     }
 
@@ -85,7 +88,17 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
         <Typography variant="caption" color="textSecondary" display="block">
           {defaultText}
         </Typography>
-        {warnings.map((warning, index) => (
+        {kpiViolation && (
+          <Typography
+            variant="body2"
+            color="error"
+            display="block"
+            sx={{ mt: 1, fontWeight: 'bold' }}
+          >
+            Alert: {kpiViolation.message}
+          </Typography>
+        )}
+        {warnings?.map((warning, index) => (
           <Typography
             key={`${warning}-${index}`}
             variant="body2"
@@ -100,25 +113,44 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
     );
   };
 
-  const warningBorderStyles = (warnings?: string[]) =>
-    warnings && warnings.length > 0
+  const warningBorderStyles = (warnings?: string[], kpiViolation?: KpiViolation) => {
+    if (kpiViolation) {
+      return {
+        '& .MuiOutlinedInput-root fieldset': {
+          borderColor: 'error.main',
+          borderWidth: 2,
+        },
+        '& .MuiOutlinedInput-root:hover fieldset': {
+          borderColor: 'error.main',
+        },
+        '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+          borderColor: 'error.dark',
+        },
+      };
+    }
+
+    return warnings && warnings.length > 0
       ? {
-          '& .MuiOutlinedInput-root fieldset': {
-            borderColor: 'warning.main',
-            borderWidth: 2,
-          },
-          '& .MuiOutlinedInput-root:hover fieldset': {
-            borderColor: 'warning.main',
-          },
-          '& .MuiOutlinedInput-root.Mui-focused fieldset': {
-            borderColor: 'warning.dark',
-          },
-        }
+        '& .MuiOutlinedInput-root fieldset': {
+          borderColor: 'warning.main',
+          borderWidth: 2,
+        },
+        '& .MuiOutlinedInput-root:hover fieldset': {
+          borderColor: 'warning.main',
+        },
+        '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+          borderColor: 'warning.dark',
+        },
+      }
       : undefined;
+  };
 
   const doorOutWarnings = timelineWarnings['interventionsAndTreatments.doorOutTime'];
   const balloonWarnings = timelineWarnings['interventionsAndTreatments.balloonInflationTime'];
   const thrombolyticWarnings = timelineWarnings['interventionsAndTreatments.thrombolyticAdminTime'];
+
+  const thrombolyticViolation = kpiViolations['interventionsAndTreatments.thrombolyticAdminTime'];
+  const balloonViolation = kpiViolations['interventionsAndTreatments.balloonInflationTime'];
 
   return (
     <Box>
@@ -224,8 +256,8 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             onChange={handleChange('balloonInflationTime')}
             InputLabelProps={{ shrink: true }}
             disabled={!data.eligibleForPrimaryPci}
-            helperText={buildHelperText('When the balloon was inflated during the PCI procedure', balloonWarnings)}
-            sx={warningBorderStyles(balloonWarnings)}
+            helperText={buildHelperText('When the balloon was inflated during the PCI procedure', balloonWarnings, balloonViolation)}
+            sx={warningBorderStyles(balloonWarnings, balloonViolation)}
           />
         </Grid>
 
@@ -255,8 +287,8 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
             onChange={handleChange('thrombolyticAdminTime')}
             InputLabelProps={{ shrink: true }}
             disabled={!data.thrombolyticGiven}
-            helperText={buildHelperText('When the thrombolytic medication was administered', thrombolyticWarnings)}
-            sx={warningBorderStyles(thrombolyticWarnings)}
+            helperText={buildHelperText('When the thrombolytic medication was administered', thrombolyticWarnings, thrombolyticViolation)}
+            sx={warningBorderStyles(thrombolyticWarnings, thrombolyticViolation)}
           />
         </Grid>
 

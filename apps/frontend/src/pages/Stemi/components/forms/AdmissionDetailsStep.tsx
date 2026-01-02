@@ -9,6 +9,7 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material';
+import { KpiViolation } from '../../../../utils/kpiValidationUtils';
 
 interface AdmissionDetails {
   admissionTime: string;
@@ -22,6 +23,7 @@ interface AdmissionDetailsStepProps {
   onChange: (data: AdmissionDetails) => void;
   validationErrors?: Record<string, string>;
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, KpiViolation>;
 }
 
 const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
@@ -29,6 +31,7 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
   onChange,
   validationErrors = {},
   timelineWarnings = {},
+  kpiViolations = {},
 }) => {
   const handleChange = (field: keyof AdmissionDetails) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -66,8 +69,8 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
     });
   };
 
-  const buildHelperText = (defaultText: string, warnings?: string[]) => {
-    if (!warnings || warnings.length === 0) {
+  const buildHelperText = (defaultText: string, warnings?: string[], kpiViolation?: KpiViolation) => {
+    if ((!warnings || warnings.length === 0) && !kpiViolation) {
       return defaultText;
     }
 
@@ -76,7 +79,17 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
         <Typography variant="caption" color="textSecondary" display="block">
           {defaultText}
         </Typography>
-        {warnings.map((warning, index) => (
+        {kpiViolation && (
+          <Typography
+            variant="body2"
+            color="error"
+            display="block"
+            sx={{ mt: 1, fontWeight: 'bold' }}
+          >
+            Alert: {kpiViolation.message}
+          </Typography>
+        )}
+        {warnings?.map((warning, index) => (
           <Typography
             key={`${warning}-${index}`}
             variant="body2"
@@ -91,25 +104,43 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
     );
   };
 
-  const warningBorderStyles = (warnings?: string[]) =>
-    warnings && warnings.length > 0
+  const warningBorderStyles = (warnings?: string[], kpiViolation?: KpiViolation) => {
+    if (kpiViolation) {
+      return {
+        '& .MuiOutlinedInput-root fieldset': {
+          borderColor: 'error.main',
+          borderWidth: 2,
+        },
+        '& .MuiOutlinedInput-root:hover fieldset': {
+          borderColor: 'error.main',
+        },
+        '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+          borderColor: 'error.dark',
+        },
+      };
+    }
+
+    return warnings && warnings.length > 0
       ? {
-          '& .MuiOutlinedInput-root fieldset': {
-            borderColor: 'warning.main',
-            borderWidth: 2,
-          },
-          '& .MuiOutlinedInput-root:hover fieldset': {
-            borderColor: 'warning.main',
-          },
-          '& .MuiOutlinedInput-root.Mui-focused fieldset': {
-            borderColor: 'warning.dark',
-          },
-        }
+        '& .MuiOutlinedInput-root fieldset': {
+          borderColor: 'warning.main',
+          borderWidth: 2,
+        },
+        '& .MuiOutlinedInput-root:hover fieldset': {
+          borderColor: 'warning.main',
+        },
+        '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+          borderColor: 'warning.dark',
+        },
+      }
       : undefined;
+  };
 
   const admissionWarnings = timelineWarnings['admissionDetails.admissionTime'];
   const transferRequestWarnings = timelineWarnings['admissionDetails.transferRequestDateTime'];
   const transferArrivalWarnings = timelineWarnings['admissionDetails.transferArrivalDateTime'];
+
+  const transferArrivalViolation = kpiViolations['admissionDetails.transferArrivalDateTime'];
 
   return (
     <Box>
@@ -131,11 +162,11 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
             InputLabelProps={{ shrink: true }}
             required
             error={!!validationErrors['admissionDetails.admissionTime']}
-          helperText={
-            validationErrors['admissionDetails.admissionTime'] ||
-            buildHelperText('When the patient arrived at the facility', admissionWarnings)
-          }
-          sx={warningBorderStyles(admissionWarnings)}
+            helperText={
+              validationErrors['admissionDetails.admissionTime'] ||
+              buildHelperText('When the patient arrived at the facility', admissionWarnings)
+            }
+            sx={warningBorderStyles(admissionWarnings)}
           />
         </Grid>
 
@@ -186,8 +217,8 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
                 InputLabelProps={{
                   shrink: true,
                 }}
-                helperText={buildHelperText('When the receiving hospital confirmed arrival', transferArrivalWarnings)}
-                sx={warningBorderStyles(transferArrivalWarnings)}
+                helperText={buildHelperText('When the receiving hospital confirmed arrival', transferArrivalWarnings, transferArrivalViolation)}
+                sx={warningBorderStyles(transferArrivalWarnings, transferArrivalViolation)}
               />
             </Grid>
           </>

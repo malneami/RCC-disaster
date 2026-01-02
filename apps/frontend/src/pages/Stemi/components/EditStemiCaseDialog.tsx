@@ -42,6 +42,11 @@ import { StemiDatetimeService } from '../services/stemiDatetimeService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Hospital, hospitalService } from '../../../services/hospitalService';
 import { calculateAge } from '../../../utils/ageCalculator';
+import {
+  KPI_LIMITS,
+  calculateKpiViolation,
+  KpiViolation,
+} from '../../../utils/kpiValidationUtils';
 
 const DESTINATION_REQUIRED_MESSAGE =
   'Please select a destination hospital because the selected origin hospital does not provide STEMI service.';
@@ -129,6 +134,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [timelineWarnings, setTimelineWarnings] = useState<Record<string, string[]>>({});
+  const [kpiViolations, setKpiViolations] = useState<Record<string, KpiViolation>>({});
   const [originHospital, setOriginHospital] = useState<Hospital | null>(null);
 
   // Form data state (same structure as creation form)
@@ -392,6 +398,73 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
     clinicalAssessment,
   ]);
 
+  // KPI Violation Checks
+  useEffect(() => {
+    const violations: Record<string, KpiViolation> = {};
+
+    const parseDate = (value?: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      return date;
+    };
+
+    const admissionTime = parseDate(admissionDetails.admissionTime);
+    const triageTime = parseDate(criticalTimestamps.triageTime);
+    const transferRequestTime = parseDate(admissionDetails.transferRequestDateTime);
+    const transferArrivalTime = parseDate(admissionDetails.transferArrivalDateTime);
+
+    const balloonInflationTime = parseDate(interventionsAndTreatments.balloonInflationTime);
+    const thrombolyticAdminTime =
+      interventionsAndTreatments.thrombolyticGiven === false
+        ? null
+        : parseDate(interventionsAndTreatments.thrombolyticAdminTime);
+
+    // Admission -> Triage
+    const admissionToTriageViolation = calculateKpiViolation(
+      admissionTime,
+      triageTime,
+      KPI_LIMITS.ADMISSION_TO_TRIAGE
+    );
+    if (admissionToTriageViolation) {
+      violations['criticalTimestamps.triageTime'] = admissionToTriageViolation;
+    }
+
+    // Transfer Request -> Arrival
+    const transferViolation = calculateKpiViolation(
+      transferRequestTime,
+      transferArrivalTime,
+      KPI_LIMITS.TRANSFER_REQUEST_TO_ARRIVAL
+    );
+    if (transferViolation) {
+      violations['admissionDetails.transferArrivalDateTime'] = transferViolation;
+    }
+
+    // Door (Admission) -> Needle (Thrombolytic)
+    const doorToNeedleViolation = calculateKpiViolation(
+      admissionTime,
+      thrombolyticAdminTime,
+      KPI_LIMITS.DOOR_TO_NEEDLE
+    );
+    if (doorToNeedleViolation) {
+      violations['interventionsAndTreatments.thrombolyticAdminTime'] = doorToNeedleViolation;
+    }
+
+    // Door (Admission) -> Balloon
+    const doorToBalloonViolation = calculateKpiViolation(
+      admissionTime,
+      balloonInflationTime,
+      KPI_LIMITS.DOOR_TO_BALLOON
+    );
+    if (doorToBalloonViolation) {
+      violations['interventionsAndTreatments.balloonInflationTime'] = doorToBalloonViolation;
+    }
+
+    setKpiViolations(violations);
+  }, [admissionDetails, criticalTimestamps, interventionsAndTreatments]);
+
   // Helper function to reset form to initial state
   const resetForm = () => {
     setPatientInfo({
@@ -458,7 +531,9 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
     setError(null);
     setSuccess(null);
     setValidationErrors({});
+    setValidationErrors({});
     setTimelineWarnings({});
+    setKpiViolations({});
     setOriginHospital(null);
     setLoading(false);
   };
@@ -571,7 +646,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         } else if (bedHospitalId === stemiCase.destinationHospitalId) {
           hospitalType = 'destination';
         }
-        
+
         setBedAssignment({
           bedId: stemiCase.assignedBed.id,
           bedNumber: stemiCase.assignedBed.bedNumber,
@@ -640,6 +715,11 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
 
   const handleSubmit = async () => {
     if (!stemiCase) return;
+
+
+
+
+
 
     try {
       setLoading(true);
@@ -836,6 +916,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
             onChange={handleAdmissionDetailsChange}
             validationErrors={validationErrors}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 2:
@@ -844,6 +925,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
             data={criticalTimestamps}
             onChange={setCriticalTimestamps}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 3:
@@ -852,6 +934,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
             data={interventionsAndTreatments}
             onChange={setInterventionsAndTreatments}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 4:
@@ -887,6 +970,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
             clinicalAssessment={clinicalAssessment}
             additionalData={additionalData}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
             bedAssignment={bedAssignment}
           />
         );

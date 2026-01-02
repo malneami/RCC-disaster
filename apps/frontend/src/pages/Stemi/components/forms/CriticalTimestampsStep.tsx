@@ -6,17 +6,20 @@ import {
   Typography,
 } from '@mui/material';
 import { CriticalTimestamps } from '../../services/stemiService';
+import { KpiViolation } from '../../../../utils/kpiValidationUtils';
 
 interface CriticalTimestampsStepProps {
   data: CriticalTimestamps;
   onChange: (data: CriticalTimestamps) => void;
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, KpiViolation>;
 }
 
 const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
   data,
   onChange,
   timelineWarnings = {},
+  kpiViolations = {},
 }) => {
   const handleChange = (field: keyof CriticalTimestamps) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
@@ -44,8 +47,8 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
     });
   };
 
-  const buildHelperText = (defaultText: string, warnings?: string[]) => {
-    if (!warnings || warnings.length === 0) {
+  const buildHelperText = (defaultText: string, warnings?: string[], kpiViolation?: KpiViolation) => {
+    if ((!warnings || warnings.length === 0) && !kpiViolation) {
       return defaultText;
     }
 
@@ -54,7 +57,17 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
         <Typography variant="caption" color="textSecondary" display="block">
           {defaultText}
         </Typography>
-        {warnings.map((warning, index) => (
+        {kpiViolation && (
+          <Typography
+            variant="body2"
+            color="error"
+            display="block"
+            sx={{ mt: 1, fontWeight: 'bold' }}
+          >
+            Alert: {kpiViolation.message}
+          </Typography>
+        )}
+        {warnings?.map((warning, index) => (
           <Typography
             key={`${warning}-${index}`}
             variant="body2"
@@ -69,24 +82,42 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
     );
   };
 
-  const warningBorderStyles = (warnings?: string[]) =>
-    warnings && warnings.length > 0
+  const warningBorderStyles = (warnings?: string[], kpiViolation?: KpiViolation) => {
+    if (kpiViolation) {
+      return {
+        '& .MuiOutlinedInput-root fieldset': {
+          borderColor: 'error.main',
+          borderWidth: 2,
+        },
+        '& .MuiOutlinedInput-root:hover fieldset': {
+          borderColor: 'error.main',
+        },
+        '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+          borderColor: 'error.dark',
+        },
+      };
+    }
+
+    return warnings && warnings.length > 0
       ? {
-          '& .MuiOutlinedInput-root fieldset': {
-            borderColor: 'warning.main',
-            borderWidth: 2,
-          },
-          '& .MuiOutlinedInput-root:hover fieldset': {
-            borderColor: 'warning.main',
-          },
-          '& .MuiOutlinedInput-root.Mui-focused fieldset': {
-            borderColor: 'warning.dark',
-          },
-        }
+        '& .MuiOutlinedInput-root fieldset': {
+          borderColor: 'warning.main',
+          borderWidth: 2,
+        },
+        '& .MuiOutlinedInput-root:hover fieldset': {
+          borderColor: 'warning.main',
+        },
+        '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+          borderColor: 'warning.dark',
+        },
+      }
       : undefined;
+  };
 
   const triageWarnings = timelineWarnings['criticalTimestamps.triageTime'];
   const ecgWarnings = timelineWarnings['criticalTimestamps.firstEcgTime'];
+
+  const triageViolation = kpiViolations['criticalTimestamps.triageTime'];
 
   return (
     <Box>
@@ -106,8 +137,8 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
             value={data.triageTime}
             onChange={handleChange('triageTime')}
             InputLabelProps={{ shrink: true }}
-          helperText={buildHelperText('When the patient was triaged at the facility', triageWarnings)}
-          sx={warningBorderStyles(triageWarnings)}
+            helperText={buildHelperText('When the patient was triaged at the facility', triageWarnings, triageViolation)}
+            sx={warningBorderStyles(triageWarnings, triageViolation)}
           />
         </Grid>
 
@@ -119,8 +150,8 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
             value={data.firstEcgTime}
             onChange={handleChange('firstEcgTime')}
             InputLabelProps={{ shrink: true }}
-          helperText={buildHelperText('When the first ECG was performed', ecgWarnings)}
-          sx={warningBorderStyles(ecgWarnings)}
+            helperText={buildHelperText('When the first ECG was performed', ecgWarnings)}
+            sx={warningBorderStyles(ecgWarnings)}
           />
         </Grid>
       </Grid>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { KpiViolation } from '../../../../utils/kpiValidationUtils';
 import {
   Alert,
   Box,
@@ -27,6 +28,7 @@ interface ReviewStepProps {
     troponinValue?: number;
   };
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, KpiViolation>;
   bedAssignment?: BedAssignmentFormData;
 }
 
@@ -38,6 +40,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   clinicalAssessment,
   additionalData,
   timelineWarnings = {},
+  kpiViolations = {},
   bedAssignment,
 }) => {
   const formatDateTime = (dateTime: string) => {
@@ -52,6 +55,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   };
 
   const hasWarnings = Object.keys(timelineWarnings).length > 0;
+  const hasKpiViolations = Object.keys(kpiViolations).length > 0;
 
   const emphasizeKeywords = (text: string) => {
     const keywords = ['Admission', 'Triage', 'ECG', 'PCI', 'Door', 'Balloon', 'Symptom', 'Transfer', 'Thrombolytic'];
@@ -73,15 +77,31 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
     });
   };
 
-  const cardStyles = (highlight = false) => ({
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    borderRadius: 3,
-    boxShadow: '0px 12px 30px rgba(15, 23, 42, 0.08)',
-    border: highlight ? '2px solid rgba(245, 158, 11, 0.6)' : '1px solid rgba(15, 23, 42, 0.05)',
-    transition: 'border 0.3s ease',
-  });
+  const cardStyles = (severity?: 'error' | 'warning' | null) => {
+    let borderColor = 'rgba(15, 23, 42, 0.05)';
+    let boxShadow = '0px 12px 30px rgba(15, 23, 42, 0.08)';
+
+    if (severity === 'error') {
+      borderColor = 'rgba(239, 68, 68, 0.6)'; // Red
+      boxShadow = '0px 12px 30px rgba(239, 68, 68, 0.15)';
+    } else if (severity === 'warning') {
+      borderColor = 'rgba(245, 158, 11, 0.6)'; // Amber/Yellow
+      boxShadow = '0px 12px 30px rgba(245, 158, 11, 0.15)';
+    } else if (severity) {
+      // Fallback for boolean true if passed by mistake (though we should use strict types)
+      borderColor = 'rgba(245, 158, 11, 0.6)';
+    }
+
+    return {
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      borderRadius: 3,
+      boxShadow,
+      border: `2px solid ${borderColor}`,
+      transition: 'all 0.3s ease',
+    };
+  };
 
   const cardContentStyles = {
     display: 'flex',
@@ -124,6 +144,33 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
     );
   };
 
+  const renderKpiViolationsList = (violations: KpiViolation[]) => {
+    if (!violations.length) return null;
+
+    return (
+      <Box mt={1.5} display="flex" flexDirection="column" gap={0.5}>
+        {violations.map((violation, index) => (
+          <Alert
+            key={`${violation.message}-${index}`}
+            severity="error"
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              fontSize: '0.95rem',
+              bgcolor: 'transparent',
+              borderColor: 'error.main',
+              color: 'error.dark',
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: 700, color: 'inherit' }}>
+              {violation.message}
+            </Typography>
+          </Alert>
+        ))}
+      </Box>
+    );
+  };
+
   const renderValue = (value: string, hasIssue: boolean) => (
     <Box
       component="span"
@@ -144,9 +191,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   );
   const admissionHasIssue = admissionWarnings.length > 0;
   const triageWarnings = getWarnings('criticalTimestamps.triageTime');
-  const triageHasIssue = triageWarnings.length > 0;
   const ecgWarnings = getWarnings('criticalTimestamps.firstEcgTime');
-  const ecgHasIssue = ecgWarnings.length > 0;
   const doorOutWarnings = getWarnings('interventionsAndTreatments.doorOutTime');
   const balloonWarnings = getWarnings('interventionsAndTreatments.balloonInflationTime');
   const thrombolyticWarnings = getWarnings('interventionsAndTreatments.thrombolyticAdminTime');
@@ -160,6 +205,15 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
     ]),
   ];
 
+  const getKpiViolations = (...fields: string[]) => {
+    return fields.map(field => kpiViolations[field]).filter(Boolean);
+  };
+
+  const admissionKpiViolations = getKpiViolations('admissionDetails.admissionTime', 'admissionDetails.transferRequestDateTime', 'admissionDetails.transferArrivalDateTime');
+  const criticalKpiViolations = getKpiViolations('criticalTimestamps.triageTime', 'criticalTimestamps.firstEcgTime');
+  const interventionKpiViolations = getKpiViolations('interventionsAndTreatments.doorOutTime', 'interventionsAndTreatments.balloonInflationTime', 'interventionsAndTreatments.thrombolyticAdminTime');
+  const symptomKpiViolations = getKpiViolations('clinicalAssessment.symptomOnset');
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -168,6 +222,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
       <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
         Please review all the information before submitting the STEMI case.
       </Typography>
+
+
 
       {hasWarnings && (
         <Alert
@@ -189,234 +245,219 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
         </Alert>
       )}
 
-      <Grid container spacing={3} alignItems="stretch">
-        {/* Patient Information */}
+      {hasKpiViolations && (
+        <Alert
+          severity="error"
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            fontSize: '1rem',
+            fontWeight: 600,
+            color: 'error.dark',
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: 'error.main',
+          }}
+        >
+          <Typography variant="body1" sx={{ fontWeight: 700 }}>
+            KPI Violations Detected in:
+          </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
+            {Object.keys(kpiViolations).map((key) => {
+              // Make key human readable e.g. "criticalTimestamps.triageTime" -> "Triage Time"
+              const label = key.split('.').pop()?.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim() || key;
+              return <li key={key}><Typography variant="body2">{label}</Typography></li>;
+            })}
+          </Box>
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {/* Patient Info Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(false)}>
+          <Card sx={cardStyles(null)}>
             <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                 Patient Information
               </Typography>
-              <Typography variant="body2">
-                <strong>Name:</strong> {patientInfo.firstName} {patientInfo.lastName}
-              </Typography>
-              <Typography variant="body2">
-                <strong>National ID:</strong> {patientInfo.nationalId}
-              </Typography>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Full Name</Typography>
+                <Typography variant="body1">{patientInfo.firstName} {patientInfo.lastName}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">National ID</Typography>
+                <Typography variant="body1">{patientInfo.nationalId || 'Not provided'}</Typography>
+              </Box>
               {patientInfo.dateOfBirth && (
-                <Typography variant="body2">
-                  <strong>Date of Birth:</strong> {new Date(patientInfo.dateOfBirth).toLocaleDateString('en-US', { timeZone: 'UTC' })}
-                </Typography>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Date of Birth</Typography>
+                  <Typography variant="body1">
+                    {new Date(patientInfo.dateOfBirth).toLocaleDateString()}
+                  </Typography>
+                </Box>
               )}
-              <Typography variant="body2">
-                <strong>Age:</strong> {patientInfo.age ? `${patientInfo.age} years` : 'N/A'}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Gender:</strong> {patientInfo.gender}
-              </Typography>
-              {patientInfo.phoneNumber && (
-                <Typography variant="body2">
-                  <strong>Phone:</strong> {patientInfo.phoneNumber}
-                </Typography>
-              )}
-              {patientInfo.address && (
-                <Typography variant="body2">
-                  <strong>Address:</strong> {patientInfo.address}
-                </Typography>
-              )}
+              <Box>
+                <Typography variant="body2" color="text.secondary">Age</Typography>
+                <Typography variant="body1">{patientInfo.age ? `${patientInfo.age} years` : 'Not provided'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Gender</Typography>
+                <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>{patientInfo.gender}</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Admission Details */}
+        {/* Admission Details Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(admissionHasIssue)}>
+          <Card sx={cardStyles(admissionKpiViolations.length > 0 ? 'error' : admissionHasIssue ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom>
-                Admission Details
-              </Typography>
-              <Typography variant="body2">
-                <strong>Admission Time:</strong>
-                {renderValue(formatDateTime(admissionDetails.admissionTime), admissionHasIssue)}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Mode of Arrival:</strong> {admissionDetails.modeOfArrival.replace(/_/g, ' ')}
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Admission Details
+                </Typography>
+                {(admissionKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="error" size="small" />
+                ) : admissionHasIssue ? (
+                  <Chip label="Timeline Warning" color="warning" size="small" />
+                ) : null}
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Admission Date & Time</Typography>
+                <Typography variant="body1">
+                  {renderValue(formatDateTime(admissionDetails.admissionTime), !!timelineWarnings['admissionDetails.admissionTime'])}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Mode of Arrival</Typography>
+                <Typography variant="body1">{admissionDetails.modeOfArrival}</Typography>
+              </Box>
+              {renderWarningsList(admissionWarnings)}
+              {renderKpiViolationsList(admissionKpiViolations)}
             </CardContent>
-            {renderWarningsList(admissionWarnings)}
           </Card>
         </Grid>
 
-        {/* Critical Timestamps */}
+        {/* Clinical Assessment Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(triageHasIssue || ecgHasIssue)}>
+          <Card sx={cardStyles(symptomKpiViolations.length > 0 ? 'error' : symptomWarnings.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom>
-                Critical Timestamps
-              </Typography>
-              <Typography variant="body2">
-                <strong>Triage Time:</strong>
-                {renderValue(formatDateTime(criticalTimestamps.triageTime || ''), triageHasIssue)}
-              </Typography>
-              <Typography variant="body2">
-                <strong>First ECG Time:</strong>
-                {renderValue(formatDateTime(criticalTimestamps.firstEcgTime || ''), ecgHasIssue)}
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Clinical Assessment
+                </Typography>
+                {(symptomKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="error" size="small" />
+                ) : (symptomWarnings.length > 0) ? (
+                  <Chip label="Timeline Warning" color="warning" size="small" />
+                ) : null}
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Killip Class</Typography>
+                <Typography variant="body1">{(clinicalAssessment as any).killipClass || 'Not specified'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Symptom Onset</Typography>
+                <Typography variant="body1">
+                  {renderValue(formatDateTime(clinicalAssessment.symptomOnset || ''), !!timelineWarnings['clinicalAssessment.symptomOnset'])}
+                </Typography>
+              </Box>
+              {additionalData.ecgResult && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">ECG Result</Typography>
+                  <Typography variant="body1">{additionalData.ecgResult}</Typography>
+                </Box>
+              )}
+              {additionalData.troponinValue !== undefined && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Troponin Value</Typography>
+                  <Typography variant="body1">{additionalData.troponinValue} ng/mL</Typography>
+                </Box>
+              )}
+              {renderWarningsList(symptomWarnings)}
+              {renderKpiViolationsList(symptomKpiViolations)}
             </CardContent>
-            {renderWarningsList(criticalWarnings)}
           </Card>
         </Grid>
 
-        {/* Interventions and Treatments */}
+        {/* Critical Timestamps Card */}
         <Grid item xs={12} md={6}>
-          <Card
-            sx={cardStyles(
-              doorOutWarnings.length > 0 ||
-              balloonWarnings.length > 0 ||
-              thrombolyticWarnings.length > 0
-            )}
-          >
+          <Card sx={cardStyles(criticalKpiViolations.length > 0 ? 'error' : criticalWarnings.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom>
-                Interventions & Treatments
-              </Typography>
-              <Typography variant="body2">
-                <strong>Eligible for Primary PCI:</strong> {interventionsAndTreatments.eligibleForPrimaryPci ? 'Yes' : 'No'}
-              </Typography>
-              {interventionsAndTreatments.pciType && (
-                <Typography variant="body2">
-                  <strong>Type of PCI:</strong> {interventionsAndTreatments.pciType.replace('_', ' ')}
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Critical Timestamps
                 </Typography>
-              )}
-              {interventionsAndTreatments.pciLocation && (
-                <Typography variant="body2">
-                  <strong>PCI Location:</strong> {interventionsAndTreatments.pciLocation}
+                {(criticalKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="error" size="small" />
+                ) : (criticalWarnings.length > 0) ? (
+                  <Chip label="Timeline Warning" color="warning" size="small" />
+                ) : null}
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Triage Time</Typography>
+                <Typography variant="body1">
+                  {renderValue(formatDateTime(criticalTimestamps.triageTime || ''), !!timelineWarnings['criticalTimestamps.triageTime'])}
                 </Typography>
-              )}
-              <Typography variant="body2">
-                <strong>Thrombolytic Given:</strong> {interventionsAndTreatments.thrombolyticGiven ? 'Yes' : 'No'}
-              </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">First ECG Time</Typography>
+                <Typography variant="body1">
+                  {renderValue(formatDateTime(criticalTimestamps.firstEcgTime || ''), !!timelineWarnings['criticalTimestamps.firstEcgTime'])}
+                </Typography>
+              </Box>
+              {renderWarningsList(criticalWarnings)}
+              {renderKpiViolationsList(criticalKpiViolations)}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Treatment Card */}
+        <Grid item xs={12} md={6}>
+          <Card sx={cardStyles(interventionKpiViolations.length > 0 ? 'error' : interventionWarnings.length > 0 ? 'warning' : null)}>
+            <CardContent sx={cardContentStyles}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Treatment
+                </Typography>
+                {(interventionKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="error" size="small" />
+                ) : (interventionWarnings.length > 0) ? (
+                  <Chip label="Timeline Warning" color="warning" size="small" />
+                ) : null}
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Selected Treatment</Typography>
+                <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
+                  {additionalData.selectedTreatment?.replace('_', ' ') || 'None'}
+                </Typography>
+              </Box>
               {interventionsAndTreatments.thrombolyticAdminTime && (
-                <Typography variant="body2">
-                  <strong>Thrombolytic Administration Time:</strong>
-                  {renderValue(
-                    formatDateTime(interventionsAndTreatments.thrombolyticAdminTime),
-                    thrombolyticWarnings.length > 0
-                  )}
-                </Typography>
-              )}
-              {interventionsAndTreatments.doorOutTime && (
-                <Typography variant="body2">
-                  <strong>Door Out Time:</strong>
-                  {renderValue(
-                    formatDateTime(interventionsAndTreatments.doorOutTime),
-                    doorOutWarnings.length > 0
-                  )}
-                </Typography>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Thrombolytic Admin Time</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(interventionsAndTreatments.thrombolyticAdminTime), !!timelineWarnings['interventionsAndTreatments.thrombolyticAdminTime'])}
+                  </Typography>
+                </Box>
               )}
               {interventionsAndTreatments.balloonInflationTime && (
-                <Typography variant="body2">
-                  <strong>Balloon Inflation Time:</strong>
-                  {renderValue(
-                    formatDateTime(interventionsAndTreatments.balloonInflationTime),
-                    balloonWarnings.length > 0
-                  )}
-                </Typography>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Balloon Inflation Time</Typography>
+                  <Typography variant="body1">
+                    {renderValue(formatDateTime(interventionsAndTreatments.balloonInflationTime), !!timelineWarnings['interventionsAndTreatments.balloonInflationTime'])}
+                  </Typography>
+                </Box>
               )}
-              {interventionsAndTreatments.fibrinolyticAbsoluteContraindications && (
-                <Typography variant="body2">
-                  <strong>Fibrinolytic Absolute Contraindications:</strong> {interventionsAndTreatments.fibrinolyticAbsoluteContraindications.replace(/_/g, ' ')}
-                </Typography>
-              )}
-              {interventionsAndTreatments.fibrinolyticRelativeContraindications && (
-                <Typography variant="body2">
-                  <strong>Fibrinolytic Relative Contraindications:</strong> {interventionsAndTreatments.fibrinolyticRelativeContraindications}
-                </Typography>
-              )}
-            </CardContent>
-            {renderWarningsList(interventionWarnings)}
-          </Card>
-        </Grid>
-
-        {/* Clinical Assessment */}
-        <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(symptomWarnings.length > 0)}>
-            <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom>
-                Clinical Assessment
-              </Typography>
-              {clinicalAssessment.heartScore !== undefined && (
-                <Typography variant="body2">
-                  <strong>HEART Score:</strong> {clinicalAssessment.heartScore}
-                </Typography>
-              )}
-              {clinicalAssessment.clinicalRiskLevel && (
-                <Typography variant="body2">
-                  <strong>Risk Level:</strong> {clinicalAssessment.clinicalRiskLevel}
-                </Typography>
-              )}
-              {clinicalAssessment.presentingSymptoms && (
-                <Typography variant="body2">
-                  <strong>Presenting Symptoms:</strong> {clinicalAssessment.presentingSymptoms}
-                </Typography>
-              )}
-              {clinicalAssessment.symptomOnset && (
-                <Typography variant="body2">
-                  <strong>Symptom Onset:</strong>
-                  {renderValue(
-                    formatDateTime(clinicalAssessment.symptomOnset),
-                    symptomWarnings.length > 0
-                  )}
-                </Typography>
-              )}
-              {clinicalAssessment.symptomDuration !== undefined && (
-                <Typography variant="body2">
-                  <strong>Symptom Duration:</strong> {clinicalAssessment.symptomDuration} minutes
-                </Typography>
-              )}
-            </CardContent>
-            {renderWarningsList(symptomWarnings)}
-          </Card>
-        </Grid>
-
-        {/* Additional Information */}
-        <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(false)}>
-            <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom>
-                Additional Information
-              </Typography>
-              <Typography variant="body2">
-                <strong>Current Status:</strong>
-                <Chip
-                  label={additionalData.currentStatus.replace(/_/g, ' ')}
-                  size="small"
-                  sx={{ ml: 1 }}
-                />
-              </Typography>
-              {additionalData.selectedTreatment && (
-                <Typography variant="body2">
-                  <strong>Selected Treatment:</strong> {additionalData.selectedTreatment.replace(/_/g, ' ')}
-                </Typography>
-              )}
-              {additionalData.ecgResult && (
-                <Typography variant="body2">
-                  <strong>ECG Result:</strong> {additionalData.ecgResult.replace(/_/g, ' ')}
-                </Typography>
-              )}
-              {additionalData.troponinValue && (
-                <Typography variant="body2">
-                  <strong>Troponin Value:</strong> {additionalData.troponinValue}
-                </Typography>
-              )}
+              {renderWarningsList(interventionWarnings)}
+              {renderKpiViolationsList(interventionKpiViolations)}
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Bed Assignment */}
-        {(bedAssignment?.assignedBed || bedAssignment?.bedId || bedAssignment?.bedNumber) && (
+        {/* Bed Assignment Card */}
+        {bedAssignment && (
           <Grid item xs={12} md={6}>
-            <Card sx={cardStyles(false)}>
+            <Card sx={cardStyles(null)}>
               <CardContent sx={cardContentStyles}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                   Bed Assignment

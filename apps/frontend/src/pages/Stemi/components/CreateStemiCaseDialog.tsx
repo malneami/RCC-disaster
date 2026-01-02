@@ -28,6 +28,7 @@ import { bedService } from '../../Beds/services/bedService';
 import { useSnackbar } from 'notistack';
 import { useQueryClient } from 'react-query';
 import { BedAssignmentFormData } from '../../Trauma/types/traumaTypes';
+import { KPI_LIMITS, calculateKpiViolation, KpiViolation } from '../../../utils/kpiValidationUtils';
 
 interface CreateStemiCaseDialogProps {
   open: boolean;
@@ -113,6 +114,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [timelineWarnings, setTimelineWarnings] = useState<Record<string, string[]>>({});
+  const [kpiViolations, setKpiViolations] = useState<Record<string, KpiViolation>>({});
   const [originHospital, setOriginHospital] = useState<Hospital | null>(null);
 
   // Form data state
@@ -388,6 +390,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
 
       return warnings;
     });
+
   }, [
     admissionDetails,
     criticalTimestamps,
@@ -395,7 +398,75 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     clinicalAssessment,
   ]);
 
+  // KPI Violation Checks
+  useEffect(() => {
+    const violations: Record<string, KpiViolation> = {};
+
+    const parseDate = (value?: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      return date;
+    };
+
+    const admissionTime = parseDate(admissionDetails.admissionTime);
+    const triageTime = parseDate(criticalTimestamps.triageTime);
+    const transferRequestTime = parseDate(admissionDetails.transferRequestDateTime);
+    const transferArrivalTime = parseDate(admissionDetails.transferArrivalDateTime);
+
+    const balloonInflationTime = parseDate(interventionsAndTreatments.balloonInflationTime);
+    const thrombolyticAdminTime =
+      interventionsAndTreatments.thrombolyticGiven === false
+        ? null
+        : parseDate(interventionsAndTreatments.thrombolyticAdminTime);
+
+    // Admission -> Triage
+    const admissionToTriageViolation = calculateKpiViolation(
+      admissionTime,
+      triageTime,
+      KPI_LIMITS.ADMISSION_TO_TRIAGE
+    );
+    if (admissionToTriageViolation) {
+      violations['criticalTimestamps.triageTime'] = admissionToTriageViolation;
+    }
+
+    // Transfer Request -> Arrival
+    const transferViolation = calculateKpiViolation(
+      transferRequestTime,
+      transferArrivalTime,
+      KPI_LIMITS.TRANSFER_REQUEST_TO_ARRIVAL
+    );
+    if (transferViolation) {
+      violations['admissionDetails.transferArrivalDateTime'] = transferViolation;
+    }
+
+    // Door (Admission) -> Needle (Thrombolytic)
+    const doorToNeedleViolation = calculateKpiViolation(
+      admissionTime,
+      thrombolyticAdminTime,
+      KPI_LIMITS.DOOR_TO_NEEDLE
+    );
+    if (doorToNeedleViolation) {
+      violations['interventionsAndTreatments.thrombolyticAdminTime'] = doorToNeedleViolation;
+    }
+
+    // Door (Admission) -> Balloon
+    const doorToBalloonViolation = calculateKpiViolation(
+      admissionTime,
+      balloonInflationTime,
+      KPI_LIMITS.DOOR_TO_BALLOON
+    );
+    if (doorToBalloonViolation) {
+      violations['interventionsAndTreatments.balloonInflationTime'] = doorToBalloonViolation;
+    }
+
+    setKpiViolations(violations);
+  }, [admissionDetails, criticalTimestamps, interventionsAndTreatments]);
+
   const timelineWarningKeys = useMemo(() => Object.keys(timelineWarnings), [timelineWarnings]);
+  const kpiViolationKeys = useMemo(() => Object.keys(kpiViolations), [kpiViolations]);
 
   const hasTimelineWarnings = timelineWarningKeys.length > 0;
 
@@ -412,9 +483,14 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     issues[0] = hasPatientErrors;
     issues[1] =
       hasAdmissionErrors ||
-      timelineWarningKeys.some((key) => key.startsWith('admissionDetails.'));
-    issues[2] = timelineWarningKeys.some((key) => key.startsWith('criticalTimestamps.'));
-    issues[3] = timelineWarningKeys.some((key) => key.startsWith('interventionsAndTreatments.'));
+      timelineWarningKeys.some((key) => key.startsWith('admissionDetails.')) ||
+      kpiViolationKeys.some((key) => key.startsWith('admissionDetails.'));
+    issues[2] =
+      timelineWarningKeys.some((key) => key.startsWith('criticalTimestamps.')) ||
+      kpiViolationKeys.some((key) => key.startsWith('criticalTimestamps.'));
+    issues[3] =
+      timelineWarningKeys.some((key) => key.startsWith('interventionsAndTreatments.')) ||
+      kpiViolationKeys.some((key) => key.startsWith('interventionsAndTreatments.'));
     issues[4] = timelineWarningKeys.some((key) => key.startsWith('clinicalAssessment.'));
     const hasBedAssignmentErrors = Object.keys(validationErrors).some((key) =>
       key.startsWith('bedAssignment.')
@@ -423,7 +499,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     issues[6] = hasTimelineWarnings;
 
     return issues;
-  }, [validationErrors, timelineWarningKeys, hasTimelineWarnings]);
+  }, [validationErrors, timelineWarningKeys, hasTimelineWarnings, kpiViolationKeys]);
 
   const handleNext = async () => {
     const errors = await validateStep(activeStep);
@@ -463,6 +539,8 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
         return;
       }
     }
+
+
 
     if (hasTimelineWarnings) {
       setActiveStep(6);
@@ -525,7 +603,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             // Invalidate hospitals queries and dispatch event to trigger refetch
             queryClient.invalidateQueries('hospitals');
             window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
-            
+
             try {
               const refreshedCase = await StemiService.getStemiCaseById(createdCase.id);
               // Notify parent component with refreshed case
@@ -586,6 +664,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
       setBedAssignment(undefined);
       setOriginHospital(null);
       setValidationErrors({});
+      setKpiViolations({});
     } catch (err: any) {
       console.error('Error creating STEMI case:', err);
       setError(err.response?.data?.message || 'Failed to create STEMI case');
@@ -599,6 +678,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
       setActiveStep(0);
       setError(null);
       setValidationErrors({});
+      setKpiViolations({});
       setOriginHospital(null);
       setBedAssignment(undefined);
       onClose();
@@ -665,6 +745,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             onChange={setAdmissionDetails}
             validationErrors={validationErrors}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 2:
@@ -673,6 +754,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             data={criticalTimestamps}
             onChange={setCriticalTimestamps}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 3:
@@ -681,6 +763,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             data={interventionsAndTreatments}
             onChange={setInterventionsAndTreatments}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 4:
@@ -714,8 +797,14 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
             criticalTimestamps={criticalTimestamps}
             interventionsAndTreatments={interventionsAndTreatments}
             clinicalAssessment={clinicalAssessment}
-            additionalData={additionalData}
+            additionalData={{
+              currentStatus: additionalData.currentStatus,
+              selectedTreatment: additionalData.selectedTreatment,
+              ecgResult: additionalData.ecgResult,
+              troponinValue: additionalData.troponinValue,
+            }}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
             bedAssignment={bedAssignment}
           />
         );
