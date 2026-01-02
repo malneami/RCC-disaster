@@ -421,6 +421,7 @@ const StrokePortalPage: React.FC = () => {
           ) : (
             <StrokeCasesCards
               cases={strokeCases}
+              totalCount={totalCases}
               loading={loading}
               onUpdateCase={handleUpdateCase}
               onCreateCase={() => setCreateDialogOpen(true)}

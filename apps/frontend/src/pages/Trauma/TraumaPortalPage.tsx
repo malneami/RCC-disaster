@@ -44,6 +44,7 @@ const TraumaPortalPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [traumaCases, setTraumaCases] = useState<TraumaCase[]>([]);
+  const [totalCases, setTotalCases] = useState(0);
   const [kpiSummary, setKpiSummary] = useState<TraumaKPIsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +96,7 @@ const TraumaPortalPage: React.FC = () => {
       ]);
 
       setTraumaCases(casesData.cases);
+      setTotalCases(casesData.total);
       setKpiSummary(kpiData);
 
     } catch (err) {
@@ -352,6 +354,7 @@ const TraumaPortalPage: React.FC = () => {
           ) : (
             <TraumaCasesCards
               cases={traumaCases}
+              totalCount={totalCases}
               onCreateCase={() => setCreateDialogOpen(true)}
               onDeleteCase={handleDeleteCase}
               onUpdateCase={handleUpdateCase}

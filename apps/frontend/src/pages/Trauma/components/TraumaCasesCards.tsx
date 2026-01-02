@@ -42,6 +42,7 @@ import { notificationService } from '../../../services/notificationService';
 
 interface TraumaCasesCardsProps {
   cases: TraumaCase[];
+  totalCount?: number;
   onCreateCase: () => void;
   onDeleteCase: (id: string) => Promise<void>;
   onUpdateCase: (id: string, data: any) => Promise<void>;
@@ -54,6 +55,7 @@ interface TraumaCasesCardsProps {
 
 const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   cases,
+  totalCount,
   onCreateCase,
   onDeleteCase,
   onViewDetails,
@@ -603,7 +605,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
       {/* Header and Actions */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">
-          Trauma Cases ({filteredCases.length})
+          TraumaCases ({filteredCases.length} / {totalCount || cases.length})
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button

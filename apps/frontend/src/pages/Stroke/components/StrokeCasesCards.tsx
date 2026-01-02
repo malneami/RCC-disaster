@@ -40,6 +40,7 @@ import { notificationService } from '../../../services/notificationService';
 
 interface StrokeCasesCardsProps {
   cases: StrokeCase[];
+  totalCount?: number;
   loading: boolean;
   onUpdateCase: (id: string, data: any) => Promise<void>;
   onCreateCase: () => void;
@@ -53,6 +54,7 @@ interface StrokeCasesCardsProps {
 
 const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
   cases,
+  totalCount,
   loading,
   onCreateCase,
   onDeleteCase,
@@ -608,7 +610,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
             Stroke Cases
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {filteredCases.length} of {cases.length} cases
+            {filteredCases.length} of {totalCount || cases.length} cases
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
