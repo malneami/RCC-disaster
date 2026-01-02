@@ -505,8 +505,22 @@ class TicketService {
     return response.data;
   }
 
-  async getStatistics(): Promise<TicketStatistics> {
-    const response = await apiClient.get('/tickets/statistics');
+  async getStatistics(filters?: TicketFilter): Promise<TicketStatistics> {
+    const params = new URLSearchParams();
+    if (filters) {
+      if (filters.status) params.append('status', filters.status);
+      if (filters.priority) params.append('priority', filters.priority);
+      if (filters.pathway) params.append('pathway', filters.pathway);
+      if (filters.originHospitalId) params.append('originHospitalId', filters.originHospitalId);
+      if (filters.destinationHospitalId) params.append('destinationHospitalId', filters.destinationHospitalId);
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.emsStatus) params.append('emsStatus', filters.emsStatus);
+    }
+    
+    const queryString = params.toString();
+    const url = queryString ? `/tickets/statistics?${queryString}` : '/tickets/statistics';
+    const response = await apiClient.get(url);
     return response.data;
   }
 

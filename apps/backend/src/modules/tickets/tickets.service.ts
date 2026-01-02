@@ -1182,14 +1182,59 @@ export class TicketsService {
   }
 
   // Get ticket statistics
-  async getStatistics(userRole?: UserRole, hospitalId?: string) {
+  async getStatistics(userRole?: UserRole, hospitalId?: string, filters?: TicketFilterDto) {
     let where: any = { deletedAt: null };
+
+    // Role-based filtering
+    if (userRole === UserRole.CATH_LAB_USER) {
+      where.pathway = 'STEMI';
+    }
 
     if (hospitalId && userRole !== UserRole.ADMIN && userRole !== UserRole.RCC) {
       where.OR = [
         { originHospitalId: hospitalId },
         { destinationHospitalId: hospitalId },
       ];
+    }
+
+    // Apply filters (same logic as findAll)
+    if (filters) {
+      if (filters.status) where.status = filters.status;
+      if (filters.priority) where.priority = filters.priority;
+      if (filters.pathway) where.pathway = filters.pathway;
+      if (filters.originHospitalId) where.originHospitalId = filters.originHospitalId;
+      if (filters.destinationHospitalId) where.destinationHospitalId = filters.destinationHospitalId;
+      if (filters.patientId) where.patientId = filters.patientId;
+      if (filters.assignedToId) where.assignedToId = filters.assignedToId;
+      
+      // Apply date filters
+      if (filters.startDate || filters.endDate) {
+        where.createdAt = {};
+        if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
+        if (filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          where.createdAt.lte = endDate;
+        }
+      }
+
+      if (filters.emsStatus && filters.emsStatus !== '') {
+        if (filters.emsStatus === 'ASSIGNED') {
+          where.emsAssignments = {
+            some: {
+              status: {
+                in: [AssignmentStatus.EMS_CONTACT, AssignmentStatus.EMS_ARRIVAL],
+              },
+            },
+          };
+        } else {
+          where.emsAssignments = {
+            some: {
+              status: filters.emsStatus as AssignmentStatus,
+            },
+          };
+        }
+      }
     }
 
     const [total, pending, assigned, inTransport, completed, cancelled] = await Promise.all([

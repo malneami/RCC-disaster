@@ -78,8 +78,41 @@ export class TicketsController {
   }
 
   @Get('statistics')
-  async getStatistics(@Request() req: any) {
-    return this.ticketsService.getStatistics(req.user.role, req.user.hospitalId);
+  @ApiOperation({ summary: 'Get ticket statistics with optional filters' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by ticket status' })
+  @ApiQuery({ name: 'priority', required: false, description: 'Filter by priority' })
+  @ApiQuery({ name: 'pathway', required: false, description: 'Filter by pathway' })
+  @ApiQuery({ name: 'originHospitalId', required: false, description: 'Filter by origin hospital ID' })
+  @ApiQuery({ name: 'destinationHospitalId', required: false, description: 'Filter by destination hospital ID' })
+  @ApiQuery({ name: 'startDate', required: false, description: 'Filter by start date (ISO string)' })
+  @ApiQuery({ name: 'endDate', required: false, description: 'Filter by end date (ISO string)' })
+  @ApiQuery({ name: 'emsStatus', required: false, description: 'Filter by EMS status' })
+  async getStatistics(
+    @Request() req: any,
+    @Query('status') status?: string,
+    @Query('priority') priority?: string,
+    @Query('pathway') pathway?: string,
+    @Query('originHospitalId') originHospitalId?: string,
+    @Query('destinationHospitalId') destinationHospitalId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('emsStatus') emsStatus?: string,
+  ) {
+    const filters: TicketFilterDto = {};
+    if (status) filters.status = status as any;
+    if (priority) filters.priority = priority as any;
+    if (pathway) filters.pathway = pathway;
+    if (originHospitalId) filters.originHospitalId = originHospitalId;
+    if (destinationHospitalId) filters.destinationHospitalId = destinationHospitalId;
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+    if (emsStatus) filters.emsStatus = emsStatus;
+
+    return this.ticketsService.getStatistics(
+      req.user.role,
+      req.user.hospitalId,
+      Object.keys(filters).length > 0 ? filters : undefined
+    );
   }
 
   @Get('statistics/priority')

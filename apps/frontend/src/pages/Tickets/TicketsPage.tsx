@@ -89,9 +89,13 @@ const TicketsPage: React.FC = () => {
         delete filtersWithTab.emsStatus;
       }
       
+      // Prepare statistics filters (exclude emsStatus from statistics to get accurate counts for all tabs)
+      const statisticsFilters: TicketFilter = { ...filters };
+      // Don't pass emsStatus to statistics since we want counts for all statuses
+      
       const [ticketsResponse, statsResponse] = await Promise.all([
         ticketService.getTickets(1, 50, filtersWithTab),
-        ticketService.getStatistics(),
+        ticketService.getStatistics(statisticsFilters),
       ]);
 
       setTickets(ticketsResponse.data);
