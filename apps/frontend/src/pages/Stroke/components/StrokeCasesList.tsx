@@ -344,9 +344,9 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
-            variant="outlined"
+            variant={filterDialogOpen ? "contained" : "outlined"}
             startIcon={<FilterIcon />}
-            onClick={() => setFilterDialogOpen(true)}
+            onClick={() => setFilterDialogOpen(!filterDialogOpen)}
           >
             Filters
           </Button>
@@ -405,6 +405,17 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
           }}
         />
       </Box>
+
+      {/* Filters Popup */}
+      <StrokeCasesFilters
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        filters={filters}
+        hospitals={hospitals}
+        onFiltersChange={setFilters}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
+      />
 
       {/* Active Filters Alert */}
       {(filters.strokeType || filters.status || filters.originHospitalId || filters.destinationHospitalId || filters.modeOfArrival || filters.dateFrom || filters.dateTo || searchValue) && (
@@ -468,16 +479,6 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
       </Card>
 
       {/* Dialogs */}
-      <StrokeCasesFilters
-        open={filterDialogOpen}
-        onClose={() => setFilterDialogOpen(false)}
-        filters={filters}
-        hospitals={hospitals}
-        onFiltersChange={setFilters}
-        onApplyFilters={handleApplyFilters}
-        onClearFilters={handleClearFilters}
-      />
-
       <StrokeCaseDetailsDialog
         open={detailsDialogOpen}
         onClose={handleCloseDetailsDialog}
