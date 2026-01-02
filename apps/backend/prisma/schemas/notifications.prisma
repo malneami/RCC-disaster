@@ -8,12 +8,25 @@ enum NotificationType {
   CASE_ASSIGNMENT
   CASE_COMPLETION
   CASE_ESCALATION
+  EMS_LATE_CASE
+  CRITICAL_CASE_INCOMING
+  INCOMPLETE_PATIENT_DATA
+  KPI_THRESHOLD_BREACH
+  CRITICAL_TIME_LIMIT_APPROACHING
 }
 
 enum NotificationPriority {
   LOW
   MEDIUM
   HIGH
+  CRITICAL
+}
+
+enum NotificationCategory {
+  PATIENTS
+  EMS
+  HOSPITALS
+  TICKETS
 }
 
 enum NotificationStatus {
@@ -65,6 +78,12 @@ model Notification {
   // Additional Information
   metadata                String?             // JSON string for additional data
   
+  // Category and Source Tracking
+  category                NotificationCategory @map("category")
+  sourceEntityType        String?             @map("source_entity_type") 
+  sourceEntityId          String?             @map("source_entity_id") 
+  escalationLevel         Int?                @map("escalation_level") 
+  
   // Audit Fields
   createdAt               DateTime            @default(now()) @map("created_at")
   updatedAt               DateTime            @updatedAt @map("updated_at")
@@ -85,6 +104,8 @@ model Notification {
   @@index([patientId])
   @@index([createdAt])
   @@index([isRead])
+  @@index([category])
+  @@index([sourceEntityType, sourceEntityId])
 }
 
 model CaseNote {

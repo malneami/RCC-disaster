@@ -1,5 +1,5 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsArray, IsUUID } from 'class-validator';
-import { NotificationType, NotificationPriority, CaseType, DeliveryMethod } from '@prisma/client';
+import { IsString, IsEnum, IsOptional, IsBoolean, IsArray, IsUUID, IsInt, Min } from 'class-validator';
+import { NotificationType, NotificationPriority, CaseType, DeliveryMethod, NotificationCategory } from '@prisma/client';
 
 export class CreateNotificationDto {
   @IsEnum(NotificationType)
@@ -42,6 +42,23 @@ export class CreateNotificationDto {
   @IsOptional()
   @IsEnum(DeliveryMethod)
   deliveryMethod?: DeliveryMethod;
+
+  @IsOptional()
+  @IsEnum(NotificationCategory)
+  category?: NotificationCategory;
+
+  @IsOptional()
+  @IsString()
+  sourceEntityType?: string;
+
+  @IsOptional()
+  @IsString()
+  sourceEntityId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  escalationLevel?: number;
 }
 
 export class CreateCaseNoteDto {
@@ -92,6 +109,10 @@ export class NotificationFilterDto {
   @IsOptional()
   @IsEnum(NotificationPriority)
   priority?: NotificationPriority;
+
+  @IsOptional()
+  @IsEnum(NotificationCategory)
+  category?: NotificationCategory;
 
   @IsOptional()
   @IsEnum(CaseType)
