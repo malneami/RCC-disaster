@@ -44,6 +44,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [initialPatientsLoaded, setInitialPatientsLoaded] = useState(false);
 
   const [newPatient, setNewPatient] = useState<CreatePatientData>({
     firstName: '',
@@ -52,29 +53,18 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
     gender: 'MALE',
   });
 
-  // Load initial patients
-  useEffect(() => {
-    loadPatients();
-  }, []);
-
-  // Load selected patient if value is provided
-  useEffect(() => {
-    if (value && !selectedPatient) {
-      loadSelectedPatient(value);
-    }
-  }, [value]);
-
-  const loadPatients = async () => {
+  const loadPatients = useCallback(async () => {
     try {
       setLoading(true);
       const response = await patientService.getPatients(1, 50);
       setPatients(response.data);
+      setInitialPatientsLoaded(true);
     } catch (error) {
       console.error('Error loading patients:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const loadSelectedPatient = async (patientId: string) => {
     try {
@@ -85,9 +75,29 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
     }
   };
 
+  // Load initial patients on mount
+  useEffect(() => {
+    loadPatients();
+  }, [loadPatients]);
+
+  // Handle value changes (including when it becomes null)
+  useEffect(() => {
+    if (value) {
+      // Value exists - load the selected patient if not already loaded
+      if (!selectedPatient || selectedPatient.id !== value) {
+        loadSelectedPatient(value);
+      }
+    } else {
+      // Value is null - clear selection and reload initial list if needed
+      setSelectedPatient(null);
+      loadPatients();
+    }
+  }, [value, loadPatients]);
+
   const handleSearch = useCallback(async (query: string) => {
     if (query.length < 2) {
-      setPatients([]);
+      // When search query is cleared, reload initial patients list
+      loadPatients();
       return;
     }
 
@@ -100,7 +110,14 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadPatients]);
+
+  const handleOpen = useCallback(() => {
+    // When Autocomplete opens, ensure initial list is loaded if there's no search query
+    if (!searchQuery) {
+      loadPatients();
+    }
+  }, [searchQuery, loadPatients]);
 
   const handleCreatePatient = async () => {
     try {
@@ -171,6 +188,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
         getOptionLabel={(option) => getPatientDisplayName(option)}
         loading={loading}
         filterOptions={(x) => x}
+        onOpen={handleOpen}
         onInputChange={(_, newInputValue) => {
           setSearchQuery(newInputValue);
           handleSearch(newInputValue);
