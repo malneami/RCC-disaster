@@ -21,7 +21,7 @@ import { UpdateTraumaCaseDto } from './dto/update-trauma-case.dto';
 import { TraumaFilterDto } from './dto/trauma-filter.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Public } from '../../auth/decorators/public.decorator';
-import { TraumaModeOfArrival, TraumaMechanismOfInjury } from '@prisma/client';
+import { TraumaModeOfArrival, TraumaMechanismOfInjury, TraumaDispositionType } from '@prisma/client';
 import { TraumaExportService } from './services/trauma-export.service';
 
 @Controller('trauma-cases')
@@ -48,6 +48,7 @@ export class TraumaCasesController {
     @Query('destinationHospitalId') destinationHospitalId?: string,
     @Query('modeOfArrival') modeOfArrival?: TraumaModeOfArrival,
     @Query('mechanismOfInjury') mechanismOfInjury?: TraumaMechanismOfInjury,
+    @Query('edDisposition') edDisposition?: TraumaDispositionType,
     @Query('criticalCase') criticalCase?: boolean,
     @Query('transferCase') transferCase?: boolean,
     @Query('startDate') startDate?: string,
@@ -62,6 +63,7 @@ export class TraumaCasesController {
       destinationHospitalId,
       modeOfArrival,
       mechanismOfInjury,
+      edDisposition,
       criticalCase,
       transferCase,
       startDate,

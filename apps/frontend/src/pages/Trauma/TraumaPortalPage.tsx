@@ -115,6 +115,7 @@ const TraumaPortalPage: React.FC = () => {
       
       if (appliedFilters.modeOfArrival) filters.modeOfArrival = appliedFilters.modeOfArrival;
       if (appliedFilters.mechanismOfInjury) filters.mechanismOfInjury = appliedFilters.mechanismOfInjury;
+      if (appliedFilters.edDisposition) filters.edDisposition = appliedFilters.edDisposition;
       if (appliedFilters.criticalCase !== null && appliedFilters.criticalCase !== undefined) {
         filters.criticalCase = appliedFilters.criticalCase === true || (typeof appliedFilters.criticalCase === 'string' && appliedFilters.criticalCase === 'true');
       }

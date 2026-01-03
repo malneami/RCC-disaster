@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../database/prisma.service';
 import { CreateTraumaCaseDto } from './dto/create-trauma-case.dto';
 import { UpdateTraumaCaseDto } from './dto/update-trauma-case.dto';
-import { TraumaCase, TraumaModeOfArrival, TraumaMechanismOfInjury } from '@prisma/client';
+import { TraumaCase, TraumaModeOfArrival, TraumaMechanismOfInjury, TraumaDispositionType } from '@prisma/client';
 import { TraumaPatientService } from './services/trauma-patient.service';
 import { TraumaTicketService } from './services/trauma-ticket.service';
 import { TraumaKpiService } from './services/trauma-kpi.service';
@@ -216,6 +216,7 @@ export class TraumaCasesService {
     destinationHospitalId?: string;
     modeOfArrival?: TraumaModeOfArrival;
     mechanismOfInjury?: TraumaMechanismOfInjury;
+    edDisposition?: TraumaDispositionType;
     criticalCase?: boolean;
     transferCase?: boolean;
     startDate?: string;

@@ -207,6 +207,7 @@ export interface TraumaCaseFilters {
   destinationHospitalId?: string;
   modeOfArrival?: TraumaModeOfArrival;
   mechanismOfInjury?: TraumaMechanismOfInjury;
+  edDisposition?: TraumaDispositionType;
   criticalCase?: boolean;
   transferCase?: boolean;
   startDate?: string;
@@ -318,6 +319,7 @@ export class TraumaService {
       if (filters?.destinationHospitalId) params.append('destinationHospitalId', filters.destinationHospitalId);
       if (filters?.modeOfArrival) params.append('modeOfArrival', filters.modeOfArrival);
       if (filters?.mechanismOfInjury) params.append('mechanismOfInjury', filters.mechanismOfInjury);
+      if (filters?.edDisposition) params.append('edDisposition', filters.edDisposition);
       if (filters?.criticalCase !== undefined) params.append('criticalCase', filters.criticalCase.toString());
       if (filters?.transferCase !== undefined) params.append('transferCase', filters.transferCase.toString());
       if (filters?.startDate) params.append('startDate', filters.startDate);

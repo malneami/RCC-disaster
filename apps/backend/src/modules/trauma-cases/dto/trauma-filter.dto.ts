@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsEnum, IsBoolean, IsDateString } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { TraumaModeOfArrival, TraumaMechanismOfInjury } from '@prisma/client';
+import { TraumaModeOfArrival, TraumaMechanismOfInjury, TraumaDispositionType } from '@prisma/client';
 
 export class TraumaFilterDto {
   @IsOptional()
@@ -22,6 +22,10 @@ export class TraumaFilterDto {
   @IsOptional()
   @IsEnum(TraumaMechanismOfInjury)
   mechanismOfInjury?: TraumaMechanismOfInjury;
+
+  @IsOptional()
+  @IsEnum(TraumaDispositionType)
+  edDisposition?: TraumaDispositionType;
 
   @IsOptional()
   @IsBoolean()

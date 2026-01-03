@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { TraumaCase, TraumaModeOfArrival, TraumaMechanismOfInjury } from '@prisma/client';
+import { TraumaCase, TraumaModeOfArrival, TraumaMechanismOfInjury, TraumaDispositionType } from '@prisma/client';
 
 export interface TraumaFilters {
   patientId?: string;
@@ -8,6 +8,7 @@ export interface TraumaFilters {
   destinationHospitalId?: string;
   modeOfArrival?: TraumaModeOfArrival;
   mechanismOfInjury?: TraumaMechanismOfInjury;
+  edDisposition?: TraumaDispositionType;
   criticalCase?: boolean;
   transferCase?: boolean;
   startDate?: string;
@@ -56,6 +57,10 @@ export class TraumaQueryService {
 
     if (filters?.mechanismOfInjury) {
       where.mechanismOfInjury = filters.mechanismOfInjury;
+    }
+
+    if (filters?.edDisposition) {
+      where.edDisposition = filters.edDisposition;
     }
 
     if (filters?.criticalCase !== undefined) {
