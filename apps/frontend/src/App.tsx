@@ -54,7 +54,7 @@ function App() {
     <FullscreenProvider>
       <VideoCallSocketProvider>
         <Layout>
-          <Box sx={{ flexGrow: 1, p: 3 }}>
+          <Box sx={{ flexGrow: 1 }}>
             <IncomingCallNotification />
             <Routes>
               <Route 

@@ -34,7 +34,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`stroke-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ p: 1 }}>{children}</Box>}
     </div>
   );
 }
@@ -340,8 +340,8 @@ const StrokePortalPage: React.FC = () => {
       >
         {/* ... error display ... */}
         {error && (
-          <Box sx={{ p: 3, pb: 0 }}>
-            <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
+          <Box sx={{ p: 1.5, pb: 0 }}>
+            <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 1.5 }}>
               {error}
             </Alert>
           </Box>
@@ -351,7 +351,7 @@ const StrokePortalPage: React.FC = () => {
         <Box sx={{
           borderBottom: 1,
           borderColor: 'divider',
-          mb: 1,
+          mb: 0.5,
           position: 'sticky',
           top: 0,
           zIndex: 100,

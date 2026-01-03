@@ -604,7 +604,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
   return (
     <Box>
       {/* Header and Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
             Stroke Cases
@@ -647,7 +647,7 @@ const StrokeCasesCards: React.FC<StrokeCasesCardsProps> = ({
       </Box>
 
       {/* Search Bar */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 1.5 }}>
         <TextField
           fullWidth
           placeholder="Search stroke cases..."

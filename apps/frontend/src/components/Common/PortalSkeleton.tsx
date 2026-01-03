@@ -155,18 +155,18 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#F5F5F5' }}>
       {/* Hospital Dashboard Header */}
-      <Container maxWidth="xl" sx={{ px: 3, py: 3 }}>
+      <Container maxWidth="xl" sx={{ px: 2, py: 1.5 }}>
         <Box
           sx={{
             backgroundColor: getHeaderBackground(),
             borderRadius: '8px',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            py: 2.5,
-            px: 3,
+            py: 1.5,
+            px: 2,
           }}
         >
           {/* Header Section */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                 <Box
@@ -296,7 +296,7 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
 
           {/* Divider between header and cards */}
           {kpiCards.length > 0 && (
-            <Divider sx={{ my: 2, borderColor: 'divider' }} />
+            <Divider sx={{ my: 1.5, borderColor: 'divider' }} />
           )}
 
           {/* KPI Cards - StatPill style from Hospitals page */}
@@ -352,7 +352,7 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
       </Container>
 
       {/* Main Content - Hospital Dashboard Style */}
-      <Container maxWidth="xl" sx={{ py: 3, px: 3 }}>
+      <Container maxWidth="xl" sx={{ py: 1, px: 2 }}>
         {children && (
           <Box
             sx={{
@@ -360,7 +360,7 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
               borderRadius: '8px',
               border: '1px solid #E0E0E0',
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              p: 3,
+              p: 1.5,
             }}
           >
             {children}

@@ -203,7 +203,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 1, sm: 2, md: 3 },
+          p: { xs: 0.5, sm: 1, md: 1.5 },
           width: { sm: isFullscreen ? '100%' : `calc(100% - ${drawerWidth}px)` },
           mt: isFullscreen ? '0px' : '64px',
         }}

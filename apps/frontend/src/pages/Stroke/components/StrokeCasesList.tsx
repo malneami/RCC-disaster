@@ -333,7 +333,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
   return (
     <Box>
       {/* Header and Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
             Stroke Cases
@@ -376,7 +376,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
       </Box>
 
       {/* Search Bar */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 1.5 }}>
         <TextField
           fullWidth
           placeholder="Search stroke cases..."
@@ -419,7 +419,7 @@ const StrokeCasesList: React.FC<StrokeCasesListProps> = ({
 
       {/* Active Filters Alert */}
       {(filters.strokeType || filters.status || filters.originHospitalId || filters.destinationHospitalId || filters.modeOfArrival || filters.dateFrom || filters.dateTo || searchValue) && (
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert severity="info" sx={{ mb: 1.5 }}>
           {searchValue && `Search: "${searchValue}"`}
           {(filters.strokeType || filters.status || filters.originHospitalId || filters.destinationHospitalId || filters.modeOfArrival || filters.dateFrom || filters.dateTo) && (
             <>
