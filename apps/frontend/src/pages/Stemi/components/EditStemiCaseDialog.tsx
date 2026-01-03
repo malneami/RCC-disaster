@@ -41,6 +41,7 @@ import {
 import { StemiDatetimeService } from '../services/stemiDatetimeService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Hospital, hospitalService } from '../../../services/hospitalService';
+import { calculateAge } from '../../../utils/ageCalculator';
 
 const DESTINATION_REQUIRED_MESSAGE =
   'Please select a destination hospital because the selected origin hospital does not provide STEMI service.';
@@ -481,11 +482,28 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
       setLoading(false);
 
       // Convert STEMI case data to form structure (exactly like creation form)
+      const dateOfBirth = stemiCase.patient?.dateOfBirth 
+        ? (typeof stemiCase.patient.dateOfBirth === 'string' 
+            ? stemiCase.patient.dateOfBirth 
+            : new Date(stemiCase.patient.dateOfBirth).toISOString().split('T')[0])
+        : undefined;
+      
+      // Calculate age from dateOfBirth if age is not present
+      let age = stemiCase.patient?.age;
+      if (!age && dateOfBirth) {
+        try {
+          age = calculateAge(dateOfBirth).years;
+        } catch (error) {
+          console.error('Error calculating age from dateOfBirth:', error);
+        }
+      }
+
       setPatientInfo({
         firstName: stemiCase.patient?.firstName || '',
         lastName: stemiCase.patient?.lastName || '',
         nationalId: stemiCase.patient?.nationalId || '',
-        age: stemiCase.patient?.age || undefined,
+        dateOfBirth,
+        age,
         gender: (stemiCase.patient?.gender as 'MALE' | 'FEMALE') || 'MALE',
         phoneNumber: stemiCase.patient?.phoneNumber || '',
         address: (stemiCase.patient as any)?.address || '',
