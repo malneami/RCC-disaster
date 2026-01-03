@@ -11,7 +11,7 @@ import CreateTraumaCaseDialog from './components/CreateTraumaCaseDialog';
 import ViewTraumaCaseDialog from './components/ViewTraumaCaseDialog';
 import EditTraumaCaseDialog from './components/EditTraumaCaseDialog';
 import PortalSkeleton, { PortalStep } from '../../components/Common/PortalSkeleton';
-import GenericFilterDialog from '../../components/Common/GenericFilterDialog';
+import TraumaCasesFilters from './components/TraumaCasesFilters';
 import { TraumaService, TraumaCase } from '../../services/traumaService';
 import { TraumaKPIsResponse } from './types/traumaTypes';
 import { useAuth } from '../../contexts/AuthContext';
@@ -463,9 +463,9 @@ const TraumaPortalPage: React.FC = () => {
             </Box>
             <Box display="flex" gap={2}>
               <Button
-                variant="outlined"
+                variant={filterDialogOpen ? "contained" : "outlined"}
                 startIcon={<FilterList />}
-                onClick={() => setFilterDialogOpen(true)}
+                onClick={() => setFilterDialogOpen(!filterDialogOpen)}
               >
                 Filters
               </Button>
@@ -508,6 +508,17 @@ const TraumaPortalPage: React.FC = () => {
               }}
             />
           </Box>
+
+          {/* Filters Popup */}
+          <TraumaCasesFilters
+            open={filterDialogOpen}
+            onClose={() => setFilterDialogOpen(false)}
+            fields={TRAUMA_FILTER_FIELDS as any}
+            values={appliedFilters}
+            hospitals={hospitals}
+            onApply={handleFilterDialogApply}
+            onClearFilters={handleClearFilters}
+          />
 
           {/* Cases View */}
           {viewMode === 'table' ? (
@@ -625,15 +636,6 @@ const TraumaPortalPage: React.FC = () => {
           traumaCase={selectedCase}
         />
 
-        {/* Filter Dialog */}
-        <GenericFilterDialog
-          open={filterDialogOpen}
-          onClose={() => setFilterDialogOpen(false)}
-          onApply={handleFilterDialogApply}
-          onReset={handleClearFilters}
-          fields={TRAUMA_FILTER_FIELDS as any}
-          values={appliedFilters}
-        />
       </PortalSkeleton>
     </>
   );
