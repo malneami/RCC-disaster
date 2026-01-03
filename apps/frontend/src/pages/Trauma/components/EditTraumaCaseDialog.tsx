@@ -29,6 +29,7 @@ import { TRAUMA_FORM_STEPS } from '../constants/traumaConstants';
 import { validateTraumaCaseForm } from '../helpers/traumaHelpers';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Hospital, hospitalService } from '../../../services/hospitalService';
+import { calculateAge } from '../../../utils/ageCalculator';
 
 const NAME_REGEX = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFA-Za-z\s\u00C0-\u017F-]+$/;
 const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
@@ -200,13 +201,29 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       setOriginHospital(null);
 
       // Convert trauma case data to form structure (exactly like creation form)
+      const dateOfBirth = traumaCase.patient?.dateOfBirth 
+        ? (typeof traumaCase.patient.dateOfBirth === 'string' 
+            ? traumaCase.patient.dateOfBirth 
+            : new Date(traumaCase.patient.dateOfBirth).toISOString().split('T')[0])
+        : undefined;
+      
+      // Calculate age from dateOfBirth if age is not present
+      let age = traumaCase.patient?.age;
+      if (!age && dateOfBirth) {
+        try {
+          age = calculateAge(dateOfBirth).years;
+        } catch (error) {
+          console.error('Error calculating age from dateOfBirth:', error);
+        }
+      }
+
       setFormData({
         patientInfo: {
           firstName: traumaCase.patient?.firstName || '',
           lastName: traumaCase.patient?.lastName || '',
           nationalId: traumaCase.patient?.nationalId || '',
-          dateOfBirth: traumaCase.patient?.dateOfBirth ? new Date(traumaCase.patient.dateOfBirth).toISOString().split('T')[0] : undefined,
-          age: traumaCase.patient?.age || undefined,
+          dateOfBirth,
+          age,
           gender: (traumaCase.patient?.gender as 'MALE' | 'FEMALE') || ('MALE' as 'MALE' | 'FEMALE'),
           phoneNumber: traumaCase.patient?.phoneNumber || '',
           email: traumaCase.patient?.email || '',
