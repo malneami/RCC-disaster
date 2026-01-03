@@ -292,14 +292,14 @@ const StrokePortalPage: React.FC = () => {
   const kpiCards = [
     {
       title: 'Total Cases',
-      value: strokeCases.length,
+      value: totalCases,
       icon: <Assessment />,
       color: '#1976d2',
     },
     {
       title: 'Avg Registration to CT',
-      value: kpiSummary?.averageTimings?.registrationToCt ?
-        `${Math.round(kpiSummary.averageTimings.registrationToCt)} min` : 'N/A',
+      value: kpiSummary?.averageTimings?.doorToCtScan ?
+        `${Math.round(kpiSummary.averageTimings.doorToCtScan)} min` : 'N/A',
       icon: <Timeline />,
       color: '#ed6c02',
     },

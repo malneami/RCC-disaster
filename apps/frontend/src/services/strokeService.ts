@@ -549,6 +549,7 @@ export interface StrokeKPISummary {
   };
   averageTimings: {
     doorToPhysician: number;
+    doorToCtScan: number;
     registrationToCt: number;
     registrationToThrombolysis: number;
     registrationToMechanicalThrombectomy: number;
