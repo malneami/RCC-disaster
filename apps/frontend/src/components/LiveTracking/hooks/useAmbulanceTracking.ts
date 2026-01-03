@@ -27,7 +27,7 @@ export const useAmbulanceTracking = (options: UseAmbulanceTrackingOptions = {}) 
   // Always fetch ambulance data from database to get status and driver info
   const ambulancesQuery = useQuery(
     ['ambulances'],
-    () => emsService.getAmbulances(),
+    () => emsService.getAllAmbulances(),
     {
       refetchInterval: autoRefresh ? refreshInterval : false,
     }

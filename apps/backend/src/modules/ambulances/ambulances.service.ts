@@ -16,6 +16,8 @@ interface AmbulanceFilters {
   driverId?: string;
   isActive?: boolean;
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
 interface GPSApiResponse {
@@ -81,6 +83,47 @@ export class AmbulancesService {
       include: this.driverInclude,
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async findPaginated(filters: AmbulanceFilters = {}): Promise<{ data: Ambulance[]; total: number; page: number; limit: number }> {
+    const where: Prisma.AmbulanceWhereInput = { deletedAt: null };
+
+    if (filters.status) where.status = filters.status;
+    if (filters.type) where.type = filters.type as AmbulanceType;
+    if (filters.equipmentStatus) where.equipmentStatus = filters.equipmentStatus as EquipmentStatus;
+    if (filters.baseStation) where.baseStation = { contains: filters.baseStation, mode: 'insensitive' };
+    if (filters.driverId) where.driverId = filters.driverId;
+    if (filters.isActive !== undefined) where.isActive = filters.isActive;
+
+    if (filters.search) {
+      where.OR = [
+        { callSign: { contains: filters.search, mode: 'insensitive' } },
+        { plateNumber: { contains: filters.search, mode: 'insensitive' } },
+        { vehicleImei: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.ambulance.findMany({
+        where,
+        include: this.driverInclude,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.ambulance.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+    };
   }
 
   async findAllGPS(filters: AmbulanceFilters = {}): Promise<any> {

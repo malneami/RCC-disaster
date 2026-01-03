@@ -299,6 +299,15 @@ export interface AmbulanceFilter {
   type?: string;
   isActive?: boolean;
   search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface AssignmentFilter {

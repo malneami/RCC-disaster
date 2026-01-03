@@ -39,9 +39,12 @@ export class AmbulancesController {
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
-  @ApiOperation({ summary: 'Get all ambulances with optional filtering' })
-  @ApiResponse({ status: 200, description: 'List of ambulances retrieved successfully' })
+  @ApiOperation({ summary: 'Get all ambulances with optional filtering and pagination' })
+  @ApiResponse({ status: 200, description: 'List of ambulances or paginated result' })
   async findAll(@Query() filter: AmbulanceFilterDto) {
+    if (filter.page || filter.limit) {
+      return this.ambulancesService.findPaginated(filter);
+    }
     return this.ambulancesService.findAll(filter);
   }
 

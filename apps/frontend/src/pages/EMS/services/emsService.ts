@@ -14,6 +14,7 @@ import {
   AmbulanceFilter,
   AssignmentFilter,
   GPSTrackingFilter,
+  PaginatedResponse,
 } from '../types/ems';
 
 class EMSService {
@@ -43,12 +44,40 @@ class EMSService {
   }
 
   // Ambulances
-  async getAmbulances(filter?: AmbulanceFilter): Promise<Ambulance[]> {
+  async getAmbulances(filter?: AmbulanceFilter): Promise<PaginatedResponse<Ambulance>> {
     try {
       const response = await apiClient.get(`${this.baseUrl}/ambulances`, { params: filter });
-      return response.data || [];
+      // Handle both old array format (fallback) and new paginated format
+      if (Array.isArray(response.data)) {
+        return {
+          data: response.data,
+          total: response.data.length,
+          page: 1,
+          pageSize: response.data.length
+        };
+      }
+      return {
+        data: response.data.data || [],
+        total: response.data.total || 0,
+        page: response.data.page || 1,
+        pageSize: response.data.limit || 10
+      };
     } catch (error) {
       console.error('Failed to fetch ambulances:', error);
+      return { data: [], total: 0, page: 1, pageSize: 10 };
+    }
+  }
+
+  async getAllAmbulances(): Promise<Ambulance[]> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/ambulances`);
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      // If backend returns paginated response even without params (shouldn't happen with my fix, but safe fallback)
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to fetch all ambulances:', error);
       return [];
     }
   }

@@ -2,14 +2,20 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { emsService } from '../services/emsService';
 import { CreateAmbulanceDto, UpdateAmbulanceDto, AmbulanceFilter } from '../types/ems';
 
-export const useAmbulances = (filter?: AmbulanceFilter) => {
+import { useState } from 'react';
+
+export const useAmbulances = (initialFilter?: AmbulanceFilter) => {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [filter, setFilter] = useState<AmbulanceFilter>(initialFilter || {});
 
   const query = useQuery(
-    ['ambulances', filter],
-    () => emsService.getAmbulances(filter),
+    ['ambulances', { ...filter, page, limit }],
+    () => emsService.getAmbulances({ ...filter, page, limit }),
     {
       refetchInterval: 60000, // Refetch every minute
+      keepPreviousData: true,
     }
   );
 
@@ -53,7 +59,13 @@ export const useAmbulances = (filter?: AmbulanceFilter) => {
 
 
   return {
-    ambulances: query.data || [],
+    ambulances: query.data?.data || [],
+    total: query.data?.total || 0,
+    page,
+    limit,
+    setPage,
+    setLimit,
+    setFilter,
     isLoading: query.isLoading,
     error: query.error,
     createAmbulance: createMutation.mutateAsync,
