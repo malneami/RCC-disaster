@@ -124,7 +124,7 @@ export class StrokeCasesService {
           if (createStrokeCaseDto.patientInfo.dateOfBirth) {
               patientData.dateOfBirth = new Date(createStrokeCaseDto.patientInfo.dateOfBirth);
           } else {
-              patientData.dateOfBirth = new Date('1900-01-01');
+              patientData.dateOfBirth = null;
           }
           
           if (createStrokeCaseDto.patientInfo.gender) {

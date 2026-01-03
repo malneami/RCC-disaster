@@ -17,6 +17,7 @@ import { StrokeCase, CreateStrokeCaseData } from '../../../services/strokeServic
 import { useAuth } from '../../../contexts/AuthContext';
 import { Hospital, hospitalService } from '../../../services/hospitalService';
 import PatientStep from './CreateStrokeCase/PatientStep';
+import { calculateAge } from '../../../utils/ageCalculator';
 import AssessmentStep from './CreateStrokeCase/AssessmentStep';
 import DiagnosisStep from './CreateStrokeCase/DiagnosisStep';
 import TreatmentStep from './CreateStrokeCase/TreatmentStep';
@@ -417,17 +418,29 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         chiefComplaint: strokeCase.chiefComplaint || '',
 
         // Patient Information
-        patientInfo: {
-          firstName: strokeCase.patient?.firstName || '',
-          lastName: strokeCase.patient?.lastName || '',
-          nationalId: strokeCase.patient?.nationalId || '',
-          mrn: strokeCase.patient?.mrn || '',
-          dateOfBirth: strokeCase.patient?.dateOfBirth ? new Date(strokeCase.patient.dateOfBirth).toISOString().split('T')[0] : undefined,
-          age: strokeCase.patient?.age || undefined,
-          gender: (strokeCase.patient?.gender as 'MALE' | 'FEMALE') || 'MALE',
-          phoneNumber: strokeCase.patient?.phoneNumber || '',
-          email: strokeCase.patient?.email || '',
-        },
+        patientInfo: (() => {
+          const dateOfBirth = strokeCase.patient?.dateOfBirth ? new Date(strokeCase.patient.dateOfBirth).toISOString().split('T')[0] : undefined;
+          // Calculate age from dateOfBirth if age is not present
+          let age = strokeCase.patient?.age;
+          if (!age && dateOfBirth) {
+            try {
+              age = calculateAge(dateOfBirth).years;
+            } catch (error) {
+              console.error('Error calculating age from dateOfBirth:', error);
+            }
+          }
+          return {
+            firstName: strokeCase.patient?.firstName || '',
+            lastName: strokeCase.patient?.lastName || '',
+            nationalId: strokeCase.patient?.nationalId || '',
+            mrn: strokeCase.patient?.mrn || '',
+            dateOfBirth,
+            age,
+            gender: (strokeCase.patient?.gender as 'MALE' | 'FEMALE') || 'MALE',
+            phoneNumber: strokeCase.patient?.phoneNumber || '',
+            email: strokeCase.patient?.email || '',
+          };
+        })(),
 
         // Patient Arrival & Timing
         modeOfArrival: strokeCase.modeOfArrival,

@@ -585,7 +585,8 @@ export class StrokeService {
       firstName: data.patientInfo.firstName, // Required, don't clean
       lastName: data.patientInfo.lastName, // Required, don't clean
       nationalId: data.patientInfo.nationalId, // Required, don't clean
-      age: data.patientInfo.age, // Required, don't clean
+      dateOfBirth: cleanValue(data.patientInfo.dateOfBirth), // Optional
+      age: data.patientInfo.age, // Optional
       gender: data.patientInfo.gender, // Required, don't clean
       mrn: cleanValue(data.patientInfo.mrn), // Optional
       phoneNumber: cleanValue(data.patientInfo.phoneNumber), // Optional
@@ -594,7 +595,7 @@ export class StrokeService {
 
     // Remove undefined values from patientInfo (only optional fields)
     if (cleanPatientInfo) {
-      const optionalFields = ['mrn', 'phoneNumber', 'email'];
+      const optionalFields = ['mrn', 'phoneNumber', 'email', 'dateOfBirth', 'age'];
       optionalFields.forEach(key => {
         if (cleanPatientInfo[key as keyof typeof cleanPatientInfo] === undefined) {
           delete cleanPatientInfo[key as keyof typeof cleanPatientInfo];
