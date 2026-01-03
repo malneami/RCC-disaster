@@ -228,7 +228,7 @@ const DashboardPage: React.FC = () => {
   // Main KPI Cards - now using dynamic data
   const kpiCards = [
     {
-      title: 'Active Transfers',
+      title: 'Total Transfers',
       value: dashboardMetrics?.activeTransfers?.toString() || '0',
       subtitle: 'Currently in progress',
       color: '#2196f3',
@@ -605,7 +605,7 @@ const DashboardPage: React.FC = () => {
                         </Box>
                         
                         <Chip
-                          label={`${pathway.activeCount} Active`}
+                          label={`${pathway.activeCount} Cases`}
                           size="small"
                           sx={{
                             bgcolor: pathway.color,
