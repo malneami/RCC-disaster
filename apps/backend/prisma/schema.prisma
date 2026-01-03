@@ -379,6 +379,26 @@ enum BedRequestPriority {
   EMERGENCY
 }
 
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketCategory {
+  BUG
+  ENHANCEMENT
+  TECHNICAL_ISSUE
+  FEATURE_REQUEST
+  OTHER
+}
+
+enum MessageSenderType {
+  USER
+  SUPPORT
+}
+
 // ems-enums.prisma
 // EMS-specific enums for Emergency Medical Services
 
@@ -779,7 +799,10 @@ model Patient {
   firstName       String         @map("first_name")
   lastName        String         @map("last_name")
   middleName      String?        @map("middle_name")
-  dateOfBirth     DateTime?      @map("date_of_birth") // Single source of truth for age
+  dateOfBirth     DateTime?      @map("date_of_birth") // Will be removed after migration
+  age             Int?           // Age in years
+  ageMonths       Int?           @map("age_months") // Age in months (for precise age when manually entered)
+  ageDays         Int?           @map("age_days") // Age in days (for precise age when manually entered)
   gender          PatientGender
   maritalStatus   MaritalStatus? @map("marital_status")
   
@@ -867,6 +890,7 @@ model Patient {
   @@index([mrn])
   @@index([nationalId])
   @@index([lastName, firstName])
+  @@index([age])
   @@index([duplicateGroupId])
   @@index([createdAt])
   @@index([lastAccessedAt])
@@ -2012,7 +2036,7 @@ model GPSTrackingLog {
   createdAt               DateTime        @default(now()) @map("created_at")
   
   // Relations
-  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id], onDelete: Cascade)
+  ambulance               Ambulance       @relation(fields: [ambulanceId], references: [id])
   
   @@map("gps_tracking_logs")
   @@index([ambulanceId])
@@ -2382,12 +2406,25 @@ enum NotificationType {
   CASE_ASSIGNMENT
   CASE_COMPLETION
   CASE_ESCALATION
+  EMS_LATE_CASE
+  CRITICAL_CASE_INCOMING
+  INCOMPLETE_PATIENT_DATA
+  KPI_THRESHOLD_BREACH
+  CRITICAL_TIME_LIMIT_APPROACHING
 }
 
 enum NotificationPriority {
   LOW
   MEDIUM
   HIGH
+  CRITICAL
+}
+
+enum NotificationCategory {
+  PATIENTS
+  EMS
+  HOSPITALS
+  TICKETS
 }
 
 enum NotificationStatus {
@@ -2439,6 +2476,12 @@ model Notification {
   // Additional Information
   metadata                String?             // JSON string for additional data
   
+  // Category and Source Tracking
+  category                NotificationCategory @default(PATIENTS) @map("category")
+  sourceEntityType        String?             @map("source_entity_type") 
+  sourceEntityId          String?             @map("source_entity_id") 
+  escalationLevel         Int?                @map("escalation_level") 
+  
   // Audit Fields
   createdAt               DateTime            @default(now()) @map("created_at")
   updatedAt               DateTime            @updatedAt @map("updated_at")
@@ -2459,6 +2502,8 @@ model Notification {
   @@index([patientId])
   @@index([createdAt])
   @@index([isRead])
+  @@index([category])
+  @@index([sourceEntityType, sourceEntityId])
 }
 
 model CaseNote {
@@ -2627,26 +2672,7 @@ model Reply {
   @@index([deletedAt])
 }
 
-enum SupportTicketStatus {
-  OPEN
-  IN_PROGRESS
-  RESOLVED
-  CLOSED
-}
-
-enum SupportTicketCategory {
-  BUG
-  ENHANCEMENT
-  TECHNICAL_ISSUE
-  FEATURE_REQUEST
-  OTHER
-}
-
-enum MessageSenderType {
-  USER
-  SUPPORT
-}
-
+// support-ticket.prisma
 model SupportTicket {
   id              String                @id @default(uuid())
   ticketNumber    String                @unique @map("ticket_number")
@@ -2677,11 +2703,10 @@ model SupportTicket {
   @@index([createdAt])
 }
 
-// Support Message Model
 model SupportMessage {
   id              String                @id @default(uuid())
   ticketId        String                @map("ticket_id")
-  content         String               
+  content         String                
   senderType      MessageSenderType     @map("sender_type")
   
   // Relations
@@ -2702,7 +2727,6 @@ model SupportMessage {
   @@index([createdAt])
 }
 
-// Support Attachment Model
 model SupportAttachment {
   id              String                @id @default(uuid())
   ticketId        String                @map("ticket_id")
