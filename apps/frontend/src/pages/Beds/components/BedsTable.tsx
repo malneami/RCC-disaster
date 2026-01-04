@@ -217,6 +217,20 @@ const BedsTable: React.FC<BedsTableProps> = ({
         </Box>
       </Box>
 
+      {/* Inline Filters */}
+      <BedsFilters
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        filters={filters}
+        hospitals={hospitals}
+        units={units}
+        onFiltersChange={setFilters}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
+        isAdmin={isAdmin}
+        userHospitalId={userHospitalId}
+      />
+
       <Card
         elevation={0}
         sx={{
@@ -288,19 +302,6 @@ const BedsTable: React.FC<BedsTableProps> = ({
           />
         )}
       </Card>
-
-      <BedsFilters
-        open={filterDialogOpen}
-        onClose={() => setFilterDialogOpen(false)}
-        filters={filters}
-        hospitals={hospitals}
-        units={units}
-        onFiltersChange={setFilters}
-        onApplyFilters={handleApplyFilters}
-        onClearFilters={handleClearFilters}
-        isAdmin={isAdmin}
-        userHospitalId={userHospitalId}
-      />
     </Box>
   );
 };
