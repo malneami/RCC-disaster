@@ -22,7 +22,7 @@ import {
 import { Patient } from '../../services/patientService';
 import MultiStepPatientForm from './components/forms/MultiStepPatientForm';
 import GenericTabs from '../../components/Common/GenericTabs';
-import GenericFilterDialog from '../../components/Common/GenericFilterDialog';
+import PatientFilters from './components/PatientFilters';
 import ExportDialog from '../../components/Common/ExportDialog';
 import { usePatientData } from './hooks/usePatientData';
 import { usePatientExport } from './hooks/usePatientExport';
@@ -100,11 +100,6 @@ const PatientsPage: React.FC = () => {
   };
 
   const handleFilterDialogClose = () => {
-    setShowFilterDialog(false);
-  };
-
-  const handleFilterDialogApply = (newFilters: any) => {
-    handleFiltersChange(newFilters);
     setShowFilterDialog(false);
   };
 
@@ -384,8 +379,8 @@ const PatientsPage: React.FC = () => {
               const displayValue = Array.isArray(value)
                 ? value.join(', ')
                 : typeof value === 'object' && value !== null
-                ? JSON.stringify(value)
-                : String(value);
+                  ? JSON.stringify(value)
+                  : String(value);
               return (
                 <Chip
                   key={key}
@@ -430,6 +425,17 @@ const PatientsPage: React.FC = () => {
           </Alert>
         )}
 
+        {/* Patient Filters Dialog */}
+        <PatientFilters
+          open={showFilterDialog}
+          onClose={handleFilterDialogClose}
+          fields={filterFields}
+          values={filters}
+          onFiltersChange={handleFiltersChange}
+          onApplyFilters={handleFilterDialogClose}
+          onClearFilters={handleFilterDialogReset}
+        />
+
         {/* Tabs */}
         <GenericTabs
           tabs={tabsConfig}
@@ -437,6 +443,8 @@ const PatientsPage: React.FC = () => {
           onChange={(_, newValue) => setTabValue(newValue)}
         />
       </Box>
+
+
 
       {/* Patient Form Dialog */}
       <MultiStepPatientForm
@@ -446,17 +454,6 @@ const PatientsPage: React.FC = () => {
         onPatientCreated={handlePatientCreatedWrapper}
         onPatientUpdated={handlePatientUpdatedWrapper}
         onViewDuplicate={handleViewDuplicate}
-      />
-
-      {/* Filter Dialog */}
-      <GenericFilterDialog
-        open={showFilterDialog}
-        title="Patient Filters"
-        fields={filterFields}
-        values={filters}
-        onClose={handleFilterDialogClose}
-        onApply={handleFilterDialogApply}
-        onReset={handleFilterDialogReset}
       />
 
       {/* Export Dialog */}
