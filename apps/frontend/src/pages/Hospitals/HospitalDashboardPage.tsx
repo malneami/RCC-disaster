@@ -120,20 +120,28 @@ const HospitalDashboardPage: React.FC = () => {
           <Box
             sx={{
               backgroundColor: '#F8FAFC',
-              p: 1.5,
+              p: { xs: 1, md: 1.5 },
               borderBottom: '1px solid #E2E8F0',
             }}
           >
             <Tabs
               value={tabValue}
               onChange={(_, newValue) => setTabValue(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
               sx={{
                 minHeight: 'auto',
                 '& .MuiTabs-indicator': {
                   display: 'none',
                 },
                 '& .MuiTabs-flexContainer': {
-                  gap: '8px',
+                  gap: { xs: '4px', md: '8px' },
+                },
+                '& .MuiTabs-scrollButtons': {
+                  '&.Mui-disabled': {
+                    opacity: 0.3,
+                  },
                 },
               }}
             >
@@ -143,15 +151,16 @@ const HospitalDashboardPage: React.FC = () => {
                   label={label}
                   sx={{
                     minHeight: '44px',
-                    padding: '8px 20px',
+                    padding: { xs: '8px 12px', md: '8px 20px' },
                     borderRadius: spacing.borderRadius.md,
                     textTransform: 'none',
-                    fontSize: '0.875rem',
+                    fontSize: { xs: '0.75rem', md: '0.875rem' },
                     fontWeight: tabValue === index ? 700 : 500,
                     color: tabValue === index ? '#0F172A' : '#64748B',
                     backgroundColor: tabValue === index ? '#FFFFFF' : 'transparent',
                     boxShadow: tabValue === index ? shadows.tabActive : 'none',
                     transition: 'all 0.2s ease-in-out',
+                    whiteSpace: 'nowrap',
                     '&:hover': {
                       backgroundColor: tabValue === index ? '#FFFFFF' : alpha('#FFFFFF', 0.5),
                     },

@@ -36,8 +36,8 @@ export const HospitalsHeader: React.FC<HospitalsHeaderProps> = ({
     return (
         <Box
             sx={{
-                px: 4,
-                py: 2.5,
+                px: { xs: 2, md: 4 },
+                py: { xs: 2, md: 2.5 },
                 backgroundColor: 'white',
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 position: 'sticky',
@@ -45,10 +45,16 @@ export const HospitalsHeader: React.FC<HospitalsHeaderProps> = ({
                 zIndex: 10,
             }}
         >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 3 }}>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', md: 'row' },
+                alignItems: { xs: 'stretch', md: 'center' },
+                justifyContent: 'space-between',
+                gap: { xs: 2, md: 3 }
+            }}>
                 {/* Title */}
-                <Box>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                <Box sx={{ flexShrink: 0 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
                         Hospital Network
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -63,7 +69,8 @@ export const HospitalsHeader: React.FC<HospitalsHeaderProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         flex: 1,
-                        maxWidth: 400,
+                        maxWidth: { xs: '100%', md: 400 },
+                        order: { xs: 3, md: 0 },
                         px: 2,
                         py: 1,
                         borderRadius: 3,
@@ -91,7 +98,13 @@ export const HospitalsHeader: React.FC<HospitalsHeaderProps> = ({
                 </Paper>
 
                 {/* Actions */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: { xs: 'flex-end', md: 'flex-start' },
+                    gap: 1.5,
+                    flexShrink: 0,
+                }}>
                     <IconButton
                         size="small"
                         onClick={onRefresh}
@@ -111,12 +124,13 @@ export const HospitalsHeader: React.FC<HospitalsHeaderProps> = ({
                             borderRadius: 2.5,
                             textTransform: 'none',
                             fontWeight: 600,
-                            px: 2.5,
+                            px: { xs: 2, md: 2.5 },
                             boxShadow: 'none',
                             '&:hover': { boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}` },
                         }}
                     >
-                        Add Hospital
+                        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Add Hospital</Box>
+                        <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Add</Box>
                     </Button>
                 </Box>
             </Box>

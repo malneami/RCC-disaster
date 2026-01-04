@@ -52,7 +52,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
     return (
         <>
-            <Breadcrumbs sx={{ mb: 3, display: isFullscreen ? 'none' : 'flex' }}>
+            <Breadcrumbs sx={{ mb: { xs: 2, md: 3 }, display: isFullscreen ? 'none' : 'flex' }}>
                 <Link
                     color="inherit"
                     href="/hospitals"
@@ -67,15 +67,29 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <Typography color="text.primary">{hospital.name}</Typography>
             </Breadcrumbs>
 
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'flex-start', md: 'center' },
+                    gap: { xs: 2, md: 3 },
+                    mb: 3
+                }}
+            >
                 <Box>
-                    <Typography variant="h4" component="h1" gutterBottom>
+                    <Typography
+                        variant="h4"
+                        component="h1"
+                        gutterBottom
+                        sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}
+                    >
                         {hospital.name}
                     </Typography>
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}>
                         {hospital.address || 'No address provided'}
                     </Typography>
-                    <Box display="flex" gap={1} mt={1}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
                         <Chip label={hospital.status} color="primary" size="small" />
                         <Chip
                             label={`${availabilityPercentage}% Available`}
@@ -91,7 +105,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                         <Chip label={hospital.cluster} variant="outlined" size="small" />
                     </Box>
                 </Box>
-                <Box>
+                <Box sx={{ display: 'flex', flexShrink: 0 }}>
                     <Tooltip title="Refresh Data">
                         <IconButton onClick={onRefresh}>
                             <RefreshIcon />

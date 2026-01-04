@@ -113,28 +113,30 @@ const HospitalsPage: React.FC<HospitalsPageProps> = ({
         )}
 
         {/* Filter Chips */}
-        <Box sx={{ px: 4, py: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-            Filter:
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {filterChips.map((f) => (
-              <Chip
-                key={f.key}
-                label={f.label}
-                size="small"
-                onClick={() => setStatusFilter(f.key)}
-                sx={getChipStyles(f.key, f.color)}
-              />
-            ))}
+        <Box sx={{ px: { xs: 2, md: 4 }, py: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: { xs: 1.5, sm: 2 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+              Filter:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {filterChips.map((f) => (
+                <Chip
+                  key={f.key}
+                  label={f.label}
+                  size="small"
+                  onClick={() => setStatusFilter(f.key)}
+                  sx={getChipStyles(f.key, f.color)}
+                />
+              ))}
+            </Box>
           </Box>
-          <Typography variant="body2" sx={{ color: 'text.secondary', ml: 'auto' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', ml: { xs: 0, sm: 'auto' } }}>
             Showing {filteredHospitals.length} of {hospitals.length} hospitals
           </Typography>
         </Box>
 
         {/* Hospital Cards List */}
-        <Box sx={{ px: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ px: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
           {filteredHospitals.length === 0 ? (
             <Paper
               elevation={0}
