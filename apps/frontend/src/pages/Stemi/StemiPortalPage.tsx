@@ -401,32 +401,9 @@ const StemiPortalPage: React.FC = () => {
     // For now, just log the case - you can implement a dialog later
   };
 
-  const handleOutcomeFormUpdate = (caseId: string, updatedData: any) => {
-    // Update the specific case in the local state
-    setStemiCases(prev => prev.map(c =>
-      c.id === caseId
-        ? {
-          ...c,
-          // Update outcome form related fields
-          cathLabActivationTime: updatedData.cathLabActivationTime,
-          cathLabArrivalTime: updatedData.cathLabArrivalTime,
-          pciProcedureStartTime: updatedData.pciProcedureStartTime,
-          pciProcedureCompleteTime: updatedData.pciProcedureCompleteTime,
-          postPciComplications: updatedData.postPciComplications,
-          dischargeStatus: updatedData.dischargeStatus,
-          dischargeMedications: updatedData.dischargeMedications,
-          followUpAppointmentDate: updatedData.followUpAppointmentDate,
-          followUpAppointmentProvider: updatedData.followUpAppointmentProvider,
-          followUpCallCompleted: updatedData.followUpCallCompleted,
-          followUpCallDate: updatedData.followUpCallDate,
-          outcomeFormCompleted: updatedData.outcomeFormCompleted,
-          outcomeFormCompletionDate: updatedData.outcomeFormCompletionDate,
-          outcomePercentageCompleteness: updatedData.outcomePercentageCompleteness,
-        }
-        : c
-    ));
-
-    // Refresh KPIs to reflect any changes
+  const handleOutcomeFormUpdate = (_caseId: string, _updatedData: any) => {
+    // Re-fetch all case data from backend to get fresh computed values
+    // This ensures outcomePercentageCompleteness and all timestamps are in sync
     loadData();
   };
 
