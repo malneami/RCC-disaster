@@ -75,11 +75,11 @@ const BedsFilters: React.FC<BedsFiltersProps> = ({
     onClearFilters();
   };
 
-  const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
+  const hasActiveFilters = Object.entries(filters).some(([, value]) => {
     return value !== undefined && value !== null && value !== '';
   });
 
-  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+  const activeFiltersCount = Object.entries(filters).filter(([, value]) => {
     return value !== undefined && value !== null && value !== '';
   }).length;
 

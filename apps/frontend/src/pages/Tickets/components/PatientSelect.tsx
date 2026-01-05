@@ -58,7 +58,6 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
       setLoading(true);
       const response = await patientService.getPatients(1, 50);
       setPatients(response.data);
-      setInitialPatientsLoaded(true);
     } catch (error) {
       console.error('Error loading patients:', error);
     } finally {
@@ -131,14 +130,14 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
       }
 
       const createdPatient = await patientService.createPatient(newPatient);
-      
+
       // Add to patients list
       setPatients(prev => [createdPatient, ...prev]);
-      
+
       // Select the new patient
       setSelectedPatient(createdPatient);
       onChange(createdPatient.id);
-      
+
       // Close dialog and reset form
       setCreateDialogOpen(false);
       setNewPatient({
@@ -163,11 +162,11 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
   const getPatientDisplayName = (patient: Patient) => {
     const fullName = `${patient.firstName} ${patient.lastName}`;
     const identifiers = [];
-    
+
     if (patient.nationalId) identifiers.push(`ID: ${patient.nationalId}`);
     if (patient.mrn) identifiers.push(`MRN: ${patient.mrn}`);
     if (patient.age) identifiers.push(`${patient.age}y`);
-    
+
     return `${fullName}${identifiers.length > 0 ? ` (${identifiers.join(', ')})` : ''}`;
   };
 
@@ -217,15 +216,15 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
           </Box>
         )}
         noOptionsText={
-          searchQuery.length > 0 
+          searchQuery.length > 0
             ? "No patients found. Click 'New' to create a patient."
             : "Start typing to search patients..."
         }
       />
 
       {/* Create Patient Dialog */}
-      <Dialog 
-        open={createDialogOpen} 
+      <Dialog
+        open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
         maxWidth="md"
         fullWidth
@@ -236,7 +235,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
             <Typography variant="h6">Create New Patient</Typography>
           </Box>
         </DialogTitle>
-        
+
         <DialogContent>
           {createError && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -254,7 +253,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
                 required
               />
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -426,7 +425,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
         </DialogContent>
 
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => setCreateDialogOpen(false)}
             disabled={createLoading}
           >
