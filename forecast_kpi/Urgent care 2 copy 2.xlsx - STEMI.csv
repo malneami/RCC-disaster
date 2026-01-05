@@ -1,0 +1,138 @@
+Date of admissionDD-MONTH-YY,Column1,Gender,Age,Mode of arrival,Referred From Hospital,Triage Time (Door In) (hh:mm),Time of first ECG (hh:mm),Did the patient given (administered) thrombolytic medication?,Time of thrombolytic administration(hh:mm),Door out time(hh:mm),Time of  1ry PCI began(hh:mm),PCI locationAutomatically filled!,Facility nameAutomatically filled!,Cluster
+1/8/2025,,M,33,By private car,,18:53,18:56,No,,,20:01,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/9/2025,,M,44,By private car,,22:35,22:37,No,,,23:51,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/9/2025,,M,40,By private car,,14:40,14:44,No,,,15:20,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/9/2025,,M,37,By private car,,10:54,10:58,No,,,13:02,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/9/2025,,M,70,By private car,,8:50,8:54,No,,,10:30,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/13/2025,,F,62,By private car,,9:00,9:04,No,,,9:48,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/14/2025,,F,60,By Red crescent,,11:12,11:14,No,,,12:02,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/16/2025,,M,49,By Red crescent,,16:23,16:25,No,,,17:13,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/17/2025,,M,57,Transferred from another hospital,Ahad Almasarha General Hospital,9:46,9:55,No,,,10:35,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/22/2025,,M,64,By private car,,21:00,21:05,No,,,21:43,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/22/2025,,M,48,By Red crescent,,11:42,11:45,No,,,12:35,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/22/2025,,M,46,By Red crescent,,11:40,11:40,No,,,12:40,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/27/2025,,M,45,By private car,,21:22,21:45,No,,,22:07,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+1/29/2025,,M,38,By Red crescent,,7:36,7:38,No,,,8:30,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+2/1/2025,,M,68,By private car,,19:44,19:45,Yes,20:43,,,non-PCI capable facility,Aledabi General Hospital,Jazan health directorate
+2/5/2025,,M,44,By private car,,9:15,9:23,No,,,10:25,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+2/13/2025,,M,52,By private car,,14:27,14:35,No,,,15:42,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+2/16/2025,,M,52,By Red crescent,,10:35,10:40,No,,,11:45,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+2/17/2025,,M,50,By private car,,17:38,17:45,No,,,18:50,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+2/23/2025,,M,70,By private car,,19:37,19:40,No,,,20:55,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+2/28/2025,,M,43,By private car,,19:04,19:10,No,,,20:30,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+3/2/2025,,M,51,Transferred from another hospital,Ahd Almasarha General Hospital,7:45,7:51,No,,,8:01,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+3/7/2025,,M,46,By private car,,9:56,10:05,No,,,11:24,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+3/11/2025,,M,47,By private car,,8:23,8:30,No,,,9:48,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+3/16/2025,,F,68,Transferred from another hospital,Aledabi General Hospital,4:05,4:13,No,,,4:31,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+3/16/2025,,F,68,By private car,,2:44,2:45,No,,3:10,,non-PCI capable facility,Aledabi General Hospital,Jazan health directorate
+3/18/2025,,M,56,By private car,,9:20,9:24,No,,,10:23,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+3/18/2025,,M,52,By private car,,1:52,1:58,No,,,3:14,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+3/19/2025,,M,64,By private car,,12:01,12:07,No,,,13:27,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+4/2/2025,,M,60,By private car,,13:16,13:18,Yes,14:55,,,non-PCI capable facility,Aledabi General Hospital,Jazan health directorate
+4/5/2025,,M,59,By private car,,9:06,9:09,No,,,9:59,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+4/7/2025,,M,45,By private car,,19:33,19:34,No,,,20:55,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+4/10/2025,,M,48,By private car,,9:56,9:59,Yes,11:00,,,non-PCI capable facility,Aledabi General Hospital,Jazan health directorate
+4/17/2025,,M,54,By Red crescent,,12:00,12:05,No,,,12:24,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+4/18/2025,,M,68,Transferred from another hospital,Ahad Almasarha,14:46,14:55,No,,,15:33,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+4/20/2025,,M,45,By private car,,22:02,22:10,No,,,23:01,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+4/23/2025,,M,42,Transferred from another hospital,SABYA,3:10,3:11,No,,,3:25,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+4/24/2025,,M,51,By private car,,19:10,19:18,No,,,20:54,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/5/2025,,M,66,Transferred from another hospital,Jazan General Hospital,10:35,10:38,No,,,10:55,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/6/2025,,M,53,Transferred from another hospital,Ahd Almasarha General Hospital,6:44,6:46,No,,,,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/10/2025,,M,67,Transferred from another hospital,Beesh General Hospital,10:50,10:53,No,,,2:13,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/12/2025,,M,46,Transferred from another hospital,Jazan General Hospital,11:43,11:46,No,,,12:02,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/12/2025,,M,44,Transferred from another hospital,Ahd Almasarha General Hospital,14:28,14:30,No,,,14:57,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/13/2025,,M,48,By private car,,8:09,8:12,No,,,9:13,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/15/2025,,F,55,Transferred from another hospital,sabya General Hospital,4:40,4:43,No,,,5:35,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/15/2025,,M,52,By Red crescent,,7:51,7:53,No,,,9:15,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/16/2025,,M,44,By private car,,14:45,14:47,No,,,15:40,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/18/2025,,M,59,By private car,,20:11,20:15,No,,,21:23,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/23/2025,,F,65,Transferred from another hospital,Ahd Almasarha General Hospital,10:53,10:55,No,,,12:12,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/25/2025,,M,49,By private car,,9:15,9:18,No,,,10:35,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/26/2025,,M,78,By private car,,20:20,20:25,No,,,21:34,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/29/2025,,M,45,Transferred from another hospital,Aldarb General Hospital,7:25,7:32,No,,,9:32,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+5/30/2025,,M,86,By private car,,11:00,11:04,Yes,11:04,,11:04,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/3/2025,,M,39,By private car, ,13:40,13:43,No, , ,14:22,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/6/2025,,M,46,Transferred from another hospital,sabya General Hospital,12:15,12:19,No, , ,12:27,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/6/2025,,M,57,Transferred from another hospital,Besh General Hospital,12:25,12:30,No, , ,12:55,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/8/2025,,M,58,Transferred from another hospital,sabya General Hospital,12:28,12:35,No, , ,12:50,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/8/2025,,M,41,Transferred from another hospital,Abi Areesh General Hospital,22:06,22:11,No, , ,23:22,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/9/2025,,M,68,Transferred from another hospital,Samtah General Hospital,20:11,20:18,No, , ,20:45,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/9/2025,,M,70,By private car, ,6:30,6:36,No, , ,7:19,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/11/2025,,M,44,Transferred from another hospital,Damad General Hospital,14:09,14:13,No, , ,14:47,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/11/2025,,M,54,Transferred from another hospital,Abi Areesh General Hospital,10:40,10:46,No, , ,11:20,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/11/2025,,M,61,Transferred from another hospital,sabya General Hospital,15:40,15:46,No, , ,16:04,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/12/2025,,M,46,Transferred from another hospital,sabya General Hospital,14:24,14:30,No, ,,15:30,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/15/2025,,M,54,By private car,,9:16,9:22,No,,,10:01,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/15/2025,,M,54,Transferred from another hospital,Jazan General Hospital,1:10,1:15,No, ,,1:25,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/16/2025,,M,81,Transferred from another hospital,Abi Areesh General Hospital,16:27,16:32,No,,,16:52,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/17/2025,,M,45,By private car,,22:21,22:28,No,,,23:31,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/19/2025,,M,58,Transferred from another hospital,PHC,12:19,12:24,No,,,12:38,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/22/2025,,M,48,By private car,,18:58,19:03,No,,,20:23,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/23/2025,,M,46,Transferred from another hospital,SABYA,11:35,11:41,No,,,12:05,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/24/2025,,F,53,Transferred from another hospital,SABYA,12:43,12:53,No,,,13:00,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/25/2025,,M,68,By private car,,5:24,5:30,No,,,6:44,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/26/2025,,M,67,Transferred from another hospital,alaidabi,7:56,8:03,No,,,8:16,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/26/2025,,F,61,Transferred from another hospital,jazan,8:10,8:16,No,,,8:38,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+6/29/2025,,M,41,Transferred from another hospital,Abi Areesh General Hospital,0:25,0:32,No,,,1:05,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/3/2025,,M,48,By private car, ,1:48,1:53,No, ,,3:10,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/5/2025,,M,49,By private car, ,23:35,23:40,No, ,,0:50,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/9/2025,,M,61,By private car,,20:54,20:59,No,,,22:12,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/9/2025,,M,53,By private car,,2:10,2:16,Yes,2:40,, ,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/13/2025,,M,48,Transferred from another hospital,Jazan General Hospital,23:10,23:12,No, ,23:30,0:15,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/14/2025,,M,42,By private car,,12:54,12:59,No,,,14:20,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/16/2025,,M,61,Transferred from another hospital,JAZAN,6:59,7:03,No, ,,8:40,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/18/2025,,M,57,By private car, ,4:30,4:35,No, ,,6:50,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/21/2025,,M,52,By Red crescent, ,15:23,15:28,No, ,,16:10,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/25/2025,,F,71,By private car, ,14:55,15:04,No, ,,16:15,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/29/2025,,M,41,By private car, ,5:18,5:21,No, ,,6:03,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/29/2025,,F,49,By private car, ,18:54,18:58,Yes,19:40,20:50, ,non-PCI capable facility,Aledabi General Hospital,Jazan health directorate
+7/29/2025,,M,52,By private car,,5:20,5:25,No,,,6:03,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/30/2025,,F,63,By private car, ,20:17,20:22,No,,,21:45,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/30/2025,,F,63,By private car,,20:17,20:22,No,,,21:45,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+7/31/2025,,F,72,By private car,,10:40,10:44,No,,,11:45,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/7/2025,,M,65,Transferred from another hospital,Sabya General Hospital,18:25,18:30,No,,19:29,20:05,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/7/2025,,M,65,Transferred from another hospital,Sabya General Hospital,18:25,18:30,No,,19:29,20:05,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/8/2025,,F,80,Transferred from another hospital,King Fahad Central Hospital (KFCH),6:50,6:55,No,,7:15,7:55,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/8/2025,,F,80,Transferred from another hospital,King Fahad Central Hospital (KFCH),6:50,6:55,No,,7:15,7:55,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/8/2025,,M,58,By private car,,2:24,2:27,No,,,3:42,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/8/2025,,M,58,By private car,,2:24,2:27,No,,,3:42,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/9/2025,,M,48,Transferred from another hospital,Jazan General Hospital (JGH),15:35,15:39,No,,15:52,16:32,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/9/2025,,M,48,Transferred from another hospital,Jazan General Hospital (JGH),15:35,15:39,No,,15:52,16:32,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/9/2025,,M,48,By private car,,4:30,4:39,Yes,4:58,,,non-PCI capable facility,Al-Aidabi General Hospital,Jazan health directorate
+8/9/2025,,M,48,By private car,,4:30,4:39,Yes,4:58,,,non-PCI capable facility,Aledabi General Hospital,Jazan health directorate
+8/10/2025,,M,47,Transferred from another hospital,Jazan General Hospital (JGH),21:36,21:42,No,,22:05,22:40,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/10/2025,,M,47,Transferred from another hospital,Jazan General Hospital (JGH),21:36,21:42,No,,22:05,22:40,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/12/2025,,M,66,Transferred from another hospital,Dhamad General Hospital,7:25,7:33,No,,7:53,9:03,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/12/2025,,M,66,Transferred from another hospital,Dhamad General Hospital,7:25,7:33,No,,7:53,9:03,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/13/2025,,M,56,Transferred from another hospital,PHC Centers,21:35,21:42,No,,22:04,23:40,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/13/2025,,M,56,Transferred from another hospital,PHC Centers,21:35,21:42,No,,22:04,23:40,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/13/2025,,M,47,Transferred from another hospital,Jazan General Hospital (JGH),9:40,9:44,No,,10:02,10:45,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/13/2025,,M,47,Transferred from another hospital,Jazan General Hospital (JGH),9:40,9:44,No,,10:02,10:45,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/16/2025,,F,74,By private car,,10:51,10:58,No,,,11:50,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/16/2025,,F,74,By private car,,10:51,10:58,No,,,11:50,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/16/2025,,M,66,By private car,,9:08,9:12,No,,,10:05,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/16/2025,,M,66,By private car,,9:08,9:12,No,,,10:05,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/23/2025,,M,42,By private car,,0:22,0:26,No,,,1:38,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/23/2025,,M,42,By private car,,0:22,0:26,No,,,1:38,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/24/2025,,M,40,By private car,,14:56,15:00,No,,,16:10,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/24/2025,,M,40,By private car,,14:56,15:00,No,,,16:10,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+8/24/2025,,M,54,By private car,,15:37,15:45,No,,,16:32,PCI capable facility,Prince Mohammed Bin Nasser Hospital,Jazan health directorate
+8/24/2025,,M,54,By private car,,15:37,15:45,No,,,16:32,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/2/2025,,M,43,Transferred from another hospital,Abi Areesh General Hospital,8:37,8:45,Yes,10:06,11:34,13:20,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/7/2025,,M,61,By private car, ,13:57,14:03,No, , ,14:30,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/8/2025,,M,51,By private car, ,15:42,15:50,No, , ,16:50,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/8/2025,,M,40,Transferred from another hospital,sabya General Hospital,16:22,16:29,No, ,16:35,17:56,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/9/2025,,M,46,Transferred from another hospital,sabya General Hospital,8:05,8:10,No, ,8:34,9:56,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/9/2025,,F,45,By private car, ,17:27,17:28,No, , ,19:05,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/9/2025,,M,45,By private car, ,19:38,19:42,No, , ,20:55,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/14/2025,,M,43,Transferred from another hospital,Jazan General Hospital,1:15,1:22,No, ,1:37,3:12,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/14/2025,,M,35,Transferred from another hospital,Jazan General Hospital,10:38,11:10,No, ,11:14,13:30,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/18/2025,,M,36,Transferred from another hospital,Jazan General Hospital,15:10,15:11,No, ,15:34,16:40,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/18/2025,,M,31,Transferred from another hospital,Jazan General Hospital,17:25,17:30,No, ,17:58,19:05,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/22/2025,,M,41,Transferred from another hospital,Jazan General Hospital,14:42,14:45,No, ,14:50,16:55,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/22/2025,,M,63,Transferred from another hospital,Jazan General Hospital,12:10,12:26,No, ,12:39,14:09,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/22/2025,,M,55,By private car, ,17:25,17:30,No, , ,18:20,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/24/2025,,M,69,Transferred from another hospital,sabya General Hospital,11:05,11:08,No, ,12:02,13:16,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/24/2025,,M,45,Transferred from another hospital,sabya General Hospital,20:32,20:34,No,,20:59,21:52,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate
+9/28/2025,,F,52,Transferred from another hospital,sabya General Hospital,5:18,5:40,No, ,5:43,6:59,PCI capable facility,Prince Mohamed Bin Nasser Hospital,Jazan health directorate

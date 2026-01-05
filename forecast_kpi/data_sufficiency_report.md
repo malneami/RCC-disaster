@@ -1,0 +1,132 @@
+# Data Sufficiency Analysis Report
+## KPI Forecasting - ED Pathway Datasets
+
+**Generated:** December 28, 2025  
+**Datasets Analyzed:** STEMI, TRAUMA
+
+---
+
+## Executive Summary
+
+> [!WARNING]
+> **Current data is insufficient for reliable machine learning forecasting.** With only 9 months of historical data, ML models lack the samples needed for robust training, validation, and seasonal pattern detection.
+
+---
+
+## Current Data Overview
+
+| Dataset | Total Cases | Date Range | Months Available | Monthly Avg |
+|---------|-------------|------------|------------------|-------------|
+| **STEMI** | 137 | Jan 2025 – Sep 2025 | 9 months | ~15 cases/month |
+| **STROKE** | 275 | Jan 2025 – Sep 2025 | 9 months | ~31 cases/month |
+| **TRAUMA** | 1,415 | Jan 2025 – Oct 2025 | 9 months | ~157 cases/month |
+
+---
+
+## Why Current Data is Insufficient
+
+### 1. Time Series Length Problem
+
+| Aspect | Current Status | Impact |
+|--------|----------------|--------|
+| **Total months** | 9 | After creating lag features (3-6), only 3-6 samples remain for training |
+| **Training samples** | 3 | Most ML models need 50+ samples for generalization |
+| **Cross-validation folds** | 2 | Insufficient for reliable model evaluation |
+| **Seasonal patterns** | Cannot detect | Need 24+ months to capture annual cycles |
+
+### 2. Feature Engineering Limitations
+
+With 9 months of data and 3 lag features:
+- **Effective training samples:** 3-6 observations
+- **Features created:** 20
+- **Feature-to-sample ratio:** ~7:1 (should be < 1:10)
+
+> [!CAUTION]
+> This extreme feature-to-sample imbalance causes **overfitting** - models memorize noise rather than learning patterns.
+
+### 3. Validation Concerns
+
+| Dataset & KPI | MAE | Interpretation |
+|---------------|-----|----------------|
+| **STEMI door_to_ecg** | 0.0 min | **Suspiciously perfect** - indicates overfitting or very stable KPI |
+| **STROKE door_to_ct** | 0.51 min | Low error, but only 2 validation folds |
+| **TRAUMA transfer_duration** | 8.5 min | Reasonable, but based on only 2 validation folds |
+
+---
+
+## Recommended Data Requirements
+
+### Minimum Requirements for Reliable ML Forecasting
+
+| Requirement | Minimum | Recommended | Current Gap |
+|-------------|---------|-------------|-------------|
+| **Historical data** | 18 months | 24-36 months | Need 9-27 more months |
+| **Training samples** | 12 | 24+ | Need 9-21 more months |
+| **Validation folds** | 6 | 12 | Need 4-10 more folds |
+| **Seasonal coverage** | 1 full year | 2+ years | Need 3-15 more months |
+
+### Data Collection Timeline
+
+```
+Current:  Jan 2025 ────────────────────► Sep 2025  (9 months)
+                                                    │
+Minimum:  ◄─────────────────────────────────────────┤ Continue to Jul 2026  (+9 months = 18 total)
+                                                    │
+Recommended: ◄──────────────────────────────────────┤ Continue to Jan 2027  (+15 months = 24 total)
+                                                    │
+Optimal:  ◄─────────────────────────────────────────┤ Continue to Jan 2028  (+27 months = 36 total)
+```
+
+---
+
+## Recommendations
+
+### Short-Term (Current Data)
+
+1. **Use baseline methods** - Last-3-month median is most reliable with limited data
+2. **Interpret ML results with caution** - High uncertainty in predictions
+3. **Continue data collection** - Do not pause data gathering
+
+### Medium-Term (When 18+ months available)
+
+1. **Re-run ML forecasting** - Models will be more reliable
+2. **Add seasonal features** - Month-of-year effects become meaningful
+3. **Implement proper train/test split** - At least 6 months for testing
+
+### Long-Term (When 24+ months available)
+
+1. **Full ML pipeline** - XGBoost, LSTM, or ensemble methods
+2. **Seasonal decomposition** - Capture yearly patterns
+3. **Confidence intervals** - Reliable uncertainty quantification
+4. **External variables** - Holiday effects, staffing patterns, etc.
+
+---
+
+## Model-Specific Data Requirements
+
+| Model Type | Minimum Months | Why |
+|------------|----------------|-----|
+| **Baseline (Last-3 median)** | 3 | Simple average, works with any data |
+| **Exponential Smoothing (ETS)** | 12 | Needs trend detection |
+| **Ridge/Lasso Regression** | 18 | Requires stable coefficients |
+| **Random Forest** | 24 | Tree splits need diverse samples |
+| **XGBoost/Gradient Boosting** | 24-36 | Prone to overfitting with small data |
+| **LSTM Neural Networks** | 36+ | Deep learning needs extensive data |
+
+---
+
+## Conclusion
+
+> [!IMPORTANT]
+> **Action Required:** Continue collecting data for at least 9 more months before relying on ML forecasts for decision-making. Until then, use the baseline (last-3-month median) method which remains robust with limited data.
+
+**Current data utility:**
+- ✅ Descriptive statistics and trend visualization
+- ✅ Simple baseline forecasting
+- ⚠️ ML forecasting (experimental only)
+- ❌ Seasonal pattern detection
+- ❌ Long-term trend analysis
+
+---
+
+*Report generated by ML KPI Forecasting System*
