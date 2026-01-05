@@ -1235,4 +1235,86 @@ export class NotificationsService {
       throw new InternalServerErrorException(`Failed to create ticket assignment notification: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
+
+  /**
+   * Create notification for incomplete patient data
+   * Notifies RCC users when a patient has incomplete data (national ID zeros or missing date of birth)
+   */
+  async createIncompletePatientDataNotification(
+    patientId: string,
+    patientName: string,
+    missingFields: string[],
+    createdById: string,
+  ) {
+    try {
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      const existingNotification = await this.prisma.notification.findFirst({
+        where: {
+          type: NotificationType.INCOMPLETE_PATIENT_DATA,
+          patientId,
+          isRead: false,
+          createdAt: {
+            gte: twentyFourHoursAgo,
+          },
+        },
+      });
+
+      if (existingNotification) {
+        this.logger.log(`Duplicate incomplete patient data notification prevented for patient ${patientId}`);
+        return null;
+      }
+
+      const rccUserIds = await this.getUsersByRole(UserRole.RCC);
+
+      if (rccUserIds.length === 0) {
+        this.logger.warn(`No RCC users found for incomplete patient data notification (patient: ${patientId})`);
+        return null;
+      }
+
+      const missingFieldsText = missingFields.join(', ');
+      const message = `Patient ${patientName} has incomplete data. Missing fields: ${missingFieldsText}`;
+
+      const notification = await this.createNotification(
+        {
+          type: NotificationType.INCOMPLETE_PATIENT_DATA,
+          priority: NotificationPriority.MEDIUM,
+          title: `Incomplete Patient Data - ${patientName}`,
+          message,
+          caseType: CaseType.GENERAL,
+          caseId: patientId,
+          patientId,
+          patientName,
+          category: NotificationCategory.PATIENTS,
+          recipientUserIds: rccUserIds,
+          metadata: JSON.stringify({
+            missingFields,
+            source: 'patient_data_validation',
+          }),
+        },
+        createdById,
+      );
+
+      if (notification) {
+        this.notificationsGateway.emitNotificationCreated(notification);
+        this.notificationsGateway.emitNotificationByCategory(
+          notification,
+          NotificationCategory.PATIENTS,
+        );
+        this.notificationsGateway.emitNotificationByRole(notification, [UserRole.RCC]);
+      }
+
+      this.logger.log(`Successfully created incomplete patient data notification ${notification?.id} for patient ${patientId}`);
+      return notification;
+    } catch (error) {
+      this.logger.error(`=== Error in createIncompletePatientDataNotification ===`);
+      this.logger.error(`Patient ID: ${patientId}, Patient Name: ${patientName}`);
+      this.logger.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(`Stack: ${error instanceof Error ? error.stack : 'No stack trace'}`);
+      
+      // Don't throw error - patient creation/update should still succeed even if notification fails
+      return null;
+    }
+  }
 }

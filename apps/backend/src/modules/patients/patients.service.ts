@@ -7,6 +7,7 @@ import { Patient } from '@prisma/client';
 import { PatientsExportService } from './services/patients-export.service';
 import { PatientsStatisticsService } from './services/patients-statistics.service';
 import { DuplicateDetectionService } from './services/duplicate-detection.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class PatientsService {
@@ -18,7 +19,9 @@ export class PatientsService {
     private patientsExportService: PatientsExportService,
     private patientsStatisticsService: PatientsStatisticsService,
     private duplicateDetectionService: DuplicateDetectionService,
-  ) { }
+    @Inject(forwardRef(() => NotificationsService))
+    private notificationsService: NotificationsService,
+  ) {}
 
   async findAll(page = 1, limit = 10, filters?: any, userId?: string, ipAddress?: string, userAgent?: string) {
     const skip = (page - 1) * limit;
@@ -365,12 +368,33 @@ export class PatientsService {
               lastName: true,
               email: true,
             },
-          },
         },
-      });
+      },
+    });
 
       this.logAccess(result.id, userId, 'CREATE', 'Patient created via create endpoint');
-
+            
+      const incompleteDataCheck = this.hasIncompleteData(result);
+      
+      // Return normalized ID for display
+      if (this.isOriginalNationalId(createPatientDto.nationalId)) {
+        result.nationalId = '00000000000000';
+      }
+      if (incompleteDataCheck.incomplete) {
+        const patientName = `${result.firstName} ${result.lastName}`.trim();
+        // Call notification asynchronously to not block patient creation
+        this.notificationsService
+          .createIncompletePatientDataNotification(
+            result.id,
+            patientName,
+            incompleteDataCheck.missingFields,
+            userId,
+          )
+          .catch((error) => {
+            console.error('Failed to create incomplete patient data notification:', error);
+          });
+      }
+      
       return result;
     } catch (error: any) {
       this.handlePatientError(error, 'creating');
@@ -474,6 +498,22 @@ export class PatientsService {
         : 'Patient updated (no fields changed)';
 
       this.logAccess(id, userId, 'UPDATE', reason, ipAddress, userAgent, changeDescription);
+
+      const incompleteDataCheck = this.hasIncompleteData(updatedPatient);
+      if (incompleteDataCheck.incomplete) {
+        const patientName = `${updatedPatient.firstName} ${updatedPatient.lastName}`.trim();
+        // Call notification asynchronously to not block patient update
+        this.notificationsService
+          .createIncompletePatientDataNotification(
+            updatedPatient.id,
+            patientName,
+            incompleteDataCheck.missingFields,
+            userId,
+          )
+          .catch((error) => {
+            console.error('Failed to create incomplete patient data notification:', error);
+          });
+      }
 
       return updatedPatient;
     } catch (error: any) {
@@ -791,6 +831,69 @@ export class PatientsService {
   }
 
   // --- Helpers ---
+
+  /**
+   * Generates a unique national ID if the input is the special "00000000000000" placeholder.
+   * If existingId is provided (update scenario), it preserves the existing unique suffix if the base matches.
+   */
+  private async ensureUniqueNationalId(nationalId: string | null | undefined, existingId?: string): Promise<string | null | undefined> {
+    if (!nationalId) return nationalId;
+    
+    // Check if input is the placeholder "00000000000000"
+    if (nationalId.trim() === '00000000000000') {
+      // If updating, and the existing ID is already a variant of this placeholder, keep it
+      if (existingId && existingId.startsWith('00000000000000-')) {
+        return existingId;
+      }
+      // Otherwise generate a new unique variant
+      const suffix = require('crypto').randomUUID().replace(/-/g, '').substring(26);
+      return `00000000000000-${suffix}`;
+    }
+
+    // Check for duplicates in the database (including deleted patients)
+    if (existingId && nationalId === existingId) {
+      return nationalId;
+    }
+
+    const duplicate = await this.prisma.patient.findFirst({
+      where: {
+        nationalId: nationalId,
+        // Check ALL patients (implicitly included as we don't filter deletedAt)
+      },
+    });
+
+    if (duplicate) {
+      throw new ConflictException('A patient with this National ID already exists (possibly deleted). Please use a different National ID.');
+    }
+    
+    return nationalId;
+  }
+
+  private isOriginalNationalId(id: string | null | undefined): boolean {
+    return !!id && id.trim() === '00000000000000';
+  }
+
+  /**
+   * Check if patient has incomplete data fields
+   * Returns an object indicating if data is incomplete and which fields are missing
+   */
+  private hasIncompleteData(patient: any): { incomplete: boolean; missingFields: string[] } {
+    const missingFields: string[] = [];
+
+    const nationalId = patient.nationalId;
+    if (nationalId && (nationalId.trim() === '00000000000000' || nationalId.startsWith('00000000000000-'))) {
+      missingFields.push('National ID');
+    }
+
+    if (!patient.dateOfBirth) {
+      missingFields.push('Date of Birth');
+    }
+
+    return {
+      incomplete: missingFields.length > 0,
+      missingFields,
+    };
+  }
 
   private cleanupPatientData(data: any) {
     if (data.dateOfBirth) {
