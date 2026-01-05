@@ -35,48 +35,63 @@ import {
 
 import { useAuth } from '../../contexts/AuthContext';
 import { notificationService } from '../../services/notificationService';
+import { useNotificationSocket } from '../../contexts/NotificationSocketContext';
 
 const Sidebar: React.FC = () => {
   const { user } = useAuth();
+  const { socket, isConnected } = useNotificationSocket();
   const location = useLocation();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    if (user) {
-      loadUnreadCount();
-      // Refresh unread count every 30 seconds
-      const interval = setInterval(loadUnreadCount, 30000);
-
-      // Listen for notification events
-      const handleNotificationRead = () => {
-        loadUnreadCount();
-      };
-
-      const handleNotificationDeleted = () => {
-        loadUnreadCount();
-      };
-
-      window.addEventListener('notificationRead', handleNotificationRead);
-      window.addEventListener('notificationDeleted', handleNotificationDeleted);
-
-      return () => {
-        clearInterval(interval);
-        window.removeEventListener('notificationRead', handleNotificationRead);
-        window.removeEventListener('notificationDeleted', handleNotificationDeleted);
-      };
-    }
-  }, [user]);
 
   const loadUnreadCount = async () => {
     try {
       const summary = await notificationService.getNotificationSummary();
       setUnreadCount(summary.unreadNotifications);
     } catch (error) {
-      console.error('Failed to load unread notifications count:', error);
-      setUnreadCount(0);
+      console.error('Error loading unread count:', error);
     }
   };
+
+  // Load unread count on mount and set up polling
+  useEffect(() => {
+    if (user) {
+      loadUnreadCount();
+      const interval = setInterval(loadUnreadCount, 30000);
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [user]);
+
+  // Listen to socket events using context hook
+  useEffect(() => {
+    if (!socket || !isConnected || !user) {
+      return;
+    }
+
+    const handleNotificationRead = () => {
+      loadUnreadCount();
+    };
+
+    const handleNotificationDeleted = () => {
+      loadUnreadCount();
+    };
+
+    const handleNotificationCreated = () => {
+      loadUnreadCount();
+    };
+
+    socket.on('notification-created', handleNotificationCreated);
+    socket.on('notification-read', handleNotificationRead);
+    socket.on('notification-deleted', handleNotificationDeleted);
+
+    return () => {
+      socket.off('notification-created', handleNotificationCreated);
+      socket.off('notification-read', handleNotificationRead);
+      socket.off('notification-deleted', handleNotificationDeleted);
+    };
+  }, [socket, isConnected, user]);
 
   const navigationItems = [
     {

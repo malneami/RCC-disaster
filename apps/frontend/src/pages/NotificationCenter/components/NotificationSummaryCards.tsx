@@ -17,6 +17,7 @@ import {
 
 import SkeletonLoader from '../../../components/Common/SkeletonLoader';
 import { notificationService, NotificationSummary } from '../../../services/notificationService';
+import { useNotificationSocket } from '../../../contexts/NotificationSocketContext';
 
 interface SummaryCardProps {
   title: string;
@@ -116,13 +117,12 @@ interface NotificationSummaryCardsProps {
 }
 
 const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ refreshTrigger }) => {
+  // Get socket connection from context
+  const { socket, isConnected } = useNotificationSocket();
+
   const [summary, setSummary] = useState<NotificationSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadSummary();
-  }, [refreshTrigger]);
 
   const loadSummary = async () => {
     try {
@@ -137,6 +137,44 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
       setLoading(false);
     }
   };
+
+  // Load summary on mount and set up polling
+  useEffect(() => {
+    loadSummary();
+    const interval = setInterval(loadSummary, 30000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [refreshTrigger]);
+
+  // Listen to socket events using context hook
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      return;
+    }
+
+    const handleNotificationCreated = () => {
+      loadSummary();
+    };
+
+    const handleNotificationRead = () => {
+      loadSummary();
+    };
+
+    const handleNotificationDeleted = () => {
+      loadSummary();
+    };
+
+    socket.on('notification-created', handleNotificationCreated);
+    socket.on('notification-read', handleNotificationRead);
+    socket.on('notification-deleted', handleNotificationDeleted);
+
+    return () => {
+      socket.off('notification-created', handleNotificationCreated);
+      socket.off('notification-read', handleNotificationRead);
+      socket.off('notification-deleted', handleNotificationDeleted);
+    };
+  }, [socket, isConnected, refreshTrigger]);
 
   if (loading) {
     return (

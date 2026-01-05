@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { TicketStatus, UserRole, ActivityType, AssignmentStatus, BedStatus } from '@prisma/client';
+import { TicketStatus, UserRole, ActivityType, AssignmentStatus, BedStatus, CaseType } from '@prisma/client';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto, UpdateTicketStatusDto, AssignTicketDto } from './dto/update-ticket.dto';
 import { TicketFilterDto } from './dto/ticket-filter.dto';
@@ -24,6 +24,8 @@ export class TicketsService {
     private accessLogService: AccessLogService,
     private emsEtaService: EMSETAService,
     private emsAssignmentsService: EmsAssignmentsService,
+    @Inject(forwardRef(() => NotificationsService))
+    private notificationsService: NotificationsService,
   ) {
     this.logger = new Logger(TicketsService.name);
   }
@@ -194,6 +196,61 @@ export class TicketsService {
       this.ticketsGateway.emitEmergencyTicket(ticket);
     }
 
+    // Create ticket assignment notification for all tickets with destination hospital
+    if (ticket.destinationHospitalId) {
+      try {
+        this.logger.log(
+          `Attempting to create ticket assignment notification for ticket ${ticket.id}, destination hospital ${ticket.destinationHospitalId}`,
+        );
+        const notification = await this.notificationsService.createTicketAssignmentNotification(
+          ticket.id,
+          ticket.destinationHospitalId,
+        );
+        if (notification) {
+          this.logger.log(
+            `Successfully created ticket assignment notification ${notification.id} for ticket ${ticket.id} - destination hospital users notified`,
+          );
+        } else {
+          this.logger.warn(
+            `Ticket assignment notification returned null for ticket ${ticket.id} (likely no hospital users found)`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `=== Failed to create ticket assignment notification for ticket ${ticket.id} ===`,
+        );
+        this.logger.error(`Error: ${(error as Error).message}`);
+        this.logger.error(`Stack: ${(error as Error).stack}`);
+        // Don't fail ticket creation if notification fails
+      }
+    } else {
+      this.logger.debug(`Ticket ${ticket.id} has no destination hospital, skipping assignment notification`);
+    }
+
+    const isCriticalCase = (ticket.isEmergency || ticket.priority === 'CRITICAL' || ticket.priority === 'EMERGENCY') &&
+                           (ticket.pathway === 'STEMI' || ticket.pathway === 'STROKE');
+    
+    if (isCriticalCase && ticket.destinationHospitalId) {
+      try {
+        // Notify RCC users (HIGH priority, TICKETS category - escalation)
+        await this.notificationsService.createCriticalCaseNotification(
+          ticket.id,
+          ticket.pathway as CaseType,
+          ticket.id, // Use ticket ID as case ID
+          ticket.destinationHospitalId,
+          true, // isRCCNotification = true for RCC users
+        );
+
+        this.logger.log(
+          `Created RCC escalation notification for critical case ticket ${ticket.id} (${ticket.pathway})`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to create RCC escalation notification for ticket ${ticket.id}: ${(error as Error).message}`,
+        );
+        // Don't fail ticket creation if notification fails
+      }
+    }
 
     try {
       const emsAssignment = await this.emsAssignmentsService.create({

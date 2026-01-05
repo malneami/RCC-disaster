@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -28,12 +28,15 @@ import NotificationFilters from './components/NotificationFilters';
 import EmptyState from '../../components/Common/EmptyState';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import ErrorBoundary from '../../components/Common/ErrorBoundary';
-import ConnectionStatus from '../../components/Common/ConnectionStatus';
 import { notificationService, NotificationFilter, NotificationCategory } from '../../services/notificationService';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useDebouncedCallback } from '../../hooks/useDebounce';
+import { useNotificationSocket } from '../../contexts/NotificationSocketContext';
 
 
 const NotificationCenterPage: React.FC = () => {
+  // Get socket connection from context
+  const { socket, isConnected } = useNotificationSocket();
+
   // State
   const [activeTab, setActiveTab] = useState(0);
   const [filters, setFilters] = useState<NotificationFilter>({});
@@ -42,42 +45,78 @@ const NotificationCenterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [lastConnected, setLastConnected] = useState<Date | undefined>();
-  
-  // WebSocket connection
-  const { socket, isConnected } = useWebSocket('notifications');
 
   // Load initial data
   useEffect(() => {
     loadInitialData();
   }, []);
 
-  // Track WebSocket connection status
-  useEffect(() => {
-    if (isConnected) {
-      setLastConnected(new Date());
+  // Debounced refresh function to prevent multiple rapid refreshes
+  const debouncedRefresh = useDebouncedCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, 500);
+
+  // Debounced category load function
+  const debouncedLoadCategories = useDebouncedCallback(async () => {
+    try {
+      const categoriesData = await notificationService.getNotificationCategories();
+      setCategories(categoriesData);
+    } catch (err) {
+      console.error('Error loading categories:', err);
     }
-  }, [isConnected]);
+  }, 500);
 
-  // Listen for real-time notifications
+  // Memoized event handlers using useCallback
+  const handleNotificationCreated = useCallback(() => {
+    debouncedRefresh();
+    debouncedLoadCategories();
+  }, [debouncedRefresh, debouncedLoadCategories]);
+
+  const handleNotificationRead = useCallback(() => {
+    debouncedRefresh();
+  }, [debouncedRefresh]);
+
+  const handleNotificationDeleted = useCallback(() => {
+    debouncedRefresh();
+    debouncedLoadCategories();
+  }, [debouncedRefresh, debouncedLoadCategories]);
+
+  // Load categories on mount and set up interval
   useEffect(() => {
-    if (socket && isConnected) {
-      socket.on('notification', (notification: any) => {
-        console.log('Received real-time notification:', notification);
-        setRefreshTrigger(prev => prev + 1);
-      });
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await notificationService.getNotificationCategories();
+        setCategories(categoriesData);
+      } catch (err) {
+        console.error('Error loading categories:', err);
+      }
+    };
 
-      socket.on('notification-read', (data: any) => {
-        console.log('Notification marked as read:', data);
-        setRefreshTrigger(prev => prev + 1);
-      });
+    loadCategories();
+    const interval = setInterval(loadCategories, 30000);
 
-      return () => {
-        socket.off('notification');
-        socket.off('notification-read');
-      };
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Listen to socket events using context hook
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      return;
     }
-  }, [socket, isConnected]);
+
+    // Listen for notification events from WebSocket
+    socket.on('notification-created', handleNotificationCreated);
+    socket.on('notification-read', handleNotificationRead);
+    socket.on('notification-deleted', handleNotificationDeleted);
+
+    return () => {
+      socket.off('notification-created', handleNotificationCreated);
+      socket.off('notification-read', handleNotificationRead);
+      socket.off('notification-deleted', handleNotificationDeleted);
+    };
+  }, [socket, isConnected, handleNotificationCreated, handleNotificationRead, handleNotificationDeleted]);
 
   const loadInitialData = async () => {
     try {
@@ -128,6 +167,10 @@ const NotificationCenterPage: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleNotificationChange = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
   const handlePriorityFilter = (priority: string) => {
     if (priority === 'All') {
       const { priority: _, ...rest } = filters;
@@ -170,13 +213,6 @@ const NotificationCenterPage: React.FC = () => {
         backgroundColor: '#f8fafc',
         p: { xs: 1, sm: 2, md: 3 }
       }}>
-        {/* Connection Status */}
-        <ConnectionStatus 
-          isConnected={isConnected}
-          lastConnected={lastConnected}
-          showDetails={true}
-          position="top-right"
-        />
       {/* Header */}
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
         <GenericPageHeader
@@ -325,7 +361,7 @@ const NotificationCenterPage: React.FC = () => {
               {/* Notification List */}
               <NotificationList 
                 filters={filters} 
-                onNotificationChange={() => setRefreshTrigger(prev => prev + 1)}
+                onNotificationChange={handleNotificationChange}
               />
             </CardContent>
           </Card>

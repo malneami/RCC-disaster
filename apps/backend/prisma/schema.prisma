@@ -105,6 +105,7 @@ enum CriticalCaseType {
 }
 
 enum CaseType {
+  GENERAL
   STEMI
   STROKE
   TRAUMA

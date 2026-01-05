@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TicketsController } from './tickets.controller';
@@ -10,6 +10,7 @@ import { AuthModule } from '../../auth/auth.module';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
 import { EmsAssignmentsModule } from '../ems-assignments/ems-assignments.module';
 import { CommonModule } from '../../common/common.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { CommonModule } from '../../common/common.module';
     AuthModule,
     EmsAssignmentsModule,
     CommonModule,
+    forwardRef(() => NotificationsModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

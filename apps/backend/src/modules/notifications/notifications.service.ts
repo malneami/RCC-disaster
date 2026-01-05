@@ -1,14 +1,19 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, InternalServerErrorException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateNotificationDto, NotificationFilterDto, MarkNotificationReadDto } from './dto/create-notification.dto';
-import { NotificationType, NotificationPriority, CaseType, DeliveryStatus, DeliveryMethod, NotificationCategory } from '@prisma/client';
+import { NotificationType, NotificationPriority, CaseType, DeliveryStatus, DeliveryMethod, NotificationCategory, UserRole } from '@prisma/client';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => NotificationsGateway))
+    private notificationsGateway: NotificationsGateway,
+  ) {}
 
   /**
    * Create a new notification with recipients
@@ -29,52 +34,52 @@ export class NotificationsService {
 
       // Create the notification with enhanced error handling
       const notification = await this.prisma.$transaction(async (tx) => {
-      // Create the notification
+        // Create the notification
         const notification = await tx.notification.create({
-      data: {
-        ...notificationData,
-        category: category || NotificationCategory.PATIENTS,
-        createdById,
-        recipients: recipientUserIds && recipientUserIds.length > 0 ? {
-          create: recipientUserIds.map(userId => ({
-            userId,
-            deliveryStatus: DeliveryStatus.PENDING,
-            deliveryMethod: createNotificationDto.deliveryMethod || DeliveryMethod.IN_APP,
-          })),
-        } : undefined,
-      },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+          data: {
+            ...notificationData,
+            category: category || NotificationCategory.PATIENTS || this.ensureCategory(notificationData),
+            createdById,
+            recipients: recipientUserIds && recipientUserIds.length > 0 ? {
+              create: recipientUserIds.map(userId => ({
+                userId,
+                deliveryStatus: DeliveryStatus.PENDING,
+                deliveryMethod: createNotificationDto.deliveryMethod || DeliveryMethod.IN_APP,
+              })),
+            } : undefined,
           },
-        },
-        recipients: {
           include: {
-            user: {
+            createdBy: {
               select: {
                 id: true,
                 firstName: true,
                 lastName: true,
                 email: true,
-                role: true,
+              },
+            },
+            recipients: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    role: true,
+                  },
+                },
+              },
+            },
+            patient: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                dateOfBirth: true,
+                gender: true,
               },
             },
           },
-        },
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            dateOfBirth: true,
-            gender: true,
-          },
-        },
-      },
         });
 
         // TODO: Create audit log when audit table is available
@@ -90,25 +95,25 @@ export class NotificationsService {
         // });
 
         return notification;
-    });
+      });
 
-    this.logger.log(`Created notification ${notification.id} for ${recipientUserIds?.length || 0} recipients`);
-      
+      this.logger.log(`Created notification ${notification.id} for ${recipientUserIds?.length || 0} recipients`);
+
       // Queue for delivery (async)
       this.queueNotificationDelivery(notification.id).catch(error => {
         this.logger.error(`Failed to queue notification delivery for ${notification.id}:`, error);
       });
 
-    return notification;
+      return notification;
     } catch (error) {
       this.logger.error('=== Error in createNotification service ===');
       this.logger.error('Error:', error);
       this.logger.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
-      
+
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
-      throw error;
+        throw error;
       }
-      
+
       throw new InternalServerErrorException('Failed to create notification');
     }
   }
@@ -153,7 +158,7 @@ export class NotificationsService {
     // Validate recipients exist and are active
     if (recipientUserIds && recipientUserIds.length > 0) {
       const recipients = await this.prisma.user.findMany({
-        where: { 
+        where: {
           id: { in: recipientUserIds },
           status: 'ACTIVE',
         },
@@ -231,7 +236,7 @@ export class NotificationsService {
       this.logger.log(`Delivered notification ${notification.id} to user ${recipient.userId}`);
     } catch (error) {
       this.logger.error(`Failed to deliver notification to user ${recipient.userId}:`, error);
-      
+
       // Update delivery status to failed
       await this.prisma.notificationRecipient.update({
         where: { id: recipient.id },
@@ -254,6 +259,7 @@ export class NotificationsService {
       const {
         type,
         priority,
+        category,
         caseType,
         patientId,
         caseId,
@@ -268,7 +274,7 @@ export class NotificationsService {
       // Validate pagination parameters
       const pageNum = Math.max(1, parseInt(page) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20)); // Max 100 items per page
-    const skip = (pageNum - 1) * limitNum;
+      const skip = (pageNum - 1) * limitNum;
 
       // Validate user exists
       const user = await this.prisma.user.findUnique({
@@ -285,45 +291,46 @@ export class NotificationsService {
       }
 
       // Build where clause with enhanced filtering
-    const where: any = {
-      recipients: {
-        some: {
-          userId,
-          deletedAt: null, // Only include notifications with non-deleted recipients
-        },
-      },
-    };
-
-      // Apply filters
-    if (type) where.type = type;
-    if (priority) where.priority = priority;
-    if (caseType) where.caseType = caseType;
-    if (patientId) where.patientId = patientId;
-    if (caseId) where.caseId = caseId;
-      
-    if (isRead !== undefined) {
-      where.recipients = {
-        some: {
-          userId,
-          isRead,
-          deletedAt: null, // Only include non-deleted recipients
+      const where: any = {
+        recipients: {
+          some: {
+            userId,
+            deletedAt: null, // Only include notifications with non-deleted recipients
+          },
         },
       };
-    }
+
+      // Apply filters
+      if (type) where.type = type;
+      if (priority) where.priority = priority;
+      if (category) where.category = category;
+      if (caseType) where.caseType = caseType;
+      if (patientId) where.patientId = patientId;
+      if (caseId) where.caseId = caseId;
+
+      if (isRead !== undefined) {
+        where.recipients = {
+          some: {
+            userId,
+            isRead,
+            deletedAt: null, // Only include non-deleted recipients
+          },
+        };
+      }
 
       // Enhanced search functionality
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { message: { contains: search, mode: 'insensitive' } },
-        { patientName: { contains: search, mode: 'insensitive' } },
+      if (search) {
+        where.OR = [
+          { title: { contains: search, mode: 'insensitive' } },
+          { message: { contains: search, mode: 'insensitive' } },
+          { patientName: { contains: search, mode: 'insensitive' } },
           // { tags: { has: search } }, // TODO: Enable when tags field is available
-      ];
-    }
+        ];
+      }
 
       // Date range filtering
-    if (dateFrom || dateTo) {
-      where.createdAt = {};
+      if (dateFrom || dateTo) {
+        where.createdAt = {};
         if (dateFrom) {
           const fromDate = new Date(dateFrom);
           if (isNaN(fromDate.getTime())) {
@@ -341,86 +348,86 @@ export class NotificationsService {
       }
 
       // Execute queries in parallel for better performance
-    const [notifications, total] = await Promise.all([
-      this.prisma.notification.findMany({
-        where,
-        include: {
-          createdBy: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+      const [notifications, total] = await Promise.all([
+        this.prisma.notification.findMany({
+          where,
+          include: {
+            createdBy: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            recipients: {
+              where: {
+                userId,
+                deletedAt: null, // Only include non-deleted recipients
+              },
+              select: {
+                id: true,
+                userId: true,
+                isRead: true,
+                readAt: true,
+                deliveryStatus: true,
+                deliveryMethod: true,
+              },
+            },
+            patient: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                dateOfBirth: true,
+                gender: true,
+              },
             },
           },
-          recipients: {
-            where: { 
-              userId,
-              deletedAt: null, // Only include non-deleted recipients
-            },
-            select: {
-              id: true,
-              userId: true,
-              isRead: true,
-              readAt: true,
-              deliveryStatus: true,
-              deliveryMethod: true,
-            },
-          },
-          patient: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              dateOfBirth: true,
-              gender: true,
-            },
-          },
-        },
           orderBy: [
             { priority: 'desc' }, // High priority first
             { createdAt: 'desc' }, // Then by creation date
           ],
-        skip,
-        take: limitNum,
-      }),
-      this.prisma.notification.count({ where }),
-    ]);
+          skip,
+          take: limitNum,
+        }),
+        this.prisma.notification.count({ where }),
+      ]);
 
-    // Transform notifications to include user-specific read status
-    const transformedNotifications = notifications.map(notification => {
+      // Transform notifications to include user-specific read status
+      const transformedNotifications = notifications.map(notification => {
         const userRecipient = notification.recipients.find((r: any) => r.userId === userId);
-      return {
-        ...notification,
-        isRead: userRecipient?.isRead || false,
-        readAt: userRecipient?.readAt || null,
+        return {
+          ...notification,
+          isRead: userRecipient?.isRead || false,
+          readAt: userRecipient?.readAt || null,
           deliveryStatus: userRecipient?.deliveryStatus || 'PENDING',
-        recipients: undefined, // Remove recipients array to avoid confusion
-      };
-    });
+          recipients: undefined, // Remove recipients array to avoid confusion
+        };
+      });
 
-    this.logger.log(`Retrieved ${notifications.length} notifications, total: ${total}`);
-    
-    return {
-      notifications: transformedNotifications,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        totalPages: Math.ceil(total / limitNum),
+      this.logger.log(`Retrieved ${notifications.length} notifications, total: ${total}`);
+
+      return {
+        notifications: transformedNotifications,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
           hasNext: pageNum < Math.ceil(total / limitNum),
           hasPrev: pageNum > 1,
-      },
-    };
+        },
+      };
     } catch (error) {
       this.logger.error('=== Error in getNotifications service ===');
       this.logger.error('Error:', error);
       this.logger.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
-      
+
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
-      throw error;
+        throw error;
       }
-      
+
       throw new InternalServerErrorException('Failed to retrieve notifications');
     }
   }
@@ -440,7 +447,7 @@ export class NotificationsService {
       this.prisma.notification.count({
         where: {
           recipients: {
-            some: { 
+            some: {
               userId,
               deletedAt: null, // Only count non-deleted notifications
             },
@@ -450,7 +457,7 @@ export class NotificationsService {
       this.prisma.notification.count({
         where: {
           recipients: {
-            some: { 
+            some: {
               userId,
               isRead: false,
               deletedAt: null, // Only count non-deleted notifications
@@ -462,7 +469,7 @@ export class NotificationsService {
         where: {
           priority: NotificationPriority.HIGH,
           recipients: {
-            some: { 
+            some: {
               userId,
               deletedAt: null, // Only count non-deleted notifications
             },
@@ -473,7 +480,7 @@ export class NotificationsService {
         where: {
           priority: NotificationPriority.HIGH,
           recipients: {
-            some: { 
+            some: {
               userId,
               isRead: false,
               deletedAt: null, // Only count non-deleted notifications
@@ -625,23 +632,23 @@ export class NotificationsService {
    */
   async getNotificationCategories(userId: string) {
     try {
-    const categories = await this.prisma.notification.groupBy({
-      by: ['type'],
-      where: {
-        recipients: {
-            some: { 
+      const categories = await this.prisma.notification.groupBy({
+        by: ['type'],
+        where: {
+          recipients: {
+            some: {
               userId,
               deletedAt: null, // Only count non-deleted recipients
             },
+          },
         },
-      },
-      _count: {
-        id: true,
-      },
-    });
+        _count: {
+          id: true,
+        },
+      });
 
-    return categories.map(category => ({
-      type: category.type,
+      return categories.map(category => ({
+        type: category.type,
         count: category._count?.id || 0,
       }));
     } catch (error) {
@@ -657,7 +664,7 @@ export class NotificationsService {
   async cleanupExpiredNotifications() {
     try {
       this.logger.log('Starting cleanup of expired notifications...');
-      
+
       // TODO: Implement when expiresAt field is available
       const expiredNotifications: any[] = [];
       // const expiredNotifications = await this.prisma.notification.findMany({
@@ -694,7 +701,7 @@ export class NotificationsService {
   async archiveOldNotifications() {
     try {
       this.logger.log('Starting archive of old notifications...');
-      
+
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -732,7 +739,7 @@ export class NotificationsService {
   async retryFailedDeliveries() {
     try {
       this.logger.log('Starting retry of failed deliveries...');
-      
+
       // TODO: Implement when new fields are available
       const failedRecipients: any[] = [];
       // const failedRecipients = await this.prisma.notificationRecipient.findMany({
@@ -758,7 +765,7 @@ export class NotificationsService {
       for (const recipient of failedRecipients) {
         try {
           await this.deliverToRecipient(recipient.notification, recipient);
-          
+
           // TODO: Update next retry time when fields are available
           // const nextRetryMinutes = Math.pow(2, recipient.deliveryAttempts) * 5; // 5, 10, 20 minutes
           // const nextRetryAt = new Date();
@@ -813,6 +820,419 @@ export class NotificationsService {
     } catch (error) {
       this.logger.error('Failed to update user notification preferences:', error);
       throw new InternalServerErrorException('Failed to update notification preferences');
+    }
+  }
+
+  /**
+   * Get system patient ID (for system notifications that don't have a specific patient)
+   */
+  private async getSystemPatientId(): Promise<{ id: string; name: string }> {
+    try {
+      const patient = await this.prisma.patient.findFirst({
+        where: {
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (patient) {
+        return {
+          id: patient.id,
+          name: `${patient.firstName} ${patient.lastName}`,
+        };
+      }
+
+      // If no patient found, return a placeholder
+      // This should rarely happen in a production system
+      return {
+        id: '00000000-0000-0000-0000-000000000000',
+        name: 'System',
+      };
+    } catch (error) {
+      this.logger.error('Failed to get system patient ID:', error);
+      return {
+        id: '00000000-0000-0000-0000-000000000000',
+        name: 'System',
+      };
+    }
+  }
+
+  /**
+   * Get system user ID (for system-created notifications)
+   */
+  private async getSystemUserId(): Promise<string> {
+    try {
+      const adminUser = await this.prisma.user.findFirst({
+        where: {
+          role: UserRole.ADMIN,
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (adminUser) {
+        return adminUser.id;
+      }
+
+      const rccUser = await this.prisma.user.findFirst({
+        where: {
+          role: UserRole.RCC,
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (rccUser) {
+        return rccUser.id;
+      }
+
+      throw new InternalServerErrorException('No system user found for creating notifications');
+    } catch (error) {
+      this.logger.error('Failed to get system user ID:', error);
+      throw new InternalServerErrorException('Failed to retrieve system user for notifications');
+    }
+  }
+
+  /**
+   * Get all active users by role
+   */
+  async getUsersByRole(role: UserRole): Promise<string[]> {
+    try {
+      const users = await this.prisma.user.findMany({
+        where: {
+          role,
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      return users.map(user => user.id);
+    } catch (error) {
+      this.logger.error(`Failed to get users by role ${role}:`, error);
+      throw new InternalServerErrorException(`Failed to retrieve users with role ${role}`);
+    }
+  }
+
+  deriveCategoryFromCaseType(caseType: CaseType): NotificationCategory {
+    return NotificationCategory.TICKETS;
+  }
+
+  /**
+   * Ensure category is set in notification data
+   */
+  ensureCategory(notificationData: Partial<CreateNotificationDto>): NotificationCategory {
+    if (notificationData.category) {
+      return notificationData.category;
+    }
+
+    if (notificationData.caseType) {
+      return this.deriveCategoryFromCaseType(notificationData.caseType);
+    }
+
+    return NotificationCategory.TICKETS;
+  }
+
+  /**
+   * Create notification for critical cases incoming to hospitals
+   */
+  async createCriticalCaseNotification(
+    ticketId: string,
+    caseType: CaseType,
+    caseId: string,
+    hospitalId: string,
+    isRCCNotification: boolean = false,
+  ) {
+    try {
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: {
+          patient: true,
+          destinationHospital: true,
+          originHospital: true,
+        },
+      });
+
+      if (!ticket) {
+        throw new NotFoundException(`Ticket with ID ${ticketId} not found`);
+      }
+
+      const patient = ticket.patient;
+      const hospital = ticket.destinationHospital || ticket.originHospital;
+
+      let recipientUserIds: string[];
+      if (isRCCNotification) {
+        recipientUserIds = await this.getUsersByRole(UserRole.RCC);
+      } else {
+        const hospitalUsers = await this.prisma.user.findMany({
+          where: {
+            hospitalId,
+            status: 'ACTIVE',
+            deletedAt: null,
+            role: {
+              in: [UserRole.HOSPITAL_USER, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR],
+            },
+          },
+          select: { id: true },
+        });
+        recipientUserIds = hospitalUsers.map(u => u.id);
+      }
+
+      if (recipientUserIds.length === 0) {
+        this.logger.warn(`No recipients found for critical case notification (ticket: ${ticketId}, isRCC: ${isRCCNotification})`);
+        return null;
+      }
+
+      // Determine caseType from ticket pathway (same as createTicketAssignmentNotification)
+      let resolvedCaseType: CaseType;
+      if (ticket.pathway === 'GENERAL' || ticket.pathway === 'STEMI' || ticket.pathway === 'STROKE' || ticket.pathway === 'TRAUMA') {
+        resolvedCaseType = ticket.pathway as CaseType;
+      } else {
+        this.logger.warn(`Ticket ${ticketId} has unknown pathway ${ticket.pathway}, defaulting to GENERAL`);
+        resolvedCaseType = CaseType.GENERAL;
+      }
+
+      // Determine priority based on ticket priority (same as createTicketAssignmentNotification)
+      let notificationPriority: NotificationPriority;
+      switch (ticket.priority) {
+        case 'EMERGENCY':
+          notificationPriority = NotificationPriority.HIGH;
+          break;
+        case 'CRITICAL':
+          notificationPriority = NotificationPriority.HIGH; // Same as EMERGENCY
+          break;
+        default:
+          notificationPriority = NotificationPriority.HIGH;
+      }
+
+      // Override priority for RCC notifications (RCC gets HIGH priority)
+      if (isRCCNotification) {
+        notificationPriority = NotificationPriority.HIGH;
+      }
+
+      const notification = await this.createNotification(
+        {
+          type: NotificationType.CRITICAL_CASE_INCOMING,
+          priority: notificationPriority,
+          title: `Critical ${caseType} Case Incoming - ${patient.firstName} ${patient.lastName}`,
+          message: `Critical ${caseType} case is incoming to ${hospital?.name || 'hospital'}. Patient: ${patient.firstName} ${patient.lastName}.`,
+          caseType,
+          caseId,
+          ticketId,
+          patientId: patient.id,
+          patientName: `${patient.firstName} ${patient.lastName}`,
+          category: isRCCNotification ? NotificationCategory.TICKETS : NotificationCategory.HOSPITALS,
+          sourceEntityType: isRCCNotification ? 'TICKET' : 'CASE',
+          sourceEntityId: isRCCNotification ? ticketId : caseId,
+          recipientUserIds,
+          metadata: JSON.stringify({
+            ticketId,
+            ticketNumber: ticket.ticketNumber,
+            caseId,
+            caseType: resolvedCaseType,
+            pathway: ticket.pathway,
+            priority: ticket.priority,
+            hospitalId,
+            isRCCNotification,
+          }),
+        },
+        await this.getSystemUserId(),
+      );
+
+      if (notification) {
+        this.notificationsGateway.emitNotificationCreated(notification);
+        this.notificationsGateway.emitNotificationByCategory(
+          notification,
+          isRCCNotification ? NotificationCategory.TICKETS : NotificationCategory.HOSPITALS,
+        );
+        if (isRCCNotification) {
+          this.notificationsGateway.emitNotificationByRole(notification, [UserRole.RCC]);
+        } else {
+          this.notificationsGateway.emitNotificationByRole(notification, [
+            UserRole.HOSPITAL_USER,
+            UserRole.ED_NURSE,
+            UserRole.UNIT_NURSE,
+            UserRole.BED_COORDINATOR,
+          ]);
+        }
+      }
+
+      return notification;
+    } catch (error) {
+      this.logger.error(`Failed to create critical case notification for ticket ${ticketId}:`, error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to create critical case notification');
+    }
+  }
+
+  /**
+   * Create notification for ticket assignment to destination hospital
+   * Notifies hospital users when a patient is assigned to their hospital
+   */
+  async createTicketAssignmentNotification(
+    ticketId: string,
+    destinationHospitalId: string,
+  ) {
+    try {
+      this.logger.log(`Creating ticket assignment notification for ticket ${ticketId}, destination hospital ${destinationHospitalId}`);
+      
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: {
+          patient: true,
+          destinationHospital: true,
+          originHospital: true,
+        },
+      });
+
+      if (!ticket) {
+        this.logger.error(`Ticket with ID ${ticketId} not found`);
+        throw new NotFoundException(`Ticket with ID ${ticketId} not found`);
+      }
+
+      if (!ticket.destinationHospitalId) {
+        this.logger.warn(`Ticket ${ticketId} has no destination hospital, skipping assignment notification`);
+        return null;
+      }
+
+      const patient = ticket.patient;
+      const hospital = ticket.destinationHospital;
+
+      if (!patient) {
+        this.logger.error(`Patient not found for ticket ${ticketId}`);
+        throw new NotFoundException(`Patient not found for ticket ${ticketId}`);
+      }
+
+      if (!hospital) {
+        this.logger.warn(`Destination hospital ${destinationHospitalId} not found for ticket ${ticketId}`);
+        return null;
+      }
+
+      
+      const hospitalUsers = await this.prisma.user.findMany({
+        where: {
+          hospitalId: destinationHospitalId,
+          status: 'ACTIVE',
+          deletedAt: null,
+          role: {
+            in: [UserRole.HOSPITAL_USER, UserRole.ED_NURSE, UserRole.UNIT_NURSE, UserRole.BED_COORDINATOR],
+          },
+        },
+        select: { id: true },
+      });
+
+      const recipientUserIds = hospitalUsers.map(u => u.id);
+
+      if (recipientUserIds.length === 0) {
+        this.logger.warn(`No hospital users found for ticket assignment notification (ticket: ${ticketId}, hospital: ${destinationHospitalId})`);
+        return null;
+      }
+
+      
+      let notificationPriority: NotificationPriority;
+      switch (ticket.priority) {
+        case 'EMERGENCY':
+          notificationPriority = NotificationPriority.HIGH;
+          break;
+        case 'CRITICAL':
+          notificationPriority = NotificationPriority.HIGH; // Same as EMERGENCY
+          break;
+        case 'MEDIUM':
+          notificationPriority = NotificationPriority.MEDIUM;
+          break;
+        default:
+          notificationPriority = NotificationPriority.LOW;
+      }
+
+      
+      let caseType: CaseType;
+      if (ticket.pathway === 'GENERAL' || ticket.pathway === 'STEMI' || ticket.pathway === 'STROKE' || ticket.pathway === 'TRAUMA') {
+        caseType = ticket.pathway as CaseType;
+      } else {
+        this.logger.warn(`Ticket ${ticketId} has unknown pathway ${ticket.pathway}, defaulting to GENERAL`);
+        caseType = CaseType.GENERAL;
+      }
+
+      const isCriticalCase = ticket.priority === 'EMERGENCY' || ticket.priority === 'CRITICAL' || ticket.isEmergency;
+
+      const notificationType = isCriticalCase 
+        ? NotificationType.CRITICAL_CASE_INCOMING 
+        : NotificationType.CASE_ASSIGNMENT;
+
+      const title = isCriticalCase
+        ? `Critical Case Incoming - ${patient.firstName} ${patient.lastName}`
+        : `Patient Incoming - ${patient.firstName} ${patient.lastName}`;
+      
+      const message = isCriticalCase
+        ? `Critical ${caseType} case is incoming to ${hospital.name}. Patient: ${patient.firstName} ${patient.lastName}. Ticket: ${ticket.ticketNumber}`
+        : `Patient ${patient.firstName} ${patient.lastName} is assigned to ${hospital.name}. Ticket: ${ticket.ticketNumber}`;
+
+      const notification = await this.createNotification(
+        {
+          type: notificationType,
+          priority: notificationPriority,
+          title,
+          message,
+          caseType,
+          caseId: ticketId, 
+          ticketId,
+          patientId: patient.id,
+          patientName: `${patient.firstName} ${patient.lastName}`,
+          category: NotificationCategory.HOSPITALS,
+          sourceEntityType: 'TICKET',
+          sourceEntityId: ticketId,
+          recipientUserIds,
+          metadata: JSON.stringify({
+            ticketId,
+            ticketNumber: ticket.ticketNumber,
+            destinationHospitalId,
+            priority: ticket.priority,
+            pathway: ticket.pathway,
+            isCriticalCase,
+          }),
+        },
+        await this.getSystemUserId(),
+      );
+
+      if (notification) {
+        this.notificationsGateway.emitNotificationCreated(notification);
+        this.notificationsGateway.emitNotificationByCategory(
+          notification,
+          NotificationCategory.HOSPITALS,
+        );
+        this.notificationsGateway.emitNotificationByRole(notification, [
+          UserRole.HOSPITAL_USER,
+          UserRole.ED_NURSE,
+          UserRole.UNIT_NURSE,
+          UserRole.BED_COORDINATOR,
+        ]);
+      }
+
+      this.logger.log(`Successfully created ticket assignment notification ${notification.id} for ticket ${ticketId}`);
+      return notification;
+    } catch (error) {
+      this.logger.error(`=== Error in createTicketAssignmentNotification ===`);
+      this.logger.error(`Ticket ID: ${ticketId}, Destination Hospital ID: ${destinationHospitalId}`);
+      this.logger.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(`Stack: ${error instanceof Error ? error.stack : 'No stack trace'}`);
+      
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(`Failed to create ticket assignment notification: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

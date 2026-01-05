@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
 import { FullscreenProvider } from './contexts/FullscreenContext';
 import { VideoCallSocketProvider } from './contexts/VideoCallSocketContext';
+import { NotificationSocketProvider } from './contexts/NotificationSocketContext';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/Auth/LoginPage';
 import UserRegistrationPage from './pages/Auth/UserRegistrationPage';
@@ -54,6 +55,7 @@ function App() {
   return (
     <FullscreenProvider>
       <VideoCallSocketProvider>
+        <NotificationSocketProvider>
         <Layout>
           <Box sx={{ flexGrow: 1 }}>
             <IncomingCallNotification />
@@ -192,6 +194,7 @@ function App() {
             </Routes>
           </Box>
         </Layout>
+        </NotificationSocketProvider>
       </VideoCallSocketProvider>
     </FullscreenProvider>
   );

@@ -17,11 +17,11 @@ export interface RetryConfig {
 // Types
 export interface Notification {
   id: string;
-  type: 'CASE_COMMENT' | 'CASE_UPDATE' | 'CASE_ASSIGNMENT' | 'CASE_COMPLETION' | 'CASE_ESCALATION';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  type: 'CASE_COMMENT' | 'CASE_UPDATE' | 'CASE_ASSIGNMENT' | 'CASE_COMPLETION' | 'CASE_ESCALATION' | 'EMS_LATE_CASE' | 'CRITICAL_CASE_INCOMING' | 'INCOMPLETE_PATIENT_DATA' | 'KPI_THRESHOLD_BREACH' | 'CRITICAL_TIME_LIMIT_APPROACHING';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   title: string;
   message: string;
-  caseType: 'STEMI' | 'STROKE' | 'TRAUMA';
+  caseType: 'GENERAL' | 'STEMI' | 'STROKE' | 'TRAUMA';
   caseId: string;
   ticketId?: string;
   patientId: string;
@@ -122,6 +122,7 @@ export interface NotificationFilter {
   dateTo?: string;
   page?: string;
   limit?: string;
+  category?: string;
 }
 
 export interface CreateNotificationData {

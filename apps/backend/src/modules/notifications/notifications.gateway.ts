@@ -12,6 +12,7 @@ import { Logger, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
 import { PrismaService } from '../../database/prisma.service';
+import { UserRole , NotificationCategory} from '@prisma/client';
 
 @WebSocketGateway({
   cors: {
@@ -88,6 +89,12 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
       // Join role-specific rooms
       await client.join(`role-${user.role}`);
+
+      // Join category-specific rooms based on user role
+      await client.join(`category-${NotificationCategory.PATIENTS}`);
+      await client.join(`category-${NotificationCategory.EMS}`);
+      await client.join(`category-${NotificationCategory.HOSPITALS}`);
+      await client.join(`category-${NotificationCategory.TICKETS}`);
 
       // Join hospital-specific room if user has hospital
       if (user.hospitalId) {
@@ -196,29 +203,69 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       return;
     }
 
-    // Emit to all recipients
+    const eventData = {
+      notification,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Emit to all recipients (user-specific rooms)
     if (notification.recipients && notification.recipients.length > 0) {
       notification.recipients.forEach((recipient: any) => {
-        this.server.to(`user-${recipient.userId}`).emit('notification-created', {
-          notification,
-          timestamp: new Date().toISOString(),
-        });
+        this.server.to(`user-${recipient.userId}`).emit('notification-created', eventData);
       });
     }
 
-    // Emit to role-specific rooms based on notification type
+    // Emit to category-specific room if category is available
+    if (notification.category) {
+      this.server.to(`category-${NotificationCategory[notification.category as keyof typeof NotificationCategory]}`).emit('notification-created', eventData);
+    }
+
+    // Emit to role-specific rooms based on notification type (legacy support)
     if (notification.type === 'CASE_COMMENT') {
-      this.server.to('role-RCC').emit('notification-created', {
-        notification,
-        timestamp: new Date().toISOString(),
-      });
-      this.server.to('role-ADMIN').emit('notification-created', {
-        notification,
-        timestamp: new Date().toISOString(),
-      });
+      this.server.to('role-RCC').emit('notification-created', eventData);
+      this.server.to('role-ADMIN').emit('notification-created', eventData);
     }
 
     this.logger.log(`Emitted notification created event: ${notification.id}`);
+  }
+
+  /**
+   * Emit notification to category-specific room
+   */
+  emitNotificationByCategory(notification: any, category: NotificationCategory | string) {
+    if (!this.server) {
+      this.logger.warn('WebSocket server not initialized, skipping category emission');
+      return;
+    }
+
+    const eventData = {
+      notification,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.server.to(`category-${NotificationCategory[category as keyof typeof NotificationCategory]}`).emit('notification-created', eventData);
+    this.logger.log(`Emitted notification ${notification.id} to category room: category-${category}`);
+  }
+
+  /**
+   * Emit notification to role-specific rooms
+   */
+  emitNotificationByRole(notification: any, roles: UserRole[]) {
+    if (!this.server) {
+      this.logger.warn('WebSocket server not initialized, skipping role emission');
+      return;
+    }
+
+    const eventData = {
+      notification,
+      timestamp: new Date().toISOString(),
+    };
+
+    roles.forEach(role => {
+      this.server.to(`role-${role}`).emit('notification-created', eventData);
+    });
+
+    this.logger.log(`Emitted notification ${notification.id} to role rooms: ${roles.join(', ')}`);
   }
 
   emitCaseNoteUpdated(caseNote: any) {

@@ -17,6 +17,7 @@ import EmptyState from '../../../components/Common/EmptyState';
 import SkeletonLoader from '../../../components/Common/SkeletonLoader';
 import { notificationService, Notification, NotificationFilter, ApiError } from '../../../services/notificationService';
 import NotificationItemWithReplies from './NotificationItemWithReplies';
+import { useNotificationSocket } from '../../../contexts/NotificationSocketContext';
 
 interface NotificationListProps {
   filters: NotificationFilter;
@@ -24,6 +25,9 @@ interface NotificationListProps {
 }
 
 const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotificationChange }) => {
+  // Get socket connection from context
+  const { socket, isConnected } = useNotificationSocket();
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,10 +38,6 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     total: 0,
     totalPages: 0,
   });
-
-  useEffect(() => {
-    loadNotifications();
-  }, [filters]);
 
   const loadNotifications = async () => {
     const requestFilters = {
@@ -50,14 +50,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
       setLoading(true);
       setError(null);
       
-      console.log('Loading notifications with filters:', requestFilters);
-      console.log('Filter object keys and values:', Object.entries(requestFilters));
-      
       const data = await notificationService.getNotifications(requestFilters);
-      console.log('Received notifications:', data.notifications.length);
-      console.log('Full response:', data);
-      console.log('API call successful for filters:', requestFilters);
-      
       setNotifications(data.notifications);
       setPagination(data.pagination);
     } catch (err: any) {
@@ -85,6 +78,47 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     }
   };
 
+  useEffect(() => {
+    loadNotifications();
+  }, [filters]);
+
+  // Set up polling interval
+  useEffect(() => {
+    const interval = setInterval(loadNotifications, 30000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [filters]);
+
+  // Listen to socket events using context hook
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      return;
+    }
+
+    const handleNotificationCreated = () => {
+      loadNotifications();
+    };
+
+    const handleNotificationRead = () => {
+      loadNotifications();
+    };
+
+    const handleNotificationDeleted = () => {
+      loadNotifications();
+    };
+
+    socket.on('notification-created', handleNotificationCreated);
+    socket.on('notification-read', handleNotificationRead);
+    socket.on('notification-deleted', handleNotificationDeleted);
+
+    return () => {
+      socket.off('notification-created', handleNotificationCreated);
+      socket.off('notification-read', handleNotificationRead);
+      socket.off('notification-deleted', handleNotificationDeleted);
+    };
+  }, [socket, isConnected, filters]);
+
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       console.log('Marking notification as read:', notificationId);
@@ -102,11 +136,6 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
       if (onNotificationChange) {
         onNotificationChange();
       }
-      
-      // Dispatch custom event to notify sidebar
-      window.dispatchEvent(new CustomEvent('notificationRead', { 
-        detail: { notificationId, count: result.count } 
-      }));
     } catch (err) {
       console.error('Error marking notification as read:', err);
       // Revert the optimistic update
@@ -131,11 +160,6 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
       if (onNotificationChange) {
         onNotificationChange();
       }
-      
-      // Dispatch custom event to notify sidebar
-      window.dispatchEvent(new CustomEvent('notificationDeleted', { 
-        detail: { notificationId, count: result.count } 
-      }));
     } catch (err) {
       console.error('Error deleting notification:', err);
     }

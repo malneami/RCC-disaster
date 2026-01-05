@@ -170,8 +170,8 @@ export class CaseNotesService {
           ticketId: caseNote.ticketId,
           patientId: caseNote.patientId,
           patientName: caseNote.patientName,
+          category: NotificationCategory.TICKETS,
           createdById,
-          category: NotificationCategory.PATIENTS,
           metadata: JSON.stringify({ caseNoteId: caseNote.id }),
           recipients: recipientUserIds.length > 0 ? {
             create: recipientUserIds.map((userId: string) => ({

@@ -326,7 +326,7 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
           }}>
             <RepliesSection
               caseNoteId={JSON.parse(notification.metadata || '{}').caseNoteId || notification.id}
-              caseType={notification.caseType}
+              caseType={notification.caseType as 'STEMI' | 'STROKE' | 'TRAUMA'}
               caseId={notification.caseId}
               patientId={notification.patientId}
               patientName={notification.patientName}
