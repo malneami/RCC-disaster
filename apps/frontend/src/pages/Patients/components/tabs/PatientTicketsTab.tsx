@@ -1,24 +1,15 @@
 import React from 'react';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Box,
   Typography,
-  Chip,
-  IconButton,
-  Tooltip,
+  alpha,
 } from '@mui/material';
 import {
-  Visibility,
+  ConfirmationNumber,
+  Inbox,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { Ticket } from '../../../../services/patientService';
+import TicketCard from './TicketCard';
 
 interface PatientTicketsTabProps {
   tickets: Ticket[];
@@ -26,89 +17,93 @@ interface PatientTicketsTabProps {
 }
 
 const PatientTicketsTab: React.FC<PatientTicketsTabProps> = ({ tickets, onViewTicket }) => {
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'EMERGENCY': return 'error';
-      case 'CRITICAL': return 'error';
-      case 'HIGH': return 'warning';
-      case 'MEDIUM': return 'info';
-      case 'LOW': return 'success';
-      default: return 'default';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'COMPLETED': return 'success';
-      case 'IN_TRANSPORT': return 'warning';
-      case 'ASSIGNED': return 'info';
-      case 'PENDING': return 'default';
-      case 'CANCELLED': return 'error';
-      default: return 'default';
-    }
-  };
+  const cardColor = '#42a5f5';
 
   return (
-    <Card>
-      <CardHeader title="Patient Tickets" />
-      <CardContent>
-        {tickets && tickets.length > 0 ? (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Ticket #</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Priority</TableCell>
-                  <TableCell>Origin</TableCell>
-                  <TableCell>Destination</TableCell>
-                  <TableCell>Created</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tickets.map((ticket: Ticket) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell>{ticket.ticketNumber}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={ticket.status} 
-                        color={getStatusColor(ticket.status) as any}
-                        size="small" 
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={ticket.priority} 
-                        color={getPriorityColor(ticket.priority) as any}
-                        size="small" 
-                      />
-                    </TableCell>
-                    <TableCell>{ticket.originHospital?.name}</TableCell>
-                    <TableCell>{ticket.destinationHospital?.name || 'N/A'}</TableCell>
-                    <TableCell>{format(new Date(ticket.createdAt), 'PP')}</TableCell>
-                    <TableCell>
-                      <Tooltip title="View Ticket">
-                        <IconButton 
-                          size="small"
-                          onClick={() => onViewTicket(ticket.id)}
-                        >
-                          <Visibility />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-            No tickets found for this patient
+    <Box>
+      {/* Header Section */}
+      <Box
+        sx={{
+          background: `linear-gradient(135deg, ${alpha(cardColor, 0.1)} 0%, ${alpha(cardColor, 0.05)} 100%)`,
+          borderRadius: '16px',
+          border: `1px solid ${alpha(cardColor, 0.2)}`,
+          padding: '18px 24px',
+          marginBottom: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            sx={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: `linear-gradient(135deg, ${cardColor} 0%, ${alpha(cardColor, 0.8)} 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: `0 2px 8px ${alpha(cardColor, 0.3)}`,
+            }}
+          >
+            <ConfirmationNumber sx={{ color: '#ffffff', fontSize: '24px' }} />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '1.1rem' }}>
+              Patient Tickets
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem', mt: 0.25 }}>
+              {tickets?.length || 0} ticket{tickets?.length !== 1 ? 's' : ''} found
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Tickets List */}
+      {tickets && tickets.length > 0 ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {tickets.map((ticket: Ticket) => (
+            <TicketCard
+              key={ticket.id}
+              ticket={ticket}
+              onView={onViewTicket}
+            />
+          ))}
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            border: `1px solid ${alpha(cardColor, 0.2)}`,
+            padding: '60px 24px',
+            textAlign: 'center',
+          }}
+        >
+          <Box
+            sx={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${alpha(cardColor, 0.1)} 0%, ${alpha(cardColor, 0.05)} 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <Inbox sx={{ color: cardColor, fontSize: '40px' }} />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+            No Tickets Found
           </Typography>
-        )}
-      </CardContent>
-    </Card>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+            This patient has no tickets associated
+          </Typography>
+        </Box>
+      )}
+    </Box>
   );
 };
 
