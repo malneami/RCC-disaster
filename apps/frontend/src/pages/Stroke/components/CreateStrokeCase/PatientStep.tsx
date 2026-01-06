@@ -28,6 +28,7 @@ interface PatientInformationStepProps {
   onOriginHospitalSelect?: (hospital: Hospital | null) => void;
   destinationRequired?: boolean;
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, string>;
 }
 
 const PatientStep: React.FC<PatientInformationStepProps> = ({
@@ -37,7 +38,56 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
   onOriginHospitalSelect,
   destinationRequired = false,
   timelineWarnings = {},
+  kpiViolations = {},
 }) => {
+  const getInputStyle = (field: string) => {
+    const hasError = !!timelineWarnings[field];
+    const hasWarning = !!kpiViolations[field];
+
+    if (hasError) {
+      return {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: 'error.main' },
+          '&:hover fieldset': { borderColor: 'error.main' },
+          '&.Mui-focused fieldset': { borderColor: 'error.main' },
+        }
+      };
+    }
+
+    if (hasWarning) {
+      return {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: 'warning.main' },
+          '&:hover fieldset': { borderColor: 'warning.main' },
+          '&.Mui-focused fieldset': { borderColor: 'warning.main' },
+        }
+      };
+    }
+
+    return undefined;
+  };
+
+  const emphasizeKeywords = (text: string) => {
+    const keywords = [
+      'Transfer request',
+      'Transfer arrival',
+      'Admission',
+    ];
+
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, index) => {
+      const isKeyword = keywords.some(
+        (keyword) => keyword.toLowerCase() === part.toLowerCase()
+      );
+      return isKeyword ? (
+        <Box key={`${part}-${index}`} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      );
+    });
+  };
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [hospitalError, setHospitalError] = useState<string | null>(null);
@@ -527,11 +577,12 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
                 shrink: true,
               }}
               error={!!timelineWarnings['transferRequestDateTime']}
+              sx={getInputStyle('transferRequestDateTime')}
             />
             {timelineWarnings['transferRequestDateTime']?.map((warning, idx) => (
-              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+              <Alert key={idx} severity="error" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {warning}
+                  {emphasizeKeywords(warning)}
                 </Typography>
               </Alert>
             ))}
@@ -547,11 +598,12 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
                 shrink: true,
               }}
               error={!!timelineWarnings['transferArrivalDateTime']}
+              sx={getInputStyle('transferArrivalDateTime')}
             />
             {timelineWarnings['transferArrivalDateTime']?.map((warning, idx) => (
-              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+              <Alert key={idx} severity="error" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {warning}
+                  {emphasizeKeywords(warning)}
                 </Typography>
               </Alert>
             ))}

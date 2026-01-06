@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   Alert,
+  Chip,
 } from '@mui/material';
 
 import { CreateStrokeCaseData, StrokeService } from '../../../../services/strokeService';
@@ -14,10 +15,11 @@ import { hospitalService, Hospital } from '../../../../services/hospitalService'
 interface ReviewStepProps {
   formData: CreateStrokeCaseData;
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, string>;
   validationErrors?: Record<string, string>;
 }
 
-const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}, validationErrors = {} }) => {
+const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}, kpiViolations = {}, validationErrors = {} }) => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
 
   useEffect(() => {
@@ -81,17 +83,28 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
     });
   };
 
-  const cardStyles = (highlight = false) => ({
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    borderRadius: 3,
-    boxShadow: highlight
-      ? '0px 12px 30px rgba(234, 179, 8, 0.25)'
-      : '0px 12px 30px rgba(15, 23, 42, 0.08)',
-    border: `1px solid ${highlight ? 'rgba(234, 179, 8, 0.6)' : 'rgba(15, 23, 42, 0.05)'}`,
-    transition: 'border-color 0.3s ease',
-  });
+  const cardStyles = (severity: 'error' | 'warning' | null = null) => {
+    let borderColor = 'rgba(15, 23, 42, 0.05)';
+    let boxShadow = '0px 12px 30px rgba(15, 23, 42, 0.08)';
+
+    if (severity === 'error') {
+      borderColor = 'rgba(239, 68, 68, 0.6)'; // Red
+      boxShadow = '0px 12px 30px rgba(239, 68, 68, 0.15)';
+    } else if (severity === 'warning') {
+      borderColor = 'rgba(245, 158, 11, 0.6)'; // Amber/Yellow
+      boxShadow = '0px 12px 30px rgba(245, 158, 11, 0.15)';
+    }
+
+    return {
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      borderRadius: 3,
+      boxShadow,
+      border: `1px solid ${borderColor}`,
+      transition: 'border-color 0.3s ease',
+    };
+  };
 
   const cardContentStyles = {
     display: 'flex',
@@ -105,6 +118,37 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
     return fields.flatMap((field) => timelineWarnings[field] || []);
   };
 
+  const getKpiViolations = (...fields: string[]) => {
+    return fields.filter(field => kpiViolations[field]).map(field => kpiViolations[field]);
+  };
+
+  const renderKpiViolationsList = (violations: string[]) => {
+    if (!violations.length) return null;
+
+    return (
+      <Box mt={1.5} display="flex" flexDirection="column" gap={0.5}>
+        {violations.map((violation, index) => (
+          <Alert
+            key={`${violation}-${index}`}
+            severity="warning"
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              fontSize: '0.95rem',
+              bgcolor: 'transparent',
+              borderColor: 'warning.main',
+              color: 'warning.dark',
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: 700, color: 'inherit' }}>
+              {violation}
+            </Typography>
+          </Alert>
+        ))}
+      </Box>
+    );
+  };
+
   const renderWarningsList = (warnings: string[]) => {
     if (!warnings.length) {
       return null;
@@ -113,8 +157,19 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
     return (
       <Box mt={1.5} display="flex" flexDirection="column" gap={0.5}>
         {warnings.map((warning, index) => (
-          <Alert key={`${warning}-${index}`} severity="warning" variant="outlined" sx={{ borderRadius: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <Alert
+            key={`${warning}-${index}`}
+            severity="error"
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              fontSize: '0.95rem',
+              bgcolor: 'transparent',
+              borderColor: 'error.main',
+              color: 'error.dark',
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: 600, color: 'inherit' }}>
               {emphasizeKeywords(warning)}
             </Typography>
           </Alert>
@@ -141,6 +196,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
   };
 
   const hasBedAssignmentErrors = Object.keys(validationErrors).some(key => key.startsWith('bedAssignment.'));
+  const hasKpiViolations = Object.keys(kpiViolations).length > 0;
 
   const patientWarnings = getWarnings(
     'transferRequestDateTime',
@@ -166,6 +222,20 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
     'timeOfTransferActivation',
     'timeOfTransferDeparture'
   );
+  const assessmentKpiViolations = getKpiViolations(
+    'timeOfTriage',
+    'timeOfPhysicianAssessment'
+  );
+
+  const diagnosisKpiViolations = getKpiViolations(
+    'timeOfCtScanStart',
+    'timeOfCtReportFinal'
+  );
+
+  const treatmentKpiViolations = getKpiViolations(
+    'ivThrombolysisAdministrationTime',
+    'timeOfMechanicalThrombectomyPuncture'
+  );
 
   return (
     <Box>
@@ -174,21 +244,46 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
       </Typography>
 
       {hasWarnings && (
+        <Alert severity="error" variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, color: 'error.dark' }}>
+            Submission Blocked: Please resolve the timeline errors (red) below:
+          </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
+            {Object.keys(timelineWarnings).map((key) => {
+              const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+              return <li key={key}><Typography variant="body2">{label}</Typography></li>;
+            })}
+          </Box>
+        </Alert>
+      )}
+
+      {hasKpiViolations && (
         <Alert severity="warning" variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
           <Typography variant="body2" sx={{ fontWeight: 700, color: 'warning.dark' }}>
-            Please review the timeline warnings below. Some timestamps may have logical inconsistencies that need to be corrected before submission.
+            KPI Attention: Some timings exceed target thresholds (yellow). You may proceed with these warnings.
           </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
+            {Object.keys(kpiViolations).map((key) => {
+              const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+              return <li key={key}><Typography variant="body2">{label}</Typography></li>;
+            })}
+          </Box>
         </Alert>
       )}
 
       <Grid container spacing={3}>
         {/* Patient Information Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(patientWarnings.length > 0)}>
+          <Card sx={cardStyles(patientWarnings.length > 0 ? 'error' : null)}>
             <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                Patient Information
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Patient Information
+                </Typography>
+                {(patientWarnings.length > 0) ? (
+                  <Chip label="Timeline Issue" color="error" size="small" />
+                ) : null}
+              </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary">Patient Name:</Typography>
                 <Typography variant="body1">{formData.patientInfo?.firstName} {formData.patientInfo?.lastName}</Typography>
@@ -248,11 +343,18 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
 
         {/* Assessment & Timing Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(assessmentWarnings.length > 0)}>
+          <Card sx={cardStyles(assessmentWarnings.length > 0 ? 'error' : assessmentKpiViolations.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                Assessment & Timing
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Assessment & Timing
+                </Typography>
+                {(assessmentWarnings.length > 0) ? (
+                  <Chip label="Timeline Issue" color="error" size="small" />
+                ) : (assessmentKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="warning" size="small" />
+                ) : null}
+              </Box>
               {formData.timeOfSymptomOnset && (
                 <Box>
                   <Typography variant="body2" color="text.secondary">Time of Symptom Onset:</Typography>
@@ -294,17 +396,25 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
                 </Box>
               )}
               {renderWarningsList(assessmentWarnings)}
+              {renderKpiViolationsList(assessmentKpiViolations)}
             </CardContent>
           </Card>
         </Grid>
 
         {/* Diagnosis Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(diagnosisWarnings.length > 0)}>
+          <Card sx={cardStyles(diagnosisWarnings.length > 0 ? 'error' : diagnosisKpiViolations.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                Diagnosis
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Diagnosis
+                </Typography>
+                {(diagnosisWarnings.length > 0) ? (
+                  <Chip label="Timeline Issue" color="error" size="small" />
+                ) : (diagnosisKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="warning" size="small" />
+                ) : null}
+              </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary">Stroke Type:</Typography>
                 <Typography variant="body1">{StrokeService.getStrokeTypeLabel(formData.strokeType)}</Typography>
@@ -334,17 +444,25 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
                 </Box>
               )}
               {renderWarningsList(diagnosisWarnings)}
+              {renderKpiViolationsList(diagnosisKpiViolations)}
             </CardContent>
           </Card>
         </Grid>
 
         {/* Treatment Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(treatmentWarnings.length > 0)}>
+          <Card sx={cardStyles(treatmentWarnings.length > 0 ? 'error' : treatmentKpiViolations.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                Treatment
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Treatment
+                </Typography>
+                {(treatmentWarnings.length > 0) ? (
+                  <Chip label="Timeline Issue" color="error" size="small" />
+                ) : (treatmentKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="warning" size="small" />
+                ) : null}
+              </Box>
               {formData.thrombolysisOrderTime && (
                 <Box>
                   <Typography variant="body2" color="text.secondary">Thrombolysis Order Time:</Typography>
@@ -378,6 +496,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
                 </Box>
               )}
               {renderWarningsList(treatmentWarnings)}
+              {renderKpiViolationsList(treatmentKpiViolations)}
             </CardContent>
           </Card>
         </Grid>
@@ -385,11 +504,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData, timelineWarnings = {}
         {/* Bed Assignment */}
         {(formData.bedAssignment?.assignedBed || formData.bedAssignment?.bedId || formData.bedAssignment?.bedNumber || hasBedAssignmentErrors) && (
           <Grid item xs={12} md={6}>
-            <Card sx={cardStyles(hasBedAssignmentErrors)}>
+            <Card sx={cardStyles(hasBedAssignmentErrors ? 'error' : null)}>
               <CardContent sx={cardContentStyles}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                  Bed Assignment
-                </Typography>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Bed Assignment
+                  </Typography>
+                  {hasBedAssignmentErrors && (
+                    <Chip label="Validation Error" color="error" size="small" />
+                  )}
+                </Box>
                 {formData.bedAssignment?.assignedBed ? (
                   <>
                     <Box>

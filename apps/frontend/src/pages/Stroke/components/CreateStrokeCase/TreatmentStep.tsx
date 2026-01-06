@@ -14,9 +14,9 @@ import {
   Box,
 } from '@mui/material';
 
-import { 
-  CreateStrokeCaseData, 
-  StrokeDisposition, 
+import {
+  CreateStrokeCaseData,
+  StrokeDisposition,
   IVThrombolysisGiven,
   CandidateAssessment
 } from '../../../../services/strokeService';
@@ -26,13 +26,41 @@ interface TreatmentStepProps {
   formData: CreateStrokeCaseData;
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, string>;
 }
 
 const TreatmentStep: React.FC<TreatmentStepProps> = ({
   formData,
   updateFormData,
   timelineWarnings = {},
+  kpiViolations = {},
 }) => {
+  const getInputStyle = (field: string) => {
+    const hasError = !!timelineWarnings[field];
+    const hasWarning = !!kpiViolations[field];
+
+    if (hasError) {
+      return {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: 'error.main' },
+          '&:hover fieldset': { borderColor: 'error.main' },
+          '&.Mui-focused fieldset': { borderColor: 'error.main' },
+        }
+      };
+    }
+
+    if (hasWarning) {
+      return {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: 'warning.main' },
+          '&:hover fieldset': { borderColor: 'warning.main' },
+          '&.Mui-focused fieldset': { borderColor: 'warning.main' },
+        }
+      };
+    }
+
+    return undefined;
+  };
   const handleDateTimeChange = (field: string, value: string) => {
     // Convert datetime-local input to ISO-8601 format for backend
     if (value) {
@@ -52,7 +80,7 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
       'Admission',
       'CT report',
     ];
-    
+
     const parts = text.split(/(\s+)/);
     return parts.map((part, index) => {
       const isKeyword = keywords.some(
@@ -142,14 +170,22 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
               InputLabelProps={{ shrink: true }}
               helperText="When IV thrombolysis was administered (KPI#4)"
               error={!!timelineWarnings['ivThrombolysisAdministrationTime']}
+              sx={getInputStyle('ivThrombolysisAdministrationTime')}
             />
             {timelineWarnings['ivThrombolysisAdministrationTime']?.map((warning, idx) => (
-              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+              <Alert key={`err-${idx}`} severity="error" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {emphasizeKeywords(warning)}
                 </Typography>
               </Alert>
             ))}
+            {kpiViolations['ivThrombolysisAdministrationTime'] && (
+              <Alert severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {kpiViolations['ivThrombolysisAdministrationTime']}
+                </Typography>
+              </Alert>
+            )}
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
@@ -167,7 +203,7 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
           </Grid>
         </>
       )}
-      
+
       {showReasonForNotAdministeringIV && (
         <Grid item xs={12}>
           <TextField
@@ -218,14 +254,22 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
               InputLabelProps={{ shrink: true }}
               helperText="When mechanical thrombectomy puncture was performed (KPI#8)"
               error={!!timelineWarnings['timeOfMechanicalThrombectomyPuncture']}
+              sx={getInputStyle('timeOfMechanicalThrombectomyPuncture')}
             />
             {timelineWarnings['timeOfMechanicalThrombectomyPuncture']?.map((warning, idx) => (
-              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+              <Alert key={`err-${idx}`} severity="error" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {emphasizeKeywords(warning)}
                 </Typography>
               </Alert>
             ))}
+            {kpiViolations['timeOfMechanicalThrombectomyPuncture'] && (
+              <Alert severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {kpiViolations['timeOfMechanicalThrombectomyPuncture']}
+                </Typography>
+              </Alert>
+            )}
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControlLabel
@@ -247,7 +291,7 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
           </Grid>
         </>
       )}
-      
+
       {showThrombectomyCompleteTime && (
         <Grid item xs={12} sm={6}>
           <TextField
@@ -284,8 +328,8 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
         </Typography>
       </Grid>
 
-      
-      
+
+
       {/* {showTransferFields && (
         <>
           <Grid item xs={12} sm={6}>
@@ -312,7 +356,7 @@ const TreatmentStep: React.FC<TreatmentStepProps> = ({
           </Grid>
         </>
       )} */}
-     
+
       <Grid item xs={12} sm={6}>
         <FormControl fullWidth>
           <InputLabel>Disposition</InputLabel>

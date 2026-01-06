@@ -14,8 +14,8 @@ import {
   Box,
 } from '@mui/material';
 
-import { 
-  CreateStrokeCaseData, 
+import {
+  CreateStrokeCaseData,
   SwallowingScreeningResult,
   CTFindings,
   ModifiedRankinScale
@@ -26,13 +26,41 @@ interface DiagnosisStepProps {
   formData: CreateStrokeCaseData;
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, string>;
 }
 
 const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
   formData,
   updateFormData,
   timelineWarnings = {},
+  kpiViolations = {},
 }) => {
+  const getInputStyle = (field: string) => {
+    const hasError = !!timelineWarnings[field];
+    const hasWarning = !!kpiViolations[field];
+
+    if (hasError) {
+      return {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: 'error.main' },
+          '&:hover fieldset': { borderColor: 'error.main' },
+          '&.Mui-focused fieldset': { borderColor: 'error.main' },
+        }
+      };
+    }
+
+    if (hasWarning) {
+      return {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: 'warning.main' },
+          '&:hover fieldset': { borderColor: 'warning.main' },
+          '&.Mui-focused fieldset': { borderColor: 'warning.main' },
+        }
+      };
+    }
+
+    return undefined;
+  };
   const handleDateTimeChange = (field: string, value: string) => {
     // Convert datetime-local input to ISO-8601 format for backend
     if (value) {
@@ -50,7 +78,7 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
       'Swallowing screening',
       'Admission',
     ];
-    
+
     const parts = text.split(/(\s+)/);
     return parts.map((part, index) => {
       const isKeyword = keywords.some(
@@ -114,14 +142,22 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
               InputLabelProps={{ shrink: true }}
               helperText="Time the CT scan was initiated (KPI#3)"
               error={!!timelineWarnings['timeOfCtScanStart']}
+              sx={getInputStyle('timeOfCtScanStart')}
             />
             {timelineWarnings['timeOfCtScanStart']?.map((warning, idx) => (
-              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+              <Alert key={`err-${idx}`} severity="error" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {emphasizeKeywords(warning)}
                 </Typography>
               </Alert>
             ))}
+            {kpiViolations['timeOfCtScanStart'] && (
+              <Alert severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {kpiViolations['timeOfCtScanStart']}
+                </Typography>
+              </Alert>
+            )}
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -134,14 +170,22 @@ const DiagnosisStep: React.FC<DiagnosisStepProps> = ({
               InputLabelProps={{ shrink: true }}
               helperText="Time the radiologist finalized and signed the CT report"
               error={!!timelineWarnings['timeOfCtReportFinal']}
+              sx={getInputStyle('timeOfCtReportFinal')}
             />
             {timelineWarnings['timeOfCtReportFinal']?.map((warning, idx) => (
-              <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+              <Alert key={`err-${idx}`} severity="error" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {emphasizeKeywords(warning)}
                 </Typography>
               </Alert>
             ))}
+            {kpiViolations['timeOfCtReportFinal'] && (
+              <Alert severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {kpiViolations['timeOfCtReportFinal']}
+                </Typography>
+              </Alert>
+            )}
           </Grid>
 
           <Grid item xs={12} sm={6}>

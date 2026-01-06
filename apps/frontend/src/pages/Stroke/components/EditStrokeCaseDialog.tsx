@@ -7,7 +7,7 @@ import {
   Button,
   Stepper,
   Step,
-  StepLabel,
+  StepButton,
   Box,
   Alert,
 } from '@mui/material';
@@ -121,7 +121,11 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [timelineWarnings, setTimelineWarnings] = useState<Record<string, string[]>>({});
+  const [kpiViolations, setKpiViolations] = useState<Record<string, string>>({});
   const [originHospital, setOriginHospital] = useState<Hospital | null>(null);
+
+  const dialogContentRef = React.useRef<HTMLElement>(null);
+
   const [formData, setFormData] = useState<CreateStrokeCaseData>({
     originHospitalId: '',
     strokeType: 'ISCHEMIC',
@@ -164,6 +168,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
     setSuccess(null);
     setValidationErrors({});
     setTimelineWarnings({});
+    setKpiViolations({});
     setOriginHospital(null);
     setLoading(false);
   };
@@ -221,8 +226,8 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
     const timeOfSymptomOnset = parseDate(formData.timeOfSymptomOnset);
     const timeOfTriage = parseDate(formData.timeOfTriage);
     const timeOfPhysicianAssessment = parseDate(formData.timeOfPhysicianAssessment);
-    const transferRequestTime = parseDate(formData.transferRequestDateTime);
-    const transferArrivalTime = parseDate(formData.transferArrivalDateTime);
+    const transferRequestDateTime = parseDate(formData.transferRequestDateTime);
+    const transferArrivalDateTime = parseDate(formData.transferArrivalDateTime);
     const srcaCallTime = parseDate(formData.srcaCallTime);
     const timeOfCtScanStart = parseDate(formData.timeOfCtScanStart);
     const timeOfCtReportFinal = parseDate(formData.timeOfCtReportFinal);
@@ -262,14 +267,14 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       );
     }
 
-    if (transferRequestTime && dateOfAdmission && transferRequestTime < dateOfAdmission) {
+    if (transferRequestDateTime && dateOfAdmission && transferRequestDateTime < dateOfAdmission) {
       addWarning(
         'transferRequestDateTime',
         'Transfer request is logged before admission. Confirm the request time.'
       );
     }
 
-    if (transferArrivalTime && transferRequestTime && transferArrivalTime < transferRequestTime) {
+    if (transferArrivalDateTime && transferRequestDateTime && transferArrivalDateTime < transferRequestDateTime) {
       addWarning(
         'transferArrivalDateTime',
         'Transfer arrival is before the request. Please correct these times.'
@@ -339,6 +344,13 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       );
     }
 
+    if (transferRequestDateTime && transferArrivalDateTime && transferArrivalDateTime < transferRequestDateTime) {
+      addWarning(
+        'transferArrivalDateTime',
+        'Transfer arrival is before request. Please check valid timestamps.'
+      );
+    }
+
     if (timeOfTransferActivation && dateOfAdmission && timeOfTransferActivation < dateOfAdmission) {
       addWarning(
         'timeOfTransferActivation',
@@ -373,6 +385,95 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
     });
   }, [formData]);
 
+  // KPI Validation Logic (Yellow Warnings)
+  useEffect(() => {
+    const violations: Record<string, string> = {};
+
+    const parseDate = (value?: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date;
+    };
+
+    const calculateDiffMinutes = (start?: Date | null, end?: Date | null) => {
+      if (!start || !end) return null;
+      return (end.getTime() - start.getTime()) / (1000 * 60);
+    };
+
+    const dateOfAdmission = parseDate(formData.dateOfAdmission);
+    const timeOfTriage = parseDate(formData.timeOfTriage);
+    const timeOfPhysicianAssessment = parseDate(formData.timeOfPhysicianAssessment);
+    const timeOfCtScanStart = parseDate(formData.timeOfCtScanStart);
+    const timeOfCtReportFinal = parseDate(formData.timeOfCtReportFinal);
+    const ivThrombolysisAdminTime = parseDate(formData.ivThrombolysisAdministrationTime);
+    const timeOfPuncture = parseDate(formData.timeOfMechanicalThrombectomyPuncture);
+
+    const timeOfTransferActivation = parseDate(formData.timeOfTransferActivation);
+    const timeOfTransferDeparture = parseDate(formData.timeOfTransferDeparture);
+    const srcaCallTime = parseDate(formData.srcaCallTime);
+    const timeOfSwallowingScreening = parseDate(formData.timeOfSwallowingScreening);
+
+    if (dateOfAdmission) {
+      // Door to Triage: Target 10 min
+      const doorToTriage = calculateDiffMinutes(dateOfAdmission, timeOfTriage);
+      if (doorToTriage !== null && doorToTriage > 10) {
+        violations['timeOfTriage'] = `Door to Triage exceeded 10 min (${Math.round(doorToTriage)} min)`;
+      }
+
+      // Door to Physician: Target 15 min
+      const doorToPhysician = calculateDiffMinutes(dateOfAdmission, timeOfPhysicianAssessment);
+      if (doorToPhysician !== null && doorToPhysician > 15) {
+        violations['timeOfPhysicianAssessment'] = `Door to Physician exceeded 15 min (${Math.round(doorToPhysician)} min)`;
+      }
+
+      // Door to CT Start: Target 20 min
+      const doorToCtStart = calculateDiffMinutes(dateOfAdmission, timeOfCtScanStart);
+      if (doorToCtStart !== null && doorToCtStart > 20) {
+        violations['timeOfCtScanStart'] = `Door to CT Scan exceeded 20 min (${Math.round(doorToCtStart)} min)`;
+      }
+
+      // Door to CT Final Report: Target 45 min
+      const doorToCtFinal = calculateDiffMinutes(dateOfAdmission, timeOfCtReportFinal);
+      if (doorToCtFinal !== null && doorToCtFinal > 45) {
+        violations['timeOfCtReportFinal'] = `Door to CT Report exceeded 45 min (${Math.round(doorToCtFinal)} min)`;
+      }
+
+      // Door to Needle (IV Thrombolysis): Target 60 min
+      const doorToNeedle = calculateDiffMinutes(dateOfAdmission, ivThrombolysisAdminTime);
+      if (doorToNeedle !== null && doorToNeedle > 60) {
+        violations['ivThrombolysisAdministrationTime'] = `Door to Needle exceeded 60 min (${Math.round(doorToNeedle)} min)`;
+      }
+
+      // Door to Puncture (Mechanical Thrombectomy): Target 120 min
+      const doorToPuncture = calculateDiffMinutes(dateOfAdmission, timeOfPuncture);
+      if (doorToPuncture !== null && doorToPuncture > 120) {
+        violations['timeOfMechanicalThrombectomyPuncture'] = `Door to Puncture exceeded 120 min (${Math.round(doorToPuncture)} min)`;
+      }
+    }
+
+    // SRCA Call to Arrival: Target 60 min (if admission date exists)
+    const srcaToArrival = calculateDiffMinutes(srcaCallTime, dateOfAdmission);
+    if (srcaToArrival !== null && srcaToArrival > 60) {
+      violations['srcaCallTime'] = `SRCA Call to Arrival exceeded 60 min (${Math.round(srcaToArrival)} min)`;
+    }
+
+    // Swallowing Screening: Target 4 hours (240 min) from arrival
+    const doorToSwallow = calculateDiffMinutes(dateOfAdmission, timeOfSwallowingScreening);
+    if (doorToSwallow !== null && doorToSwallow > 240) {
+      violations['timeOfSwallowingScreening'] = `Swallowing Screening exceeded 4 hrs (${Math.round(doorToSwallow / 60)} hrs)`;
+    }
+
+    // Transfer Time: Target 40 min (using Activation to Departure as proxy for DIDO logic if CT present)
+    // Note: Standard typically says 20m without CT, 40m with CT. We'll warn if > 40 to be safe/broad.
+    const transferTime = calculateDiffMinutes(timeOfTransferActivation, timeOfTransferDeparture);
+    if (transferTime !== null && transferTime > 40) {
+      violations['timeOfTransferDeparture'] = `Transfer time exceeded 40 min (${Math.round(transferTime)} min)`;
+    }
+
+
+    setKpiViolations(violations);
+  }, [formData]);
+
   // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
@@ -393,7 +494,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         } else if (bedHospitalId === strokeCase.destinationHospitalId) {
           hospitalType = 'destination';
         }
-        
+
         bedAssignment = {
           bedId: strokeCase.assignedBed.id,
           bedNumber: strokeCase.assignedBed.bedNumber,
@@ -487,7 +588,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         // Follow-up & Outcome Tracking
         followUpContactAttempted: strokeCase.followUpContactAttempted,
         modifiedRankinScaleAt90Days: strokeCase.modifiedRankinScaleAt90Days,
-        
+
         // Bed Assignment
         bedAssignment,
       });
@@ -547,6 +648,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
             onOriginHospitalSelect={handleOriginHospitalSelect}
             destinationRequired={originRequiresDestination}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 1:
@@ -556,6 +658,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
             updateFormData={updateFormData}
             validationErrors={validationErrors}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 2:
@@ -564,6 +667,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
             formData={formData}
             updateFormData={updateFormData}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 3:
@@ -572,6 +676,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
             formData={formData}
             updateFormData={updateFormData}
             timelineWarnings={timelineWarnings}
+            kpiViolations={kpiViolations}
           />
         );
       case 4:
@@ -588,7 +693,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
           />
         );
       case 5:
-        return <ReviewStep formData={formData} timelineWarnings={timelineWarnings} />;
+        return <ReviewStep formData={formData} timelineWarnings={timelineWarnings} kpiViolations={kpiViolations} />;
       default:
         return null;
     }
@@ -708,12 +813,32 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         setActiveStep(targetStep);
         setError('Please correct the highlighted information before submitting.');
         setLoading(false);
+        if (dialogContentRef.current) {
+          dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        return;
+      }
+
+      // Check for timeline warnings (BLOCKING - Red Errors)
+      if (Object.keys(timelineWarnings).length > 0) {
+        setError('Please resolve all timeline errors (red) before submitting.');
+        setLoading(false);
+        // Find step with warning
+        const warningKeys = Object.keys(timelineWarnings);
+        if (warningKeys.some(k => ['timeOfTriage', 'timeOfPhysicianAssessment', 'dateOfAdmission'].includes(k))) setActiveStep(1);
+        else if (warningKeys.some(k => ['timeOfCtScanStart', 'timeOfCtReportFinal'].includes(k))) setActiveStep(2);
+        else if (warningKeys.some(k => ['thrombolysisOrderTime', 'ivThrombolysisAdministrationTime'].includes(k))) setActiveStep(3);
+        else setActiveStep(5); // Review step
+
+        if (dialogContentRef.current) {
+          dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         return;
       }
 
       // Prepare update data with patientInfo included
       const { patientInfo, bedAssignment, ...otherData } = formData;
-      
+
       // Clean empty string values and convert them to undefined
       const cleanedData = Object.entries(otherData).reduce((acc, [key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
@@ -729,11 +854,11 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
 
       console.log('Sending update data:', cleanedData);
       await onUpdate(strokeCase.id, cleanedData);
-      
+
       const bedAssignmentData = bedAssignment as any;
       const currentBedId = strokeCase.assignedBed?.id;
       const newBedId = bedAssignmentData && 'bedId' in bedAssignmentData ? bedAssignmentData.bedId : undefined;
-      
+
       if (newBedId && newBedId !== currentBedId && strokeCase.patientId) {
         try {
           await bedService.assignBed(newBedId, {
@@ -760,7 +885,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       } else {
         enqueueSnackbar('Stroke case updated successfully', { variant: 'success' });
       }
-      
+
       setSuccess('Case updated successfully!');
       setError(null);
 
@@ -773,9 +898,58 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       setError(err.response?.data?.message || err.message || 'Failed to update stroke case');
       setSuccess(null);
       console.error('Error updating stroke case:', err);
+      if (dialogContentRef.current) {
+        dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const getStepSeverity = (stepIndex: number): 'error' | 'warning' | null => {
+    const step0Fields = ['patientInfo', 'originHospitalId', 'destinationHospitalId', 'transferRequestDateTime', 'transferArrivalDateTime'];
+    const step1Fields = ['timeOfSymptomOnset', 'dateOfAdmission', 'timeOfTriage', 'timeOfPhysicianAssessment', 'srcaCallTime'];
+    const step2Fields = ['strokeType', 'timeOfCtScanStart', 'timeOfCtReportFinal', 'timeOfSwallowingScreening'];
+    const step3Fields = ['thrombolysisOrderTime', 'ivThrombolysisAdministrationTime', 'timeOfMechanicalThrombectomyPuncture', 'timeOfThrombectomyComplete', 'timeOfTransferActivation', 'timeOfTransferDeparture'];
+    const step4Fields = ['bedAssignment'];
+
+    const getFieldsForStep = (index: number) => {
+      switch (index) {
+        case 0: return step0Fields;
+        case 1: return step1Fields;
+        case 2: return step2Fields;
+        case 3: return step3Fields;
+        case 4: return step4Fields;
+        default: return [];
+      }
+    };
+
+    const fields = getFieldsForStep(stepIndex);
+
+    // 1. Check validation errors (recursive/prefix check) - RED
+    const hasValidationError = fields.some(field => {
+      return Object.keys(validationErrors).some(key => key.startsWith(field));
+    });
+
+    // 2. Check timeline warnings (Blocking) - RED
+    const hasTimelineWarning = fields.some(field => {
+      return Object.keys(timelineWarnings).some(key => key === field);
+    });
+
+    if (hasValidationError || hasTimelineWarning) {
+      return 'error';
+    }
+
+    // 3. Check KPI Violations (Non-blocking) - YELLOW
+    const hasKpiViolation = fields.some(field => {
+      return Object.keys(kpiViolations).some(key => key === field);
+    });
+
+    if (hasKpiViolation) {
+      return 'warning';
+    }
+
+    return null;
   };
 
   const handleClose = () => {
@@ -805,12 +979,38 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         )}
 
         <Box sx={{ width: '100%', mt: 2 }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
+          <Stepper activeStep={activeStep} alternativeLabel nonLinear>
+            {steps.map((label, index) => {
+              const severity = getStepSeverity(index);
+              const labelProps: { error?: boolean } = {};
+
+              if (severity === 'error') {
+                labelProps.error = true;
+              }
+              const isCompleted = activeStep > index;
+
+              return (
+                <Step key={label} completed={isCompleted}>
+                  <StepButton
+                    onClick={() => {
+                      setActiveStep(index);
+                      setError(null);
+                    }}
+                    {...labelProps}
+                    sx={{
+                      '& .MuiStepIcon-root': {
+                        color: severity === 'warning' ? 'warning.main' : undefined,
+                      },
+                      '& .MuiStepIcon-text': {
+                        fill: severity === 'warning' ? '#fff' : undefined,
+                      }
+                    }}
+                  >
+                    {label}
+                  </StepButton>
+                </Step>
+              );
+            })}
           </Stepper>
         </Box>
 

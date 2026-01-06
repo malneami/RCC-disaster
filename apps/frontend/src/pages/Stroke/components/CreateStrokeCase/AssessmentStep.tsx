@@ -19,6 +19,7 @@ interface AssessmentStepProps {
   updateFormData: (field: keyof CreateStrokeCaseData, value: any) => void;
   validationErrors?: Record<string, string>;
   timelineWarnings?: Record<string, string[]>;
+  kpiViolations?: Record<string, string>;
 }
 
 const AssessmentStep: React.FC<AssessmentStepProps> = ({
@@ -26,7 +27,34 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
   updateFormData,
   validationErrors = {},
   timelineWarnings = {},
+  kpiViolations = {},
 }) => {
+  const getInputStyle = (field: string) => {
+    const hasError = !!timelineWarnings[field];
+    const hasWarning = !!kpiViolations[field];
+
+    if (hasError) {
+      return {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: 'error.main' },
+          '&:hover fieldset': { borderColor: 'error.main' },
+          '&.Mui-focused fieldset': { borderColor: 'error.main' },
+        }
+      };
+    }
+
+    if (hasWarning) {
+      return {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: 'warning.main' },
+          '&:hover fieldset': { borderColor: 'warning.main' },
+          '&.Mui-focused fieldset': { borderColor: 'warning.main' },
+        }
+      };
+    }
+
+    return undefined;
+  };
   const handleDateTimeChange = (field: string, value: string) => {
     // Convert datetime-local input to ISO-8601 format for backend
     if (value) {
@@ -47,7 +75,7 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
       'Transfer arrival',
       'SRCA call',
     ];
-    
+
     const parts = text.split(/(\s+)/);
     return parts.map((part, index) => {
       const isKeyword = keywords.some(
@@ -103,7 +131,7 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           onChange={(e) => updateFormData('chiefComplaint', e.target.value)}
         />
       </Grid>
-      
+
       {formData.modeOfArrival === 'AMBULANCE_RED_CRESCENT' && (
         <Grid item xs={12} sm={6}>
           <TextField
@@ -125,7 +153,7 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           ))}
         </Grid>
       )}
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -145,7 +173,7 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           </Alert>
         ))}
       </Grid>
-      
+
       <Grid item xs={12} sm={6}>
         <TextField
           fullWidth
@@ -175,14 +203,22 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           InputLabelProps={{ shrink: true }}
           helperText="When patient was triaged"
           error={!!timelineWarnings['timeOfTriage']}
+          sx={getInputStyle('timeOfTriage')}
         />
         {timelineWarnings['timeOfTriage']?.map((warning, idx) => (
-          <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+          <Alert key={`err-${idx}`} severity="error" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {emphasizeKeywords(warning)}
             </Typography>
           </Alert>
         ))}
+        {kpiViolations['timeOfTriage'] && (
+          <Alert severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {kpiViolations['timeOfTriage']}
+            </Typography>
+          </Alert>
+        )}
       </Grid>
       <Grid item xs={12} sm={6}>
         <TextField
@@ -194,14 +230,22 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
           InputLabelProps={{ shrink: true }}
           helperText="When physician first assessed patient (KPI#1)"
           error={!!timelineWarnings['timeOfPhysicianAssessment']}
+          sx={getInputStyle('timeOfPhysicianAssessment')}
         />
         {timelineWarnings['timeOfPhysicianAssessment']?.map((warning, idx) => (
-          <Alert key={idx} severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+          <Alert key={`err-${idx}`} severity="error" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {emphasizeKeywords(warning)}
             </Typography>
           </Alert>
         ))}
+        {kpiViolations['timeOfPhysicianAssessment'] && (
+          <Alert severity="warning" variant="outlined" sx={{ mt: 1, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {kpiViolations['timeOfPhysicianAssessment']}
+            </Typography>
+          </Alert>
+        )}
       </Grid>
 
 
