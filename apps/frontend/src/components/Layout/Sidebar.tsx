@@ -223,17 +223,28 @@ const Sidebar: React.FC = () => {
   return (
     <Box sx={{ height: '100%', bgcolor: 'background.paper' }}>
       <Toolbar>
-        <Typography variant="h6" component="div" sx={{ color: 'primary.main', fontWeight: 600 }}>
+        <Typography 
+          variant="h6" 
+          component="div" 
+          sx={{ 
+            color: 'primary.main', 
+            fontWeight: 600,
+            fontSize: { xs: '1rem', md: '1.25rem' },
+          }}
+        >
           RCC Healthcare
         </Typography>
       </Toolbar>
 
-      <Box sx={{ px: 2, py: 1 }}>
+      <Box sx={{ px: { xs: 1, md: 2 }, py: 1 }}>
         <Chip
           label={`${user?.role?.replace('_', ' ')}`}
           size="small"
           color="primary"
           variant="outlined"
+          sx={{
+            fontSize: { xs: '0.7rem', md: '0.75rem' },
+          }}
         />
       </Box>
 
@@ -248,8 +259,16 @@ const Sidebar: React.FC = () => {
                 selected={location.pathname === item.path}
                 onClick={() => handleNavigation(item.path)}
                 sx={{
-                  mx: 1,
+                  mx: { xs: 0.5, md: 1 },
                   borderRadius: 1,
+                  minHeight: 44,
+                  py: { xs: 1.25, md: 1 },
+                  transition: 'all 0.2s ease',
+                  '&:focus-visible': {
+                    outline: '2px solid',
+                    outlineColor: 'primary.main',
+                    outlineOffset: 2,
+                  },
                   '&.Mui-selected': {
                     bgcolor: 'primary.light',
                     color: 'white',
@@ -262,6 +281,7 @@ const Sidebar: React.FC = () => {
                 <ListItemIcon
                   sx={{
                     color: location.pathname === item.path ? 'inherit' : 'text.secondary',
+                    minWidth: { xs: 40, md: 56 },
                   }}
                 >
                   {item.text === 'Notification Center' ? (
@@ -272,7 +292,14 @@ const Sidebar: React.FC = () => {
                     item.icon
                   )}
                 </ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemText 
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    sx: {
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                    },
+                  }}
+                />
               </ListItemButton>
             </ListItem>
           ))}
@@ -282,7 +309,14 @@ const Sidebar: React.FC = () => {
       {dashboardItems.filter(item => hasRole(item.roles)).length > 0 && (
         <>
           <Divider sx={{ my: 1 }} />
-          <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
+          <Typography 
+            variant="overline" 
+            sx={{ 
+              px: { xs: 2, md: 3 }, 
+              color: 'text.secondary',
+              fontSize: { xs: '0.7rem', md: '0.75rem' },
+            }}
+          >
             Dashboards
           </Typography>
         </>
@@ -297,8 +331,16 @@ const Sidebar: React.FC = () => {
                 selected={location.pathname === item.path}
                 onClick={() => handleNavigation(item.path)}
                 sx={{
-                  mx: 1,
+                  mx: { xs: 0.5, md: 1 },
                   borderRadius: 1,
+                  minHeight: 44,
+                  py: { xs: 1.25, md: 1 },
+                  transition: 'all 0.2s ease',
+                  '&:focus-visible': {
+                    outline: '2px solid',
+                    outlineColor: item.color ? `${item.color}.main` : 'primary.main',
+                    outlineOffset: 2,
+                  },
                   '&.Mui-selected': {
                     bgcolor: item.color ? `${item.color}.light` : 'primary.light',
                     color: 'white',
@@ -311,11 +353,19 @@ const Sidebar: React.FC = () => {
                 <ListItemIcon
                   sx={{
                     color: location.pathname === item.path ? 'inherit' : (item.color ? `${item.color}.main` : 'text.secondary'),
+                    minWidth: { xs: 40, md: 56 },
                   }}
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemText 
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    sx: {
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                    },
+                  }}
+                />
               </ListItemButton>
             </ListItem>
           ))}
@@ -325,7 +375,14 @@ const Sidebar: React.FC = () => {
       {portalItems.filter(item => hasRole(item.roles)).length > 0 && (
         <>
           <Divider sx={{ my: 1 }} />
-          <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
+          <Typography 
+            variant="overline" 
+            sx={{ 
+              px: { xs: 2, md: 3 }, 
+              color: 'text.secondary',
+              fontSize: { xs: '0.7rem', md: '0.75rem' },
+            }}
+          >
             Clinical Portals
           </Typography>
         </>
@@ -340,8 +397,16 @@ const Sidebar: React.FC = () => {
                 selected={location.pathname === item.path}
                 onClick={() => handleNavigation(item.path)}
                 sx={{
-                  mx: 1,
+                  mx: { xs: 0.5, md: 1 },
                   borderRadius: 1,
+                  minHeight: 44,
+                  py: { xs: 1.25, md: 1 },
+                  transition: 'all 0.2s ease',
+                  '&:focus-visible': {
+                    outline: '2px solid',
+                    outlineColor: `${item.color}.main`,
+                    outlineOffset: 2,
+                  },
                   '&.Mui-selected': {
                     bgcolor: `${item.color}.light`,
                     color: 'white',
@@ -354,11 +419,19 @@ const Sidebar: React.FC = () => {
                 <ListItemIcon
                   sx={{
                     color: location.pathname === item.path ? 'inherit' : `${item.color}.main`,
+                    minWidth: { xs: 40, md: 56 },
                   }}
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemText 
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    sx: {
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                    },
+                  }}
+                />
               </ListItemButton>
             </ListItem>
           ))}
@@ -368,7 +441,14 @@ const Sidebar: React.FC = () => {
       {supportItems.filter(item => hasRole(item.roles)).length > 0 && (
         <>
           <Divider sx={{ my: 1 }} />
-          <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
+          <Typography 
+            variant="overline" 
+            sx={{ 
+              px: { xs: 2, md: 3 }, 
+              color: 'text.secondary',
+              fontSize: { xs: '0.7rem', md: '0.75rem' },
+            }}
+          >
             Support
           </Typography>
           <List>
@@ -380,8 +460,16 @@ const Sidebar: React.FC = () => {
                     selected={location.pathname === item.path}
                     onClick={() => handleNavigation(item.path)}
                     sx={{
-                      mx: 1,
+                      mx: { xs: 0.5, md: 1 },
                       borderRadius: 1,
+                      minHeight: 44,
+                      py: { xs: 1.25, md: 1 },
+                      transition: 'all 0.2s ease',
+                      '&:focus-visible': {
+                        outline: '2px solid',
+                        outlineColor: 'primary.main',
+                        outlineOffset: 2,
+                      },
                       '&.Mui-selected': {
                         bgcolor: 'primary.light',
                         color: 'white',
@@ -394,11 +482,19 @@ const Sidebar: React.FC = () => {
                     <ListItemIcon
                       sx={{
                         color: location.pathname === item.path ? 'inherit' : 'text.secondary',
+                        minWidth: { xs: 40, md: 56 },
                       }}
                     >
                       {item.icon}
                     </ListItemIcon>
-                    <ListItemText primary={item.text} />
+                    <ListItemText 
+                      primary={item.text}
+                      primaryTypographyProps={{
+                        sx: {
+                          fontSize: { xs: '0.875rem', md: '1rem' },
+                        },
+                      }}
+                    />
                   </ListItemButton>
                 </ListItem>
               ))}
@@ -409,7 +505,14 @@ const Sidebar: React.FC = () => {
       {hasRole(['ADMIN']) && (
         <>
           <Divider sx={{ my: 1 }} />
-          <Typography variant="overline" sx={{ px: 3, color: 'text.secondary' }}>
+          <Typography 
+            variant="overline" 
+            sx={{ 
+              px: { xs: 2, md: 3 }, 
+              color: 'text.secondary',
+              fontSize: { xs: '0.7rem', md: '0.75rem' },
+            }}
+          >
             Administration
           </Typography>
           <List>
@@ -419,8 +522,16 @@ const Sidebar: React.FC = () => {
                   selected={location.pathname === item.path}
                   onClick={() => handleNavigation(item.path)}
                   sx={{
-                    mx: 1,
+                    mx: { xs: 0.5, md: 1 },
                     borderRadius: 1,
+                    minHeight: 44,
+                    py: { xs: 1.25, md: 1 },
+                    transition: 'all 0.2s ease',
+                    '&:focus-visible': {
+                      outline: '2px solid',
+                      outlineColor: 'secondary.main',
+                      outlineOffset: 2,
+                    },
                     '&.Mui-selected': {
                       bgcolor: 'secondary.light',
                       color: 'white',
@@ -433,11 +544,19 @@ const Sidebar: React.FC = () => {
                   <ListItemIcon
                     sx={{
                       color: location.pathname === item.path ? 'inherit' : 'text.secondary',
+                      minWidth: { xs: 40, md: 56 },
                     }}
                   >
                     {item.icon}
                   </ListItemIcon>
-                  <ListItemText primary={item.text} />
+                  <ListItemText 
+                    primary={item.text}
+                    primaryTypographyProps={{
+                      sx: {
+                        fontSize: { xs: '0.875rem', md: '1rem' },
+                      },
+                    }}
+                  />
                 </ListItemButton>
               </ListItem>
             ))}

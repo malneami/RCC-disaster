@@ -11,6 +11,7 @@ import {
   MenuItem,
   Divider,
   ListItemIcon,
+  useMediaQuery,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -38,6 +39,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
   const isAdmin = user?.role === 'ADMIN';
+  
+  // Use 768px breakpoint for mobile/tablet detection
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -67,11 +71,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          width: isMobile ? '100%' : `calc(100% - ${drawerWidth}px)`,
+          ml: isMobile ? 0 : `${drawerWidth}px`,
           bgcolor: 'background.paper',
           color: 'text.primary',
           boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          transition: 'width 0.3s ease, margin-left 0.3s ease',
         }}
       >
         <Toolbar>
@@ -80,7 +85,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ 
+              mr: 2, 
+              display: isMobile ? 'flex' : 'none',
+              minWidth: 44,
+              minHeight: 44,
+            }}
           >
             <FontAwesomeIcon icon={faBars} />
           </IconButton>
@@ -164,7 +174,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {!isFullscreen && (
         <Box
         component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        sx={{ 
+          width: isMobile ? 0 : drawerWidth, 
+          flexShrink: 0,
+          transition: 'width 0.3s ease',
+        }}
       >
         <Drawer
           variant="temporary"
@@ -174,10 +188,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             keepMounted: true,
           }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
+            display: isMobile ? 'block' : 'none',
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
+              transition: 'transform 0.3s ease-in-out',
             },
           }}
         >
@@ -186,10 +201,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', sm: 'block' },
+            display: isMobile ? 'none' : 'block',
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
+              transition: 'width 0.3s ease',
             },
           }}
           open
@@ -204,8 +220,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         sx={{
           flexGrow: 1,
           p: { xs: 0.5, sm: 1, md: 1.5 },
-          width: { sm: isFullscreen ? '100%' : `calc(100% - ${drawerWidth}px)` },
+          width: isFullscreen ? '100%' : (isMobile ? '100%' : `calc(100% - ${drawerWidth}px)`),
           mt: isFullscreen ? '0px' : '64px',
+          transition: 'width 0.3s ease',
         }}
       >
         {children}
