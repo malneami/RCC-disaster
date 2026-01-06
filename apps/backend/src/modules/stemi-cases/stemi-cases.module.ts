@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { StemiCasesController } from './stemi-cases.controller';
 import { StemiOutcomeFormController } from './stemi-outcome-form.controller';
 import { StemiCasesService } from './services/stemi-cases.service';
@@ -9,9 +9,10 @@ import { StemiExportService } from './services/stemi-export.service';
 import { StemiOutcomeFormService } from './services/stemi-outcome-form.service';
 import { PrismaService } from '../../database/prisma.service';
 import { CommonModule } from '../../common/common.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [CommonModule],
+  imports: [CommonModule, forwardRef(() => NotificationsModule)],
   controllers: [StemiCasesController, StemiOutcomeFormController],
   providers: [
     PrismaService,

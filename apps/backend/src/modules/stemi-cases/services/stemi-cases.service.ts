@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef, Optional } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateStemiCaseDto, UpdateStemiCaseDto } from '../dto/create-stemi-case.dto';
 import { StemiFilterDto } from '../dto/stemi-filter.dto';
 import { StemiQueryService } from './stemi-query.service';
 import { StemiPatientService } from './stemi-patient.service';
 import { StemiKpiService } from './stemi-kpi.service';
+import { KpiMonitorService } from '../../notifications/services/kpi-monitor.service';
 
 @Injectable()
 export class StemiCasesService {
@@ -13,6 +14,9 @@ export class StemiCasesService {
     private readonly stemiQueryService: StemiQueryService,
     private readonly stemiPatientService: StemiPatientService,
     private readonly stemiKpiService: StemiKpiService,
+    @Inject(forwardRef(() => KpiMonitorService))
+    @Optional()
+    private readonly kpiMonitorService?: KpiMonitorService,
   ) {}
 
   private calculateAge(dob: Date | null | undefined): number | undefined {
@@ -227,7 +231,32 @@ export class StemiCasesService {
 
       // Timeline events will be handled separately if needed
 
-      return await this.getStemiCaseById(stemiCase.id);
+      const createdCase = await this.getStemiCaseById(stemiCase.id);
+
+      // Schedule KPI threshold checks (fire and forget)
+      if (this.kpiMonitorService && createdCase && createdCase.pathwayStarted) {
+        this.kpiMonitorService.scheduleKpiThresholdChecks(
+          createdCase.id,
+          'STEMI',
+          new Date(createdCase.pathwayStarted),
+          {
+            caseType: createdCase.caseType,
+            triageTime: createdCase.triageTime,
+            firstEcgTime: createdCase.firstEcgTime,
+            balloonInflationTime: createdCase.balloonInflationTime,
+            thrombolyticAdminTime: createdCase.thrombolyticAdminTime,
+            eligibleForPrimaryPci: createdCase.eligibleForPrimaryPci,
+            thrombolyticGiven: createdCase.thrombolyticGiven,
+            doorOutTime: createdCase.doorOutTime,
+            ticketId: createdCase.ticketId,
+            ticket: createdCase.ticket,
+          },
+        ).catch((error: any) => {
+          console.error('Error scheduling KPI threshold checks for STEMI case:', error);
+        });
+      }
+
+      return createdCase;
     } catch (error: any) {
       console.error('Error creating STEMI case:', error);
       console.error('Error details:', error.message);
@@ -566,7 +595,36 @@ export class StemiCasesService {
       // Recalculate quality metrics after update
       await this.calculateAndUpdateQualityMetrics(id);
 
-      return await this.getStemiCaseById(id);
+      const updatedCaseForKpi = await this.getStemiCaseById(id);
+
+      // Cancel existing timers and reschedule if case is not completed
+      if (this.kpiMonitorService && updatedCaseForKpi) {
+        this.kpiMonitorService.cancelCaseTimers(id);
+        
+        if (!updatedCaseForKpi.outcomeFormCompleted && updatedCaseForKpi.pathwayStarted) {
+          this.kpiMonitorService.scheduleKpiThresholdChecks(
+            id,
+            'STEMI',
+            new Date(updatedCaseForKpi.pathwayStarted),
+            {
+              caseType: updatedCaseForKpi.caseType,
+              triageTime: updatedCaseForKpi.triageTime,
+              firstEcgTime: updatedCaseForKpi.firstEcgTime,
+              balloonInflationTime: updatedCaseForKpi.balloonInflationTime,
+              thrombolyticAdminTime: updatedCaseForKpi.thrombolyticAdminTime,
+              eligibleForPrimaryPci: updatedCaseForKpi.eligibleForPrimaryPci,
+              thrombolyticGiven: updatedCaseForKpi.thrombolyticGiven,
+              doorOutTime: updatedCaseForKpi.doorOutTime,
+              ticketId: updatedCaseForKpi.ticketId,
+              ticket: updatedCaseForKpi.ticket,
+            },
+          ).catch((error: any) => {
+            console.error('Error rescheduling KPI threshold checks for STEMI case:', error);
+          });
+        }
+      }
+
+      return updatedCaseForKpi;
     } catch (error) {
       console.error('Error updating STEMI case:', error);
       throw new BadRequestException('Failed to update STEMI case');

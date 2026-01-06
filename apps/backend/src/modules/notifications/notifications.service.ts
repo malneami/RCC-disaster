@@ -865,7 +865,7 @@ export class NotificationsService {
   /**
    * Get system user ID (for system-created notifications)
    */
-  private async getSystemUserId(): Promise<string> {
+  async getSystemUserId(): Promise<string> {
     try {
       const adminUser = await this.prisma.user.findFirst({
         where: {
@@ -1314,6 +1314,222 @@ export class NotificationsService {
       this.logger.error(`Stack: ${error instanceof Error ? error.stack : 'No stack trace'}`);
       
       // Don't throw error - patient creation/update should still succeed even if notification fails
+      return null;
+    }
+  }
+
+  /**
+   * Create notification for KPI threshold breach
+   * Notifies RCC users when a hospital KPI reaches YELLOW (warning) or RED (critical) status
+   */
+  async createKpiBreachNotification(
+    hospitalId: string,
+    hospitalName: string,
+    caseType: 'STEMI' | 'STROKE' | 'TRAUMA',
+    kpiName: string,
+    kpiId: string,
+    status: 'YELLOW' | 'RED',
+    percentage: number,
+    target: string,
+    previousStatus: 'GREEN' | 'YELLOW' | 'RED',
+    createdById: string,
+  ) {
+    try {
+      const priority =
+        status === 'RED' ? NotificationPriority.HIGH : NotificationPriority.MEDIUM;
+
+      const title =
+        status === 'RED'
+          ? `KPI Critical - ${hospitalName} - ${kpiName}`
+          : `KPI Warning - ${hospitalName} - ${kpiName}`;
+
+      const message =
+        status === 'RED'
+          ? `${hospitalName} ${caseType} KPI '${kpiName}' is at ${percentage}% (Target: ${target}). Immediate attention required.`
+          : `${hospitalName} ${caseType} KPI '${kpiName}' is at ${percentage}% (Target: ${target}). Status: Warning`;
+
+      const rccUserIds = await this.getUsersByRole(UserRole.RCC);
+
+      if (rccUserIds.length === 0) {
+        this.logger.warn(
+          `No active RCC users found for KPI breach notification (hospital: ${hospitalId}, KPI: ${kpiId})`,
+        );
+        return null;
+      }
+
+      const metadata = JSON.stringify({
+        hospitalId,
+        hospitalName,
+        caseType,
+        kpiId,
+        kpiName,
+        status,
+        percentage,
+        target,
+        previousStatus,
+        source: 'kpi_monitoring',
+      });
+
+      const systemPatient = await this.getSystemPatientId();
+
+      const notification = await this.createNotification(
+        {
+          type: NotificationType.KPI_THRESHOLD_BREACH,
+          priority,
+          title,
+          message,
+          caseType: caseType === 'STEMI' ? CaseType.STEMI : caseType === 'STROKE' ? CaseType.STROKE : CaseType.TRAUMA,
+          caseId: hospitalId, 
+          patientId: systemPatient.id, 
+          patientName: hospitalName, 
+          category: NotificationCategory.HOSPITALS,
+          recipientUserIds: rccUserIds,
+          metadata,
+        },
+        createdById,
+      );
+
+      if (notification) {
+        this.notificationsGateway.emitNotificationCreated(notification);
+        this.notificationsGateway.emitNotificationByCategory(
+          notification,
+          NotificationCategory.HOSPITALS,
+        );
+        this.notificationsGateway.emitNotificationByRole(notification, [UserRole.RCC]);
+      }
+
+      this.logger.log(
+        `Successfully created KPI breach notification ${notification?.id} for hospital ${hospitalName}, caseType ${caseType}, KPI ${kpiName} (${status})`,
+      );
+      return notification;
+    } catch (error) {
+      this.logger.error(`=== Error in createKpiBreachNotification ===`);
+      this.logger.error(
+        `Hospital ID: ${hospitalId}, Case Type: ${caseType}, KPI ID: ${kpiId}, Status: ${status}`,
+      );
+      this.logger.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(`Stack: ${error instanceof Error ? error.stack : 'No stack trace'}`);
+
+      return null;
+    }
+  }
+
+  /**
+   * Create a consolidated notification for multiple KPI breaches at once
+   * One notification per hospital/caseType with all failing KPIs
+   */
+  async createKpiBreachSummaryNotification(
+    hospitalId: string,
+    hospitalName: string,
+    caseType: 'STEMI' | 'STROKE' | 'TRAUMA',
+    failingKpis: Array<{
+      id: string;
+      name: string;
+      status: 'YELLOW' | 'RED';
+      percentage: number;
+      target: string;
+      previousStatus: 'GREEN' | 'YELLOW' | 'RED';
+    }>,
+    createdById: string,
+  ) {
+    try {
+      const redKpis = failingKpis.filter(k => k.status === 'RED');
+      const yellowKpis = failingKpis.filter(k => k.status === 'YELLOW');
+      const hasRed = redKpis.length > 0;
+
+      const priority = hasRed ? NotificationPriority.HIGH : NotificationPriority.MEDIUM;
+
+      const title = hasRed
+        ? `KPI Alert - ${hospitalName} - ${failingKpis.length} KPIs Requiring Attention`
+        : `KPI Warning - ${hospitalName} - ${failingKpis.length} KPIs Below Target`;
+
+      const redCount = redKpis.length;
+      const yellowCount = yellowKpis.length;
+      let message = `${hospitalName} ${caseType} has ${failingKpis.length} KPI(s) requiring attention:\n\n`;
+      
+      if (redCount > 0) {
+        message += `🔴 Critical (${redCount}):\n`;
+        redKpis.forEach(kpi => {
+          message += `  • ${kpi.name}: ${kpi.percentage}% (Target: ${kpi.target})\n`;
+        });
+        message += '\n';
+      }
+      
+      if (yellowCount > 0) {
+        message += `🟡 Warning (${yellowCount}):\n`;
+        yellowKpis.forEach(kpi => {
+          message += `  • ${kpi.name}: ${kpi.percentage}% (Target: ${kpi.target})\n`;
+        });
+      }
+
+      const rccUserIds = await this.getUsersByRole(UserRole.RCC);
+
+      if (rccUserIds.length === 0) {
+        this.logger.warn(
+          `No active RCC users found for KPI breach summary notification (hospital: ${hospitalId})`,
+        );
+        return null;
+      }
+
+      const metadata = JSON.stringify({
+        hospitalId,
+        hospitalName,
+        caseType,
+        totalFailingKpis: failingKpis.length,
+        redCount,
+        yellowCount,
+        kpis: failingKpis.map(kpi => ({
+          id: kpi.id,
+          name: kpi.name,
+          status: kpi.status,
+          percentage: kpi.percentage,
+          target: kpi.target,
+          previousStatus: kpi.previousStatus,
+        })),
+        source: 'kpi_monitoring',
+        notificationType: 'summary', 
+      });
+
+      const systemPatient = await this.getSystemPatientId();
+
+      const notification = await this.createNotification(
+        {
+          type: NotificationType.KPI_THRESHOLD_BREACH,
+          priority,
+          title,
+          message,
+          caseType: caseType === 'STEMI' ? CaseType.STEMI : caseType === 'STROKE' ? CaseType.STROKE : CaseType.TRAUMA,
+          caseId: hospitalId,
+          patientId: systemPatient.id,
+          patientName: hospitalName,
+          category: NotificationCategory.HOSPITALS,
+          recipientUserIds: rccUserIds,
+          metadata,
+        },
+        createdById,
+      );
+
+      if (notification) {
+        this.notificationsGateway.emitNotificationCreated(notification);
+        this.notificationsGateway.emitNotificationByCategory(
+          notification,
+          NotificationCategory.HOSPITALS,
+        );
+        this.notificationsGateway.emitNotificationByRole(notification, [UserRole.RCC]);
+      }
+
+      this.logger.log(
+        `Successfully created KPI breach summary notification ${notification?.id} for hospital ${hospitalName}, caseType ${caseType}, ${failingKpis.length} failing KPIs`,
+      );
+      return notification;
+    } catch (error) {
+      this.logger.error(`=== Error in createKpiBreachSummaryNotification ===`);
+      this.logger.error(
+        `Hospital ID: ${hospitalId}, Case Type: ${caseType}, Failing KPIs: ${failingKpis.length}`,
+      );
+      this.logger.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(`Stack: ${error instanceof Error ? error.stack : 'No stack trace'}`);
+
       return null;
     }
   }

@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { StemiOutcomeFormDto, UpdateStemiOutcomeFormDto } from '../dto/stemi-outcome-form.dto';
+import { KpiMonitorService } from '../../notifications/services/kpi-monitor.service';
 
 @Injectable()
 export class StemiOutcomeFormService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => KpiMonitorService))
+    private readonly kpiMonitorService: KpiMonitorService,
+  ) {}
 
   /**
    * Update STEMI case with outcome form data
@@ -14,7 +19,7 @@ export class StemiOutcomeFormService {
     outcomeFormDto: StemiOutcomeFormDto,
     userId: string,
   ) {
-    // Check if STEMI case exists and get completion date
+    // Check if STEMI case exists and get completion date and previous completeness
     const existingCaseCheck = await this.prisma.stemiCase.findUnique({
       where: { 
         id: stemiCaseId,
@@ -22,12 +27,16 @@ export class StemiOutcomeFormService {
       },
       select: {
         outcomeFormCompletionDate: true,
+        outcomePercentageCompleteness: true,
       },
     });
 
     if (!existingCaseCheck) {
       throw new NotFoundException('STEMI case not found');
     }
+
+    // Store previous completeness for KPI checking
+    const previousCompleteness = existingCaseCheck.outcomePercentageCompleteness ?? 0;
 
     // Calculate completeness percentage (use provided value or calculate)
     const completenessPercentage = outcomeFormDto.outcomePercentageCompleteness ?? 
@@ -101,6 +110,21 @@ export class StemiOutcomeFormService {
         destinationHospital: true,
         createdBy: true,
       },
+    });
+
+    // Cancel timers if case is completed
+    if (completenessPercentage === 100 && this.kpiMonitorService) {
+      this.kpiMonitorService.cancelCaseTimers(stemiCaseId);
+    }
+
+    // Check KPIs based on completeness change (fire and forget)
+    this.kpiMonitorService.checkCaseKpisOnCompleteness(
+      stemiCaseId,
+      'STEMI',
+      previousCompleteness,
+      completenessPercentage,
+    ).catch(error => {
+      console.error('Error checking KPIs for STEMI case:', error);
     });
 
     return updatedCase;

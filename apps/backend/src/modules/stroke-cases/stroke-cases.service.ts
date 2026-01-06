@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateStrokeCaseDto } from './dto/create-stroke-case.dto';
 import { CreateStrokeCaseV2Dto } from './dto/create-stroke-case-v2.dto';
@@ -6,13 +6,17 @@ import { UpdateStrokeCaseDto } from './dto/update-stroke-case.dto';
 import { StrokeCase, StrokeStatus, StrokeType, StrokeModeOfArrival, TicketPriority, TicketPathway, PatientGender } from '@prisma/client';
 import { PatientMergeService } from '../patients/patient-merge.service';
 import { StrokeKPICalculatorService } from './services/stroke-kpi-calculator.service';
+import { KpiMonitorService } from '../notifications/services/kpi-monitor.service';
 
 @Injectable()
 export class StrokeCasesService {
   constructor(
     private prisma: PrismaService,
     private patientMergeService: PatientMergeService,
-    private kpiCalculator: StrokeKPICalculatorService
+    private kpiCalculator: StrokeKPICalculatorService,
+    @Inject(forwardRef(() => KpiMonitorService))
+    @Optional()
+    private readonly kpiMonitorService?: KpiMonitorService,
   ) {}
 
   private calculateAge(dob: Date | null | undefined): number | undefined {
@@ -416,6 +420,7 @@ export class StrokeCasesService {
     });
 
     console.log('Stroke case and initial timeline event created successfully');
+
     return strokeCase;
     } catch (error) {
       console.error('=== STROKE CASE CREATION ERROR ===');
@@ -1215,6 +1220,29 @@ export class StrokeCasesService {
       });
       
       console.log('=== UPDATE SUCCESSFUL ===');
+      
+      // Cancel existing timers and reschedule if case is not completed
+      if (this.kpiMonitorService && result) {
+        this.kpiMonitorService.cancelCaseTimers(result.id);
+        
+        // Reschedule if case is not completed
+        if (!result.outcomeFormCompleted) {
+          const pathwayStarted = result.dateOfAdmission || result.createdAt;
+          this.kpiMonitorService.scheduleKpiThresholdChecks(
+            result.id,
+            'STROKE',
+            new Date(pathwayStarted),
+            {
+              candidateForIVThrombolysis: result.candidateForIVThrombolysis,
+              lvoDetected: result.lvoDetected,
+              srcaCallTime: result.srcaCallTime,
+            },
+          ).catch((error: any) => {
+            console.error('Error rescheduling KPI threshold checks for Stroke case:', error);
+          });
+        }
+      }
+      
       return result;
     } catch (error) {
       console.error('=== UPDATE ERROR ===');

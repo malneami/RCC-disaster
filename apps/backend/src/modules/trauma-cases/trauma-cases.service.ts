@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateTraumaCaseDto } from './dto/create-trauma-case.dto';
 import { UpdateTraumaCaseDto } from './dto/update-trauma-case.dto';
@@ -8,6 +8,7 @@ import { TraumaTicketService } from './services/trauma-ticket.service';
 import { TraumaKpiService } from './services/trauma-kpi.service';
 import { TraumaDatetimeService } from './services/trauma-datetime.service';
 import { TraumaQueryService } from './services/trauma-query.service';
+import { KpiMonitorService } from '../notifications/services/kpi-monitor.service';
 
 @Injectable()
 export class TraumaCasesService {
@@ -17,7 +18,10 @@ export class TraumaCasesService {
     private traumaTicketService: TraumaTicketService,
     private traumaKpiService: TraumaKpiService,
     private traumaDatetimeService: TraumaDatetimeService,
-    private traumaQueryService: TraumaQueryService
+    private traumaQueryService: TraumaQueryService,
+    @Inject(forwardRef(() => KpiMonitorService))
+    @Optional()
+    private readonly kpiMonitorService?: KpiMonitorService,
   ) {}
 
   async create(createTraumaCaseDto: CreateTraumaCaseDto, userId: string): Promise<TraumaCase> {
@@ -133,6 +137,24 @@ export class TraumaCasesService {
       });
 
       console.log('Trauma case created successfully:', traumaCase.id);
+
+      // Schedule KPI threshold checks (fire and forget)
+      if (this.kpiMonitorService && traumaCase) {
+        const pathwayStarted = traumaCase.arrivalDateTime || traumaCase.createdAt;
+        this.kpiMonitorService.scheduleKpiThresholdChecks(
+          traumaCase.id,
+          'TRAUMA',
+          new Date(pathwayStarted),
+          {
+            transferRequestDateTime: traumaCase.transferRequestDateTime,
+            incidentDateTime: traumaCase.incidentDateTime,
+            arrivalDateTime: traumaCase.arrivalDateTime,
+          },
+        ).catch((error: any) => {
+          console.error('Error scheduling KPI threshold checks for Trauma case:', error);
+        });
+      }
+
       return traumaCase;
 
     } catch (error) {
@@ -356,6 +378,26 @@ export class TraumaCasesService {
         createdBy: true,
       },
     });
+
+    // Cancel existing timers and reschedule
+    if (this.kpiMonitorService && updatedCase) {
+      this.kpiMonitorService.cancelCaseTimers(id);
+      
+      // Reschedule timers (trauma doesn't have outcomeFormCompleted yet)
+      const pathwayStarted = updatedCase.arrivalDateTime || updatedCase.createdAt;
+      this.kpiMonitorService.scheduleKpiThresholdChecks(
+        id,
+        'TRAUMA',
+        new Date(pathwayStarted),
+        {
+          transferRequestDateTime: updatedCase.transferRequestDateTime,
+          incidentDateTime: updatedCase.incidentDateTime,
+          arrivalDateTime: updatedCase.arrivalDateTime,
+        },
+      ).catch((error: any) => {
+        console.error('Error rescheduling KPI threshold checks for Trauma case:', error);
+      });
+    }
 
     return updatedCase;
   }

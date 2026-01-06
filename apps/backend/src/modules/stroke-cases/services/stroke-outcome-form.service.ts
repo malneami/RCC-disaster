@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { StrokeOutcomeFormDto, UpdateStrokeOutcomeFormDto } from '../dto/stroke-outcome-form.dto';
 import { StrokeKPICalculatorService } from './stroke-kpi-calculator.service';
+import { KpiMonitorService } from '../../notifications/services/kpi-monitor.service';
 
 @Injectable()
 export class StrokeOutcomeFormService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly kpiCalculatorService: StrokeKPICalculatorService,
+    @Inject(forwardRef(() => KpiMonitorService))
+    private readonly kpiMonitorService: KpiMonitorService,
   ) {}
 
   /**
@@ -18,17 +21,21 @@ export class StrokeOutcomeFormService {
     outcomeFormDto: StrokeOutcomeFormDto,
     userId: string,
   ) {
-    // Check if stroke case exists and get completion date
+    // Check if stroke case exists and get completion date and previous completeness
     const existingCaseCheck = await this.prisma.strokeCase.findUnique({
       where: { id: strokeCaseId },
       select: {
         outcomeFormCompletionDate: true,
+        outcomePercentageCompleteness: true,
       },
     });
 
     if (!existingCaseCheck) {
       throw new NotFoundException('Stroke case not found');
     }
+
+    // Store previous completeness for KPI checking
+    const previousCompleteness = existingCaseCheck.outcomePercentageCompleteness ?? 0;
 
     // Calculate completeness percentage (use provided value or calculate)
     const completenessPercentage = outcomeFormDto.outcomePercentageCompleteness ?? 
@@ -98,6 +105,21 @@ export class StrokeOutcomeFormService {
         destinationHospital: true,
         createdBy: true,
       },
+    });
+
+    // Cancel timers if case is completed
+    if (completenessPercentage === 100 && this.kpiMonitorService) {
+      this.kpiMonitorService.cancelCaseTimers(strokeCaseId);
+    }
+
+    // Check KPIs based on completeness change (fire and forget)
+    this.kpiMonitorService.checkCaseKpisOnCompleteness(
+      strokeCaseId,
+      'STROKE',
+      previousCompleteness,
+      completenessPercentage,
+    ).catch(error => {
+      console.error('Error checking KPIs for Stroke case:', error);
     });
 
     return finalCase || updatedCase;

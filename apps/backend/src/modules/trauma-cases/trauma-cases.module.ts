@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TraumaCasesService } from './trauma-cases.service';
 import { TraumaCasesController } from './trauma-cases.controller';
 import { PrismaService } from '../../database/prisma.service';
@@ -10,9 +10,10 @@ import { TraumaDatetimeService } from './services/trauma-datetime.service';
 import { TraumaQueryService } from './services/trauma-query.service';
 import { TraumaExportService } from './services/trauma-export.service';
 import { CommonModule } from '../../common/common.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [CommonModule],
+  imports: [CommonModule, forwardRef(() => NotificationsModule)],
   controllers: [TraumaCasesController],
   providers: [
     TraumaCasesService, 
@@ -28,6 +29,7 @@ import { CommonModule } from '../../common/common.module';
   exports: [
     TraumaCasesService,
     TraumaExportService,
+    TraumaKpiService,
   ],
 })
 export class TraumaCasesModule {}
