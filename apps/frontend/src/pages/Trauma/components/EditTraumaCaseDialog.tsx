@@ -7,7 +7,7 @@ import {
   Button,
   Stepper,
   Step,
-  StepLabel,
+  StepButton,
   Box,
   Alert,
   CircularProgress,
@@ -22,6 +22,8 @@ import IncidentDetailsStep from './forms/IncidentDetailsStep';
 import VitalsAssessmentStep from './forms/VitalsAssessmentStep';
 import InjuryAssessmentStep from './forms/InjuryAssessmentStep';
 import DispositionStep from './forms/DispositionStep';
+import BedAssignmentStep from './forms/BedAssignmentStep';
+import ReviewStep from './forms/ReviewStep';
 
 // Types and constants
 import { TraumaCase, UpdateTraumaCaseData } from '../../../services/traumaService';
@@ -105,6 +107,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [timelineWarnings, setTimelineWarnings] = useState<Record<string, string[]>>({});
+  const [kpiViolations, setKpiViolations] = useState<Record<string, string[]>>({});
   const [originHospital, setOriginHospital] = useState<Hospital | null>(null);
   const [formData, setFormData] = useState({
     patientInfo: {
@@ -167,6 +170,14 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         restrictions: '',
       },
     },
+    bedAssignment: {
+      assignedBed: null,
+      bedId: '',
+      bedNumber: '',
+      unitName: '',
+      hospitalName: '',
+      arrivalDate: '',
+    },
   });
   const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
 
@@ -201,12 +212,12 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       setOriginHospital(null);
 
       // Convert trauma case data to form structure (exactly like creation form)
-      const dateOfBirth = traumaCase.patient?.dateOfBirth 
-        ? (typeof traumaCase.patient.dateOfBirth === 'string' 
-            ? traumaCase.patient.dateOfBirth 
-            : new Date(traumaCase.patient.dateOfBirth).toISOString().split('T')[0])
+      const dateOfBirth = traumaCase.patient?.dateOfBirth
+        ? (typeof traumaCase.patient.dateOfBirth === 'string'
+          ? traumaCase.patient.dateOfBirth
+          : new Date(traumaCase.patient.dateOfBirth).toISOString().split('T')[0])
         : undefined;
-      
+
       // Calculate age from dateOfBirth if age is not present
       let age = traumaCase.patient?.age;
       if (!age && dateOfBirth) {
@@ -278,16 +289,71 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
             restrictions: traumaCase.disposition?.restrictions || '',
           },
         },
+        bedAssignment: {
+          assignedBed: (traumaCase as any).bedAssignment?.assignedBed || undefined,
+          bedId: (traumaCase as any).bedAssignment?.bedId || '',
+          bedNumber: (traumaCase as any).bedAssignment?.bedNumber || '',
+          unitName: (traumaCase as any).bedAssignment?.unitName || '',
+          hospitalName: (traumaCase as any).bedAssignment?.hospitalName || '',
+          arrivalDate: (traumaCase as any).bedAssignment?.arrivalDate || '',
+        },
       });
     }
   }, [traumaCase, open]);
 
+  // Step Validation & Severity Logic
+  const getStepSeverity = (stepIndex: number): 'error' | 'warning' | null => {
+
+    // Map steps to field prefixes
+    const stepPrefixes: Record<number, string[]> = {
+      0: ['patientInfo'],
+      1: ['incidentDetails'],
+      2: ['vitalsAssessment'],
+      3: ['injuryAssessment'],
+      4: ['disposition'],
+      5: ['bedAssignment']
+    };
+
+    const prefixes = stepPrefixes[stepIndex] || [];
+
+    // 1. Check validation errors (Red/Blocking)
+    const hasValidationError = prefixes.some(prefix =>
+      Object.keys(validationErrors).some(key => key.startsWith(prefix))
+    );
+
+    // 2. Check timeline warnings (Red/Blocking for Trauma too?)
+    // In Stroke we treated timeline as blocking. Doing the same here for consistency.
+    const hasTimelineWarning = Object.keys(timelineWarnings).some(key =>
+      prefixes.some(prefix => key.startsWith(prefix))
+    );
+
+    if (hasValidationError || hasTimelineWarning) {
+      return 'error';
+    }
+
+    // 3. Check KPI Violations (Yellow/Warning)
+    const hasKpiViolation = Object.keys(kpiViolations).some(key =>
+      prefixes.some(prefix => key.startsWith(prefix))
+    );
+
+    if (hasKpiViolation) {
+      return 'warning';
+    }
+
+    return null;
+  };
+
   // Timeline validation
   useEffect(() => {
     const warnings: Record<string, string[]> = {};
+    const violations: Record<string, string[]> = {};
 
     const addWarning = (field: string, message: string) => {
       warnings[field] = [...(warnings[field] || []), message];
+    };
+
+    const addViolation = (field: string, message: string) => {
+      violations[field] = [...(violations[field] || []), message];
     };
 
     const parseDate = (value?: string) => {
@@ -332,25 +398,72 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       );
     }
 
-    setTimelineWarnings((prev: Record<string, string[]>) => {
-      const prevKeys = Object.keys(prev);
-      const newKeys = Object.keys(warnings);
-
-      if (
-        prevKeys.length === newKeys.length &&
-        prevKeys.every(
-          (key) =>
-            newKeys.includes(key) &&
-            (prev[key]?.length || 0) === (warnings[key]?.length || 0) &&
-            (prev[key] || []).every((message: string, index: number) => message === warnings[key]?.[index])
-        )
-      ) {
-        return prev;
+    // KPI VIOLATIONS (Yellow)
+    // KPI 1: Response Time (Incident to Arrival) > 60 mins (approx 1 hour golden window concept for trauma)
+    if (incidentTime && arrivalTime) {
+      const diffMinutes = (arrivalTime.getTime() - incidentTime.getTime()) / (1000 * 60);
+      if (diffMinutes > 60) {
+        addViolation(
+          'incidentDetails.arrivalDateTime',
+          `Time from Incident to Arrival is ${Math.round(diffMinutes)} mins (Target: < 60 mins).`
+        );
       }
+    }
 
+    // KPI 2: Illogical Vitals (Yellow)
+    // KPI 2: Illogical Vitals (Yellow Warnings as requested)
+    const { vitalSigns, systolicBloodPressure, respiratoryRate } = formData.vitalsAssessment || {};
+
+    // Temperature (Celsius) - Warning if < 30 or > 45
+    if (vitalSigns?.temperature) {
+      const temp = Number(vitalSigns.temperature);
+      if (!isNaN(temp) && (temp < 30 || temp > 45)) {
+        addViolation('vitalsAssessment.vitalSigns.temperature', `Temperature ${temp}°C is outside logical range (30-45°C).`);
+      }
+    }
+
+    // Heart Rate - Warning if < 30 or > 250
+    if (vitalSigns?.heartRate) {
+      const hr = Number(vitalSigns.heartRate);
+      if (!isNaN(hr) && (hr < 30 || hr > 250)) {
+        addViolation('vitalsAssessment.vitalSigns.heartRate', `Heart Rate ${hr} bpm is outside logical range (30-250 bpm).`);
+      }
+    }
+
+    // Respiratory Rate - Warning if < 8 or > 60
+    if (respiratoryRate) {
+      const rr = Number(respiratoryRate);
+      if (!isNaN(rr) && (rr < 8 || rr > 60)) {
+        addViolation('vitalsAssessment.respiratoryRate', `Respiratory Rate ${rr} is outside logical range (8-60).`);
+      }
+    }
+
+    // Systolic BP - Warning if < 50 or > 300
+    if (systolicBloodPressure) {
+      const sbp = Number(systolicBloodPressure);
+      if (!isNaN(sbp) && (sbp < 50 || sbp > 300)) {
+        addViolation('vitalsAssessment.systolicBloodPressure', `Systolic BP ${sbp} is outside logical range (50-300).`);
+      }
+    }
+
+    // Oxygen Saturation - Warning if < 50 or > 100
+    if (vitalSigns?.oxygenSaturation) {
+      const o2 = Number(vitalSigns.oxygenSaturation);
+      if (!isNaN(o2) && (o2 < 50 || o2 > 100)) {
+        addViolation('vitalsAssessment.vitalSigns.oxygenSaturation', `O2 Saturation ${o2}% is outside logical range (50-100%).`);
+      }
+    }
+
+    setTimelineWarnings((prev) => {
+      if (JSON.stringify(prev) === JSON.stringify(warnings)) return prev;
       return warnings;
     });
-  }, [formData.incidentDetails]);
+
+    setKpiViolations((prev) => {
+      if (JSON.stringify(prev) === JSON.stringify(violations)) return prev;
+      return violations;
+    });
+  }, [formData.incidentDetails, formData.vitalsAssessment]);
 
   const handleOriginHospitalSelect = useCallback((hospital: Hospital | null) => {
     setOriginHospital(hospital);
@@ -450,6 +563,15 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         setActiveStep(targetStep);
         setError('Please correct the highlighted information before submitting.');
         setLoading(false);
+        return;
+      }
+
+      // Check for timeline warnings (BLOCKING - Red Errors)
+      if (Object.keys(timelineWarnings).length > 0) {
+        setError('Please resolve all timeline errors (red) before submitting.');
+        setLoading(false);
+        // All timeline errors are currently in Step 1 (Incident Details)
+        setActiveStep(1);
         return;
       }
 
@@ -630,6 +752,27 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
             validationErrors={validationErrors}
           />
         );
+      case 5:
+        return (
+          <BedAssignmentStep
+            data={{
+              ...formData.bedAssignment,
+              assignedBed: formData.bedAssignment.assignedBed || undefined
+            }}
+            onChange={(data) => handleStepDataChange({ bedAssignment: { ...formData.bedAssignment, ...data } })}
+            errors={stepErrors}
+            validationErrors={validationErrors}
+          />
+        );
+      case 6:
+        return (
+          <ReviewStep
+            formData={formData}
+            timelineWarnings={timelineWarnings}
+            validationErrors={validationErrors}
+            kpiViolations={kpiViolations}
+          />
+        );
       default:
         return null;
     }
@@ -669,14 +812,42 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
             </Alert>
           )}
 
-          <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-            {TRAUMA_FORM_STEPS.map((step) => (
-              <Step key={step.id}>
-                <StepLabel icon={step.icon}>
-                  {step.label}
-                </StepLabel>
-              </Step>
-            ))}
+          <Stepper activeStep={activeStep} nonLinear sx={{ mb: 4 }}>
+            {TRAUMA_FORM_STEPS.map((step, index) => {
+              const severity = getStepSeverity(index);
+              const labelProps: { error?: boolean } = {};
+
+              if (severity === 'error') {
+                labelProps.error = true;
+              }
+
+              const isCompleted = activeStep > index;
+
+              return (
+                <Step key={step.id} completed={isCompleted}>
+                  <StepButton
+                    onClick={() => {
+                      setActiveStep(index);
+                      setError(null);
+                    }}
+                    {...labelProps}
+                    sx={{
+                      '& .MuiStepLabel-label': {
+                        color: severity === 'warning' ? 'warning.main' : undefined,
+                      },
+                      '& .MuiStepIcon-root': {
+                        color: severity === 'warning' ? 'warning.main' : undefined,
+                      },
+                      '& .MuiStepIcon-text': {
+                        fill: severity === 'warning' ? '#fff' : undefined,
+                      }
+                    }}
+                  >
+                    {step.label}
+                  </StepButton>
+                </Step>
+              );
+            })}
           </Stepper>
 
           <Box minHeight="400px">

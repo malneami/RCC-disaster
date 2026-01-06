@@ -101,7 +101,7 @@ interface CreateTraumaCaseDialogProps {
   onSubmit: (data: CreateTraumaCaseData) => Promise<void>;
 }
 
-const steps = [...TRAUMA_FORM_STEPS.map(step => step.label), 'Review & Submit'];
+const steps = TRAUMA_FORM_STEPS.map(step => step.label);
 
 const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
   open,
@@ -116,6 +116,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [timelineWarnings, setTimelineWarnings] = useState<Record<string, string[]>>({});
+  const [kpiViolations, setKpiViolations] = useState<Record<string, string[]>>({});
   const [originHospital, setOriginHospital] = useState<Hospital | null>(null);
   const [formData, setFormData] = useState({
     patientInfo: {
@@ -238,17 +239,17 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         extremitiesInjury: '1 - No Injury: - No injury',
         externalInjury: '1 - No Injury: - No injury',
       },
+      disposition: {
+        edDisposition: 'DISCHARGE',
         disposition: {
-          edDisposition: 'DISCHARGE',
-          disposition: {
-            dischargeInstructions: '',
-            followUpRequired: false,
-            followUpDate: '',
-            medicationsPrescribed: '',
-            restrictions: '',
-          },
+          dischargeInstructions: '',
+          followUpRequired: false,
+          followUpDate: '',
+          medicationsPrescribed: '',
+          restrictions: '',
         },
-        bedAssignment: undefined,
+      },
+      bedAssignment: undefined,
     });
     onClose();
   }, [onClose]);
@@ -280,41 +281,119 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
     setFormData(prev => ({ ...prev, ...stepData }));
 
     // Clear validation errors for fields that are being changed
-    if (stepData.patientInfo) {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        Object.keys(stepData.patientInfo).forEach(key => {
-          delete newErrors[`patientInfo.${key}`];
+    setValidationErrors((prev) => {
+      const newErrors = { ...prev };
+
+      if (stepData.patientInfo) {
+        Object.keys(newErrors).forEach(key => {
+          if (key.startsWith('patientInfo.')) {
+            delete newErrors[key];
+          }
         });
-        return newErrors;
-      });
-    }
-    if (stepData.incidentDetails) {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        Object.keys(stepData.incidentDetails).forEach(key => {
-          delete newErrors[`incidentDetails.${key}`];
+      }
+
+      if (stepData.incidentDetails) {
+        Object.keys(newErrors).forEach(key => {
+          if (key.startsWith('incidentDetails.')) {
+            delete newErrors[key];
+          }
         });
-        return newErrors;
-      });
-    }
-    if (stepData.disposition) {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        Object.keys(stepData.disposition).forEach(key => {
-          delete newErrors[`disposition.${key}`];
+      }
+
+      if (stepData.vitalsAssessment) {
+        Object.keys(newErrors).forEach(key => {
+          if (key.startsWith('vitalsAssessment.')) {
+            delete newErrors[key];
+          }
         });
-        return newErrors;
-      });
-    }
+      }
+
+      if (stepData.injuryAssessment) {
+        Object.keys(newErrors).forEach(key => {
+          if (key.startsWith('injuryAssessment.')) {
+            delete newErrors[key];
+          }
+        });
+      }
+
+      if (stepData.disposition) {
+        Object.keys(newErrors).forEach(key => {
+          if (key.startsWith('disposition.')) {
+            delete newErrors[key];
+          }
+        });
+      }
+
+      if (stepData.bedAssignment) {
+        Object.keys(newErrors).forEach(key => {
+          if (key.startsWith('bedAssignment.')) {
+            delete newErrors[key];
+          }
+        });
+      }
+
+      return newErrors;
+    });
   };
 
-  // Timeline validation
+  const getStepSeverity = (stepIndex: number): 'error' | 'warning' | null => {
+    const step0Fields = ['patientInfo', 'originHospitalId', 'destinationHospitalId', 'transferRequestDateTime', 'transferArrivalDateTime'];
+    const step1Fields = ['incidentDetails'];
+    const step2Fields = ['vitalsAssessment'];
+    const step3Fields = ['injuryAssessment'];
+    const step4Fields = ['disposition'];
+    const step5Fields = ['bedAssignment'];
+
+    const getFieldsForStep = (index: number) => {
+      switch (index) {
+        case 0: return step0Fields;
+        case 1: return step1Fields;
+        case 2: return step2Fields;
+        case 3: return step3Fields;
+        case 4: return step4Fields;
+        case 5: return step5Fields;
+        default: return [];
+      }
+    };
+
+    const fields = getFieldsForStep(stepIndex);
+
+    // 1. Check validation errors (recursive/prefix check) - RED
+    const hasValidationError = fields.some(field => {
+      return Object.keys(validationErrors).some(key => key.startsWith(field));
+    });
+
+    // 2. Check timeline warnings (Blocking) - RED
+    // Timeline warnings are primarily mapped to incident details fields
+    const hasTimelineWarning = stepIndex === 1 && Object.keys(timelineWarnings).length > 0;
+
+    if (hasValidationError || hasTimelineWarning) {
+      return 'error';
+    }
+
+    // 3. Check KPI Violations (Yellow/Warning)
+    const hasKpiViolation = Object.keys(kpiViolations).some(key =>
+      fields.some(field => key.startsWith(field))
+    );
+
+    if (hasKpiViolation) {
+      return 'warning';
+    }
+
+    return null;
+  };
+
+  // Timeline validation and KPI Calculation
   useEffect(() => {
     const warnings: Record<string, string[]> = {};
+    const violations: Record<string, string[]> = {};
 
     const addWarning = (field: string, message: string) => {
       warnings[field] = [...(warnings[field] || []), message];
+    };
+
+    const addViolation = (field: string, message: string) => {
+      violations[field] = [...(violations[field] || []), message];
     };
 
     const parseDate = (value?: string) => {
@@ -363,6 +442,61 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       );
     }
 
+    // KPI VIOLATIONS (Yellow)
+    // KPI 1: Response Time (Incident to Arrival) > 60 mins
+    if (incidentTime && arrivalTime) {
+      const diffMinutes = (arrivalTime.getTime() - incidentTime.getTime()) / (1000 * 60);
+      if (diffMinutes > 60) {
+        addViolation(
+          'incidentDetails.arrivalDateTime',
+          `Time from Incident to Arrival is ${Math.round(diffMinutes)} mins (Target: < 60 mins).`
+        );
+      }
+    }
+
+    // KPI 2: Illogical Vitals (Yellow Warnings as requested)
+    const { vitalSigns, systolicBloodPressure, respiratoryRate } = formData.vitalsAssessment || {};
+
+    // Temperature (Celsius) - Warning if < 30 or > 45
+    if (vitalSigns?.temperature) {
+      const temp = parseFloat(vitalSigns.temperature as any);
+      if (!isNaN(temp) && (temp < 30 || temp > 45)) {
+        addViolation('vitalsAssessment.vitalSigns.temperature', `Temperature ${temp}°C is outside logical range (30-45°C).`);
+      }
+    }
+
+    // Heart Rate - Warning if < 30 or > 250
+    if (vitalSigns?.heartRate) {
+      const hr = parseFloat(vitalSigns.heartRate as any);
+      if (!isNaN(hr) && (hr < 30 || hr > 250)) {
+        addViolation('vitalsAssessment.vitalSigns.heartRate', `Heart Rate ${hr} bpm is outside logical range (30-250 bpm).`);
+      }
+    }
+
+    // Respiratory Rate - Warning if < 8 or > 60
+    if (respiratoryRate) {
+      const rr = parseFloat(respiratoryRate as any);
+      if (!isNaN(rr) && (rr < 8 || rr > 60)) {
+        addViolation('vitalsAssessment.respiratoryRate', `Respiratory Rate ${rr} is outside logical range (8-60).`);
+      }
+    }
+
+    // Systolic BP - Warning if < 50 or > 300
+    if (systolicBloodPressure) {
+      const sbp = parseFloat(systolicBloodPressure as any);
+      if (!isNaN(sbp) && (sbp < 50 || sbp > 300)) {
+        addViolation('vitalsAssessment.systolicBloodPressure', `Systolic BP ${sbp} is outside logical range (50-300).`);
+      }
+    }
+
+    // Oxygen Saturation - Warning if < 50 or > 100
+    if (vitalSigns?.oxygenSaturation) {
+      const o2 = parseFloat(vitalSigns.oxygenSaturation as any);
+      if (!isNaN(o2) && (o2 < 50 || o2 > 100)) {
+        addViolation('vitalsAssessment.vitalSigns.oxygenSaturation', `O2 Saturation ${o2}% is outside logical range (50-100%).`);
+      }
+    }
+
     setTimelineWarnings((prev) => {
       const prevKeys = Object.keys(prev);
       const newKeys = Object.keys(warnings);
@@ -381,7 +515,13 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
 
       return warnings;
     });
-  }, [formData.incidentDetails]);
+
+    setKpiViolations((prev) => {
+      if (JSON.stringify(prev) === JSON.stringify(violations)) return prev;
+      return violations;
+    });
+
+  }, [formData.incidentDetails, formData.vitalsAssessment]);
 
   const hasTimelineWarnings = useMemo(
     () => Object.keys(timelineWarnings).length > 0,
@@ -403,53 +543,13 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         const dispositionErrors = await validateStep(4);
         const bedAssignmentErrors = await validateStep(5);
         const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors, ...bedAssignmentErrors };
-        
+
         setValidationErrors(allErrors);
       };
 
       validateAllSteps();
     }
   }, [activeStep]);
-
-  // Track which steps have issues
-  const stepIssues = useMemo(() => {
-    const issues = [false, false, false, false, false, false, false];
-    
-    // Step 0 (Patient) - check validation errors
-    if (Object.keys(validationErrors).some(key => key.startsWith('patientInfo.') || key === 'originHospitalId' || key === 'destinationHospitalId')) {
-      issues[0] = true;
-    }
-
-    // Step 1 (Incident Details) - check validation errors and timeline warnings
-    if (Object.keys(validationErrors).some(key => key.startsWith('incidentDetails.')) ||
-      Object.keys(timelineWarnings).some(key => key.startsWith('incidentDetails.'))) {
-      issues[1] = true;
-    }
-
-    // Step 2 (Vitals) - check validation errors
-    if (Object.keys(validationErrors).some(key => key.startsWith('vitalsAssessment.'))) {
-      issues[2] = true;
-    }
-
-    // Step 3 (Injury) - check validation errors
-    if (Object.keys(validationErrors).some(key => key.startsWith('injuryAssessment.'))) {
-      issues[3] = true;
-    }
-
-    // Step 4 (Disposition) - check validation errors
-    if (Object.keys(validationErrors).some(key => key.startsWith('disposition.'))) {
-      issues[4] = true;
-    }
-    
-    // Step 5 (Bed Assignment) - optional, no validation needed
-    
-    // Step 6 (Review) - check timeline warnings and validation errors
-    if (hasTimelineWarnings || hasValidationErrors) {
-      issues[6] = true;
-    }
-
-    return issues;
-  }, [validationErrors, timelineWarnings, hasTimelineWarnings, hasValidationErrors]);
 
   const validateStep = async (stepIndex: number): Promise<Record<string, string>> => {
     const errors: Record<string, string> = {};
@@ -532,7 +632,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         try {
           const bedErrors = await validateStep(5);
           setValidationErrors(bedErrors);
-          
+
           if (bedErrors['bedAssignment.bedId']) {
             try {
               if (bedAssignment && bedAssignment.unitId) {
@@ -540,11 +640,11 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
                 const validBeds = availableBeds.filter(
                   (bed) => bed.status === 'VACANT' || bed.status === 'RESERVED'
                 );
-                
+
                 if (validBeds.length > 0) {
                   const firstVacantBed = validBeds.find((bed) => bed.status === 'VACANT') || validBeds[0];
                   const bed = await bedService.getBedById(firstVacantBed.id);
-                  
+
                   handleStepDataChange({
                     bedAssignment: {
                       ...bedAssignment,
@@ -558,7 +658,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
                       },
                     },
                   });
-                  
+
                   setValidatingBed(false);
                   setError(null);
                   setActiveStep((activeStep + 1) as any);
@@ -567,13 +667,13 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
               }
             } catch (autoAssignErr: any) {
               setValidatingBed(false);
-              const errorMessage = autoAssignErr?.response?.data?.message 
-                || autoAssignErr?.message 
+              const errorMessage = autoAssignErr?.response?.data?.message
+                || autoAssignErr?.message
                 || 'Failed to auto-assign a bed. Please try selecting a bed manually or try again.';
               setError(errorMessage);
               return;
             }
-            
+
             setValidatingBed(false);
             if (!bedAssignment.unitId) {
               setError('Please select a unit first before assigning a bed.');
@@ -582,7 +682,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             }
             return;
           }
-          
+
           if (bedAssignment.bedId && !bedAssignment.assignedBed) {
             try {
               const bed = await bedService.getBedById(bedAssignment.bedId);
@@ -605,32 +705,32 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
               }
             } catch (err: any) {
               setValidatingBed(false);
-              const errorMessage = err?.response?.data?.message 
-                || err?.message 
+              const errorMessage = err?.response?.data?.message
+                || err?.message
                 || 'Failed to fetch bed details. The bed may not exist or there was a network error. Please try selecting a different bed.';
               setError(errorMessage);
               return;
             }
           }
-          
+
           setValidatingBed(false);
           setActiveStep((activeStep + 1) as any);
           setError(null);
           return;
         } catch (err: any) {
           setValidatingBed(false);
-          const errorMessage = err?.response?.data?.message 
-            || err?.message 
+          const errorMessage = err?.response?.data?.message
+            || err?.message
             || 'Failed to validate bed assignment. Please check your selection and try again.';
           setError(errorMessage);
           return;
         }
       }
     }
-    
+
     const errors = await validateStep(activeStep);
     setValidationErrors(errors);
-    
+
     // If on last step before review, validate all required steps first
     if (activeStep === TRAUMA_FORM_STEPS.length - 1) {
       // Validate all required steps before going to review
@@ -639,9 +739,9 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       const dispositionErrors = await validateStep(4);
       const bedAssignmentErrors = await validateStep(5);
       const allErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors, ...bedAssignmentErrors };
-      
+
       setValidationErrors(allErrors);
-      
+
       // If there are validation errors, navigate to first step with error
       if (Object.keys(allErrors).length > 0) {
         const firstErrorKey = Object.keys(allErrors)[0];
@@ -659,7 +759,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         setError('Please correct the highlighted information before proceeding.');
         return;
       }
-    
+
       // If there are timeline warnings, go to review step
       if (hasTimelineWarnings) {
         setActiveStep(TRAUMA_FORM_STEPS.length as any); // Go to review step
@@ -705,7 +805,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
     const dispositionErrors = await validateStep(4);
     const bedAssignmentErrors = await validateStep(5);
     const combinedErrors = { ...patientErrors, ...incidentErrors, ...dispositionErrors, ...bedAssignmentErrors };
-    
+
     if (bedAssignmentErrors['bedAssignment.bedId']) {
       setValidationErrors(combinedErrors);
       setError('Please go back to the Bed Assignment step and select a valid VACANT or RESERVED bed, or let the system auto-assign one.');
@@ -736,11 +836,11 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       return;
     }
 
-    // If there are timeline warnings, stay on review step and show message
-    if (hasTimelineWarnings) {
-      setActiveStep(TRAUMA_FORM_STEPS.length as any);
-      const firstWarning = timelineWarnings[Object.keys(timelineWarnings)[0]]?.[0];
-      setError(firstWarning || 'Please review the timeline warnings before submitting.');
+    // If there are timeline warnings, stay on review step and show message (BLOCKING)
+    if (Object.keys(timelineWarnings).length > 0) {
+      setError('Please resolve all timeline errors (red) before submitting.');
+      // Timeline errors are in Step 1
+      setActiveStep(1);
       return;
     }
 
@@ -788,7 +888,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
       };
 
       const createdCase = await TraumaService.createTraumaCase(submitData);
-      
+
       const bedAssignment = formData.bedAssignment as BedAssignmentFormData | undefined;
       if (bedAssignment && 'bedId' in bedAssignment && bedAssignment.bedId && createdCase?.id && createdCase?.patientId) {
         try {
@@ -810,7 +910,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
           );
         }
       }
-      
+
       await onSubmit(submitData);
       handleClose();
     } catch (err: any) {
@@ -918,6 +1018,7 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             formData={formData}
             timelineWarnings={timelineWarnings}
             validationErrors={validationErrors}
+            kpiViolations={kpiViolations}
           />
         );
       default:
@@ -938,48 +1039,56 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
         </DialogTitle>
 
         <DialogContent>
-          <Box sx={{ mb: 3 }}>
-            <Stepper activeStep={activeStep} alternativeLabel nonLinear>
-              {steps.map((label, index) => {
-                const hasIssue = stepIssues[index];
-                return (
-                  <Step key={label}>
-                    <StepButton
-                      onClick={() => {
-                        setActiveStep(index);
-                        setError(null);
-                      }}
-                      sx={{
-                        '& .MuiStepLabel-label': {
-                          fontWeight: hasIssue ? 700 : 500,
-                          ...(hasIssue && { color: 'warning.main' }),
-                          fontSize: hasIssue ? '1rem' : '0.95rem',
-                        },
-                        ...(hasIssue && {
-                          '& .MuiStepIcon-root': {
-                            color: 'warning.main !important',
-                          },
-                        }),
-                      }}
-                    >
-                      {label}
-                    </StepButton>
-                  </Step>
-                );
-              })}
-            </Stepper>
-          </Box>
+          <Stepper activeStep={activeStep} nonLinear sx={{ mb: 4 }}>
+            {TRAUMA_FORM_STEPS.map((step, index) => {
+              const severity = getStepSeverity(index);
+              const labelProps: { error?: boolean } = {};
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+              if (severity === 'error') {
+                labelProps.error = true;
+              }
+
+              const isCompleted = activeStep > index;
+
+              return (
+                <Step key={step.id} completed={isCompleted}>
+                  <StepButton
+                    onClick={() => {
+                      setActiveStep(index);
+                      setError(null);
+                    }}
+                    {...labelProps}
+                    sx={{
+                      '& .MuiStepLabel-label': {
+                        color: severity === 'warning' ? 'warning.main' : undefined,
+                      },
+                      '& .MuiStepIcon-root': {
+                        color: severity === 'warning' ? 'warning.main' : undefined,
+                      },
+                      '& .MuiStepIcon-text': {
+                        fill: severity === 'warning' ? '#fff' : undefined,
+                      }
+                    }}
+                  >
+                    {step.label}
+                  </StepButton>
+                </Step>
+              );
+            })}
+          </Stepper>
+
+          {
+            error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )
+          }
 
           <Box minHeight="400px">
             {renderStepContent()}
           </Box>
-        </DialogContent>
+        </DialogContent >
 
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={handleClose} disabled={loading}>
@@ -1011,8 +1120,8 @@ const CreateTraumaCaseDialog: React.FC<CreateTraumaCaseDialogProps> = ({
             </Button>
           )}
         </DialogActions>
-      </Dialog>
-    </LocalizationProvider>
+      </Dialog >
+    </LocalizationProvider >
   );
 };
 

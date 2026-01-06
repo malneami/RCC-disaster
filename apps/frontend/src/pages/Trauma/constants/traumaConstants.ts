@@ -117,6 +117,12 @@ export const TRAUMA_FORM_STEPS = [
     icon: '🛏️',
     description: 'Assign bed to patient (optional)'
   },
+  {
+    id: 'review-step',
+    label: 'Review & Submit',
+    icon: '📋',
+    description: 'Review case details and submit'
+  },
 ] as const;
 
 // KPI thresholds
