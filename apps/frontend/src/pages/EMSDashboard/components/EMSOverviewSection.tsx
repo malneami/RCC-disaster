@@ -36,21 +36,57 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, subtitle, icon, color }
         sx={{
             bgcolor: color,
             borderRadius: 2,
-            p: 2.5,
+            p: { xs: 1.5, md: 2.5 },
             height: '100%',
             color: '#fff',
             transition: 'transform 0.2s ease',
             '&:hover': { transform: 'translateY(-2px)' },
+            '&:focus-within': {
+                outline: '2px solid',
+                outlineColor: 'rgba(255,255,255,0.5)',
+                outlineOffset: 2,
+            },
         }}
     >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.9 }}>{title}</Typography>
-            <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: { xs: 1, md: 1.5 } }}>
+            <Typography sx={{ 
+                fontSize: { xs: '0.7rem', md: '0.75rem' }, 
+                fontWeight: 600, 
+                opacity: 0.9 
+            }}>
+                {title}
+            </Typography>
+            <Box sx={{ 
+                width: { xs: 28, md: 32 }, 
+                height: { xs: 28, md: 32 }, 
+                borderRadius: 1.5, 
+                bgcolor: 'rgba(255,255,255,0.2)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                fontSize: { xs: '0.75rem', md: '0.85rem' },
+                flexShrink: 0,
+            }}>
                 {icon}
             </Box>
         </Box>
-        <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, lineHeight: 1 }}>{value}</Typography>
-        {subtitle && <Typography sx={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.8, mt: 0.5 }}>{subtitle}</Typography>}
+        <Typography sx={{ 
+            fontSize: { xs: '1.375rem', md: '1.75rem' }, 
+            fontWeight: 700, 
+            lineHeight: 1 
+        }}>
+            {value}
+        </Typography>
+        {subtitle && (
+            <Typography sx={{ 
+                fontSize: { xs: '0.65rem', md: '0.7rem' }, 
+                fontWeight: 500, 
+                opacity: 0.8, 
+                mt: 0.5 
+            }}>
+                {subtitle}
+            </Typography>
+        )}
     </Box>
 );
 
@@ -73,17 +109,42 @@ const EMSOverviewSection: React.FC = () => {
     ];
 
     return (
-        <Box sx={{ bgcolor: '#fff', border: `1px solid ${COLORS.slate[200]}`, borderRadius: 2, p: 3 }}>
+        <Box sx={{ 
+            bgcolor: '#fff', 
+            border: `1px solid ${COLORS.slate[200]}`, 
+            borderRadius: 2, 
+            p: { xs: 2, md: 3 } 
+        }}>
             {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: COLORS.success, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+            <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: { xs: 1, md: 1.5 }, 
+                mb: { xs: 2, md: 3 } 
+            }}>
+                <Box sx={{ 
+                    width: { xs: 32, md: 36 }, 
+                    height: { xs: 32, md: 36 }, 
+                    borderRadius: 2, 
+                    bgcolor: COLORS.success, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    color: '#fff' 
+                }}>
                     <FontAwesomeIcon icon={faChartLine} />
                 </Box>
-                <Typography sx={{ fontSize: '1.125rem', fontWeight: 700, color: COLORS.slate[900] }}>Operations Overview</Typography>
+                <Typography sx={{ 
+                    fontSize: { xs: '1rem', md: '1.125rem' }, 
+                    fontWeight: 700, 
+                    color: COLORS.slate[900] 
+                }}>
+                    Operations Overview
+                </Typography>
             </Box>
 
             {/* Cards Grid */}
-            <Grid container spacing={2}>
+            <Grid container spacing={{ xs: 1.5, md: 2 }}>
                 {cards.map((card, i) => (
                     <Grid item xs={6} sm={6} md={3} key={i}>
                         <KPICard {...card} />

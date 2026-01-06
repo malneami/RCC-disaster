@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Grid } from '@mui/material';
+import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Grid, useMediaQuery } from '@mui/material';
 import { useQuery } from 'react-query';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -42,6 +42,7 @@ const PerformanceAnalytics: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<'overall' | 'stroke' | 'stemi' | 'trauma'>('overall');
   const { data: performanceData, isLoading, error } = useEMSPerformance(selectedPeriod);
   const [tabValue, setTabValue] = useState(0);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const { data: responseTimeData = [] } = useQuery(['ems-response-time-trends', selectedPeriod], () => emsService.getResponseTimeTrends(selectedPeriod), { refetchInterval: 300000, staleTime: 60000 });
   const { data: assignmentStatusData = [] } = useQuery(['ems-assignment-status-distribution', selectedPeriod], () => emsService.getAssignmentStatusDistribution(selectedPeriod), { refetchInterval: 300000, staleTime: 60000 });
@@ -60,18 +61,59 @@ const PerformanceAnalytics: React.FC = () => {
   if (error) return <Box>Error: {(error as Error)?.message}</Box>;
 
   return (
-    <Box sx={{ bgcolor: '#fff', borderRadius: 4, p: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
+    <Box sx={{ 
+      bgcolor: '#fff', 
+      borderRadius: { xs: 2, md: 4 }, 
+      p: { xs: 2, md: 4 }, 
+      boxShadow: '0 4px 16px rgba(0,0,0,0.06)' 
+    }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ width: 44, height: 44, borderRadius: 3, bgcolor: COLORS.violet, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: `0 6px 20px ${COLORS.violet}40` }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: { xs: 'flex-start', md: 'center' }, 
+        justifyContent: 'space-between', 
+        mb: { xs: 2, md: 4 }, 
+        flexWrap: 'wrap', 
+        gap: 2,
+        flexDirection: { xs: 'column', sm: 'row' },
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 2 } }}>
+          <Box sx={{ 
+            width: { xs: 36, md: 44 }, 
+            height: { xs: 36, md: 44 }, 
+            borderRadius: { xs: 2, md: 3 }, 
+            bgcolor: COLORS.violet, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            color: '#fff', 
+            boxShadow: `0 6px 20px ${COLORS.violet}40` 
+          }}>
             <FontAwesomeIcon icon={faChartLine} />
           </Box>
-          <Typography sx={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A' }}>EMS Performance Analytics</Typography>
+          <Typography sx={{ 
+            fontSize: { xs: '1.125rem', md: '1.35rem' }, 
+            fontWeight: 800, 
+            color: '#0F172A' 
+          }}>
+            EMS Performance Analytics
+          </Typography>
         </Box>
-        <FormControl size="small" sx={{ minWidth: 130, bgcolor: '#F1F5F9', borderRadius: 2 }}>
+        <FormControl 
+          size="small" 
+          sx={{ 
+            minWidth: { xs: '100%', sm: 130 }, 
+            bgcolor: '#F1F5F9', 
+            borderRadius: 2 
+          }}
+        >
           <InputLabel>Time Period</InputLabel>
-          <Select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)} label="Time Period">
+          <Select 
+            value={selectedPeriod} 
+            onChange={(e) => setSelectedPeriod(e.target.value)} 
+            label="Time Period"
+            aria-label="Select time period"
+          >
             <MenuItem value="24h">Last 24 Hours</MenuItem>
             <MenuItem value="7d">Last 7 Days</MenuItem>
             <MenuItem value="30d">Last 30 Days</MenuItem>
@@ -81,37 +123,122 @@ const PerformanceAnalytics: React.FC = () => {
       </Box>
 
       {/* Category Tabs */}
-      <Tabs value={activeCategory} onChange={(_, v) => setActiveCategory(v)} sx={{ mb: 4, '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, minWidth: 80, color: '#64748B' }, '& .Mui-selected': { color: COLORS.skyBlue }, '& .MuiTabs-indicator': { bgcolor: COLORS.skyBlue, height: 4, borderRadius: 2 } }}>
-        <Tab label="Overall" value="overall" />
-        <Tab label="Stroke" value="stroke" />
-        <Tab label="STEMI" value="stemi" />
-        <Tab label="Trauma" value="trauma" />
+      <Tabs 
+        value={activeCategory} 
+        onChange={(_, v) => setActiveCategory(v)} 
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ 
+          mb: { xs: 2, md: 4 }, 
+          '& .MuiTab-root': { 
+            textTransform: 'none', 
+            fontWeight: 700, 
+            minWidth: { xs: 60, md: 80 }, 
+            fontSize: { xs: '0.8rem', md: '0.875rem' },
+            color: '#64748B',
+            '&:focus-visible': {
+              outline: '2px solid',
+              outlineColor: COLORS.skyBlue,
+              outlineOffset: -2,
+            },
+          }, 
+          '& .Mui-selected': { color: COLORS.skyBlue }, 
+          '& .MuiTabs-indicator': { bgcolor: COLORS.skyBlue, height: 4, borderRadius: 2 } 
+        }}
+      >
+        <Tab label="Overall" value="overall" aria-label="Overall category" />
+        <Tab label="Stroke" value="stroke" aria-label="Stroke category" />
+        <Tab label="STEMI" value="stemi" aria-label="STEMI category" />
+        <Tab label="Trauma" value="trauma" aria-label="Trauma category" />
       </Tabs>
 
       {/* KPI Cards - Vibrant Solid Colors */}
-      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+      <Grid container spacing={{ xs: 1.5, md: 2.5 }} sx={{ mb: { xs: 2, md: 4 } }}>
         {kpiConfigs.map((cfg, i) => (
           <Grid item xs={6} sm={4} md={2} key={i}>
-            <Box sx={{ bgcolor: cfg.color, borderRadius: 4, p: 2.5, height: '100%', textAlign: 'center', color: '#fff', boxShadow: `0 6px 20px ${cfg.color}40`, transition: 'all 0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 10px 28px ${cfg.color}50` } }}>
-              <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.25)', mx: 'auto', mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FontAwesomeIcon icon={cfg.icon} style={{ fontSize: '1rem' }} />
+            <Box sx={{ 
+              bgcolor: cfg.color, 
+              borderRadius: { xs: 2, md: 4 }, 
+              p: { xs: 1.5, md: 2.5 }, 
+              height: '100%', 
+              textAlign: 'center', 
+              color: '#fff', 
+              boxShadow: `0 6px 20px ${cfg.color}40`, 
+              transition: 'all 0.3s', 
+              '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 10px 28px ${cfg.color}50` },
+              '&:focus-within': {
+                outline: '2px solid',
+                outlineColor: 'rgba(255,255,255,0.5)',
+                outlineOffset: 2,
+              },
+            }}>
+              <Box sx={{ 
+                width: { xs: 32, md: 40 }, 
+                height: { xs: 32, md: 40 }, 
+                borderRadius: '50%', 
+                bgcolor: 'rgba(255,255,255,0.25)', 
+                mx: 'auto', 
+                mb: { xs: 1, md: 1.5 }, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}>
+                <FontAwesomeIcon icon={cfg.icon} style={{ fontSize: isMobile ? '0.875rem' : '1rem' }} />
               </Box>
-              <Typography sx={{ fontSize: '1.5rem', fontWeight: 800 }}>
+              <Typography sx={{ 
+                fontSize: { xs: '1.125rem', md: '1.5rem' }, 
+                fontWeight: 800 
+              }}>
                 {cfg.unit === '%' ? kpis[cfg.key] : kpis[cfg.key].toFixed(1)}{cfg.unit && ` ${cfg.unit}`}
               </Typography>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.9, mt: 0.5 }}>{cfg.label}</Typography>
-              <Typography sx={{ fontSize: '0.6rem', opacity: 0.7 }}>{cfg.sub}</Typography>
+              <Typography sx={{ 
+                fontSize: { xs: '0.65rem', md: '0.7rem' }, 
+                fontWeight: 600, 
+                opacity: 0.9, 
+                mt: 0.5 
+              }}>
+                {cfg.label}
+              </Typography>
+              <Typography sx={{ 
+                fontSize: { xs: '0.55rem', md: '0.6rem' }, 
+                opacity: 0.7 
+              }}>
+                {cfg.sub}
+              </Typography>
             </Box>
           </Grid>
         ))}
       </Grid>
 
       {/* Sub Tabs */}
-      <Box sx={{ borderTop: '2px solid #E2E8F0', pt: 3 }}>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mb: 2, '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, fontSize: '0.85rem', color: '#64748B' }, '& .Mui-selected': { color: COLORS.skyBlue }, '& .MuiTabs-indicator': { bgcolor: COLORS.skyBlue } }}>
-          <Tab label="Performance Trends" />
-          <Tab label="Resource Utilization" />
-          <Tab label="Assignment Analysis" />
+      <Box sx={{ borderTop: '2px solid #E2E8F0', pt: { xs: 2, md: 3 } }}>
+        <Tabs 
+          value={tabValue} 
+          onChange={(_, v) => setTabValue(v)} 
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ 
+            mb: 2, 
+            '& .MuiTab-root': { 
+              textTransform: 'none', 
+              fontWeight: 600, 
+              fontSize: { xs: '0.75rem', md: '0.85rem' }, 
+              color: '#64748B',
+              minWidth: { xs: 'auto', md: 120 },
+              px: { xs: 1, md: 2 },
+              '&:focus-visible': {
+                outline: '2px solid',
+                outlineColor: COLORS.skyBlue,
+                outlineOffset: -2,
+              },
+            }, 
+            '& .Mui-selected': { color: COLORS.skyBlue }, 
+            '& .MuiTabs-indicator': { bgcolor: COLORS.skyBlue } 
+          }}
+        >
+          <Tab label="Performance Trends" aria-label="Performance Trends tab" />
+          <Tab label="Resource Utilization" aria-label="Resource Utilization tab" />
+          <Tab label="Assignment Analysis" aria-label="Assignment Analysis tab" />
         </Tabs>
 
         <TabPanel value={tabValue} index={0}>
@@ -124,22 +251,53 @@ const PerformanceAnalytics: React.FC = () => {
 
         <TabPanel value={tabValue} index={2}>
           {assignmentStatusData.length > 0 ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Box sx={{ width: 280, height: 280 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              gap: { xs: 3, md: 6 }, 
+              flexWrap: 'wrap',
+              flexDirection: { xs: 'column', sm: 'row' },
+            }}>
+              <Box sx={{ 
+                width: { xs: '100%', sm: 280 }, 
+                maxWidth: 280,
+                height: { xs: 240, md: 280 } 
+              }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={assignmentStatusData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" paddingAngle={4}>
+                    <Pie 
+                      data={assignmentStatusData} 
+                      cx="50%" 
+                      cy="50%" 
+                      innerRadius={isMobile ? 40 : 60} 
+                      outerRadius={isMobile ? 80 : 100} 
+                      dataKey="value" 
+                      paddingAngle={4}
+                    >
                       {assignmentStatusData.map((_: any, idx: number) => (<Cell key={`cell-${idx}`} fill={CHART_COLORS[idx % CHART_COLORS.length]} />))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: 12 }} />
                   </PieChart>
                 </ResponsiveContainer>
               </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1, md: 1.5 } }}>
                 {assignmentStatusData.map((item: any, idx: number) => (
-                  <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ width: 16, height: 16, borderRadius: 2, bgcolor: CHART_COLORS[idx % CHART_COLORS.length] }} />
-                    <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>{item.name}: {item.value}</Typography>
+                  <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 2 } }}>
+                    <Box sx={{ 
+                      width: { xs: 14, md: 16 }, 
+                      height: { xs: 14, md: 16 }, 
+                      borderRadius: 2, 
+                      bgcolor: CHART_COLORS[idx % CHART_COLORS.length],
+                      flexShrink: 0,
+                    }} />
+                    <Typography sx={{ 
+                      fontSize: { xs: '0.8rem', md: '0.9rem' }, 
+                      fontWeight: 600, 
+                      color: '#334155' 
+                    }}>
+                      {item.name}: {item.value}
+                    </Typography>
                   </Box>
                 ))}
               </Box>
