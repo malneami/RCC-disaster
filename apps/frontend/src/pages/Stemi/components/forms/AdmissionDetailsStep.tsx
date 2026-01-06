@@ -82,7 +82,7 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
         {kpiViolation && (
           <Typography
             variant="body2"
-            color="error"
+            color="warning.main"
             display="block"
             sx={{ mt: 1, fontWeight: 'bold' }}
           >
@@ -93,7 +93,7 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
           <Typography
             key={`${warning}-${index}`}
             variant="body2"
-            color="warning.main"
+            color="error"
             display="block"
             sx={{ mt: 1, fontWeight: 600 }}
           >
@@ -105,7 +105,7 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
   };
 
   const warningBorderStyles = (warnings?: string[], kpiViolation?: KpiViolation) => {
-    if (kpiViolation) {
+    if (warnings && warnings.length > 0) {
       return {
         '& .MuiOutlinedInput-root fieldset': {
           borderColor: 'error.main',
@@ -120,8 +120,8 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
       };
     }
 
-    return warnings && warnings.length > 0
-      ? {
+    if (kpiViolation) {
+      return {
         '& .MuiOutlinedInput-root fieldset': {
           borderColor: 'warning.main',
           borderWidth: 2,
@@ -132,8 +132,10 @@ const AdmissionDetailsStep: React.FC<AdmissionDetailsStepProps> = ({
         '& .MuiOutlinedInput-root.Mui-focused fieldset': {
           borderColor: 'warning.dark',
         },
-      }
-      : undefined;
+      };
+    }
+
+    return undefined;
   };
 
   const admissionWarnings = timelineWarnings['admissionDetails.admissionTime'];

@@ -7,7 +7,7 @@ import {
   Button,
   Stepper,
   Step,
-  StepLabel,
+  StepButton,
   Box,
   Alert,
   CircularProgress,
@@ -136,6 +136,8 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
   const [timelineWarnings, setTimelineWarnings] = useState<Record<string, string[]>>({});
   const [kpiViolations, setKpiViolations] = useState<Record<string, KpiViolation>>({});
   const [originHospital, setOriginHospital] = useState<Hospital | null>(null);
+
+  const dialogContentRef = React.useRef<HTMLElement>(null);
 
   // Form data state (same structure as creation form)
   const [patientInfo, setPatientInfo] = useState<PatientInfo>({
@@ -557,12 +559,12 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
       setLoading(false);
 
       // Convert STEMI case data to form structure (exactly like creation form)
-      const dateOfBirth = stemiCase.patient?.dateOfBirth 
-        ? (typeof stemiCase.patient.dateOfBirth === 'string' 
-            ? stemiCase.patient.dateOfBirth 
-            : new Date(stemiCase.patient.dateOfBirth).toISOString().split('T')[0])
+      const dateOfBirth = stemiCase.patient?.dateOfBirth
+        ? (typeof stemiCase.patient.dateOfBirth === 'string'
+          ? stemiCase.patient.dateOfBirth
+          : new Date(stemiCase.patient.dateOfBirth).toISOString().split('T')[0])
         : undefined;
-      
+
       // Calculate age from dateOfBirth if age is not present
       let age = stemiCase.patient?.age;
       if (!age && dateOfBirth) {
@@ -744,6 +746,34 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         setActiveStep(targetStep);
         setError('Please correct the highlighted information before submitting.');
         setLoading(false);
+        // Scroll to top to show error
+        if (dialogContentRef.current) {
+          dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        return;
+      }
+
+      // Check for timeline warnings (logic breakages)
+      const hasTimelineWarnings = Object.keys(timelineWarnings).length > 0;
+      if (hasTimelineWarnings) {
+        // Find which step has the warning to navigate to it
+        const firstWarningKey = Object.keys(timelineWarnings)[0];
+        let targetStep = 6; // Default to review step
+
+        if (firstWarningKey.startsWith('admissionDetails.')) targetStep = 1;
+        else if (firstWarningKey.startsWith('criticalTimestamps.')) targetStep = 2;
+        else if (firstWarningKey.startsWith('interventionsAndTreatments.')) targetStep = 3;
+        else if (firstWarningKey.startsWith('clinicalAssessment.')) targetStep = 4;
+
+        setActiveStep(targetStep);
+
+        const firstWarningMsg = timelineWarnings[firstWarningKey]?.[0];
+        setError(firstWarningMsg || 'Please review the timeline warnings before submitting.');
+        setLoading(false);
+        // Scroll to top to show error
+        if (dialogContentRef.current) {
+          dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         return;
       }
 
@@ -1015,7 +1045,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           </Box>
         </DialogTitle>
 
-        <DialogContent>
+        <DialogContent ref={dialogContentRef}>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
@@ -1028,10 +1058,17 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
           )}
 
           <Box sx={{ mb: 3 }}>
-            <Stepper activeStep={activeStep} alternativeLabel>
-              {steps.map((label) => (
+            <Stepper activeStep={activeStep} alternativeLabel nonLinear>
+              {steps.map((label, index) => (
                 <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
+                  <StepButton
+                    onClick={() => {
+                      setActiveStep(index);
+                      setError(null);
+                    }}
+                  >
+                    {label}
+                  </StepButton>
                 </Step>
               ))}
             </Stepper>

@@ -46,8 +46,8 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
   const handleChange = (field: keyof ClinicalAssessment) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
   ) => {
-    const value = event.target.type === 'number' ? 
-      (event.target.value === '' ? undefined : Number(event.target.value)) : 
+    const value = event.target.type === 'number' ?
+      (event.target.value === '' ? undefined : Number(event.target.value)) :
       event.target.value;
     onChange({ ...data, [field]: value });
   };
@@ -86,7 +86,7 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
           <Typography
             key={`${warning}-${index}`}
             variant="body2"
-            color="warning.main"
+            color="error"
             display="block"
             sx={{ mt: 1, fontWeight: 600 }}
           >
@@ -100,17 +100,17 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
   const warningBorderStyles = (warnings?: string[]) =>
     warnings && warnings.length > 0
       ? {
-          '& .MuiOutlinedInput-root fieldset': {
-            borderColor: 'warning.main',
-            borderWidth: 2,
-          },
-          '& .MuiOutlinedInput-root:hover fieldset': {
-            borderColor: 'warning.main',
-          },
-          '& .MuiOutlinedInput-root.Mui-focused fieldset': {
-            borderColor: 'warning.dark',
-          },
-        }
+        '& .MuiOutlinedInput-root fieldset': {
+          borderColor: 'error.main',
+          borderWidth: 2,
+        },
+        '& .MuiOutlinedInput-root:hover fieldset': {
+          borderColor: 'error.main',
+        },
+        '& .MuiOutlinedInput-root.Mui-focused fieldset': {
+          borderColor: 'error.dark',
+        },
+      }
       : undefined;
 
   const symptomOnsetWarnings = timelineWarnings['clinicalAssessment.symptomOnset'];
@@ -252,9 +252,9 @@ const ClinicalAssessmentStep: React.FC<ClinicalAssessmentStepProps> = ({
             label="Troponin Value"
             type="number"
             value={additionalData.troponinValue || ''}
-            onChange={(e) => onAdditionalDataChange({ 
-              ...additionalData, 
-              troponinValue: e.target.value === '' ? undefined : Number(e.target.value) 
+            onChange={(e) => onAdditionalDataChange({
+              ...additionalData,
+              troponinValue: e.target.value === '' ? undefined : Number(e.target.value)
             })}
             inputProps={{ min: 0, step: 0.01 }}
             helperText="Troponin level (ng/mL)"

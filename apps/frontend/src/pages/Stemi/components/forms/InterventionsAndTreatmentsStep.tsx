@@ -91,7 +91,7 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
         {kpiViolation && (
           <Typography
             variant="body2"
-            color="error"
+            color="warning.main"
             display="block"
             sx={{ mt: 1, fontWeight: 'bold' }}
           >
@@ -102,7 +102,7 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
           <Typography
             key={`${warning}-${index}`}
             variant="body2"
-            color="warning.main"
+            color="error"
             display="block"
             sx={{ mt: 1, fontWeight: 600 }}
           >
@@ -114,7 +114,7 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
   };
 
   const warningBorderStyles = (warnings?: string[], kpiViolation?: KpiViolation) => {
-    if (kpiViolation) {
+    if (warnings && warnings.length > 0) {
       return {
         '& .MuiOutlinedInput-root fieldset': {
           borderColor: 'error.main',
@@ -129,8 +129,8 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
       };
     }
 
-    return warnings && warnings.length > 0
-      ? {
+    if (kpiViolation) {
+      return {
         '& .MuiOutlinedInput-root fieldset': {
           borderColor: 'warning.main',
           borderWidth: 2,
@@ -141,8 +141,10 @@ const InterventionsAndTreatmentsStep: React.FC<InterventionsAndTreatmentsStepPro
         '& .MuiOutlinedInput-root.Mui-focused fieldset': {
           borderColor: 'warning.dark',
         },
-      }
-      : undefined;
+      };
+    }
+
+    return undefined;
   };
 
   const doorOutWarnings = timelineWarnings['interventionsAndTreatments.doorOutTime'];

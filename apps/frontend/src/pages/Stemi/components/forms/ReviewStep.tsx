@@ -125,14 +125,14 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
         {warnings.map((warning, index) => (
           <Alert
             key={`${warning}-${index}`}
-            severity="warning"
+            severity="error"
             variant="outlined"
             sx={{
               borderRadius: 2,
               fontSize: '0.95rem',
               bgcolor: 'transparent',
-              borderColor: 'warning.main',
-              color: 'warning.dark',
+              borderColor: 'error.main',
+              color: 'error.dark',
             }}
           >
             <Typography variant="body1" sx={{ fontWeight: 600, color: 'inherit' }}>
@@ -152,14 +152,14 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
         {violations.map((violation, index) => (
           <Alert
             key={`${violation.message}-${index}`}
-            severity="error"
+            severity="warning"
             variant="outlined"
             sx={{
               borderRadius: 2,
               fontSize: '0.95rem',
               bgcolor: 'transparent',
-              borderColor: 'error.main',
-              color: 'error.dark',
+              borderColor: 'warning.main',
+              color: 'warning.dark',
             }}
           >
             <Typography variant="body1" sx={{ fontWeight: 700, color: 'inherit' }}>
@@ -227,26 +227,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
       {hasWarnings && (
         <Alert
-          severity="warning"
-          sx={{
-            mb: 3,
-            borderRadius: 2,
-            fontSize: '1rem',
-            fontWeight: 600,
-            color: 'warning.dark',
-            bgcolor: 'transparent',
-            border: '1px solid',
-            borderColor: 'warning.main',
-          }}
-        >
-          <Typography variant="body1" sx={{ fontWeight: 700 }}>
-            We spotted some timeline issues. Please double-check the highlighted timestamps before submitting.
-          </Typography>
-        </Alert>
-      )}
-
-      {hasKpiViolations && (
-        <Alert
           severity="error"
           sx={{
             mb: 3,
@@ -257,6 +237,26 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             bgcolor: 'transparent',
             border: '1px solid',
             borderColor: 'error.main',
+          }}
+        >
+          <Typography variant="body1" sx={{ fontWeight: 700 }}>
+            We spotted some timeline issues. Please double-check the highlighted timestamps before submitting.
+          </Typography>
+        </Alert>
+      )}
+
+      {hasKpiViolations && (
+        <Alert
+          severity="warning"
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            fontSize: '1rem',
+            fontWeight: 600,
+            color: 'warning.dark',
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: 'warning.main',
           }}
         >
           <Typography variant="body1" sx={{ fontWeight: 700 }}>
@@ -310,16 +310,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Admission Details Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(admissionKpiViolations.length > 0 ? 'error' : admissionHasIssue ? 'warning' : null)}>
+          <Card sx={cardStyles(admissionHasIssue ? 'error' : admissionKpiViolations.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Admission Details
                 </Typography>
-                {(admissionKpiViolations.length > 0) ? (
-                  <Chip label="KPI Violation" color="error" size="small" />
-                ) : admissionHasIssue ? (
-                  <Chip label="Timeline Warning" color="warning" size="small" />
+                {(admissionHasIssue) ? (
+                  <Chip label="Timeline Issue" color="error" size="small" />
+                ) : (admissionKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="warning" size="small" />
                 ) : null}
               </Box>
               <Box>
@@ -340,16 +340,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Clinical Assessment Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(symptomKpiViolations.length > 0 ? 'error' : symptomWarnings.length > 0 ? 'warning' : null)}>
+          <Card sx={cardStyles(symptomWarnings.length > 0 ? 'error' : symptomKpiViolations.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Clinical Assessment
                 </Typography>
-                {(symptomKpiViolations.length > 0) ? (
-                  <Chip label="KPI Violation" color="error" size="small" />
-                ) : (symptomWarnings.length > 0) ? (
-                  <Chip label="Timeline Warning" color="warning" size="small" />
+                {(symptomWarnings.length > 0) ? (
+                  <Chip label="Timeline Issue" color="error" size="small" />
+                ) : (symptomKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="warning" size="small" />
                 ) : null}
               </Box>
               <Box>
@@ -382,16 +382,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Critical Timestamps Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(criticalKpiViolations.length > 0 ? 'error' : criticalWarnings.length > 0 ? 'warning' : null)}>
+          <Card sx={cardStyles(criticalWarnings.length > 0 ? 'error' : criticalKpiViolations.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Critical Timestamps
                 </Typography>
-                {(criticalKpiViolations.length > 0) ? (
-                  <Chip label="KPI Violation" color="error" size="small" />
-                ) : (criticalWarnings.length > 0) ? (
-                  <Chip label="Timeline Warning" color="warning" size="small" />
+                {(criticalWarnings.length > 0) ? (
+                  <Chip label="Timeline Issue" color="error" size="small" />
+                ) : (criticalKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="warning" size="small" />
                 ) : null}
               </Box>
               <Box>
@@ -414,16 +414,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Treatment Card */}
         <Grid item xs={12} md={6}>
-          <Card sx={cardStyles(interventionKpiViolations.length > 0 ? 'error' : interventionWarnings.length > 0 ? 'warning' : null)}>
+          <Card sx={cardStyles(interventionWarnings.length > 0 ? 'error' : interventionKpiViolations.length > 0 ? 'warning' : null)}>
             <CardContent sx={cardContentStyles}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Treatment
                 </Typography>
-                {(interventionKpiViolations.length > 0) ? (
-                  <Chip label="KPI Violation" color="error" size="small" />
-                ) : (interventionWarnings.length > 0) ? (
-                  <Chip label="Timeline Warning" color="warning" size="small" />
+                {(interventionWarnings.length > 0) ? (
+                  <Chip label="Timeline Issue" color="error" size="small" />
+                ) : (interventionKpiViolations.length > 0) ? (
+                  <Chip label="KPI Violation" color="warning" size="small" />
                 ) : null}
               </Box>
               <Box>

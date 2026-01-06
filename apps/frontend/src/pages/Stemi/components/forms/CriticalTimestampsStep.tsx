@@ -60,7 +60,7 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
         {kpiViolation && (
           <Typography
             variant="body2"
-            color="error"
+            color="warning.main"
             display="block"
             sx={{ mt: 1, fontWeight: 'bold' }}
           >
@@ -71,7 +71,7 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
           <Typography
             key={`${warning}-${index}`}
             variant="body2"
-            color="warning.main"
+            color="error"
             display="block"
             sx={{ mt: 1, fontWeight: 600 }}
           >
@@ -83,7 +83,7 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
   };
 
   const warningBorderStyles = (warnings?: string[], kpiViolation?: KpiViolation) => {
-    if (kpiViolation) {
+    if (warnings && warnings.length > 0) {
       return {
         '& .MuiOutlinedInput-root fieldset': {
           borderColor: 'error.main',
@@ -98,8 +98,8 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
       };
     }
 
-    return warnings && warnings.length > 0
-      ? {
+    if (kpiViolation) {
+      return {
         '& .MuiOutlinedInput-root fieldset': {
           borderColor: 'warning.main',
           borderWidth: 2,
@@ -110,8 +110,10 @@ const CriticalTimestampsStep: React.FC<CriticalTimestampsStepProps> = ({
         '& .MuiOutlinedInput-root.Mui-focused fieldset': {
           borderColor: 'warning.dark',
         },
-      }
-      : undefined;
+      };
+    }
+
+    return undefined;
   };
 
   const triageWarnings = timelineWarnings['criticalTimestamps.triageTime'];
