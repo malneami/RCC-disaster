@@ -44,7 +44,7 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ value, label, icon }) => {
   // Determine gradient based on label
   let gradient = 'linear-gradient(to bottom right, #3B82F6, #6366F1)'; // Default blue
-  
+
   if (label === 'Total Ambulances') {
     gradient = 'linear-gradient(to bottom right, #3B82F6, #6366F1)'; // Blue
   } else if (label === 'Available') {
@@ -54,7 +54,7 @@ const StatCard: React.FC<StatCardProps> = ({ value, label, icon }) => {
   } else if (label === 'Active Assignments') {
     gradient = 'linear-gradient(to bottom right, #8B5CF6, #D946EF)'; // Purple
   }
-  
+
   return (
     <Box
       sx={{
@@ -63,21 +63,21 @@ const StatCard: React.FC<StatCardProps> = ({ value, label, icon }) => {
         p: 2,
         boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
         transition: 'all 0.3s ease',
-        '&:hover': { 
-          transform: 'translateY(-4px)', 
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)' 
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.25)'
         },
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ 
-          width: 48, 
-          height: 48, 
-          borderRadius: '50%', 
-          bgcolor: 'rgba(255, 255, 255, 0.2)', 
+        <Box sx={{
+          width: 48,
+          height: 48,
+          borderRadius: '50%',
+          bgcolor: 'rgba(255, 255, 255, 0.2)',
           backdropFilter: 'blur(4px)',
-          display: 'flex', 
-          alignItems: 'center', 
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
           color: '#FFFFFF',
           flexShrink: 0
@@ -112,14 +112,14 @@ const EMSLiveStatus: React.FC<EMSLiveStatusProps> = ({ data, isLoading }) => {
     <Box>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-        <Box sx={{ 
-          width: 40, 
-          height: 40, 
-          borderRadius: '50%', 
-          bgcolor: `${COLORS.critical}15`, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <Box sx={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          bgcolor: `${COLORS.critical}15`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           color: COLORS.critical
         }}>
           <FontAwesomeIcon icon={faHeartbeat} />
@@ -144,12 +144,12 @@ const EMSLiveStatus: React.FC<EMSLiveStatusProps> = ({ data, isLoading }) => {
       </Grid>
 
       {/* Availability & Response Time */}
-      <Box sx={{ 
-        mt: 3, 
-        bgcolor: 'rgba(255,255,255,0.8)', 
+      <Box sx={{
+        mt: 3,
+        bgcolor: 'rgba(255,255,255,0.8)',
         backdropFilter: 'blur(12px)',
-        borderRadius: 4, 
-        p: 3, 
+        borderRadius: 4,
+        p: 3,
         border: '1px solid #E2E8F0',
         boxShadow: '0 4px 24px rgba(0,0,0,0.06)'
       }}>
@@ -159,14 +159,14 @@ const EMSLiveStatus: React.FC<EMSLiveStatusProps> = ({ data, isLoading }) => {
               <Typography sx={{ fontWeight: 600, color: COLORS.slate[700], fontSize: '0.875rem', fontFamily: 'Inter, sans-serif' }}>Fleet Availability</Typography>
               <Chip label={`${pct}%`} size="small" sx={{ fontWeight: 700, bgcolor: '#10B981', color: '#fff', height: 26, fontFamily: 'Inter, sans-serif', boxShadow: '0 2px 8px rgba(16,185,129,0.3)' }} />
             </Box>
-            <LinearProgress variant="determinate" value={pct} sx={{ 
-              height: 12, 
-              borderRadius: '9999px', 
-              bgcolor: COLORS.slate[200], 
-              '& .MuiLinearProgress-bar': { 
-                borderRadius: '9999px', 
+            <LinearProgress variant="determinate" value={pct} sx={{
+              height: 12,
+              borderRadius: '9999px',
+              bgcolor: COLORS.slate[200],
+              '& .MuiLinearProgress-bar': {
+                borderRadius: '9999px',
                 background: 'linear-gradient(90deg, #10B981 0%, #14B8A6 100%)'
-              } 
+              }
             }} />
           </Grid>
           <Grid item xs={12} md={6}>
