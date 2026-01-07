@@ -300,13 +300,34 @@ export class NotificationsService {
         },
       };
 
-      // Apply filters
-      if (type) where.type = type;
-      if (priority) where.priority = priority;
-      if (category) where.category = category;
-      if (caseType) where.caseType = caseType;
-      if (patientId) where.patientId = patientId;
-      if (caseId) where.caseId = caseId;
+      // Apply filters (skip empty strings and undefined values)
+      // Filter out empty strings that might come from "All" selections
+      const typeValue = type as string | NotificationType | undefined;
+      if (typeValue && String(typeValue).trim() !== '') {
+        where.type = typeValue as NotificationType;
+      }
+      
+      const priorityValue = priority as string | NotificationPriority | undefined;
+      if (priorityValue && String(priorityValue).trim() !== '') {
+        where.priority = priorityValue as NotificationPriority;
+      }
+      
+      const categoryValue = category as string | NotificationCategory | undefined;
+      if (categoryValue && String(categoryValue).trim() !== '') {
+        where.category = categoryValue as NotificationCategory;
+      }
+      
+      const caseTypeValue = caseType as string | CaseType | undefined;
+      if (caseTypeValue && String(caseTypeValue).trim() !== '') {
+        where.caseType = caseTypeValue as CaseType;
+      }
+      
+      if (patientId && patientId.trim() !== '') {
+        where.patientId = patientId;
+      }
+      if (caseId && caseId.trim() !== '') {
+        where.caseId = caseId;
+      }
 
       if (isRead !== undefined) {
         where.recipients = {
@@ -433,9 +454,75 @@ export class NotificationsService {
   }
 
   /**
-   * Get notification summary statistics
+   * Get notification summary statistics with optional filters
    */
-  async getNotificationSummary(userId: string) {
+  async getNotificationSummary(userId: string, filterDto?: NotificationFilterDto) {
+    // Build base where clause for filtering
+    const baseWhere: any = {
+      recipients: {
+        some: {
+          userId,
+          deletedAt: null, // Only count non-deleted notifications
+        },
+      },
+    };
+
+    // Apply filters if provided
+    if (filterDto) {
+      const typeValue = filterDto.type as string | NotificationType | undefined;
+      if (typeValue && String(typeValue).trim() !== '') {
+        baseWhere.type = typeValue as NotificationType;
+      }
+      
+      const priorityValue = filterDto.priority as string | NotificationPriority | undefined;
+      if (priorityValue && String(priorityValue).trim() !== '') {
+        baseWhere.priority = priorityValue as NotificationPriority;
+      }
+      
+      const categoryValue = filterDto.category as string | NotificationCategory | undefined;
+      if (categoryValue && String(categoryValue).trim() !== '') {
+        baseWhere.category = categoryValue as NotificationCategory;
+      }
+      
+      const caseTypeValue = filterDto.caseType as string | CaseType | undefined;
+      if (caseTypeValue && String(caseTypeValue).trim() !== '') {
+        baseWhere.caseType = caseTypeValue as CaseType;
+      }
+      
+      if (filterDto.patientId && filterDto.patientId.trim() !== '') {
+        baseWhere.patientId = filterDto.patientId;
+      }
+      if (filterDto.caseId && filterDto.caseId.trim() !== '') {
+        baseWhere.caseId = filterDto.caseId;
+      }
+
+      // Date range filtering
+      if (filterDto.dateFrom || filterDto.dateTo) {
+        baseWhere.createdAt = {};
+        if (filterDto.dateFrom) {
+          const fromDate = new Date(filterDto.dateFrom);
+          if (!isNaN(fromDate.getTime())) {
+            baseWhere.createdAt.gte = fromDate;
+          }
+        }
+        if (filterDto.dateTo) {
+          const toDate = new Date(filterDto.dateTo);
+          if (!isNaN(toDate.getTime())) {
+            baseWhere.createdAt.lte = toDate;
+          }
+        }
+      }
+
+      // Search functionality
+      if (filterDto.search && filterDto.search.trim() !== '') {
+        baseWhere.OR = [
+          { title: { contains: filterDto.search, mode: 'insensitive' } },
+          { message: { contains: filterDto.search, mode: 'insensitive' } },
+          { patientName: { contains: filterDto.search, mode: 'insensitive' } },
+        ];
+      }
+    }
+
     const [
       totalNotifications,
       unreadNotifications,
@@ -445,45 +532,35 @@ export class NotificationsService {
       smsNotifications,
     ] = await Promise.all([
       this.prisma.notification.count({
-        where: {
-          recipients: {
-            some: {
-              userId,
-              deletedAt: null, // Only count non-deleted notifications
-            },
-          },
-        },
+        where: baseWhere,
       }),
       this.prisma.notification.count({
         where: {
+          ...baseWhere,
           recipients: {
             some: {
               userId,
               isRead: false,
-              deletedAt: null, // Only count non-deleted notifications
+              deletedAt: null,
             },
           },
         },
       }),
       this.prisma.notification.count({
         where: {
+          ...baseWhere,
           priority: NotificationPriority.HIGH,
-          recipients: {
-            some: {
-              userId,
-              deletedAt: null, // Only count non-deleted notifications
-            },
-          },
         },
       }),
       this.prisma.notification.count({
         where: {
+          ...baseWhere,
           priority: NotificationPriority.HIGH,
           recipients: {
             some: {
               userId,
               isRead: false,
-              deletedAt: null, // Only count non-deleted notifications
+              deletedAt: null,
             },
           },
         },
@@ -492,12 +569,20 @@ export class NotificationsService {
         where: {
           userId,
           emailSent: true,
+          deletedAt: null,
+          ...(filterDto ? {
+            notification: baseWhere,
+          } : {}),
         },
       }),
       this.prisma.notificationRecipient.count({
         where: {
           userId,
           smsSent: true,
+          deletedAt: null,
+          ...(filterDto ? {
+            notification: baseWhere,
+          } : {}),
         },
       }),
     ]);
@@ -532,6 +617,16 @@ export class NotificationsService {
     });
 
     this.logger.log(`Marked ${result.count} notifications as read for user ${userId}`);
+    
+    // Emit socket event to notify client
+    if (result.count > 0) {
+      try {
+        this.notificationsGateway.emitNotificationRead(notificationIds, userId);
+      } catch (error) {
+        this.logger.error(`Failed to emit notification-read WebSocket event: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    
     return { count: result.count };
   }
 
@@ -551,6 +646,16 @@ export class NotificationsService {
     });
 
     this.logger.log(`Soft deleted notification ${notificationId} for user ${userId}`);
+    
+    // Emit socket event to notify client
+    if (result.count > 0) {
+      try {
+        this.notificationsGateway.emitNotificationDeleted(notificationId, userId);
+      } catch (error) {
+        this.logger.error(`Failed to emit notification-deleted WebSocket event: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    
     return { count: result.count };
   }
 

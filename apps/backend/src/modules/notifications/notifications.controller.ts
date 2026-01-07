@@ -126,12 +126,15 @@ export class NotificationsController {
   }
 
   /**
-   * Get notification summary statistics
+   * Get notification summary statistics with optional filters
    */
   @Get('summary')
-  async getNotificationSummary(@Request() req: any) {
+  async getNotificationSummary(
+    @Query() filterDto: NotificationFilterDto,
+    @Request() req: any,
+  ) {
     const userId = req.user.id;
-    return this.notificationsService.getNotificationSummary(userId);
+    return this.notificationsService.getNotificationSummary(userId, filterDto);
   }
 
   /**

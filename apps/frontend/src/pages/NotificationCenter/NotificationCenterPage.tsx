@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Grid,
@@ -13,6 +13,11 @@ import {
   Select,
   MenuItem,
   Alert,
+  IconButton,
+  Tooltip,
+  Badge,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -21,7 +26,6 @@ import {
   faFilter,
 } from '@fortawesome/free-solid-svg-icons';
 
-import GenericPageHeader from '../../components/Common/GenericPageHeader';
 import NotificationSummaryCards from './components/NotificationSummaryCards';
 import NotificationList from './components/NotificationList';
 import NotificationFilters from './components/NotificationFilters';
@@ -31,9 +35,11 @@ import ErrorBoundary from '../../components/Common/ErrorBoundary';
 import { notificationService, NotificationFilter, NotificationCategory } from '../../services/notificationService';
 import { useDebouncedCallback } from '../../hooks/useDebounce';
 import { useNotificationSocket } from '../../contexts/NotificationSocketContext';
+import GenericPageHeader from '@/components/Common/GenericPageHeader';
 
 
 const NotificationCenterPage: React.FC = () => {
+  const theme = useTheme();
   // Get socket connection from context
   const { socket, isConnected } = useNotificationSocket();
 
@@ -43,8 +49,23 @@ const NotificationCenterPage: React.FC = () => {
   const [categories, setCategories] = useState<NotificationCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Check if any filters are active
+  const hasActiveFilters = Boolean(
+    filters.priority || 
+    filters.type || 
+    filters.caseType || 
+    filters.isRead === true
+  );
+
+  const handleFilterClick = () => {
+    if (filterButtonRef.current) {
+      setFilterAnchorEl(filterButtonRef.current);
+    }
+  };
 
   // Load initial data
   useEffect(() => {
@@ -215,46 +236,64 @@ const NotificationCenterPage: React.FC = () => {
       }}>
       {/* Header */}
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-        <GenericPageHeader
-          title="Notification Center"
-          subtitle="View and manage all notifications across the RCC platform"
-          actions={[
-            {
-              tooltip: 'Refresh',
-              onClick: handleRefresh,
-              icon: <FontAwesomeIcon icon={faRefresh} />,
-            },
-            {
-              tooltip: showFilters ? 'Hide Filters' : 'Show Filters',
-              onClick: () => setShowFilters(!showFilters),
-              icon: <FontAwesomeIcon icon={faFilter} />,
-            },
-          ]}
-        />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h4" component="h1" fontWeight={600}>
+              Notification Center
+            </Typography>
+            <Typography variant="body2" color="text.secondary" mt={0.5}>
+              View and manage all notifications across the RCC platform
+            </Typography>
+          </Box>
+          
+          <Box display="flex" alignItems="center" gap={1}>
+            <Tooltip title="Refresh">
+              <IconButton onClick={handleRefresh} color="primary">
+                <FontAwesomeIcon icon={faRefresh} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={hasActiveFilters ? 'Filter Notifications (Active)' : 'Filter Notifications'}>
+              <IconButton
+                ref={filterButtonRef}
+                onClick={handleFilterClick}
+                color={hasActiveFilters ? 'primary' : 'default'}
+                sx={{
+                  ...(hasActiveFilters && {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                    '&:hover': {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                    },
+                  }),
+                }}
+              >
+                {hasActiveFilters ? (
+                  <Badge badgeContent="•" color="primary">
+                    <FontAwesomeIcon icon={faFilter} />
+                  </Badge>
+                ) : (
+                  <FontAwesomeIcon icon={faFilter} />
+                )}
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
       </Box>
 
       {/* Summary Cards */}
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-        <NotificationSummaryCards refreshTrigger={refreshTrigger} />
+        <NotificationSummaryCards refreshTrigger={refreshTrigger} filters={filters} />
       </Box>
 
-      {/* Filters */}
-      {showFilters && (
-        <Card sx={{ 
-          mb: { xs: 2, sm: 3 }, 
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        }}>
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-            <NotificationFilters
-              currentFilters={filters}
-              onApplyFilters={handleFilterChange}
-              onResetFilters={() => setFilters({})}
-              onRefresh={handleRefresh}
-            />
-          </CardContent>
-        </Card>
-      )}
+      {/* Filters Popup */}
+      <NotificationFilters
+        currentFilters={filters}
+        onApplyFilters={handleFilterChange}
+        onResetFilters={() => setFilters({})}
+        onRefresh={handleRefresh}
+        anchorEl={filterAnchorEl}
+        open={Boolean(filterAnchorEl)}
+        onClose={() => setFilterAnchorEl(null)}
+      />
 
       {/* Main Content - Responsive Layout */}
       <Grid container spacing={{ xs: 2, sm: 3 }}>

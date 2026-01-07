@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -16,7 +16,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import SkeletonLoader from '../../../components/Common/SkeletonLoader';
-import { notificationService, NotificationSummary } from '../../../services/notificationService';
+import { notificationService, NotificationSummary, NotificationFilter } from '../../../services/notificationService';
 import { useNotificationSocket } from '../../../contexts/NotificationSocketContext';
 
 interface SummaryCardProps {
@@ -114,9 +114,10 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
 
 interface NotificationSummaryCardsProps {
   refreshTrigger?: number;
+  filters?: NotificationFilter;
 }
 
-const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ refreshTrigger }) => {
+const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ refreshTrigger, filters }) => {
   // Get socket connection from context
   const { socket, isConnected } = useNotificationSocket();
 
@@ -124,11 +125,11 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await notificationService.getNotificationSummary();
+      const data = await notificationService.getNotificationSummary(filters);
       setSummary(data);
     } catch (err) {
       console.error('Error loading notification summary:', err);
@@ -136,16 +137,16 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
-  // Load summary on mount and set up polling
+  // Load summary on mount, when filters change, and set up polling
   useEffect(() => {
     loadSummary();
     const interval = setInterval(loadSummary, 30000);
     return () => {
       clearInterval(interval);
     };
-  }, [refreshTrigger]);
+  }, [refreshTrigger, loadSummary]);
 
   // Listen to socket events using context hook
   useEffect(() => {
@@ -174,7 +175,7 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
       socket.off('notification-read', handleNotificationRead);
       socket.off('notification-deleted', handleNotificationDeleted);
     };
-  }, [socket, isConnected, refreshTrigger]);
+  }, [socket, isConnected, loadSummary]);
 
   if (loading) {
     return (

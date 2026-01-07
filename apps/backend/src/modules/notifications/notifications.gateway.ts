@@ -312,6 +312,48 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     this.logger.log(`Emitted case note deleted event for case ${caseId}`);
   }
 
+  /**
+   * Emit notification-read event to user
+   */
+  emitNotificationRead(notificationIds: string[], userId: string) {
+    if (!this.server) {
+      this.logger.warn('WebSocket server not initialized, skipping notification-read emission');
+      return;
+    }
+
+    const eventData = {
+      notificationIds,
+      userId,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Emit to user-specific room
+    this.server.to(`user-${userId}`).emit('notification-read', eventData);
+
+    this.logger.log(`Emitted notification-read event for user ${userId}, notifications: ${notificationIds.join(', ')}`);
+  }
+
+  /**
+   * Emit notification-deleted event to user
+   */
+  emitNotificationDeleted(notificationId: string, userId: string) {
+    if (!this.server) {
+      this.logger.warn('WebSocket server not initialized, skipping notification-deleted emission');
+      return;
+    }
+
+    const eventData = {
+      notificationId,
+      userId,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Emit to user-specific room
+    this.server.to(`user-${userId}`).emit('notification-deleted', eventData);
+
+    this.logger.log(`Emitted notification-deleted event for user ${userId}, notification: ${notificationId}`);
+  }
+
   // Broadcast to all connected clients (for system-wide notifications)
   broadcastSystemNotification(notification: any) {
     if (!this.server) {

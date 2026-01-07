@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -44,14 +44,14 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const loadUnreadCount = async () => {
+  const loadUnreadCount = useCallback(async () => {
     try {
       const summary = await notificationService.getNotificationSummary();
       setUnreadCount(summary.unreadNotifications);
     } catch (error) {
       console.error('Error loading unread count:', error);
     }
-  };
+  }, []);
 
   // Load unread count on mount and set up polling
   useEffect(() => {
@@ -62,7 +62,7 @@ const Sidebar: React.FC = () => {
         clearInterval(interval);
       };
     }
-  }, [user]);
+  }, [user, loadUnreadCount]);
 
   // Listen to socket events using context hook
   useEffect(() => {
@@ -91,7 +91,7 @@ const Sidebar: React.FC = () => {
       socket.off('notification-read', handleNotificationRead);
       socket.off('notification-deleted', handleNotificationDeleted);
     };
-  }, [socket, isConnected, user]);
+  }, [socket, isConnected, user, loadUnreadCount]);
 
   const navigationItems = [
     {

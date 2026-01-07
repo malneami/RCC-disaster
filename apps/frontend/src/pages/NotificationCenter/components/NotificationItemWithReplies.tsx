@@ -17,6 +17,7 @@ import {
   faComment,
   faChevronDown,
   faChevronUp,
+  faChartLine,
 } from '@fortawesome/free-solid-svg-icons';
 import { Notification } from '../../../services/notificationService';
 import RepliesSection from './RepliesSection';
@@ -34,8 +35,10 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
 }) => {
   const theme = useTheme();
   const [showReplies, setShowReplies] = useState(false);
+  
+  const isKpiBreach = notification.type === 'KPI_THRESHOLD_BREACH';
 
-  const getNotificationIcon = (priority: string) => {
+  const getNotificationIcon = (priority: string, type: string) => {
     const getIconColor = (priority: string) => {
       switch (priority) {
         case 'HIGH':
@@ -50,6 +53,8 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
     };
     
     const iconColor = getIconColor(priority);
+    const icon = type === 'KPI_THRESHOLD_BREACH' ? faChartLine : faComment;
+    
     return (
       <Box
         sx={{
@@ -64,7 +69,7 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
         }}
       >
         <FontAwesomeIcon 
-          icon={faComment} 
+          icon={icon} 
           style={{ 
             color: iconColor, 
             fontSize: '1.1rem' 
@@ -148,7 +153,7 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
             flexShrink: 0,
             mt: 0.5
           }}>
-            {getNotificationIcon(notification.priority)}
+            {getNotificationIcon(notification.priority, notification.type)}
           </Box>
 
           {/* Content */}
@@ -296,44 +301,48 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
             >
               <FontAwesomeIcon icon={faTrash} style={{ fontSize: '0.8rem' }} />
             </IconButton>
-            <IconButton
-              size="small"
-              onClick={toggleReplies}
-              title={showReplies ? "Hide replies" : "Show replies"}
-              sx={{
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                color: theme.palette.primary.main,
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.2)
-                }
-              }}
-            >
-              <FontAwesomeIcon 
-                icon={showReplies ? faChevronUp : faChevronDown} 
-                style={{ fontSize: '0.8rem' }} 
-              />
-            </IconButton>
+            {!isKpiBreach && (
+              <IconButton
+                size="small"
+                onClick={toggleReplies}
+                title={showReplies ? "Hide replies" : "Show replies"}
+                sx={{
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  color: theme.palette.primary.main,
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.2)
+                  }
+                }}
+              >
+                <FontAwesomeIcon 
+                  icon={showReplies ? faChevronUp : faChevronDown} 
+                  style={{ fontSize: '0.8rem' }} 
+                />
+              </IconButton>
+            )}
           </Box>
         </Box>
 
-        {/* Replies Section */}
-        <Collapse in={showReplies}>
-          <Box sx={{ 
-            px: { xs: 2, sm: 2.5, md: 3 },
-            pb: 2,
-            borderTop: '1px solid #e2e8f0',
-            backgroundColor: alpha(theme.palette.background.paper, 0.5)
-          }}>
-            <RepliesSection
-              caseNoteId={JSON.parse(notification.metadata || '{}').caseNoteId || notification.id}
-              caseType={notification.caseType as 'STEMI' | 'STROKE' | 'TRAUMA'}
-              caseId={notification.caseId}
-              patientId={notification.patientId}
-              patientName={notification.patientName}
-              ticketId={notification.ticketId}
-            />
-          </Box>
-        </Collapse>
+        {/* Replies Section (for non-KPI notifications) */}
+        {!isKpiBreach && (
+          <Collapse in={showReplies}>
+            <Box sx={{ 
+              px: { xs: 2, sm: 2.5, md: 3 },
+              pb: 2,
+              borderTop: '1px solid #e2e8f0',
+              backgroundColor: alpha(theme.palette.background.paper, 0.5)
+            }}>
+              <RepliesSection
+                caseNoteId={JSON.parse(notification.metadata || '{}').caseNoteId || notification.id}
+                caseType={notification.caseType as 'STEMI' | 'STROKE' | 'TRAUMA'}
+                caseId={notification.caseId}
+                patientId={notification.patientId}
+                patientName={notification.patientName}
+                ticketId={notification.ticketId}
+              />
+            </Box>
+          </Collapse>
+        )}
       </Box>
     </ListItem>
   );

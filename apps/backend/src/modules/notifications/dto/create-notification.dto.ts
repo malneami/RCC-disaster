@@ -103,20 +103,20 @@ export class CreateCaseNoteDto {
 
 export class NotificationFilterDto {
   @IsOptional()
-  @IsEnum(NotificationType)
-  type?: NotificationType;
+  @IsEnum(NotificationType, { message: 'type must be one of the following values: CASE_COMMENT, CASE_UPDATE, CASE_ASSIGNMENT, CASE_COMPLETION, CASE_ESCALATION, EMS_LATE_CASE, CRITICAL_CASE_INCOMING, INCOMPLETE_PATIENT_DATA, KPI_THRESHOLD_BREACH, CRITICAL_TIME_LIMIT_APPROACHING' })
+  type?: NotificationType | '';
 
   @IsOptional()
   @IsEnum(NotificationPriority)
-  priority?: NotificationPriority;
+  priority?: NotificationPriority | '';
 
   @IsOptional()
   @IsEnum(NotificationCategory)
-  category?: NotificationCategory;
+  category?: NotificationCategory | '';
 
   @IsOptional()
   @IsEnum(CaseType)
-  caseType?: CaseType;
+  caseType?: CaseType | '';
 
   @IsOptional()
   @IsString()

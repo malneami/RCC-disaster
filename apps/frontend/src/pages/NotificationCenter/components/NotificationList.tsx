@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   List,
@@ -39,7 +39,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     totalPages: 0,
   });
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async (silent: boolean = false) => {
     const requestFilters = {
       ...filters,
       page: pagination.page.toString(),
@@ -47,7 +47,9 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     };
     
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
       
       const data = await notificationService.getNotifications(requestFilters);
@@ -73,22 +75,34 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
         setError(apiError.message || 'Failed to load notifications. Please try again.');
       }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
       setRetrying(false);
     }
-  };
+  }, [filters, pagination.page, pagination.limit]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPagination(prev => {
+      if (prev.page === 1) {
+        return prev; // No change needed
+      }
+      return { ...prev, page: 1 };
+    });
+  }, [filters]);
 
   useEffect(() => {
     loadNotifications();
-  }, [filters]);
+  }, [loadNotifications]);
 
-  // Set up polling interval
+  // Set up polling interval (silent refresh)
   useEffect(() => {
-    const interval = setInterval(loadNotifications, 30000);
+    const interval = setInterval(() => loadNotifications(true), 30000);
     return () => {
       clearInterval(interval);
     };
-  }, [filters]);
+  }, [loadNotifications]);
 
   // Listen to socket events using context hook
   useEffect(() => {
@@ -97,15 +111,15 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     }
 
     const handleNotificationCreated = () => {
-      loadNotifications();
+      loadNotifications(true);
     };
 
     const handleNotificationRead = () => {
-      loadNotifications();
+      loadNotifications(true);
     };
 
     const handleNotificationDeleted = () => {
-      loadNotifications();
+      loadNotifications(true);
     };
 
     socket.on('notification-created', handleNotificationCreated);
@@ -117,7 +131,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
       socket.off('notification-read', handleNotificationRead);
       socket.off('notification-deleted', handleNotificationDeleted);
     };
-  }, [socket, isConnected, filters]);
+  }, [socket, isConnected, loadNotifications]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {

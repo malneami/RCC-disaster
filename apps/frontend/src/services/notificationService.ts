@@ -240,7 +240,8 @@ export const notificationService = {
     return retryRequest(async () => {
       const params = new URLSearchParams();
       Object.entries(filter).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
+        // Skip undefined, null, and empty strings (empty strings mean "all" for filters)
+        if (value !== undefined && value !== null && value !== '') {
           params.append(key, value.toString());
         }
       });
@@ -260,9 +261,19 @@ export const notificationService = {
     });
   },
 
-  // Get notification summary
-  async getNotificationSummary(): Promise<NotificationSummary> {
-    const response = await apiClient.get('/notifications/summary');
+  // Get notification summary with optional filters
+  async getNotificationSummary(filter?: NotificationFilter): Promise<NotificationSummary> {
+    const params = new URLSearchParams();
+    if (filter) {
+      Object.entries(filter).forEach(([key, value]) => {
+        // Skip undefined, null, and empty strings (empty strings mean "all" for filters)
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, value.toString());
+        }
+      });
+    }
+    const url = `/notifications/summary${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
 
