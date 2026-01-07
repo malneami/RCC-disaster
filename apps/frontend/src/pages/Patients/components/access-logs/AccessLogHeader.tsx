@@ -11,7 +11,6 @@ interface AccessLogHeaderProps {
     loadLogs: () => void;
     hasActiveFilters: boolean;
     activeFilterCount: number;
-    children?: React.ReactNode;
 }
 
 const AccessLogHeader: React.FC<AccessLogHeaderProps> = ({
@@ -22,7 +21,6 @@ const AccessLogHeader: React.FC<AccessLogHeaderProps> = ({
     loadLogs,
     hasActiveFilters,
     activeFilterCount,
-    children,
 }) => {
     return (
         <Box
@@ -110,7 +108,6 @@ const AccessLogHeader: React.FC<AccessLogHeaderProps> = ({
                             '&:hover': {
                                 background: 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)',
                                 boxShadow: '0 6px 16px rgba(66, 165, 245, 0.5)',
-                                transform: 'translateY(-2px)',
                             },
                         }}
                     >
@@ -118,10 +115,6 @@ const AccessLogHeader: React.FC<AccessLogHeaderProps> = ({
                     </Button>
                 </Box>
             </Box>
-
-
-
-            {children}
 
             <Typography
                 variant="body2"

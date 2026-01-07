@@ -208,4 +208,4 @@ const AccessLogFilters: React.FC<AccessLogFiltersProps> = ({
     );
 };
 
-export default AccessLogFilters;
+export default React.memo(AccessLogFilters);

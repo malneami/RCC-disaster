@@ -18,7 +18,7 @@ export class PatientsService {
     private patientsExportService: PatientsExportService,
     private patientsStatisticsService: PatientsStatisticsService,
     private duplicateDetectionService: DuplicateDetectionService,
-  ) {}
+  ) { }
 
   async findAll(page = 1, limit = 10, filters?: any, userId?: string, ipAddress?: string, userAgent?: string) {
     const skip = (page - 1) * limit;
@@ -91,7 +91,7 @@ export class PatientsService {
       const sanitizedSearch = this.sanitizeSearchQuery(filters.search);
       if (sanitizedSearch) {
         const words = sanitizedSearch.split(/\s+/).filter(word => word.length > 0);
-        
+
         if (words.length === 1) {
           andConditions.push({
             OR: [
@@ -138,7 +138,7 @@ export class PatientsService {
     // Date range filter
     if (filters.startDate || filters.endDate) {
       whereClause.createdAt = {};
-      
+
       if (filters.startDate) {
         const startDate = new Date(filters.startDate);
         if (!isNaN(startDate.getTime())) {
@@ -146,7 +146,7 @@ export class PatientsService {
           whereClause.createdAt.gte = startDate;
         }
       }
-      
+
       if (filters.endDate) {
         const endDate = new Date(filters.endDate);
         if (!isNaN(endDate.getTime())) {
@@ -199,7 +199,7 @@ export class PatientsService {
       })
     );
     // Log asynchronously without blocking the response
-    Promise.all(logPromises).catch(() => {});
+    Promise.all(logPromises).catch(() => { });
   }
 
   async findById(id: string) {
@@ -296,7 +296,7 @@ export class PatientsService {
 
   async search(query: string) {
     const sanitizedQuery = this.sanitizeSearchQuery(query);
-    
+
     if (!sanitizedQuery || sanitizedQuery.length < 2) {
       return [];
     }
@@ -305,7 +305,7 @@ export class PatientsService {
     const searchConditions: any[] = [];
 
     if (words.length === 1) {
-     
+
       searchConditions.push(
         { firstName: { contains: words[0], mode: 'insensitive' } },
         { lastName: { contains: words[0], mode: 'insensitive' } },
@@ -315,7 +315,7 @@ export class PatientsService {
         { nationalId: { contains: words[0], mode: 'insensitive' } },
       );
     } else {
-    
+
       const wordConditions = words.map(word => ({
         OR: [
           { firstName: { contains: word, mode: 'insensitive' } },
@@ -326,10 +326,10 @@ export class PatientsService {
           { phoneNumber: { contains: word, mode: 'insensitive' } },
         ],
       }));
-      
-     
+
+
       searchConditions.push(
-        { AND: wordConditions }, 
+        { AND: wordConditions },
         { firstName: { contains: sanitizedQuery, mode: 'insensitive' } },
         { lastName: { contains: sanitizedQuery, mode: 'insensitive' } },
         { middleName: { contains: sanitizedQuery, mode: 'insensitive' } },
@@ -370,16 +370,16 @@ export class PatientsService {
     try {
       // Process nationalId using helper
       const nationalId = await this.ensureUniqueNationalId(createPatientDto.nationalId);
-      
+
       // Prepare and clean data
       const patientData: any = {
         ...createPatientDto,
         nationalId,
         createdById: userId,
       };
-      
+
       this.cleanupPatientData(patientData);
-      
+
       const result = await this.prisma.patient.create({
         data: patientData,
         include: {
@@ -392,14 +392,14 @@ export class PatientsService {
           },
         },
       });
-      
+
       // Return normalized ID for display
       if (this.isOriginalNationalId(createPatientDto.nationalId)) {
         result.nationalId = '00000000000000';
       }
 
       this.logAccess(result.id, userId, 'CREATE', 'Patient created via create endpoint');
-      
+
       return result;
     } catch (error: any) {
       this.handlePatientError(error, 'creating');
@@ -465,7 +465,7 @@ export class PatientsService {
       if (nationalId) {
         nationalId = await this.ensureUniqueNationalId(nationalId, existingPatient.nationalId || undefined);
       }
-      
+
 
       // Prepare update data
       const updateData: any = {
@@ -477,44 +477,44 @@ export class PatientsService {
 
       this.cleanupPatientData(updateData);
 
-    // Update the patient
-    const updatedPatient = await this.prisma.patient.update({
-      where: { id },
-      data: updateData,
-      include: {
-        createdBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
+      // Update the patient
+      const updatedPatient = await this.prisma.patient.update({
+        where: { id },
+        data: updateData,
+        include: {
+          createdBy: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          lastAccessedByUser: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-        lastAccessedByUser: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
-    });
+      });
 
-    // Return the original nationalId value to the frontend (not the unique variant)
-    if (updatePatientDto.nationalId && updatePatientDto.nationalId.trim() === '00000000000000') {
-      updatedPatient.nationalId = '00000000000000';
-    } else if (updatedPatient.nationalId && updatedPatient.nationalId.startsWith('00000000000000-')) {
-      updatedPatient.nationalId = '00000000000000';
-    }
+      // Return the original nationalId value to the frontend (not the unique variant)
+      if (updatePatientDto.nationalId && updatePatientDto.nationalId.trim() === '00000000000000') {
+        updatedPatient.nationalId = '00000000000000';
+      } else if (updatedPatient.nationalId && updatedPatient.nationalId.startsWith('00000000000000-')) {
+        updatedPatient.nationalId = '00000000000000';
+      }
 
-    // Audit logs
-    const changeDescription = this.generateChangeDescription(existingPatient, updateData);
-    const reason = changeDescription !== 'No fields changed' 
-      ? `Patient updated: ${changeDescription}`
-      : 'Patient updated (no fields changed)';
+      // Audit logs
+      const changeDescription = this.generateChangeDescription(existingPatient, updateData);
+      const reason = changeDescription !== 'No fields changed'
+        ? `Patient updated: ${changeDescription}`
+        : 'Patient updated (no fields changed)';
 
-    this.logAccess(id, userId, 'UPDATE', reason, ipAddress, userAgent, changeDescription);
+      this.logAccess(id, userId, 'UPDATE', reason, ipAddress, userAgent, changeDescription);
 
-    return updatedPatient;
+      return updatedPatient;
     } catch (error: any) {
       this.handlePatientError(error, 'updating');
       throw error;
@@ -582,7 +582,7 @@ export class PatientsService {
 
     // Sort by creation date and get the latest
     cases.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
+
     const latestCase = cases[0];
 
     return {
@@ -677,7 +677,7 @@ export class PatientsService {
 
     if (filters.startDate || filters.endDate) {
       whereClause.timestamp = {};
-      
+
       if (filters.startDate) {
         const startDate = new Date(filters.startDate);
         if (!isNaN(startDate.getTime())) {
@@ -685,7 +685,7 @@ export class PatientsService {
           whereClause.timestamp.gte = startDate;
         }
       }
-      
+
       if (filters.endDate) {
         const endDate = new Date(filters.endDate);
         if (!isNaN(endDate.getTime())) {
@@ -704,6 +704,15 @@ export class PatientsService {
               firstName: true,
               lastName: true,
               role: true,
+            },
+          },
+          patient: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              mrn: true,
+              nationalId: true,
             },
           },
         },
@@ -756,7 +765,7 @@ export class PatientsService {
    */
   private async ensureUniqueNationalId(nationalId: string | null | undefined, existingId?: string): Promise<string | null | undefined> {
     if (!nationalId) return nationalId;
-    
+
     // Check if input is the placeholder "00000000000000"
     if (nationalId.trim() === '00000000000000') {
       // If updating, and the existing ID is already a variant of this placeholder, keep it
@@ -783,7 +792,7 @@ export class PatientsService {
     if (duplicate) {
       throw new ConflictException('A patient with this National ID already exists (possibly deleted). Please use a different National ID.');
     }
-    
+
     return nationalId;
   }
 
@@ -798,7 +807,7 @@ export class PatientsService {
     if (data.insuranceExpiry) {
       data.insuranceExpiry = data.insuranceExpiry === '' ? null : new Date(data.insuranceExpiry);
     }
-    
+
     // Remove transient/frontend-only fields
     delete data.age; // calculated from DoB
     delete data.ageMonths;
@@ -814,9 +823,9 @@ export class PatientsService {
   }
 
   private async logAccess(
-    entityId: string, 
-    userId: string, 
-    accessType: 'CREATE' | 'UPDATE' | 'VIEW', 
+    entityId: string,
+    userId: string,
+    accessType: 'CREATE' | 'UPDATE' | 'VIEW',
     reason: string,
     ipAddress?: string,
     userAgent?: string,
@@ -834,7 +843,7 @@ export class PatientsService {
         reason,
       });
       if (changes) {
-         console.log(`[PatientsService] Logged ${accessType} with changes: ${changes}`);
+        console.log(`[PatientsService] Logged ${accessType} with changes: ${changes}`);
       }
     } catch (error) {
       console.error(`Failed to log ${accessType} access:`, error);

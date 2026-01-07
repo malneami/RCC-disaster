@@ -71,14 +71,25 @@ const MedicalRecordAccessLogsTab: React.FC<MedicalRecordAccessLogsTabProps> = ({
   const [selectedLog, setSelectedLog] = useState<MedicalRecordAccessLog | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
+  // Debounced filter value for text input to prevent API calls on every keystroke
+  const [debouncedUserIdFilter, setDebouncedUserIdFilter] = useState('');
+
   const accessTypes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'SEARCH'];
+
+  // Debounce userIdFilter
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedUserIdFilter(userIdFilter);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [userIdFilter]);
 
   const loadLogs = async () => {
     try {
       setLoading(true);
       setError(null);
       const filters: any = { page, limit, medicalRecordId: entityId };
-      if (userIdFilter) filters.userId = userIdFilter;
+      if (debouncedUserIdFilter) filters.userId = debouncedUserIdFilter;
       if (accessTypeFilter) filters.accessType = accessTypeFilter;
       if (startDate) filters.startDate = startDate.toISOString().split('T')[0];
       if (endDate) filters.endDate = endDate.toISOString().split('T')[0];
@@ -98,7 +109,7 @@ const MedicalRecordAccessLogsTab: React.FC<MedicalRecordAccessLogsTabProps> = ({
     if (entityId) {
       loadLogs();
     }
-  }, [page, entityId, userIdFilter, accessTypeFilter, startDate, endDate]);
+  }, [page, entityId, debouncedUserIdFilter, accessTypeFilter, startDate, endDate]);
 
   const handleResetFilters = () => {
     setUserIdFilter('');

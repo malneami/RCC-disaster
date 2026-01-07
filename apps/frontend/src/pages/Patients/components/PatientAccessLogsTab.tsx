@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   CircularProgress,
@@ -21,42 +21,30 @@ import AccessLogDetailDialog from './access-logs/AccessLogDetailDialog';
 const PatientAccessLogsTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [logs, setLogs] = useState<PatientAccessLog[]>([]);
-  const [total, setTotal] = useState(0);
+  const [allLogs, setAllLogs] = useState<PatientAccessLog[]>([]); // All logs from server
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
-  const [totalPages, setTotalPages] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<PatientAccessLog | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
-  // Filters
+  // Filters - now used for client-side filtering only
   const [patientIdFilter, setPatientIdFilter] = useState('');
   const [userIdFilter, setUserIdFilter] = useState('');
   const [accessTypeFilter, setAccessTypeFilter] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedLog, setSelectedLog] = useState<PatientAccessLog | null>(null);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   const accessTypes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'SEARCH'];
 
-  const loadLogs = async () => {
+  // Load ALL logs once on mount
+  const loadAllLogs = async () => {
     try {
       setLoading(true);
       setError(null);
-      const filters: any = {
-        page,
-        limit,
-      };
-      if (patientIdFilter) filters.patientId = patientIdFilter;
-      if (userIdFilter) filters.userId = userIdFilter;
-      if (accessTypeFilter) filters.accessType = accessTypeFilter;
-      if (startDate) filters.startDate = startDate.toISOString().split('T')[0];
-      if (endDate) filters.endDate = endDate.toISOString().split('T')[0];
-
-      const response = await patientService.getAllAccessLogs(filters);
-      setLogs(response?.data || []);
-      setTotal(response?.total || 0);
-      setTotalPages(response?.pages || 1);
+      // Load all logs without filters - backend should support high limit or no pagination
+      const response = await patientService.getAllAccessLogs({ limit: 1000 });
+      setAllLogs(response?.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load access logs');
     } finally {
@@ -65,8 +53,76 @@ const PatientAccessLogsTab: React.FC = () => {
   };
 
   useEffect(() => {
-    loadLogs();
-  }, [page, patientIdFilter, userIdFilter, accessTypeFilter, startDate, endDate]);
+    loadAllLogs();
+  }, []); // Load once on mount
+
+  // Client-side filtering with useMemo - instant, no API calls
+  const filteredLogs = useMemo(() => {
+    return allLogs.filter(log => {
+      // Patient ID filter - search in patient name/MRN/NationalId/PatientId
+      if (patientIdFilter) {
+        const patientName = log.patient
+          ? `${log.patient.firstName} ${log.patient.lastName}`.toLowerCase()
+          : '';
+        const patientMrn = log.patient?.mrn?.toLowerCase() || '';
+        const patientNationalId = log.patient?.nationalId?.toLowerCase() || '';
+        const patientId = log.patientId?.toLowerCase() || '';
+        const searchTerm = patientIdFilter.toLowerCase();
+        if (
+          !patientName.includes(searchTerm) &&
+          !patientMrn.includes(searchTerm) &&
+          !patientNationalId.includes(searchTerm) &&
+          !patientId.includes(searchTerm)
+        ) {
+          return false;
+        }
+      }
+
+      // User ID filter - search in user name
+      if (userIdFilter) {
+        const userName = log.user
+          ? `${log.user.firstName} ${log.user.lastName}`.toLowerCase()
+          : '';
+        const userRole = log.user?.role?.toLowerCase() || '';
+        const searchTerm = userIdFilter.toLowerCase();
+        if (!userName.includes(searchTerm) && !userRole.includes(searchTerm)) {
+          return false;
+        }
+      }
+
+      // Access type filter - exact match
+      if (accessTypeFilter && log.accessType !== accessTypeFilter) {
+        return false;
+      }
+
+      // Date range filter
+      if (startDate || endDate) {
+        const logDate = new Date(log.timestamp);
+        if (startDate && logDate < startDate) return false;
+        if (endDate) {
+          const endOfDay = new Date(endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (logDate > endOfDay) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [allLogs, patientIdFilter, userIdFilter, accessTypeFilter, startDate, endDate]);
+
+  // Client-side pagination
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (page - 1) * limit;
+    return filteredLogs.slice(startIndex, startIndex + limit);
+  }, [filteredLogs, page, limit]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / limit));
+  const total = filteredLogs.length;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [patientIdFilter, userIdFilter, accessTypeFilter, startDate, endDate]);
 
   const handleResetFilters = () => {
     setPatientIdFilter('');
@@ -81,7 +137,7 @@ const PatientAccessLogsTab: React.FC = () => {
     try {
       // Create CSV content
       const headers = ['Timestamp', 'User', 'Role', 'Patient', 'Access Type', 'Method', 'IP Address', 'Reason'];
-      const rows = (logs || []).map((log) => [
+      const rows = filteredLogs.map((log) => [
         format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss'),
         log.user ? `${log.user.firstName} ${log.user.lastName}` : 'N/A',
         log.user?.role || 'N/A',
@@ -109,7 +165,7 @@ const PatientAccessLogsTab: React.FC = () => {
   const hasActiveFilters = Boolean(patientIdFilter || userIdFilter || accessTypeFilter || startDate || endDate);
   const activeFilterCount = [patientIdFilter, userIdFilter, accessTypeFilter, startDate, endDate].filter(Boolean).length;
 
-  if (loading && (!logs || logs.length === 0)) {
+  if (loading && allLogs.length === 0) {
     return (
       <Box
         sx={{
@@ -153,25 +209,36 @@ const PatientAccessLogsTab: React.FC = () => {
             showFilters={showFilters}
             setShowFilters={setShowFilters}
             handleExport={handleExport}
-            loadLogs={loadLogs}
+            loadLogs={loadAllLogs}
             hasActiveFilters={hasActiveFilters}
             activeFilterCount={activeFilterCount}
-          >
-            {error && (
-              <Alert
-                severity="error"
-                sx={{
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
-                  mb: 2,
-                }}
-                onClose={() => setError(null)}
-              >
-                {error}
-              </Alert>
-            )}
+          />
 
-            {showFilters && (
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
+                mb: 2,
+              }}
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
+
+          {showFilters && (
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)',
+                borderRadius: '16px',
+                padding: '20px',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)',
+                border: '1px solid rgba(66, 165, 245, 0.3)',
+                mb: 2,
+              }}
+            >
               <AccessLogFilters
                 patientIdFilter={patientIdFilter}
                 setPatientIdFilter={setPatientIdFilter}
@@ -186,15 +253,15 @@ const PatientAccessLogsTab: React.FC = () => {
                 handleResetFilters={handleResetFilters}
                 accessTypes={accessTypes}
               />
-            )}
-          </AccessLogHeader>
+            </Box>
+          )}
 
-          {!logs || logs.length === 0 ? (
+          {paginatedLogs.length === 0 ? (
             <AccessLogEmptyState />
           ) : (
             <>
               <AccessLogList
-                logs={logs}
+                logs={paginatedLogs}
                 onLogClick={(log) => {
                   setSelectedLog(log);
                   setDetailDialogOpen(true);
