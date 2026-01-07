@@ -292,7 +292,7 @@ export const PortalPatientEdit: React.FC<PortalPatientEditProps> = ({
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Medical Record Number (MRN)"
+              label="Medical Record Number (MRN) - Optional"
               value={formData.mrn || ''}
               onChange={(e) => handleInputChange('mrn', e.target.value)}
               disabled={isLoading}

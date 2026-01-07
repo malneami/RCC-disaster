@@ -801,10 +801,10 @@ export class PatientsService {
     }
 
     // Convert empty unique fields to null to avoid unique constraint violations
-    if (data.mrn === '' || data.mrn === undefined) {
+    if (data.mrn !== undefined && data.mrn === '') {
       data.mrn = null;
     }
-    if (data.nationalId === '' || data.nationalId === undefined) {
+    if (data.nationalId !== undefined && data.nationalId === '') {
       data.nationalId = null;
     }
 
@@ -816,8 +816,13 @@ export class PatientsService {
 
   private handlePatientError(error: any, action: string) {
     console.error(`Service: Error ${action} patient:`, error);
-    if (error.code === 'P2002' && error.meta?.target?.includes('nationalId')) {
-      throw new ConflictException('A patient with this National ID already exists. Please use a different National ID.');
+    if (error.code === 'P2002') {
+      if (error.meta?.target?.includes('nationalId')) {
+        throw new ConflictException('A patient with this National ID already exists. Please use a different National ID.');
+      }
+      if (error.meta?.target?.includes('mrn') || error.meta?.target?.includes('medical_record_number')) {
+        throw new ConflictException('A patient with this MRN already exists. Please use a different MRN or leave it empty.');
+      }
     }
     // Re-throw if not handled
   }

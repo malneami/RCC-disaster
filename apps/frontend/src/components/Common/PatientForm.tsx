@@ -265,7 +265,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Medical Record Number (MRN)"
+              label="Medical Record Number (MRN) - Optional"
               value={formData.mrn}
               onChange={(e) => handleInputChange('mrn', e.target.value)}
             />

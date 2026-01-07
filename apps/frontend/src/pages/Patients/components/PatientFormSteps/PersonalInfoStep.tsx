@@ -380,7 +380,7 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
           <Grid item xs={12} sm={6}>
             <PersonalInfoFormField
               fullWidth
-              label="MRN (Medical Record Number)"
+              label="MRN (Medical Record Number) - Optional"
               value={formData.mrn || ''}
               onChange={(e) => handleChange('mrn', e.target.value)}
               icon={
