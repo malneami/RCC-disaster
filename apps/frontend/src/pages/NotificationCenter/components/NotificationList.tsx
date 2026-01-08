@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
-  List,
   CircularProgress,
   Alert,
   Pagination,
   Button,
+  Chip,
+  Stack,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -22,16 +25,19 @@ import { useNotificationSocket } from '../../../contexts/NotificationSocketConte
 interface NotificationListProps {
   filters: NotificationFilter;
   onNotificationChange?: () => void;
+  onNotificationsLoaded?: (notifications: Notification[]) => void;
 }
 
-const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotificationChange }) => {
+const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotificationChange, onNotificationsLoaded }) => {
   // Get socket connection from context
   const { socket, isConnected } = useNotificationSocket();
+  const theme = useTheme();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -40,12 +46,20 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
   });
 
   const loadNotifications = useCallback(async (silent: boolean = false) => {
-    const requestFilters = {
-      ...filters,
+    // Clean up filters - remove undefined values
+    const cleanFilters: NotificationFilter = {};
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        cleanFilters[key as keyof NotificationFilter] = value;
+      }
+    });
+    
+    const requestFilters: NotificationFilter = {
+      ...cleanFilters,
       page: pagination.page.toString(),
       limit: pagination.limit.toString(),
     };
-    
+        
     try {
       if (!silent) {
         setLoading(true);
@@ -55,6 +69,11 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
       const data = await notificationService.getNotifications(requestFilters);
       setNotifications(data.notifications);
       setPagination(data.pagination);
+      
+      // Notify parent of loaded notifications for case type counts
+      if (onNotificationsLoaded) {
+        onNotificationsLoaded(data.notifications);
+      }
     } catch (err: any) {
       console.error('Error loading notifications:', err);
       
@@ -189,6 +208,45 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     setError(null);
     loadNotifications();
   };
+  const filteredNotifications = useMemo(() => {
+    if (!selectedPriority) {
+      return notifications;
+    }
+    return notifications.filter(n => n.priority === selectedPriority);
+  }, [notifications, selectedPriority]);
+
+  const getPriorityConfig = (priority: string) => {
+    switch (priority) {
+      case 'HIGH':
+        return {
+          label: 'High',
+          color: '#ea580c',
+          bgColor: alpha('#ea580c', 0.1),
+          borderColor: alpha('#ea580c', 0.3),
+        };
+      case 'MEDIUM':
+        return {
+          label: 'Medium',
+          color: '#f59e0b',
+          bgColor: alpha('#f59e0b', 0.1),
+          borderColor: alpha('#f59e0b', 0.3),
+        };
+      case 'LOW':
+        return {
+          label: 'Low',
+          color: '#10b981',
+          bgColor: alpha('#10b981', 0.1),
+          borderColor: alpha('#10b981', 0.3),
+        };
+      default:
+        return {
+          label: priority,
+          color: '#6b7280',
+          bgColor: alpha('#6b7280', 0.1),
+          borderColor: alpha('#6b7280', 0.3),
+        };
+    }
+  };
 
   if (loading) {
     return <SkeletonLoader variant="notification" count={5} />;
@@ -215,29 +273,87 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     );
   }
 
-  if (notifications.length === 0) {
-    return (
-      <EmptyState
-        icon={<FontAwesomeIcon icon={faBell} size="2x" />}
-        title="No Notifications"
-        description="You're all caught up! No new alerts or notifications at this time."
-        size="small"
-      />
-    );
-  }
-
   return (
     <Box>
-      <List sx={{ p: 0 }}>
-        {notifications.map((notification) => (
-          <NotificationItemWithReplies
-            key={notification.id}
-            notification={notification}
-            onMarkAsRead={handleMarkAsRead}
-            onDelete={handleDeleteNotification}
+      {notifications.length > 0 && (
+        <Stack 
+          direction="row" 
+          spacing={1.5} 
+          sx={{ 
+            mb: 3,
+            flexWrap: 'wrap',
+            gap: 1,
+          }}
+        >
+          <Chip
+            label="All"
+            onClick={() => setSelectedPriority(null)}
+            variant={selectedPriority === null ? 'filled' : 'outlined'}
+            sx={{
+              backgroundColor: selectedPriority === null 
+                ? alpha(theme.palette.primary.main, 0.1) 
+                : 'transparent',
+              borderColor: selectedPriority === null 
+                ? theme.palette.primary.main 
+                : theme.palette.divider,
+              color: selectedPriority === null 
+                ? theme.palette.primary.main 
+                : theme.palette.text.secondary,
+              fontWeight: selectedPriority === null ? 600 : 400,
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              },
+            }}
           />
-        ))}
-      </List>
+          {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => {
+            const config = getPriorityConfig(priority);
+            const isSelected = selectedPriority === priority;
+            
+            return (
+              <Chip
+                key={priority}
+                label={config.label}
+                onClick={() => setSelectedPriority(isSelected ? null : priority)}
+                variant={isSelected ? 'filled' : 'outlined'}
+                sx={{
+                  backgroundColor: isSelected ? config.color : 'transparent',
+                  borderColor: isSelected ? config.color : config.borderColor,
+                  color: isSelected ? '#ffffff' : config.color,
+                  fontWeight: isSelected ? 600 : 400,
+                  '&:hover': {
+                    backgroundColor: isSelected 
+                      ? config.color 
+                      : config.bgColor,
+                    borderColor: config.color,
+                  },
+                }}
+              />
+            );
+          })}
+        </Stack>
+      )}
+
+      {filteredNotifications.length === 0 ? (
+        <EmptyState
+          icon={<FontAwesomeIcon icon={faBell} size="2x" />}
+          title={selectedPriority ? `No ${getPriorityConfig(selectedPriority).label} Priority Notifications` : "No Notifications"}
+          description={selectedPriority 
+            ? `No ${getPriorityConfig(selectedPriority).label.toLowerCase()} priority notifications found. Try selecting a different priority or "All".`
+            : "You're all caught up! No new alerts or notifications at this time."}
+          size="small"
+        />
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {filteredNotifications.map((notification) => (
+            <NotificationItemWithReplies
+              key={notification.id}
+              notification={notification}
+              onMarkAsRead={handleMarkAsRead}
+              onDelete={handleDeleteNotification}
+            />
+          ))}
+        </Box>
+      )}
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (

@@ -1,17 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
+  Container,
   Grid,
   Card,
   CardContent,
   Typography,
   Chip,
-  Tabs,
-  Tab,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   IconButton,
   Tooltip,
@@ -24,11 +19,17 @@ import {
   faBell,
   faRefresh,
   faFilter,
+  faAmbulance,
+  faHospital,
+  faTicketAlt,
+  faTimes,
 } from '@fortawesome/free-solid-svg-icons';
 
 import NotificationSummaryCards from './components/NotificationSummaryCards';
 import NotificationList from './components/NotificationList';
 import NotificationFilters from './components/NotificationFilters';
+
+import CaseTypeTabs, { CaseTypeFilter } from './components/CaseTypeTabs';
 import EmptyState from '../../components/Common/EmptyState';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import ErrorBoundary from '../../components/Common/ErrorBoundary';
@@ -44,13 +45,19 @@ const NotificationCenterPage: React.FC = () => {
   const { socket, isConnected } = useNotificationSocket();
 
   // State
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeCaseType, setActiveCaseType] = useState<CaseTypeFilter>('ALL');
   const [filters, setFilters] = useState<NotificationFilter>({});
   const [categories, setCategories] = useState<NotificationCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [caseTypeCounts, setCaseTypeCounts] = useState<Record<CaseTypeFilter, number>>({
+    ALL: 0,
+    STEMI: 0,
+    STROKE: 0,
+    TRAUMA: 0,
+  });
   const filterButtonRef = useRef<HTMLButtonElement>(null);
 
   // Check if any filters are active
@@ -58,6 +65,7 @@ const NotificationCenterPage: React.FC = () => {
     filters.priority || 
     filters.type || 
     filters.caseType || 
+    filters.category ||
     filters.isRead === true
   );
 
@@ -87,20 +95,38 @@ const NotificationCenterPage: React.FC = () => {
     }
   }, 500);
 
+  // Load case type counts efficiently from backend
+  const loadCaseTypeCounts = useCallback(async () => {
+    try {
+      const counts = await notificationService.getCaseTypeCounts();
+      setCaseTypeCounts({
+        ALL: counts.ALL || 0,
+        STEMI: counts.STEMI || 0,
+        STROKE: counts.STROKE || 0,
+        TRAUMA: counts.TRAUMA || 0,
+      });
+    } catch (err) {
+      console.error('Error loading case type counts:', err);
+    }
+  }, []);
+
   // Memoized event handlers using useCallback
   const handleNotificationCreated = useCallback(() => {
     debouncedRefresh();
     debouncedLoadCategories();
-  }, [debouncedRefresh, debouncedLoadCategories]);
+    loadCaseTypeCounts();
+  }, [debouncedRefresh, debouncedLoadCategories, loadCaseTypeCounts]);
 
   const handleNotificationRead = useCallback(() => {
     debouncedRefresh();
-  }, [debouncedRefresh]);
+    loadCaseTypeCounts();
+  }, [debouncedRefresh, loadCaseTypeCounts]);
 
   const handleNotificationDeleted = useCallback(() => {
     debouncedRefresh();
     debouncedLoadCategories();
-  }, [debouncedRefresh, debouncedLoadCategories]);
+    loadCaseTypeCounts();
+  }, [debouncedRefresh, debouncedLoadCategories, loadCaseTypeCounts]);
 
   // Load categories on mount and set up interval
   useEffect(() => {
@@ -157,49 +183,59 @@ const NotificationCenterPage: React.FC = () => {
     }
   };
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+  const removeFilter = (filterKey: keyof NotificationFilter) => {
+    const { [filterKey]: _, ...restFilters } = filters;
+    setFilters(restFilters);
     
-    // Map tab index to caseType filter
-    const tabCaseTypes = ['ALL', 'EMERGENCY', 'STEMI', 'STROKE', 'TRAUMA'];
-    const selectedTab = tabCaseTypes[newValue];
-    
-    if (selectedTab === 'ALL') {
-      // Remove caseType filter for ALL tab
-      const { caseType: _, ...rest } = filters;
-      setFilters(rest);
-    } else if (selectedTab === 'EMERGENCY') {
-      // Set priority filter for EMERGENCY tab
-      setFilters({ ...filters, priority: 'HIGH', caseType: undefined });
+    if (filterKey === 'caseType') {
+      setActiveCaseType('ALL');
+    }
+  };
+
+  const handleCaseTypeChange = (caseType: CaseTypeFilter) => {
+    setActiveCaseType(caseType);
+    if (caseType === 'ALL') {
+      const { caseType: _, ...restFilters } = filters;
+      setFilters(restFilters);
     } else {
-      // Set caseType filter for STEMI, STROKE, TRAUMA tabs
-      // Clear priority filter to show all priorities for portal-specific notifications
-      const { priority: _, ...rest } = filters;
-      setFilters({ ...rest, caseType: selectedTab });
+      setFilters({
+        ...filters,
+        caseType: caseType,
+      });
     }
   };
 
   const handleFilterChange = (newFilters: NotificationFilter) => {
-    setFilters(newFilters);
+    const cleanFilters: NotificationFilter = {};
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        cleanFilters[key as keyof NotificationFilter] = value;
+      }
+    });
+    setFilters(cleanFilters);
+    if (cleanFilters.caseType) {
+      setActiveCaseType(cleanFilters.caseType as CaseTypeFilter);
+    } else {
+      setActiveCaseType('ALL');
+    }
   };
 
   const handleRefresh = () => {
     loadInitialData();
     setRefreshTrigger(prev => prev + 1);
+    loadCaseTypeCounts();
   };
 
   const handleNotificationChange = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
-  }, []);
+    loadCaseTypeCounts();
+  }, [loadCaseTypeCounts]);
 
-  const handlePriorityFilter = (priority: string) => {
-    if (priority === 'All') {
-      const { priority: _, ...rest } = filters;
-      setFilters(rest);
-    } else {
-      setFilters({ ...filters, priority: priority as any });
-    }
-  };
+  useEffect(() => {
+    loadCaseTypeCounts();
+    const interval = setInterval(loadCaseTypeCounts, 30000);
+    return () => clearInterval(interval);
+  }, [refreshTrigger, loadCaseTypeCounts]);
 
 
   if (loading) {
@@ -229,26 +265,64 @@ const NotificationCenterPage: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <Box sx={{ 
-        minHeight: '100vh',
-        backgroundColor: '#f8fafc',
-        p: { xs: 1, sm: 2, md: 3 }
-      }}>
-      {/* Header */}
-      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" component="h1" fontWeight={600}>
+      <Box sx={{ backgroundColor: '#f8fafc', minHeight: '100vh' }}>
+      <Container maxWidth="xl">
+        <Box
+          sx={{
+            px: { xs: 2, sm: 2, md: 5},
+            py: 2.5,
+            backgroundColor: 'white',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            borderRadius: 2,
+            mb: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          }}
+        >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 2.5,
+            gap: 2,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Box sx={{ flex: '1 1 auto', minWidth: 200 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: 'text.primary',
+                mb: 0.5,
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+              }}
+            >
               Notification Center
             </Typography>
-            <Typography variant="body2" color="text.secondary" mt={0.5}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              }}
+            >
               View and manage all notifications across the RCC platform
             </Typography>
           </Box>
-          
-          <Box display="flex" alignItems="center" gap={1}>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             <Tooltip title="Refresh">
-              <IconButton onClick={handleRefresh} color="primary">
+              <IconButton 
+                onClick={handleRefresh} 
+                color="primary"
+                sx={{
+                  borderRadius: 2.5,
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                  },
+                }}
+              >
                 <FontAwesomeIcon icon={faRefresh} />
               </IconButton>
             </Tooltip>
@@ -258,6 +332,7 @@ const NotificationCenterPage: React.FC = () => {
                 onClick={handleFilterClick}
                 color={hasActiveFilters ? 'primary' : 'default'}
                 sx={{
+                  borderRadius: 2.5,
                   ...(hasActiveFilters && {
                     backgroundColor: alpha(theme.palette.primary.main, 0.1),
                     '&:hover': {
@@ -277,12 +352,12 @@ const NotificationCenterPage: React.FC = () => {
             </Tooltip>
           </Box>
         </Box>
-      </Box>
 
-      {/* Summary Cards */}
-      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-        <NotificationSummaryCards refreshTrigger={refreshTrigger} filters={filters} />
-      </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' ,borderTop: `1px solid ${theme.palette.divider}`, paddingTop: 1, gap: 1.5, flexWrap: 'wrap' }}>
+          <NotificationSummaryCards refreshTrigger={refreshTrigger} filters={filters} />
+        </Box>
+        </Box>
+      </Container>
 
       {/* Filters Popup */}
       <NotificationFilters
@@ -295,8 +370,14 @@ const NotificationCenterPage: React.FC = () => {
         onClose={() => setFilterAnchorEl(null)}
       />
 
-      {/* Main Content - Responsive Layout */}
-      <Grid container spacing={{ xs: 2, sm: 3 }}>
+      {/* Content Area */}
+      <Container maxWidth="xl" sx={{ py: 1, px: 2 }}>
+        <Box
+          sx={{
+            p: 1.5,
+          }}
+        >
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Notifications Panel - Full width on mobile, 8/12 on desktop */}
         <Grid item xs={12} lg={8}>
           <Card sx={{ 
@@ -338,64 +419,68 @@ const NotificationCenterPage: React.FC = () => {
                 </Typography>
               </Box>
 
-              {/* Filter Tabs - Responsive */}
-              <Box sx={{ 
-                borderBottom: 1, 
-                borderColor: 'divider', 
-                mb: 3,
-                overflowX: 'auto',
-                '& .MuiTabs-scrollButtons': {
-                  display: { xs: 'block', sm: 'none' }
-                }
-              }}>
-                <Tabs 
-                  value={activeTab} 
-                  onChange={handleTabChange} 
-                  aria-label="notification tabs"
-                  variant="scrollable"
-                  scrollButtons="auto"
-                  sx={{
-                    '& .MuiTab-root': {
-                      minWidth: { xs: 'auto', sm: '120px' },
-                      fontSize: { xs: '0.875rem', sm: '0.9rem' },
-                      px: { xs: 1, sm: 2 }
-                    }
-                  }}
-                >
-                  <Tab label="All" />
-                  <Tab label="Emergency" />
-                  <Tab label="STEMI" />
-                  <Tab label="Stroke" />
-                  <Tab label="Trauma" />
-                </Tabs>
-              </Box>
+              {/* Case Type Tabs */}
+              <CaseTypeTabs
+                activeCaseType={activeCaseType}
+                onCaseTypeChange={handleCaseTypeChange}
+                caseTypeCounts={caseTypeCounts}
+              />
 
-              {/* Priority Filter - Responsive */}
-              <Box sx={{ 
-                mb: 3,
-                display: 'flex',
-                justifyContent: { xs: 'center', sm: 'flex-start' }
-              }}>
-                <FormControl 
-                  size="small" 
-                  sx={{ 
-                    minWidth: { xs: 140, sm: 160 },
-                    width: { xs: '100%', sm: 'auto' }
-                  }}
-                >
-                  <InputLabel>Priority</InputLabel>
-                  <Select
-                    value={filters.priority || 'All'}
-                    label="Priority"
-                    onChange={(e) => handlePriorityFilter(e.target.value)}
-                  >
-                    <MenuItem value="All">All Priorities</MenuItem>
-                    <MenuItem value="HIGH">High</MenuItem>
-                    <MenuItem value="MEDIUM">Medium</MenuItem>
-                    <MenuItem value="LOW">Low</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
+              {/* Active Filters Chips */}
+              {hasActiveFilters && (
+                <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                  {filters.priority && (
+                    <Chip
+                      label={`Priority: ${filters.priority}`}
+                      onDelete={() => removeFilter('priority')}
+                      deleteIcon={<FontAwesomeIcon icon={faTimes} />}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  )}
+                  {filters.type && (
+                    <Chip
+                      label={`Type: ${filters.type.replace(/_/g, ' ')}`}
+                      onDelete={() => removeFilter('type')}
+                      deleteIcon={<FontAwesomeIcon icon={faTimes} />}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  )}
+                  {filters.caseType && (
+                    <Chip
+                      label={`Case Type: ${filters.caseType}`}
+                      onDelete={() => removeFilter('caseType')}
+                      deleteIcon={<FontAwesomeIcon icon={faTimes} />}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  )}
+                  {filters.category && (
+                    <Chip
+                      label={`Category: ${filters.category}`}
+                      onDelete={() => removeFilter('category')}
+                      deleteIcon={<FontAwesomeIcon icon={faTimes} />}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  )}
+                  {filters.isRead === true && (
+                    <Chip
+                      label="Read Only"
+                      onDelete={() => removeFilter('isRead')}
+                      deleteIcon={<FontAwesomeIcon icon={faTimes} />}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  )}
+                </Box>
+              )}
 
               {/* Notification List */}
               <NotificationList 
@@ -461,66 +546,170 @@ const NotificationCenterPage: React.FC = () => {
                 <Box sx={{ 
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 1
+                  gap: 1.5
                 }}>
-                  {categories.map((category) => (
-                    <Box
-                      key={category.type}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        p: 2,
-                        borderRadius: 1,
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          backgroundColor: '#f1f5f9',
-                          borderColor: '#cbd5e1'
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <FontAwesomeIcon 
-                          icon={faBell} 
-                          style={{ 
-                            marginRight: '12px', 
-                            opacity: 0.7,
-                            fontSize: '0.9rem'
-                          }} 
-                        />
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontWeight: 500,
-                            fontSize: { xs: '0.875rem', sm: '0.9rem' }
-                          }}
-                        >
-                          {category.type.replace('_', ' ')}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        label={category.count}
-                        size="small"
-                        color="primary"
-                        variant="filled"
-                        sx={{ 
-                          fontWeight: 600,
-                          minWidth: '32px'
+                  {categories.map((category) => {
+                    const getTypeConfig = () => {
+                      switch (category.type) {
+                        // EMS types
+                        case 'EMS_LATE_CASE':
+                          return {
+                            icon: faAmbulance,
+                            color: '#3b82f6',
+                            bgColor: alpha('#3b82f6', 0.1),
+                            borderColor: alpha('#3b82f6', 0.3),
+                          };
+                        case 'CASE_ASSIGNMENT':
+                        case 'CASE_ESCALATION':
+                        case 'CRITICAL_CASE_INCOMING':
+                          return {
+                            icon: faHospital,
+                            color: '#10b981',
+                            bgColor: alpha('#10b981', 0.1),
+                            borderColor: alpha('#10b981', 0.3),
+                          };
+                        case 'CASE_COMPLETION':
+                        case 'CASE_UPDATE':
+                          return {
+                            icon: faTicketAlt,
+                            color: '#f59e0b',
+                            bgColor: alpha('#f59e0b', 0.1),
+                            borderColor: alpha('#f59e0b', 0.3),
+                          };
+                        case 'CASE_COMMENT':
+                        case 'INCOMPLETE_PATIENT_DATA':
+                        case 'KPI_THRESHOLD_BREACH':
+                        case 'CRITICAL_TIME_LIMIT_APPROACHING':
+                          return {
+                            icon: faBell,
+                            color: '#6366f1',
+                            bgColor: alpha('#6366f1', 0.1),
+                            borderColor: alpha('#6366f1', 0.3),
+                          };
+                        default:
+                          return {
+                            icon: faBell,
+                            color: '#6b7280',
+                            bgColor: alpha('#6b7280', 0.1),
+                            borderColor: alpha('#6b7280', 0.3),
+                          };
+                      }
+                    };
+
+                    const config = getTypeConfig();
+                    const typeLabel = category.type.replace(/_/g, ' ');
+
+                    const isSelected = filters.type === category.type;
+
+                    const handleTypeBoxClick = () => {
+                      if (isSelected) {
+                        const { type: _, ...restFilters } = filters;
+                        setFilters(restFilters);
+                      } else {
+                        setFilters({
+                          ...filters,
+                          type: category.type,
+                        });
+                      }
+                    };
+
+                    return (
+                      <Box
+                        key={category.type}
+                        onClick={handleTypeBoxClick}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          p: 2.5,
+                          borderRadius: 2,
+                          background: isSelected
+                            ? `linear-gradient(135deg, ${alpha(config.color, 0.15)} 0%, ${alpha(config.color, 0.08)} 100%)`
+                            : `linear-gradient(135deg, ${config.bgColor} 0%, ${alpha(config.color, 0.05)} 100%)`,
+                          border: `1px solid ${isSelected ? config.color : config.borderColor}`,
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                          boxShadow: isSelected ? `0 4px 12px ${alpha(config.color, 0.2)}` : 'none',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            boxShadow: `0 4px 12px ${alpha(config.color, 0.2)}`,
+                            borderColor: config.color,
+                            background: `linear-gradient(135deg, ${alpha(config.color, 0.15)} 0%, ${alpha(config.color, 0.08)} 100%)`,
+                          },
                         }}
-                      />
-                    </Box>
-                  ))}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                          <Box
+                            sx={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: 2,
+                              backgroundColor: config.color,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              boxShadow: `0 2px 8px ${alpha(config.color, 0.3)}`,
+                            }}
+                          >
+                            <FontAwesomeIcon 
+                              icon={config.icon} 
+                              style={{ 
+                                fontSize: '1.1rem'
+                              }} 
+                            />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography 
+                              variant="body1" 
+                              sx={{ 
+                                fontWeight: 600,
+                                fontSize: '0.95rem',
+                                color: 'text.primary',
+                                mb: 0.25,
+                              }}
+                            >
+                              {typeLabel}
+                            </Typography>
+                            <Typography 
+                              variant="caption" 
+                              sx={{ 
+                                color: 'text.secondary',
+                                fontSize: '0.75rem',
+                              }}
+                            >
+                              {category.count} notification{category.count !== 1 ? 's' : ''}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Chip
+                          label={category.count}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: config.color,
+                            color: '#ffffff',
+                            fontWeight: 700,
+                            fontSize: '0.8rem',
+                            minWidth: 36,
+                            height: 28,
+                            boxShadow: `0 2px 4px ${alpha(config.color, 0.3)}`,
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
                 </Box>
               )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
+        </Box>
+      </Container>
       </Box>
     </ErrorBoundary>
   );
 };
 
 export default NotificationCenterPage;
+

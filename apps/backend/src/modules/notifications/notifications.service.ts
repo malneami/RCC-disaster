@@ -528,6 +528,7 @@ export class NotificationsService {
       unreadNotifications,
       highPriorityNotifications,
       highPriorityUnreadNotifications,
+      mediumPriorityUnreadNotifications,
       emailNotifications,
       smsNotifications,
     ] = await Promise.all([
@@ -565,6 +566,19 @@ export class NotificationsService {
           },
         },
       }),
+      this.prisma.notification.count({
+        where: {
+          ...baseWhere,
+          priority: NotificationPriority.MEDIUM,
+          recipients: {
+            some: {
+              userId,
+              isRead: false,
+              deletedAt: null,
+            },
+          },
+        },
+      }),
       this.prisma.notificationRecipient.count({
         where: {
           userId,
@@ -592,9 +606,85 @@ export class NotificationsService {
       unreadNotifications,
       highPriorityNotifications,
       highPriorityUnreadNotifications,
+      mediumPriorityUnreadNotifications,
       emailNotifications,
       smsNotifications,
     };
+  }
+
+  /**
+   * Get case type counts for notification tabs
+   * Returns counts efficiently using database COUNT queries instead of loading all notifications
+   */
+  async getCaseTypeCounts(userId: string) {
+    try {
+      const baseWhere = {
+        recipients: {
+          some: {
+            userId,
+            deletedAt: null,
+          },
+        },
+      };
+
+      // Get total count (ALL - read + unread)
+      const totalCount = await this.prisma.notification.count({
+        where: baseWhere,
+      });
+
+      // Get unread counts by case type
+      const [stemiUnread, strokeUnread, traumaUnread] = await Promise.all([
+        this.prisma.notification.count({
+          where: {
+            ...baseWhere,
+            caseType: 'STEMI',
+            recipients: {
+              some: {
+                userId,
+                isRead: false,
+                deletedAt: null,
+              },
+            },
+          },
+        }),
+        this.prisma.notification.count({
+          where: {
+            ...baseWhere,
+            caseType: 'STROKE',
+            recipients: {
+              some: {
+                userId,
+                isRead: false,
+                deletedAt: null,
+              },
+            },
+          },
+        }),
+        this.prisma.notification.count({
+          where: {
+            ...baseWhere,
+            caseType: 'TRAUMA',
+            recipients: {
+              some: {
+                userId,
+                isRead: false,
+                deletedAt: null,
+              },
+            },
+          },
+        }),
+      ]);
+
+      return {
+        ALL: totalCount,
+        STEMI: stemiUnread,
+        STROKE: strokeUnread,
+        TRAUMA: traumaUnread,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get case type counts:', error);
+      throw new InternalServerErrorException('Failed to retrieve case type counts');
+    }
   }
 
   /**

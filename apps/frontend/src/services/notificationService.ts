@@ -26,6 +26,7 @@ export interface Notification {
   ticketId?: string;
   patientId: string;
   patientName: string;
+  category?: 'PATIENTS' | 'EMS' | 'HOSPITALS' | 'TICKETS';
   status: 'UNREAD' | 'READ' | 'ARCHIVED';
   isRead: boolean;
   readAt?: string;
@@ -101,6 +102,7 @@ export interface NotificationSummary {
   unreadNotifications: number;
   highPriorityNotifications: number;
   highPriorityUnreadNotifications: number;
+  mediumPriorityUnreadNotifications: number;
   emailNotifications: number;
   smsNotifications: number;
 }
@@ -280,6 +282,17 @@ export const notificationService = {
   // Get notification categories
   async getNotificationCategories(): Promise<NotificationCategory[]> {
     const response = await apiClient.get('/notifications/categories');
+    return response.data;
+  },
+
+  // Get case type counts for tabs
+  async getCaseTypeCounts(): Promise<{
+    ALL: number;
+    STEMI: number;
+    STROKE: number;
+    TRAUMA: number;
+  }> {
+    const response = await apiClient.get('/notifications/case-type-counts');
     return response.data;
   },
 

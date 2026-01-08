@@ -1,114 +1,62 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Grid,
-  Card,
-  CardContent,
   Typography,
   Alert,
+  alpha,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBell,
   faExclamationTriangle,
-  faEnvelope,
-  faSms,
+  faExclamationCircle,
 } from '@fortawesome/free-solid-svg-icons';
 
-import SkeletonLoader from '../../../components/Common/SkeletonLoader';
 import { notificationService, NotificationSummary, NotificationFilter } from '../../../services/notificationService';
 import { useNotificationSocket } from '../../../contexts/NotificationSocketContext';
 
-interface SummaryCardProps {
-  title: string;
-  value: number;
-  description: string;
+interface StatCardProps {
   icon: React.ReactNode;
-  color: 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success';
+  value: number | string;
+  label: string;
+  color: string;
 }
 
-const SummaryCard: React.FC<SummaryCardProps> = ({
-  title,
-  value,
-  description,
+const StatCard: React.FC<StatCardProps> = ({
   icon,
+  value,
+  label,
   color,
 }) => {
   return (
-    <Card 
-      sx={{ 
-        height: '100%',
-        borderRadius: 2,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        px: 2,
+        py: 1,
+        borderRadius: 3,
+        backgroundColor: alpha(color, 0.08),
+        border: `1px solid ${alpha(color, 0.2)}`,
         transition: 'all 0.2s ease',
-        border: '1px solid #e2e8f0',
+        cursor: 'default',
         '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-          borderColor: '#cbd5e1'
-        }
+          backgroundColor: alpha(color, 0.12),
+          transform: 'translateY(-1px)',
+        },
       }}
     >
-      <CardContent sx={{ 
-        p: { xs: 2, sm: 2.5, md: 3 },
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between'
-      }}>
-        {/* Header with Icon and Value */}
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          mb: 2
-        }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: { xs: 40, sm: 44, md: 48 },
-              height: { xs: 40, sm: 44, md: 48 },
-              borderRadius: 2,
-              backgroundColor: `${color}.light`,
-              color: `${color}.main`,
-              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
-            }}
-          >
-            {icon}
-          </Box>
-          <Typography variant="h4" component="div" sx={{ 
-            fontWeight: 700, 
-            color: 'text.primary',
-            fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' },
-            lineHeight: 1
-          }}>
-            {value}
-          </Typography>
-        </Box>
-        
-        {/* Title and Description */}
-        <Box>
-          <Typography variant="h6" sx={{ 
-            fontWeight: 600, 
-            color: 'text.primary',
-            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-            mb: 1,
-            lineHeight: 1.2
-          }}>
-            {title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ 
-            fontSize: { xs: '0.75rem', sm: '0.8rem', md: '0.875rem' },
-            lineHeight: 1.4,
-            opacity: 0.8
-          }}>
-            {description}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
+      <Box sx={{ color: color, display: 'flex', alignItems: 'center', '& svg': { fontSize: 18 } }}>
+        {icon}
+      </Box>
+      <Typography sx={{ fontWeight: 700, color: color, fontSize: '1rem', lineHeight: 1 }}>
+        {value}
+      </Typography>
+      <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500, lineHeight: 1 }}>
+        {label}
+      </Typography>
+    </Box>
   );
 };
 
@@ -179,23 +127,28 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
 
   if (loading) {
     return (
-      <Grid container spacing={{ xs: 2, sm: 2, md: 3 }}>
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <SkeletonLoader variant="summary" />
-          </Grid>
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Box
+            key={index}
+            sx={{
+              width: 150,
+              height: 40,
+              borderRadius: 3,
+              backgroundColor: alpha('#1976d2', 0.08),
+              border: `1px solid ${alpha('#1976d2', 0.2)}`,
+            }}
+          />
         ))}
-      </Grid>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Card sx={{ mt: 2 }}>
-        <CardContent>
-          <Alert severity="error">{error}</Alert>
-        </CardContent>
-      </Card>
+      <Alert severity="error" sx={{ mt: 2 }}>
+        {error}
+      </Alert>
     );
   }
 
@@ -203,45 +156,36 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
     return null;
   }
 
+  const mediumPriorityUnread = summary.mediumPriorityUnreadNotifications || 0;
+
   return (
-    <Grid container spacing={{ xs: 2, sm: 2, md: 3 }}>
-      <Grid item xs={12} sm={6} md={3}>
-        <SummaryCard
-          title="Unread"
-          value={summary.unreadNotifications}
-          description="Need attention"
-          icon={<FontAwesomeIcon icon={faBell} />}
-          color="primary"
-        />
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <SummaryCard
-          title="High Priority"
-          value={summary.highPriorityUnreadNotifications}
-          description="Emergency alerts"
-          icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
-          color="error"
-        />
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <SummaryCard
-          title="Email"
-          value={summary.emailNotifications}
-          description="Emails sent"
-          icon={<FontAwesomeIcon icon={faEnvelope} />}
-          color="info"
-        />
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <SummaryCard
-          title="SMS"
-          value={summary.smsNotifications}
-          description="SMS sent"
-          icon={<FontAwesomeIcon icon={faSms} />}
-          color="success"
-        />
-      </Grid>
-    </Grid>
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 2,
+      }}
+    >
+      <StatCard
+        icon={<FontAwesomeIcon icon={faBell} />}
+        value={summary.unreadNotifications}
+        label="Unread"
+        color="#1976d2"
+      />
+      <StatCard
+        icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
+        value={summary.highPriorityUnreadNotifications}
+        label="High Priority"
+        color="#ea580c"
+      />
+      <StatCard
+        icon={<FontAwesomeIcon icon={faExclamationCircle} />}
+        value={mediumPriorityUnread}
+        label="Medium Priority"
+        color="#f59e0b"
+      />
+    </Box>
   );
 };
 

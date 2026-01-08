@@ -160,6 +160,15 @@ export class NotificationsController {
   }
 
   /**
+   * Get case type counts for notification tabs
+   */
+  @Get('case-type-counts')
+  async getCaseTypeCounts(@Request() req: any) {
+    const userId = req.user.id;
+    return this.notificationsService.getCaseTypeCounts(userId);
+  }
+
+  /**
    * Get notification by ID
    */
   @Get(':id')

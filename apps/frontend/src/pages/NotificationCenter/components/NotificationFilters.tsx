@@ -77,6 +77,7 @@ const NotificationFilters: React.FC<NotificationFiltersProps> = ({
     filters.priority || 
     filters.type || 
     filters.caseType || 
+    filters.category ||
     filters.isRead === true
   );
 
