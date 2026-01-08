@@ -52,6 +52,7 @@ const UserRegistrationPage: React.FC = () => {
   const [hospitalsLoading, setHospitalsLoading] = useState(true);
 
   const userRoles = [
+    { value: 'ADMIN', label: 'Administrator', description: 'System Administrator with full access' },
     { value: 'RCC', label: 'RCC Coordinator', description: 'Regional Care Coordinator' },
     { value: 'EMS', label: 'EMS Operator', description: 'Emergency Medical Services' },
     { value: 'DATA_COLLECTOR', label: 'Data Collector', description: 'Clinical Data Entry' },
