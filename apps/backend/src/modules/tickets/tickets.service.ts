@@ -11,6 +11,7 @@ import { AmbulanceRecommendation, ScoreFactor, ZoneVisitSummary } from './types/
 import { AccessLogService, EntityType } from '../../common/services/access-log.service';
 import { EMSETAService } from '../../common/services/ems-eta.service';
 import { NotificationsService } from '../../modules/notifications/notifications.service';
+import { CriticalTimeMonitorService } from '../../modules/notifications/services/critical-time-monitor.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -26,6 +27,8 @@ export class TicketsService {
     private emsAssignmentsService: EmsAssignmentsService,
     @Inject(forwardRef(() => NotificationsService))
     private notificationsService: NotificationsService,
+    @Inject(forwardRef(() => CriticalTimeMonitorService))
+    private criticalTimeMonitorService?: CriticalTimeMonitorService,
   ) {
     this.logger = new Logger(TicketsService.name);
   }
@@ -1080,6 +1083,13 @@ export class TicketsService {
     // Emit WebSocket notification
     this.ticketsGateway.emitTicketStatusChanged(updatedTicket, ticket.status);
 
+    // Schedule critical time check if transfer is completed
+    if (updateStatusDto.status === TicketStatus.COMPLETED && this.criticalTimeMonitorService) {
+      this.criticalTimeMonitorService.scheduleCriticalTimeCheck(id).catch((error: any) => {
+        this.logger.error(`Error scheduling critical time check after transfer completion:`, error);
+      });
+    }
+
     return updatedTicket;
   }
 
@@ -1778,6 +1788,14 @@ export class TicketsService {
 
     this.logger.log(`Ticket ${ticket.ticketNumber} acknowledged by user ${userId}`);
 
+    // Schedule critical time check after acknowledgment
+    if (this.criticalTimeMonitorService) {
+      this.criticalTimeMonitorService.scheduleCriticalTimeCheck(ticketId).catch((error: any) => {
+        this.logger.error(`Error scheduling critical time check after acknowledgment:`, error);
+      });
+    }
+
+    return updatedTicket;
   }
 
   /**

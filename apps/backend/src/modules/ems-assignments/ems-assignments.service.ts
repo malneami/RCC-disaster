@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateEmsAssignmentDto } from './dto/create-ems-assignment.dto';
 import { UpdateEmsAssignmentDto } from './dto/update-ems-assignment.dto';
@@ -8,6 +8,7 @@ import { TimelineEventsService } from '../timeline-events/timeline-events.servic
 import { EmsLocationWorkflowService } from '../../common/services/ems-location-workflow.service';
 import { StatusMappingService } from '../../common/services/status-mapping.service';
 import { EMSETAService } from '../../common/services/ems-eta.service';
+import { CriticalTimeMonitorService } from '../notifications/services/critical-time-monitor.service';
 
 interface AssignmentFilters {
   status?: AssignmentStatus;
@@ -27,7 +28,9 @@ export class EmsAssignmentsService {
     private readonly prisma: PrismaService,
     private readonly timelineEventsService: TimelineEventsService,
     private readonly emsLocationWorkflowService: EmsLocationWorkflowService,
-    private readonly emsEtaService: EMSETAService
+    private readonly emsEtaService: EMSETAService,
+    @Inject(forwardRef(() => CriticalTimeMonitorService))
+    private readonly criticalTimeMonitorService?: CriticalTimeMonitorService,
   ) {}
 
   async create(createAssignmentDto: CreateEmsAssignmentDto, createdBy: string): Promise<EMSAssignment> {
@@ -614,6 +617,13 @@ export class EmsAssignmentsService {
           this.logger.error(`Failed to update ETA for assignment ${assignment.id}: ${err.message}`)
         );
       }
+    }
+
+    // Schedule critical time check if assignment arrived (transfer completed)
+    if (finalStatus === 'ARRIVED' && assignment.journeyEndTime && this.criticalTimeMonitorService) {
+      this.criticalTimeMonitorService.scheduleCriticalTimeCheck(assignment.ticketId).catch((error: any) => {
+        this.logger.error(`Error scheduling critical time check after EMS arrival:`, error);
+      });
     }
 
     this.logger.log(`EMS assignment updated: ${assignment.id}`);
