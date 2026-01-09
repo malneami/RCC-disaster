@@ -1,0 +1,106 @@
+name: PR Review Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  check-pr-review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR has required reviews
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            // Check if PR is in draft
+            if (pr.draft) {
+              console.log('⚠️ PR is in draft mode. Reviews not required yet.');
+              return;
+            }
+
+            // Get reviews for the PR
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            // Filter approved reviews (excluding the PR author)
+            const approvedReviews = reviews.filter(
+              review => 
+                review.state === 'APPROVED' && 
+                review.user.login !== pr.user.login
+            );
+
+            // Get unique reviewers
+            const uniqueReviewers = [...new Set(approvedReviews.map(r => r.user.login))];
+
+            if (uniqueReviewers.length === 0) {
+              core.setFailed('❌ This PR requires at least one approval from a reviewer (excluding the PR author) before it can be merged.');
+              console.log('📋 PR Review Status:');
+              console.log('   - Total reviews:', reviews.length);
+              console.log('   - Approved reviews:', approvedReviews.length);
+              console.log('   - Unique approvers:', uniqueReviewers.length);
+              console.log('');
+              console.log('💡 Please request reviews from team members before merging.');
+            } else {
+              console.log('✅ PR has required reviews:');
+              uniqueReviewers.forEach(reviewer => {
+                console.log(`   - Approved by: @${reviewer}`);
+              });
+            }
+
+      - name: Check PR description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const minDescriptionLength = 50;
+            
+            if (!pr.body || pr.body.trim().length < minDescriptionLength) {
+              core.setFailed(`❌ PR description is too short (minimum ${minDescriptionLength} characters).`);
+              console.log('💡 Please provide a detailed description of your changes.');
+              console.log('   Include:');
+              console.log('   - What changes were made');
+              console.log('   - Why the changes were needed');
+              console.log('   - How to test the changes');
+            } else {
+              console.log('✅ PR description meets requirements');
+            }
+
+      - name: Check for merge conflicts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            if (pr.mergeable === false) {
+              core.setFailed('❌ PR has merge conflicts. Please resolve conflicts before merging.');
+            } else {
+              console.log('✅ No merge conflicts detected');
+            }
+

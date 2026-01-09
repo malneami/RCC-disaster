@@ -1,0 +1,132 @@
+name: Pre-Merge Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  pre-merge-validation:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate PR title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            // Check PR title format (optional: enforce conventional commits)
+            const title = pr.title.trim();
+            const minTitleLength = 10;
+            
+            if (title.length < minTitleLength) {
+              core.setFailed(`❌ PR title is too short (minimum ${minTitleLength} characters).`);
+            } else {
+              console.log('✅ PR title meets requirements');
+            }
+
+      - name: Check changed files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            console.log(`📁 Changed files: ${files.length}`);
+            
+            // Check total line changes (additions + deletions)
+            const totalChanges = files.reduce((sum, file) => sum + file.additions + file.deletions, 0);
+            const maxChanges = 500;
+            
+            console.log(`📊 Total line changes: ${totalChanges} (additions + deletions)`);
+            
+            if (totalChanges > maxChanges) {
+              core.setFailed(`❌ PR exceeds maximum change limit of ${maxChanges} lines. Current changes: ${totalChanges} lines. Please split this PR into smaller changes.`);
+            } else {
+              console.log(`✅ PR change size is within limit (${totalChanges}/${maxChanges} lines)`);
+            }
+            
+            // Check for large files
+            const largeFiles = files.filter(file => file.changes > 1000);
+            if (largeFiles.length > 0) {
+              console.log('⚠️ Warning: Large files detected:');
+              largeFiles.forEach(file => {
+                console.log(`   - ${file.filename}: ${file.changes} changes`);
+              });
+            }
+
+            // Check for sensitive files
+            const sensitivePatterns = [
+              /\.env$/,
+              /\.key$/,
+              /\.pem$/,
+              /secrets?/i,
+              /password/i,
+              /credential/i,
+            ];
+            
+            const sensitiveFiles = files.filter(file => 
+              sensitivePatterns.some(pattern => pattern.test(file.filename))
+            );
+            
+            if (sensitiveFiles.length > 0) {
+              core.setFailed('❌ Sensitive files detected in PR. Please remove them.');
+              sensitiveFiles.forEach(file => {
+                console.log(`   - ${file.filename}`);
+              });
+            } else {
+              console.log('✅ No sensitive files detected');
+            }
+
+      - name: Post PR status comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            
+            const totalChanges = files.reduce((sum, file) => sum + file.additions + file.deletions, 0);
+            const maxChanges = 500;
+            const changeStatus = totalChanges <= maxChanges ? '✅' : '❌';
+            
+            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
+            const comment = `## Pre-Merge Checks ${status}
+            
+            - PR Title: ${pr.title.length >= 10 ? '✅' : '❌'}
+            - PR Description: ${pr.body && pr.body.length >= 50 ? '✅' : '❌'}
+            - Change Size: ${changeStatus} (${totalChanges}/${maxChanges} lines)
+            - File Validation: ${status}
+            
+            ${status === '❌' ? '⚠️ Please address the issues above before merging.' : '✅ All checks passed!'}
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment,
+            });
+
