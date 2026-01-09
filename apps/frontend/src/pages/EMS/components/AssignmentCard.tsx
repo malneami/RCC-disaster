@@ -29,6 +29,7 @@ import {
   faHistory,
   faHeart,
   faBrain,
+  faDownload,
 } from '@fortawesome/free-solid-svg-icons';
 import { alpha } from '@mui/material/styles';
 import { EMSAssignment } from '../types/ems';
@@ -37,6 +38,8 @@ import AmbulanceZoneEntriesModal from './AmbulanceZoneEntriesModal';
 import PatientJourneyTimeline from './PatientJourneyTimeline';
 import CriticalCaseTimer from './CriticalCaseTimer';
 import AssignmentInfoGrid from './AssignmentInfoGrid';
+import { emsService } from '../services/emsService';
+import { downloadFile, sanitizeFilename } from '../../../utils/fileUtils';
 
 interface AssignmentCardProps {
   assignment: EMSAssignment;
@@ -66,11 +69,13 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     markArrived: boolean;
     completeAssignment: boolean;
     delete: boolean;
+    download: boolean;
   }>({
     startAssignment: false,
     markArrived: false,
     completeAssignment: false,
     delete: false,
+    download: false,
   });
 
   // Check if ambulance is late
@@ -188,6 +193,19 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
       await onDelete(assignment.id);
     } finally {
       setLoading('delete', false);
+    }
+  };
+
+  const handleDownload = async () => {
+    setLoading('download', true);
+    try {
+      const blob = await emsService.exportAssignment(assignment.id, 'PDF');
+      const filename = sanitizeFilename(`assignment-${assignment.id.slice(-8).toUpperCase()}-${Date.now()}.pdf`);
+      downloadFile(blob, filename);
+    } catch (error) {
+      // You could add a toast notification here if available
+    } finally {
+      setLoading('download', false);
     }
   };
 
@@ -521,6 +539,17 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             <MenuItem onClick={() => { setZoneEntriesModalOpen(true); handleMenuClose(); }}>
               <FontAwesomeIcon icon={faHistory} style={{ marginRight: 8 }} />
               View Zone Entries
+            </MenuItem>
+            <MenuItem
+              onClick={() => { handleDownload(); handleMenuClose(); }}
+              disabled={loadingStates.download}
+            >
+              {loadingStates.download ? (
+                <CircularProgress size={16} style={{ marginRight: 8 }} />
+              ) : (
+                <FontAwesomeIcon icon={faDownload} style={{ marginRight: 8 }} />
+              )}
+              {loadingStates.download ? 'Downloading...' : 'Download Assignment'}
             </MenuItem>
             <MenuItem onClick={() => { onEdit(assignment); handleMenuClose(); }}>
               <FontAwesomeIcon icon={faEdit} style={{ marginRight: 8 }} />

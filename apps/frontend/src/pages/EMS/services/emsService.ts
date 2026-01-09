@@ -201,6 +201,14 @@ class EMSService {
     return response.data;
   }
 
+  async exportAssignment(id: string, format: 'PDF' | 'JSON' = 'PDF'): Promise<Blob> {
+    const response = await apiClient.get(`${this.baseUrl}/ems-assignments/${id}/export`, {
+      params: { format },
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
   // Driver Schedules
   async getDriverSchedules(): Promise<DriverSchedule[]> {
     try {
@@ -290,7 +298,6 @@ class EMSService {
     timeFromPrevious?: number;
   }>> {
     const url = `/ambulance-tracking/route/${encodeURIComponent(ambulanceId)}`;
-    console.log('Fetching route from URL:', url, 'with options:', options);
     
     const response = await apiClient.get(url, {
       params: options,

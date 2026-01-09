@@ -11,9 +11,12 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Response } from 'express';
 import { EmsAssignmentsService } from './ems-assignments.service';
+import { EmsAssignmentExportService } from './services/ems-assignment-export.service';
 import { CreateEmsAssignmentDto } from './dto/create-ems-assignment.dto';
 import { UpdateEmsAssignmentDto } from './dto/update-ems-assignment.dto';
 import { AssignmentFilterDto } from './dto/assignment-filter.dto';
@@ -27,7 +30,10 @@ import { UserRole } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('ems-assignments')
 export class EmsAssignmentsController {
-  constructor(private readonly emsAssignmentsService: EmsAssignmentsService) {}
+  constructor(
+    private readonly emsAssignmentsService: EmsAssignmentsService,
+    private readonly emsAssignmentExportService: EmsAssignmentExportService,
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
@@ -101,6 +107,23 @@ export class EmsAssignmentsController {
   @ApiResponse({ status: 404, description: 'EMS assignment not found' })
   async findOne(@Param('id') id: string) {
     return this.emsAssignmentsService.findById(id);
+  }
+
+  @Get(':id/export')
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
+  @ApiOperation({ summary: 'Export EMS assignment data' })
+  @ApiQuery({ name: 'format', required: false, enum: ['PDF', 'JSON'], description: 'Export format' })
+  @ApiResponse({ status: 200, description: 'Assignment exported successfully' })
+  @ApiResponse({ status: 404, description: 'Assignment not found' })
+  async exportAssignment(
+    @Param('id') id: string,
+    @Query('format') format: 'PDF' | 'JSON' = 'PDF',
+    @Res() res: Response,
+  ) {
+    const result = await this.emsAssignmentExportService.exportAssignment(id, format);
+    res.setHeader('Content-Type', result.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.data);
   }
 
   @Get(':id/diagnose')
