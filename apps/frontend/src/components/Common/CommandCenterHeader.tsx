@@ -73,7 +73,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
           useCORS: true,
           allowTaint: true,
         });
-        
+
         const link = document.createElement('a');
         link.download = `${title.toLowerCase().replace(/\s+/g, '-')}-dashboard.png`;
         link.href = canvas.toDataURL();
@@ -174,6 +174,9 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
                   '& .MuiInputLabel-root': {
                     color: '#ffffff',
                   },
+                  '& input::-webkit-calendar-picker-indicator': {
+                    filter: 'invert(1)',
+                  },
                 }}
               />
 
@@ -203,6 +206,9 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
                   },
                   '& .MuiInputLabel-root': {
                     color: '#ffffff',
+                  },
+                  '& input::-webkit-calendar-picker-indicator': {
+                    filter: 'invert(1)',
                   },
                 }}
               />
