@@ -21,6 +21,8 @@ import {
   TableChart as TableIcon,
 } from '@mui/icons-material';
 import { reportGeneratorService, ReportResponse } from '../../../services/reportGeneratorService';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   type: 'user' | 'assistant' | 'error' | 'system';
@@ -112,7 +114,7 @@ const Chatbot: React.FC = () => {
       return (
         <Box key={index} sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
           <Alert severity="info" sx={{ width: '100%' }}>
-            {message.content}
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
           </Alert>
         </Box>
       );
@@ -151,9 +153,9 @@ const Chatbot: React.FC = () => {
       <Box key={index} sx={{ mb: 3 }}>
         <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
           <Paper elevation={1} sx={{ p: 2, maxWidth: '80%', backgroundColor: 'background.paper' }}>
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {message.content}
-            </Typography>
+            </ReactMarkdown>
           </Paper>
         </Box>
 
