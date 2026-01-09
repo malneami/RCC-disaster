@@ -9,6 +9,7 @@ import { EmsLocationWorkflowService } from '../../common/services/ems-location-w
 import { StatusMappingService } from '../../common/services/status-mapping.service';
 import { EMSETAService } from '../../common/services/ems-eta.service';
 import { CriticalTimeMonitorService } from '../notifications/services/critical-time-monitor.service';
+import { EmsLateMonitorService } from '../notifications/services/ems-late-monitor.service';
 
 interface AssignmentFilters {
   status?: AssignmentStatus;
@@ -31,6 +32,8 @@ export class EmsAssignmentsService {
     private readonly emsEtaService: EMSETAService,
     @Inject(forwardRef(() => CriticalTimeMonitorService))
     private readonly criticalTimeMonitorService?: CriticalTimeMonitorService,
+    @Inject(forwardRef(() => EmsLateMonitorService))
+    private readonly emsLateMonitorService?: EmsLateMonitorService,
   ) {}
 
   async create(createAssignmentDto: CreateEmsAssignmentDto, createdBy: string): Promise<EMSAssignment> {
@@ -138,6 +141,33 @@ export class EmsAssignmentsService {
       this.emsEtaService.updateAssignmentETA(assignment.id).catch(err => 
         this.logger.error(`Failed to calculate initial ETA for assignment ${assignment.id}: ${err.message}`)
       );
+    }
+
+    // Schedule EMS late monitoring for this assignment
+    // Only monitor if both ambulance and driver are assigned
+    if (this.emsLateMonitorService && assignment.ambulanceId && assignment.driverId) {
+      // Wait for ETA to be calculated, then schedule monitoring
+      // ETA is calculated asynchronously via updateAssignmentETA
+      setTimeout(async () => {
+        const updatedAssignment = await this.prisma.eMSAssignment.findUnique({
+          where: { id: assignment.id },
+          select: { etaToOrigin: true },
+        });
+        if (updatedAssignment?.etaToOrigin !== null && this.emsLateMonitorService) {
+          await this.emsLateMonitorService.scheduleMonitoring(assignment.id);
+        } else if (this.emsLateMonitorService) {
+          // Retry once more after additional delay
+          setTimeout(async () => {
+            const retryAssignment = await this.prisma.eMSAssignment.findUnique({
+              where: { id: assignment.id },
+              select: { etaToOrigin: true },
+            });
+            if (retryAssignment?.etaToOrigin !== null && this.emsLateMonitorService) {
+              await this.emsLateMonitorService.scheduleMonitoring(assignment.id);
+            }
+          }, 3000);
+        }
+      }, 3000); // Wait 3 seconds for ETA calculation
     }
 
     this.logger.log(`EMS assignment created: ${assignment.id}`);
@@ -607,6 +637,46 @@ export class EmsAssignmentsService {
       } catch (error) {
         this.logger.error(`Failed to start location monitoring for assignment ${assignment.id}: ${(error as Error).message}`);
         // Don't throw error to prevent failing the update
+      }
+    }
+
+    // Update EMS late monitoring if status changed or emsContactTime was set
+    if (this.emsLateMonitorService && (statusChanged || updateAssignmentDto.emsContactTime)) {
+      this.emsLateMonitorService.updateAcknowledgment(assignment.id).catch(err =>
+        this.logger.error(`Failed to update EMS late monitoring acknowledgment for assignment ${assignment.id}: ${err.message}`)
+      );
+    }
+
+    // Cancel EMS late monitoring if assignment is completed
+    if (this.emsLateMonitorService && (finalStatus === 'ARRIVED' || finalStatus === 'CANCELLED')) {
+      this.emsLateMonitorService.cancelTimers(assignment.id);
+    }
+
+    // Schedule EMS late monitoring when crew is assigned (both ambulance and driver)
+    if (this.emsLateMonitorService) {
+      const crewIsAssigned = (updateAssignmentDto.ambulanceId || existingAssignment.ambulanceId) && 
+                             (updateAssignmentDto.driverId || existingAssignment.driverId);
+      
+      if (crewIsAssigned && assignment.ambulanceId && assignment.driverId) {
+        // Wait for ETA to be calculated, then schedule monitoring
+        // ETA is calculated asynchronously via updateAssignmentETA
+        if (assignment.etaToOrigin === null) {
+          // ETA not calculated yet, wait for it then schedule
+          setTimeout(async () => {
+            const updatedAssignment = await this.prisma.eMSAssignment.findUnique({
+              where: { id: assignment.id },
+              select: { etaToOrigin: true },
+            });
+            if (updatedAssignment?.etaToOrigin !== null && this.emsLateMonitorService) {
+              await this.emsLateMonitorService.scheduleMonitoring(assignment.id);
+            }
+          }, 3000); // Wait 3 seconds for ETA calculation
+        } else {
+          // ETA already calculated, schedule immediately
+          if (this.emsLateMonitorService) {
+            await this.emsLateMonitorService.scheduleMonitoring(assignment.id);
+          }
+        }
       }
     }
 

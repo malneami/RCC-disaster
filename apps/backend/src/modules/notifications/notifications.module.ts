@@ -11,6 +11,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { KpiStatusTrackerService } from './services/kpi-status-tracker.service';
 import { KpiMonitorService } from './services/kpi-monitor.service';
 import { CriticalTimeMonitorService } from './services/critical-time-monitor.service';
+import { EmsLateMonitorService } from './services/ems-late-monitor.service';
 import { StemiCasesModule } from '../stemi-cases/stemi-cases.module';
 import { StrokeCasesModule } from '../stroke-cases/stroke-cases.module';
 import { TraumaCasesModule } from '../trauma-cases/trauma-cases.module';
@@ -35,6 +36,7 @@ import { TraumaCasesModule } from '../trauma-cases/trauma-cases.module';
     KpiStatusTrackerService,
     KpiMonitorService,
     CriticalTimeMonitorService,
+    EmsLateMonitorService,
   ],
   exports: [
     CaseNotesService,
@@ -42,6 +44,7 @@ import { TraumaCasesModule } from '../trauma-cases/trauma-cases.module';
     NotificationsGateway,
     KpiMonitorService,
     CriticalTimeMonitorService,
+    EmsLateMonitorService,
   ],
 })
 export class NotificationsModule {}
