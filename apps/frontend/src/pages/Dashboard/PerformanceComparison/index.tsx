@@ -16,6 +16,8 @@ import { usePerformanceComparison } from './hooks';
 import DailySummary from './DailySummary';
 import ChangeAnalysis from './ChangeAnalysis';
 import PerformanceChart from './PerformanceChart';
+import CaseDistributionChart from './CaseDistributionChart';
+import { calculateCaseDistribution } from './utils';
 
 export type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -69,6 +71,10 @@ const PerformanceComparison: React.FC<PerformanceComparisonProps> = ({ filters }
     previousChange: 0,
     averageChange: 0,
   };
+
+  // Calculate case distribution from chart data
+  const chartData = data?.chartData?.data || [];
+  const caseDistribution = calculateCaseDistribution(chartData);
 
   return (
     <Card sx={{ 
@@ -192,9 +198,12 @@ const PerformanceComparison: React.FC<PerformanceComparisonProps> = ({ filters }
             <ChangeAnalysis data={data?.changeAnalysis} />
           </Grid>
 
-          {/* Performance Chart Section */}
-          <Grid item xs={12}>
+          {/* Performance Chart and Case Distribution Section */}
+          <Grid item xs={12} md={8}>
             <PerformanceChart data={data?.chartData} />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <CaseDistributionChart data={caseDistribution} />
           </Grid>
         </Grid>
       </CardContent>
