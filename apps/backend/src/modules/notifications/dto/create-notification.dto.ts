@@ -127,8 +127,8 @@ export class NotificationFilterDto {
   caseId?: string;
 
   @IsOptional()
-  @IsBoolean()
-  isRead?: boolean;
+  @IsString()
+  isRead?: string; 
 
   @IsOptional()
   @IsString()

@@ -317,6 +317,12 @@ export class KpiMonitorService implements OnModuleInit, OnModuleDestroy {
         return;
       }
       
+      const hasNotification = await this.kpiStatusTracker.hasCaseNotification(caseId, caseType);
+      
+      if (hasNotification) {
+        return;
+      }
+      
       const systemUserId = await this.notificationsService.getSystemUserId();
       
       let elapsedMinutes: number;
@@ -1300,11 +1306,9 @@ export class KpiMonitorService implements OnModuleInit, OnModuleDestroy {
 
       this.logger.log(`Found ${failingKpis.length} failing KPIs for case ${caseId}`);
 
-      // Check for recent duplicate notification for this case
-      const hasRecent = await this.kpiStatusTracker.hasRecentCaseNotification(caseId, caseType);
+      const hasNotification = await this.kpiStatusTracker.hasCaseNotification(caseId, caseType);
 
-      if (hasRecent) {
-        this.logger.log(`Skipping notification for case ${caseId} - recent notification exists`);
+      if (hasNotification) {
         return;
       }
 

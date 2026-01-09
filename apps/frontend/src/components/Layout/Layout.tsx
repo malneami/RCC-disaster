@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFullscreen } from '../../contexts/FullscreenContext';
 import Sidebar from './Sidebar';
+import NotificationBell from './NotificationBell';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -110,7 +111,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <NotificationBell />
             <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', md: 'block' } }}>
               {user?.firstName} {user?.lastName}
             </Typography>

@@ -308,6 +308,16 @@ export class CriticalTimeMonitorService implements OnModuleInit, OnModuleDestroy
         remainingMinutes,
         false, // approaching
       );
+      
+      this.cancelTimer(ticketId);
+      
+      const remainingUntilExceeded = timeLimitMs - elapsed;
+      if (remainingUntilExceeded > 0) {
+        const timer = setTimeout(async () => {
+          await this.checkCriticalTimeThreshold(ticketId);
+        }, remainingUntilExceeded);
+        this.timers.set(ticketId, timer);
+      }
     } catch (error) {
       this.logger.error(`Error checking critical time threshold for ticket ${ticketId}:`, error);
     }
@@ -324,6 +334,30 @@ export class CriticalTimeMonitorService implements OnModuleInit, OnModuleDestroy
     exceeded: boolean,
   ): Promise<void> {
     try {
+      const existingNotification = await this.prisma.notification.findFirst({
+        where: {
+          type: NotificationType.CRITICAL_TIME_LIMIT_APPROACHING,
+          caseId: ticket.id,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      if (existingNotification && !exceeded) {
+        return;
+      }
+
+      if (existingNotification && exceeded) {
+        const existingMetadata = existingNotification.metadata
+          ? JSON.parse(existingNotification.metadata)
+          : {};
+        
+        if (existingMetadata.exceeded === true) {
+          return;
+        }
+      }
+
       const systemUserId = await this.notificationsService.getSystemUserId();
       const rccUserIds = await this.notificationsService.getUsersByRole(UserRole.RCC);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -11,7 +11,6 @@ import {
   Typography,
   Divider,
   Chip,
-  Badge,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -34,64 +33,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
-import { notificationService } from '../../services/notificationService';
-import { useNotificationSocket } from '../../contexts/NotificationSocketContext';
 
 const Sidebar: React.FC = () => {
   const { user } = useAuth();
-  const { socket, isConnected } = useNotificationSocket();
   const location = useLocation();
   const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const loadUnreadCount = useCallback(async () => {
-    try {
-      const summary = await notificationService.getNotificationSummary();
-      setUnreadCount(summary.unreadNotifications);
-    } catch (error) {
-      console.error('Error loading unread count:', error);
-    }
-  }, []);
-
-  // Load unread count on mount and set up polling
-  useEffect(() => {
-    if (user) {
-      loadUnreadCount();
-      const interval = setInterval(loadUnreadCount, 30000);
-      return () => {
-        clearInterval(interval);
-      };
-    }
-  }, [user, loadUnreadCount]);
-
-  // Listen to socket events using context hook
-  useEffect(() => {
-    if (!socket || !isConnected || !user) {
-      return;
-    }
-
-    const handleNotificationRead = () => {
-      loadUnreadCount();
-    };
-
-    const handleNotificationDeleted = () => {
-      loadUnreadCount();
-    };
-
-    const handleNotificationCreated = () => {
-      loadUnreadCount();
-    };
-
-    socket.on('notification-created', handleNotificationCreated);
-    socket.on('notification-read', handleNotificationRead);
-    socket.on('notification-deleted', handleNotificationDeleted);
-
-    return () => {
-      socket.off('notification-created', handleNotificationCreated);
-      socket.off('notification-read', handleNotificationRead);
-      socket.off('notification-deleted', handleNotificationDeleted);
-    };
-  }, [socket, isConnected, user, loadUnreadCount]);
 
   const navigationItems = [
     {
@@ -306,13 +252,7 @@ const Sidebar: React.FC = () => {
                     minWidth: { xs: 40, md: 56 },
                   }}
                 >
-                  {item.text === 'Notification Center' ? (
-                    <Badge badgeContent={unreadCount} color="error" max={99}>
-                      {item.icon}
-                    </Badge>
-                  ) : (
-                    item.icon
-                  )}
+                  {item.icon}
                 </ListItemIcon>
                 <ListItemText 
                   primary={item.text}

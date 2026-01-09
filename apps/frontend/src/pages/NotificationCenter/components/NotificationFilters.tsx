@@ -4,8 +4,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Checkbox,
-  FormControlLabel,
   IconButton,
   Popover,
   Typography,
@@ -78,14 +76,15 @@ const NotificationFilters: React.FC<NotificationFiltersProps> = ({
     filters.type || 
     filters.caseType || 
     filters.category ||
-    filters.isRead === true
+    filters.isRead
   );
 
-  // Handle checkbox change for isRead
-  const handleReadStatusChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle read status filter change - treat as string like caseType
+  const handleReadStatusChange = (event: any) => {
+    const value = event.target.value;
     setFilters((prev: NotificationFilter) => ({
       ...prev,
-      isRead: event.target.checked ? true : undefined, // Set to true or undefined
+      isRead: value === '' ? undefined : value as string,
     }));
   };
 
@@ -200,18 +199,20 @@ const NotificationFilters: React.FC<NotificationFiltersProps> = ({
           </Select>
         </FormControl>
 
-        {/* Is Read Checkbox */}
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={filters.isRead === true}
-              onChange={handleReadStatusChange}
-              name="isRead"
-              color="primary"
-            />
-          }
-          label="Show only read notifications"
-        />
+        {/* Read Status Filter */}
+        <FormControl fullWidth size="small">
+          <InputLabel>Read Status</InputLabel>
+          <Select
+            name="isRead"
+            value={filters.isRead || ''}
+            onChange={handleReadStatusChange}
+            label="Read Status"
+          >
+            <MenuItem value="">All Notifications</MenuItem>
+            <MenuItem value="false">Unread Only</MenuItem>
+            <MenuItem value="true">Read Only</MenuItem>
+          </Select>
+        </FormControl>
 
         <Divider />
 

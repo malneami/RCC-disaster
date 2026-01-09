@@ -118,7 +118,7 @@ export interface NotificationFilter {
   caseType?: string;
   patientId?: string;
   caseId?: string;
-  isRead?: boolean;
+  isRead?: string; // Changed to string to match URL parameter handling like caseType
   search?: string;
   dateFrom?: string;
   dateTo?: string;

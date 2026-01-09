@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   CircularProgress,
@@ -15,6 +15,7 @@ import {
   faBell,
   faRefresh,
 } from '@fortawesome/free-solid-svg-icons';
+import { useQuery, useQueryClient } from 'react-query';
 
 import EmptyState from '../../../components/Common/EmptyState';
 import SkeletonLoader from '../../../components/Common/SkeletonLoader';
@@ -31,75 +32,58 @@ interface NotificationListProps {
 const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotificationChange, onNotificationsLoaded }) => {
   // Get socket connection from context
   const { socket, isConnected } = useNotificationSocket();
+  const queryClient = useQueryClient();
   const theme = useTheme();
 
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retrying, setRetrying] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
-    total: 0,
-    totalPages: 0,
   });
 
-  const loadNotifications = useCallback(async (silent: boolean = false) => {
-    // Clean up filters - remove undefined values
-    const cleanFilters: NotificationFilter = {};
+  // Clean up filters - remove undefined values
+  const cleanFilters: NotificationFilter = useMemo(() => {
+    const cleaned: NotificationFilter = {};
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        cleanFilters[key as keyof NotificationFilter] = value;
+        cleaned[key as keyof NotificationFilter] = value;
       }
     });
-    
-    const requestFilters: NotificationFilter = {
-      ...cleanFilters,
-      page: pagination.page.toString(),
-      limit: pagination.limit.toString(),
-    };
-        
-    try {
-      if (!silent) {
-        setLoading(true);
-      }
-      setError(null);
-      
-      const data = await notificationService.getNotifications(requestFilters);
-      setNotifications(data.notifications);
-      setPagination(data.pagination);
-      
-      // Notify parent of loaded notifications for case type counts
-      if (onNotificationsLoaded) {
-        onNotificationsLoaded(data.notifications);
-      }
-    } catch (err: any) {
-      console.error('Error loading notifications:', err);
-      
-      // Handle enhanced error types
-      const apiError = err as ApiError;
-      
-      if (apiError.status === 404) {
-        // No notifications found - show empty state instead of error
-        setNotifications([]);
-        setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 });
-        setError(null);
-        return;
-      } else if (apiError.status === 401) {
-        setError('Authentication required. Please log in again.');
-      } else if (apiError.code === 'NETWORK_ERROR') {
-        setError('Network error. Please check your connection and try again.');
-      } else {
-        setError(apiError.message || 'Failed to load notifications. Please try again.');
-      }
-    } finally {
-      if (!silent) {
-        setLoading(false);
-      }
-      setRetrying(false);
+    return cleaned;
+  }, [filters]);
+
+  // Build query key for React Query
+  const queryKey = ['notifications', cleanFilters, pagination.page, pagination.limit];
+
+  // Use React Query for data fetching
+  const { data, isLoading, error, refetch, isRefetching } = useQuery(
+    queryKey,
+    async () => {
+      const requestFilters: NotificationFilter = {
+        ...cleanFilters,
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+      };
+      return await notificationService.getNotifications(requestFilters);
+    },
+    {
+      refetchInterval: 30000, // Refetch every 30 seconds
+      refetchOnWindowFocus: true,
+      staleTime: 10000, // Consider data stale after 10 seconds
+      retry: 1,
+      onSuccess: (data) => {
+        // Notify parent of loaded notifications for case type counts
+        if (onNotificationsLoaded) {
+          onNotificationsLoaded(data.notifications);
+        }
+      },
     }
-  }, [filters, pagination.page, pagination.limit]);
+  );
+
+  const notifications = data?.notifications || [];
+  const paginationData = data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 };
+  const loading = isLoading && !isRefetching;
+  const retrying = isRefetching;
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -111,18 +95,6 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     });
   }, [filters]);
 
-  useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
-
-  // Set up polling interval (silent refresh)
-  useEffect(() => {
-    const interval = setInterval(() => loadNotifications(true), 30000);
-    return () => {
-      clearInterval(interval);
-    };
-  }, [loadNotifications]);
-
   // Listen to socket events using context hook
   useEffect(() => {
     if (!socket || !isConnected) {
@@ -130,15 +102,15 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     }
 
     const handleNotificationCreated = () => {
-      loadNotifications(true);
+      queryClient.invalidateQueries(['notifications']);
     };
 
     const handleNotificationRead = () => {
-      loadNotifications(true);
+      queryClient.invalidateQueries(['notifications']);
     };
 
     const handleNotificationDeleted = () => {
-      loadNotifications(true);
+      queryClient.invalidateQueries(['notifications']);
     };
 
     socket.on('notification-created', handleNotificationCreated);
@@ -150,45 +122,29 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
       socket.off('notification-read', handleNotificationRead);
       socket.off('notification-deleted', handleNotificationDeleted);
     };
-  }, [socket, isConnected, loadNotifications]);
+  }, [socket, isConnected, queryClient]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      console.log('Marking notification as read:', notificationId);
-      const result = await notificationService.markNotificationsAsRead([notificationId]);
-      console.log('Mark as read result:', result);
-      
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === notificationId
-            ? { ...notification, isRead: true, readAt: new Date().toISOString() }
-            : notification
-        )
-      );
+      await notificationService.markNotificationsAsRead([notificationId]);
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries(['notifications']);
+      queryClient.invalidateQueries('notificationSummary');
       // Trigger refresh of summary cards
       if (onNotificationChange) {
         onNotificationChange();
       }
     } catch (err) {
       console.error('Error marking notification as read:', err);
-      // Revert the optimistic update
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === notificationId
-            ? { ...notification, isRead: false, readAt: undefined }
-            : notification
-        )
-      );
     }
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
     try {
-      console.log('Deleting notification:', notificationId);
-      const result = await notificationService.deleteNotification(notificationId);
-      console.log('Delete result:', result);
-      
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      await notificationService.deleteNotification(notificationId);
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries(['notifications']);
+      queryClient.invalidateQueries('notificationSummary');
       // Trigger refresh of summary cards
       if (onNotificationChange) {
         onNotificationChange();
@@ -202,11 +158,8 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
     setPagination(prev => ({ ...prev, page }));
   };
 
-
   const handleRetry = () => {
-    setRetrying(true);
-    setError(null);
-    loadNotifications();
+    refetch();
   };
   const filteredNotifications = useMemo(() => {
     if (!selectedPriority) {
@@ -253,6 +206,9 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
   }
 
   if (error) {
+    const apiError = error as ApiError;
+    const errorMessage = apiError?.message || 'Failed to load notifications. Please try again.';
+    
     return (
       <Alert 
         severity="error" 
@@ -268,7 +224,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
           </Button>
         }
       >
-        {error}
+        {errorMessage}
       </Alert>
     );
   }
@@ -356,7 +312,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
       )}
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {paginationData.totalPages > 1 && (
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'center', 
@@ -365,7 +321,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ filters, onNotifica
           borderTop: '1px solid #e2e8f0'
         }}>
           <Pagination
-            count={pagination.totalPages}
+            count={paginationData.totalPages}
             page={pagination.page}
             onChange={handlePageChange}
             color="primary"

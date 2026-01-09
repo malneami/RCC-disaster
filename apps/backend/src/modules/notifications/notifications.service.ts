@@ -329,11 +329,14 @@ export class NotificationsService {
         where.caseId = caseId;
       }
 
-      if (isRead !== undefined) {
+      const isReadValue = isRead as string | undefined;
+      if (isReadValue && String(isReadValue).trim() !== '') {
+        const isReadBoolean = isReadValue.toLowerCase() === 'true';
+        this.logger.log(`Filtering by isRead: ${isReadValue} -> ${isReadBoolean}`);
         where.recipients = {
           some: {
             userId,
-            isRead,
+            isRead: isReadBoolean,
             deletedAt: null, // Only include non-deleted recipients
           },
         };
@@ -627,9 +630,18 @@ export class NotificationsService {
         },
       };
 
-      // Get total count (ALL - read + unread)
-      const totalCount = await this.prisma.notification.count({
-        where: baseWhere,
+      // Get unread count for ALL (not total count)
+      const allUnreadCount = await this.prisma.notification.count({
+        where: {
+          ...baseWhere,
+          recipients: {
+            some: {
+              userId,
+              isRead: false,
+              deletedAt: null,
+            },
+          },
+        },
       });
 
       // Get unread counts by case type
@@ -676,7 +688,7 @@ export class NotificationsService {
       ]);
 
       return {
-        ALL: totalCount,
+        ALL: allUnreadCount,
         STEMI: stemiUnread,
         STROKE: strokeUnread,
         TRAUMA: traumaUnread,
@@ -1291,7 +1303,21 @@ export class NotificationsService {
     destinationHospitalId: string,
   ) {
     try {
-      this.logger.log(`Creating ticket assignment notification for ticket ${ticketId}, destination hospital ${destinationHospitalId}`);
+      const existingNotification = await this.prisma.notification.findFirst({
+        where: {
+          ticketId,
+          type: {
+            in: [NotificationType.CRITICAL_CASE_INCOMING, NotificationType.CASE_ASSIGNMENT],
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      if (existingNotification) {
+        return existingNotification;
+      }
       
       const ticket = await this.prisma.ticket.findUnique({
         where: { id: ticketId },
@@ -1349,10 +1375,10 @@ export class NotificationsService {
       let notificationPriority: NotificationPriority;
       switch (ticket.priority) {
         case 'EMERGENCY':
-          notificationPriority = NotificationPriority.HIGH;
+          notificationPriority = NotificationPriority.CRITICAL;
           break;
         case 'CRITICAL':
-          notificationPriority = NotificationPriority.HIGH; // Same as EMERGENCY
+          notificationPriority = NotificationPriority.HIGH; 
           break;
         case 'MEDIUM':
           notificationPriority = NotificationPriority.MEDIUM;

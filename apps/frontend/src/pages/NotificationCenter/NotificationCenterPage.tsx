@@ -7,7 +7,6 @@ import {
   CardContent,
   Typography,
   Chip,
-  Alert,
   IconButton,
   Tooltip,
   Badge,
@@ -24,6 +23,7 @@ import {
   faTicketAlt,
   faTimes,
 } from '@fortawesome/free-solid-svg-icons';
+import { useQuery, useQueryClient } from 'react-query';
 
 import NotificationSummaryCards from './components/NotificationSummaryCards';
 import NotificationList from './components/NotificationList';
@@ -32,77 +32,41 @@ import RCCIncomingCasesList from './components/RCCIncomingCasesList';
 
 import CaseTypeTabs, { CaseTypeFilter } from './components/CaseTypeTabs';
 import EmptyState from '../../components/Common/EmptyState';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import ErrorBoundary from '../../components/Common/ErrorBoundary';
-import { notificationService, NotificationFilter, NotificationCategory } from '../../services/notificationService';
+import { notificationService, NotificationFilter } from '../../services/notificationService';
 import { ticketService } from '../../services/ticketService';
-import { useDebouncedCallback } from '../../hooks/useDebounce';
 import { useNotificationSocket } from '../../contexts/NotificationSocketContext';
 import { useAuth } from '../../contexts/AuthContext';
-import GenericPageHeader from '@/components/Common/GenericPageHeader';
 
 
 const NotificationCenterPage: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   // Get socket connection from context
   const { socket, isConnected } = useNotificationSocket();
 
   // State
   const [activeCaseType, setActiveCaseType] = useState<CaseTypeFilter>('ALL');
   const [filters, setFilters] = useState<NotificationFilter>({});
-  const [categories, setCategories] = useState<NotificationCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [caseTypeCounts, setCaseTypeCounts] = useState<Record<CaseTypeFilter, number>>({
-    ALL: 0,
-    STEMI: 0,
-    STROKE: 0,
-    TRAUMA: 0,
-    INCOMING_CRITICAL: 0,
-  });
   const filterButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Check if any filters are active
-  const hasActiveFilters = Boolean(
-    filters.priority || 
-    filters.type || 
-    filters.caseType || 
-    filters.category ||
-    filters.isRead === true
+  // Use React Query for categories
+  const { data: categories = [] } = useQuery(
+    'notificationCategories',
+    () => notificationService.getNotificationCategories(),
+    {
+      refetchInterval: 30000, // Refetch every 30 seconds
+      refetchOnWindowFocus: true,
+      staleTime: 10000,
+    }
   );
 
-  const handleFilterClick = () => {
-    if (filterButtonRef.current) {
-      setFilterAnchorEl(filterButtonRef.current);
-    }
-  };
-
-  // Load initial data
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  // Debounced refresh function to prevent multiple rapid refreshes
-  const debouncedRefresh = useDebouncedCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
-  }, 500);
-
-  // Debounced category load function
-  const debouncedLoadCategories = useDebouncedCallback(async () => {
-    try {
-      const categoriesData = await notificationService.getNotificationCategories();
-      setCategories(categoriesData);
-    } catch (err) {
-      console.error('Error loading categories:', err);
-    }
-  }, 500);
-
-  // Load case type counts efficiently from backend
-  const loadCaseTypeCounts = useCallback(async () => {
-    try {
+  // Use React Query for case type counts
+  const { data: caseTypeCounts = { ALL: 0, STEMI: 0, STROKE: 0, TRAUMA: 0, INCOMING_CRITICAL: 0 } } = useQuery(
+    ['caseTypeCounts', user?.role],
+    async () => {
       const counts = await notificationService.getCaseTypeCounts();
       let incomingCount = 0;
       if (user?.role === 'RCC' || user?.role === 'ADMIN' || user?.role === 'HOSPITAL_USER') {
@@ -113,54 +77,54 @@ const NotificationCenterPage: React.FC = () => {
           console.error('Error loading incoming cases count:', err);
         }
       }
-      setCaseTypeCounts({
+      return {
         ALL: counts.ALL || 0,
         STEMI: counts.STEMI || 0,
         STROKE: counts.STROKE || 0,
         TRAUMA: counts.TRAUMA || 0,
         INCOMING_CRITICAL: incomingCount,
-      });
-    } catch (err) {
-      console.error('Error loading case type counts:', err);
+      };
+    },
+    {
+      refetchInterval: 30000, // Refetch every 30 seconds
+      refetchOnWindowFocus: true,
+      staleTime: 10000,
+      enabled: !!user, // Only fetch when user is available
     }
-  }, [user?.role]);
+  );
+
+  // Check if any filters are active
+  const hasActiveFilters = Boolean(
+    filters.priority || 
+    filters.type || 
+    filters.caseType || 
+    filters.category ||
+    filters.isRead
+  );
+
+  const handleFilterClick = () => {
+    if (filterButtonRef.current) {
+      setFilterAnchorEl(filterButtonRef.current);
+    }
+  };
 
   // Memoized event handlers using useCallback
   const handleNotificationCreated = useCallback(() => {
-    debouncedRefresh();
-    debouncedLoadCategories();
-    loadCaseTypeCounts();
-  }, [debouncedRefresh, debouncedLoadCategories, loadCaseTypeCounts]);
+    queryClient.invalidateQueries(['notifications']);
+    queryClient.invalidateQueries('notificationCategories');
+    queryClient.invalidateQueries(['caseTypeCounts']);
+  }, [queryClient]);
 
   const handleNotificationRead = useCallback(() => {
-    debouncedRefresh();
-    loadCaseTypeCounts();
-  }, [debouncedRefresh, loadCaseTypeCounts]);
+    queryClient.invalidateQueries(['notifications']);
+    queryClient.invalidateQueries(['caseTypeCounts']);
+  }, [queryClient]);
 
   const handleNotificationDeleted = useCallback(() => {
-    debouncedRefresh();
-    debouncedLoadCategories();
-    loadCaseTypeCounts();
-  }, [debouncedRefresh, debouncedLoadCategories, loadCaseTypeCounts]);
-
-  // Load categories on mount and set up interval
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const categoriesData = await notificationService.getNotificationCategories();
-        setCategories(categoriesData);
-      } catch (err) {
-        console.error('Error loading categories:', err);
-      }
-    };
-
-    loadCategories();
-    const interval = setInterval(loadCategories, 30000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
+    queryClient.invalidateQueries(['notifications']);
+    queryClient.invalidateQueries('notificationCategories');
+    queryClient.invalidateQueries(['caseTypeCounts']);
+  }, [queryClient]);
 
   // Listen to socket events using context hook
   useEffect(() => {
@@ -180,23 +144,6 @@ const NotificationCenterPage: React.FC = () => {
     };
   }, [socket, isConnected, handleNotificationCreated, handleNotificationRead, handleNotificationDeleted]);
 
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [categoriesData] = await Promise.all([
-        notificationService.getNotificationCategories(),
-      ]);
-
-      setCategories(categoriesData);
-    } catch (err) {
-      console.error('Error loading notification data:', err);
-      setError('Failed to load notification data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const removeFilter = (filterKey: keyof NotificationFilter) => {
     const { [filterKey]: _, ...restFilters } = filters;
@@ -240,47 +187,14 @@ const NotificationCenterPage: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    loadInitialData();
-    setRefreshTrigger(prev => prev + 1);
-    loadCaseTypeCounts();
+    queryClient.invalidateQueries(['notifications']);
+    queryClient.invalidateQueries('notificationCategories');
+    queryClient.invalidateQueries(['caseTypeCounts']);
   };
 
   const handleNotificationChange = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
-    loadCaseTypeCounts();
-  }, [loadCaseTypeCounts]);
-
-  useEffect(() => {
-    loadCaseTypeCounts();
-    const interval = setInterval(loadCaseTypeCounts, 30000);
-    return () => clearInterval(interval);
-  }, [refreshTrigger, loadCaseTypeCounts]);
-
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return (
-      <Box>
-        <GenericPageHeader
-          title="Notification Center"
-          subtitle="View and manage all notifications across the RCC platform"
-          actions={[
-            {
-              tooltip: 'Refresh',
-              onClick: handleRefresh,
-              icon: <FontAwesomeIcon icon={faRefresh} />,
-            },
-          ]}
-        />
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
-        </Alert>
-      </Box>
-    );
-  }
+    queryClient.invalidateQueries(['caseTypeCounts']);
+  }, [queryClient]);
 
   return (
     <ErrorBoundary>
@@ -376,7 +290,6 @@ const NotificationCenterPage: React.FC = () => {
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' ,borderTop: `1px solid ${theme.palette.divider}`, paddingTop: 1, gap: 1.5, flexWrap: 'wrap' }}>
           <NotificationSummaryCards 
-            refreshTrigger={refreshTrigger} 
             filters={filters}
             incomingCriticalCasesCount={caseTypeCounts.INCOMING_CRITICAL}
           />
@@ -495,7 +408,17 @@ const NotificationCenterPage: React.FC = () => {
                       size="small"
                     />
                   )}
-                  {filters.isRead === true && (
+                  {filters.isRead === 'false' && (
+                    <Chip
+                      label="Unread Only"
+                      onDelete={() => removeFilter('isRead')}
+                      deleteIcon={<FontAwesomeIcon icon={faTimes} />}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  )}
+                  {filters.isRead === 'true' && (
                     <Chip
                       label="Read Only"
                       onDelete={() => removeFilter('isRead')}
@@ -511,7 +434,7 @@ const NotificationCenterPage: React.FC = () => {
               {activeCaseType === 'INCOMING_CRITICAL' && (user?.role === 'RCC' || user?.role === 'ADMIN') ? (
                 <RCCIncomingCasesList 
                   onCaseAcknowledged={() => {
-                    loadCaseTypeCounts();
+                    queryClient.invalidateQueries(['caseTypeCounts']);
                   }}
                 />
               ) : (
