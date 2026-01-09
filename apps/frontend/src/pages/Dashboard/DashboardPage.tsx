@@ -370,6 +370,9 @@ const DashboardPage: React.FC = () => {
                   '& .MuiInputLabel-root': {
                     color: '#ffffff',
                   },
+                  '& input::-webkit-calendar-picker-indicator': {
+                    filter: 'invert(1)',
+                  },
                 }}
               />
 
@@ -399,6 +402,9 @@ const DashboardPage: React.FC = () => {
                   },
                   '& .MuiInputLabel-root': {
                     color: '#ffffff',
+                  },
+                  '& input::-webkit-calendar-picker-indicator': {
+                    filter: 'invert(1)',
                   },
                 }}
               />
