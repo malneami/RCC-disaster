@@ -10,10 +10,12 @@ import {
   faBell,
   faExclamationTriangle,
   faExclamationCircle,
+  faHospital,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { notificationService, NotificationSummary, NotificationFilter } from '../../../services/notificationService';
 import { useNotificationSocket } from '../../../contexts/NotificationSocketContext';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -63,11 +65,17 @@ const StatCard: React.FC<StatCardProps> = ({
 interface NotificationSummaryCardsProps {
   refreshTrigger?: number;
   filters?: NotificationFilter;
+  incomingCriticalCasesCount?: number;
 }
 
-const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ refreshTrigger, filters }) => {
+const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ refreshTrigger, filters, incomingCriticalCasesCount = 0 }) => {
   // Get socket connection from context
   const { socket, isConnected } = useNotificationSocket();
+  const { user } = useAuth();
+  
+  // Check user roles
+  const isRCC = user?.role === 'RCC' || user?.role === 'ADMIN';
+  const isHospitalUser = user?.role === 'HOSPITAL_USER';
 
   const [summary, setSummary] = useState<NotificationSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,8 +164,6 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
     return null;
   }
 
-  const mediumPriorityUnread = summary.mediumPriorityUnreadNotifications || 0;
-
   return (
     <Box
       sx={{
@@ -179,12 +185,31 @@ const NotificationSummaryCards: React.FC<NotificationSummaryCardsProps> = ({ ref
         label="High Priority"
         color="#ea580c"
       />
-      <StatCard
-        icon={<FontAwesomeIcon icon={faExclamationCircle} />}
-        value={mediumPriorityUnread}
-        label="Medium Priority"
-        color="#f59e0b"
-      />
+      {isRCC && !isHospitalUser ? (
+        <StatCard
+          icon={<FontAwesomeIcon icon={faHospital} />}
+          value={incomingCriticalCasesCount}
+          label="Incoming Critical Cases"
+          color="#10b981"
+        />
+      ) : (
+        <>
+          {isHospitalUser && (
+            <StatCard
+              icon={<FontAwesomeIcon icon={faHospital} />}
+              value={incomingCriticalCasesCount}
+              label="Incoming Critical Cases"
+              color="#10b981"
+            />
+          )}
+          <StatCard
+            icon={<FontAwesomeIcon icon={faExclamationCircle} />}
+            value={summary.mediumPriorityUnreadNotifications || 0}
+            label="Medium Priority"
+            color="#f59e0b"
+          />
+        </>
+      )}
     </Box>
   );
 };

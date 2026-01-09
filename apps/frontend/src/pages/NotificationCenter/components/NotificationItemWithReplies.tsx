@@ -8,6 +8,7 @@ import {
   Collapse,
   alpha,
   useTheme,
+  Button,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -28,6 +29,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Notification } from '../../../services/notificationService';
 import RepliesSection from './RepliesSection';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationItemWithRepliesProps {
   notification: Notification;
@@ -41,6 +43,7 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
   onDelete,
 }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [showReplies, setShowReplies] = useState(false);
   const [isMessageExpanded, setIsMessageExpanded] = useState(false);
   const [isMessageTruncated, setIsMessageTruncated] = useState(false);
@@ -214,6 +217,86 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
     
     const diffInMonths = Math.floor(diffInDays / 30);
     return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
+  };
+
+  const parseMessageWithHighlights = (message: string) => {
+    if (notification.type !== 'CRITICAL_CASE_INCOMING') {
+      return message;
+    }
+
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    const regex = /\[\[(PATIENT|ORIGIN|DEST|TICKET):([^\]]+)\]\]/g;
+    let match;
+
+    while ((match = regex.exec(message)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(message.substring(lastIndex, match.index));
+      }
+
+      const type = match[1];
+      const value = match[2];
+
+      if (type === 'PATIENT') {
+        parts.push(
+          <Box
+            key={`patient-${match.index}`}
+            component="span"
+            sx={{
+              fontWeight: 700,
+              color: theme.palette.primary.main,
+              backgroundColor: alpha(theme.palette.primary.main, 0.1),
+              px: 0.75,
+              py: 0.25,
+              borderRadius: 0.5,
+            }}
+          >
+            {value}
+          </Box>
+        );
+      } else if (type === 'ORIGIN') {
+        parts.push(
+          <Box
+            key={`origin-${match.index}`}
+            component="span"
+            sx={{
+              fontWeight: 600,
+              color: theme.palette.info.main,
+              backgroundColor: alpha(theme.palette.info.main, 0.1),
+              px: 0.75,
+              py: 0.25,
+              borderRadius: 0.5,
+            }}
+          >
+            {value}
+          </Box>
+        );
+      } else if (type === 'DEST') {
+        parts.push(
+          <Box
+            key={`dest-${match.index}`}
+            component="span"
+            sx={{
+              fontWeight: 600,
+              color: theme.palette.success.main,
+              backgroundColor: alpha(theme.palette.success.main, 0.1),
+              px: 0.75,
+              py: 0.25,
+              borderRadius: 0.5,
+            }}
+          >
+            {value}
+          </Box>
+        );
+      }
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < message.length) {
+      parts.push(message.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : message;
   };
 
   const handleMarkAsRead = () => {
@@ -491,9 +574,8 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
             {/* Message */}
             <Box sx={{ position: 'relative' }}>
               {/* Hidden element to measure full text height */}
-              <Typography 
+              <Box 
                 ref={measureRef}
-                variant="body2" 
                 sx={{ 
                   position: 'absolute',
                   visibility: 'hidden',
@@ -505,31 +587,36 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
                   wordBreak: 'break-word',
                   pointerEvents: 'none',
                   zIndex: -1,
+                  color: 'text.secondary',
                 }}
               >
                 {notification.message}
-              </Typography>
+              </Box>
               
-              <Typography 
+              <Box
                 ref={messageRef}
-                variant="body2" 
-                color="text.secondary"
                 sx={{ 
                   fontSize: { xs: '0.875rem', sm: '0.9rem' },
                   lineHeight: 1.6,
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
+                  color: 'text.secondary',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.5,
+                  alignItems: 'center',
                   ...(isMessageTruncated && !isMessageExpanded && {
                     display: '-webkit-box',
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
+                    gap: 0,
                   }),
                 }}
               >
-                {notification.message}
-              </Typography>
+                {parseMessageWithHighlights(notification.message)}
+              </Box>
               {isMessageTruncated && (
                 <Box
                   onClick={() => setIsMessageExpanded(!isMessageExpanded)}
@@ -581,7 +668,7 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
             </Box>
 
             {/* Time */}
-            <Box sx={{ mt: 0.5 }}>
+            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography 
                 variant="caption" 
                 color="text.secondary"
@@ -593,6 +680,32 @@ const NotificationItemWithReplies: React.FC<NotificationItemWithRepliesProps> = 
               >
                 {formatTimeAgo(notification.createdAt)}
               </Typography>
+              
+              {notification.type === 'CRITICAL_CASE_INCOMING' && notification.ticketId && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => navigate(`/tickets/${notification.ticketId}`)}
+                  startIcon={<FontAwesomeIcon icon={faTicketAlt} />}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: '0.75rem',
+                    py: 0.5,
+                    px: 1.5,
+                    borderRadius: 1.5,
+                    borderColor: theme.palette.primary.main,
+                    color: theme.palette.primary.main,
+                    '&:hover': {
+                      borderColor: theme.palette.primary.dark,
+                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  View Details
+                </Button>
+              )}
             </Box>
           </Box>
 

@@ -230,30 +230,6 @@ export class TicketsService {
       this.logger.debug(`Ticket ${ticket.id} has no destination hospital, skipping assignment notification`);
     }
 
-    const isCriticalCase = (ticket.isEmergency || ticket.priority === 'CRITICAL' || ticket.priority === 'EMERGENCY') &&
-                           (ticket.pathway === 'STEMI' || ticket.pathway === 'STROKE');
-    
-    if (isCriticalCase && ticket.destinationHospitalId) {
-      try {
-        // Notify RCC users (HIGH priority, TICKETS category - escalation)
-        await this.notificationsService.createCriticalCaseNotification(
-          ticket.id,
-          ticket.pathway as CaseType,
-          ticket.id, // Use ticket ID as case ID
-          ticket.destinationHospitalId,
-          true, // isRCCNotification = true for RCC users
-        );
-
-        this.logger.log(
-          `Created RCC escalation notification for critical case ticket ${ticket.id} (${ticket.pathway})`,
-        );
-      } catch (error) {
-        this.logger.error(
-          `Failed to create RCC escalation notification for ticket ${ticket.id}: ${(error as Error).message}`,
-        );
-        // Don't fail ticket creation if notification fails
-      }
-    }
 
     try {
       const emsAssignment = await this.emsAssignmentsService.create({
@@ -1796,6 +1772,115 @@ export class TicketsService {
     }
 
     return updatedTicket;
+  }
+
+  /**
+   * Get incoming critical cases for RCC
+   * Returns critical cases (STEMI/STROKE) that are incoming to hospitals
+   * This is a list view for RCC, not notifications
+   */
+  async getRCCIncomingCases() {
+    try {
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      const criticalCases = await this.prisma.ticket.findMany({
+        where: {
+          deletedAt: null,
+          status: {
+            not: 'COMPLETED',
+          },
+          destinationHospitalId: {
+            not: null,
+          },
+          pathway: {
+            in: ['STEMI', 'STROKE'],
+          },
+          OR: [
+            { priority: 'CRITICAL' },
+            { priority: 'EMERGENCY' },
+            { isEmergency: true },
+          ],
+          createdAt: {
+            gte: twentyFourHoursAgo,
+          },
+        },
+        include: {
+          patient: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              nationalId: true,
+              dateOfBirth: true,
+              gender: true,
+            },
+          },
+          originHospital: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+          },
+          destinationHospital: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          acknowledgedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          emsAssignments: {
+            where: {
+              deletedAt: null,
+            },
+            include: {
+              ambulance: {
+                select: {
+                  id: true,
+                  callSign: true,
+                  plateNumber: true,
+                },
+              },
+              driver: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+            orderBy: {
+              assignedAt: 'desc',
+            },
+            take: 1,
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return criticalCases;
+    } catch (error) {
+      this.logger.error(`Error fetching RCC incoming critical cases: ${(error as Error).message}`);
+      throw error;
+    }
   }
 
   /**

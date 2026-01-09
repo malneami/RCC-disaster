@@ -28,19 +28,23 @@ import {
 import NotificationSummaryCards from './components/NotificationSummaryCards';
 import NotificationList from './components/NotificationList';
 import NotificationFilters from './components/NotificationFilters';
+import RCCIncomingCasesList from './components/RCCIncomingCasesList';
 
 import CaseTypeTabs, { CaseTypeFilter } from './components/CaseTypeTabs';
 import EmptyState from '../../components/Common/EmptyState';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import ErrorBoundary from '../../components/Common/ErrorBoundary';
 import { notificationService, NotificationFilter, NotificationCategory } from '../../services/notificationService';
+import { ticketService } from '../../services/ticketService';
 import { useDebouncedCallback } from '../../hooks/useDebounce';
 import { useNotificationSocket } from '../../contexts/NotificationSocketContext';
+import { useAuth } from '../../contexts/AuthContext';
 import GenericPageHeader from '@/components/Common/GenericPageHeader';
 
 
 const NotificationCenterPage: React.FC = () => {
   const theme = useTheme();
+  const { user } = useAuth();
   // Get socket connection from context
   const { socket, isConnected } = useNotificationSocket();
 
@@ -57,6 +61,7 @@ const NotificationCenterPage: React.FC = () => {
     STEMI: 0,
     STROKE: 0,
     TRAUMA: 0,
+    INCOMING_CRITICAL: 0,
   });
   const filterButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -99,16 +104,26 @@ const NotificationCenterPage: React.FC = () => {
   const loadCaseTypeCounts = useCallback(async () => {
     try {
       const counts = await notificationService.getCaseTypeCounts();
+      let incomingCount = 0;
+      if (user?.role === 'RCC' || user?.role === 'ADMIN' || user?.role === 'HOSPITAL_USER') {
+        try {
+          const incomingCases = await ticketService.getRCCIncomingCases();
+          incomingCount = incomingCases.length;
+        } catch (err) {
+          console.error('Error loading incoming cases count:', err);
+        }
+      }
       setCaseTypeCounts({
         ALL: counts.ALL || 0,
         STEMI: counts.STEMI || 0,
         STROKE: counts.STROKE || 0,
         TRAUMA: counts.TRAUMA || 0,
+        INCOMING_CRITICAL: incomingCount,
       });
     } catch (err) {
       console.error('Error loading case type counts:', err);
     }
-  }, []);
+  }, [user?.role]);
 
   // Memoized event handlers using useCallback
   const handleNotificationCreated = useCallback(() => {
@@ -194,6 +209,10 @@ const NotificationCenterPage: React.FC = () => {
 
   const handleCaseTypeChange = (caseType: CaseTypeFilter) => {
     setActiveCaseType(caseType);
+    // INCOMING_CRITICAL tab doesn't use filters - it shows all incoming cases
+    if (caseType === 'INCOMING_CRITICAL') {
+      return;
+    }
     if (caseType === 'ALL') {
       const { caseType: _, ...restFilters } = filters;
       setFilters(restFilters);
@@ -326,49 +345,57 @@ const NotificationCenterPage: React.FC = () => {
                 <FontAwesomeIcon icon={faRefresh} />
               </IconButton>
             </Tooltip>
-            <Tooltip title={hasActiveFilters ? 'Filter Notifications (Active)' : 'Filter Notifications'}>
-              <IconButton
-                ref={filterButtonRef}
-                onClick={handleFilterClick}
-                color={hasActiveFilters ? 'primary' : 'default'}
-                sx={{
-                  borderRadius: 2.5,
-                  ...(hasActiveFilters && {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                    '&:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                    },
-                  }),
-                }}
-              >
-                {hasActiveFilters ? (
-                  <Badge badgeContent="•" color="primary">
+            {activeCaseType !== 'INCOMING_CRITICAL' && (
+              <Tooltip title={hasActiveFilters ? 'Filter Notifications (Active)' : 'Filter Notifications'}>
+                <IconButton
+                  ref={filterButtonRef}
+                  onClick={handleFilterClick}
+                  color={hasActiveFilters ? 'primary' : 'default'}
+                  sx={{
+                    borderRadius: 2.5,
+                    ...(hasActiveFilters && {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                      },
+                    }),
+                  }}
+                >
+                  {hasActiveFilters ? (
+                    <Badge badgeContent="•" color="primary">
+                      <FontAwesomeIcon icon={faFilter} />
+                    </Badge>
+                  ) : (
                     <FontAwesomeIcon icon={faFilter} />
-                  </Badge>
-                ) : (
-                  <FontAwesomeIcon icon={faFilter} />
-                )}
-              </IconButton>
-            </Tooltip>
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' ,borderTop: `1px solid ${theme.palette.divider}`, paddingTop: 1, gap: 1.5, flexWrap: 'wrap' }}>
-          <NotificationSummaryCards refreshTrigger={refreshTrigger} filters={filters} />
+          <NotificationSummaryCards 
+            refreshTrigger={refreshTrigger} 
+            filters={filters}
+            incomingCriticalCasesCount={caseTypeCounts.INCOMING_CRITICAL}
+          />
         </Box>
         </Box>
       </Container>
 
-      {/* Filters Popup */}
-      <NotificationFilters
-        currentFilters={filters}
-        onApplyFilters={handleFilterChange}
-        onResetFilters={() => setFilters({})}
-        onRefresh={handleRefresh}
-        anchorEl={filterAnchorEl}
-        open={Boolean(filterAnchorEl)}
-        onClose={() => setFilterAnchorEl(null)}
-      />
+      {/* Filters Popup - Don't show for INCOMING_CRITICAL tab */}
+      {activeCaseType !== 'INCOMING_CRITICAL' && (
+        <NotificationFilters
+          currentFilters={filters}
+          onApplyFilters={handleFilterChange}
+          onResetFilters={() => setFilters({})}
+          onRefresh={handleRefresh}
+          anchorEl={filterAnchorEl}
+          open={Boolean(filterAnchorEl)}
+          onClose={() => setFilterAnchorEl(null)}
+        />
+      )}
 
       {/* Content Area */}
       <Container maxWidth="xl" sx={{ py: 1, px: 2 }}>
@@ -426,8 +453,7 @@ const NotificationCenterPage: React.FC = () => {
                 caseTypeCounts={caseTypeCounts}
               />
 
-              {/* Active Filters Chips */}
-              {hasActiveFilters && (
+              {hasActiveFilters && activeCaseType !== 'INCOMING_CRITICAL' && (
                 <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                   {filters.priority && (
                     <Chip
@@ -482,11 +508,18 @@ const NotificationCenterPage: React.FC = () => {
                 </Box>
               )}
 
-              {/* Notification List */}
-              <NotificationList 
-                filters={filters} 
-                onNotificationChange={handleNotificationChange}
-              />
+              {activeCaseType === 'INCOMING_CRITICAL' && (user?.role === 'RCC' || user?.role === 'ADMIN') ? (
+                <RCCIncomingCasesList 
+                  onCaseAcknowledged={() => {
+                    loadCaseTypeCounts();
+                  }}
+                />
+              ) : (
+                <NotificationList 
+                  filters={filters} 
+                  onNotificationChange={handleNotificationChange}
+                />
+              )}
             </CardContent>
           </Card>
         </Grid>

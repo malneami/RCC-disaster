@@ -228,6 +228,13 @@ export class TicketsController {
     return this.ticketsService.acknowledge(id, req.user.id, req.user.role);
   }
 
+  @Get('rcc/incoming-cases')
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.HOSPITAL_USER)
+  @ApiOperation({ summary: 'Get incoming critical cases for RCC and Hospital users (list view, not notifications)' })
+  async getRCCIncomingCases() {
+    return this.ticketsService.getRCCIncomingCases();
+  }
+
   @Get('access-logs')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Get ticket access logs with filtering (Admin only)' })

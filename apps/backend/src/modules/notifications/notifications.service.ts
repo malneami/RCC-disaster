@@ -1216,17 +1216,24 @@ export class NotificationsService {
         notificationPriority = NotificationPriority.HIGH;
       }
 
+      const originHospital = ticket.originHospital?.name || 'Unknown';
+      const destinationHospital = ticket.destinationHospital?.name || 'Unknown';
+      const patientFullName = `${patient.firstName} ${patient.lastName}`;
+      
+      // Format message with markers for highlighting: [[PATIENT:name]], [[ORIGIN:hospital]], [[DEST:hospital]], [[TICKET:number]]
+      const message = `Critical ${caseType} case is incoming. Patient: [[PATIENT:${patientFullName}]]. From: [[ORIGIN:${originHospital}]] to [[DEST:${destinationHospital}]]. Ticket: [[TICKET:${ticket.ticketNumber}]].`;
+
       const notification = await this.createNotification(
         {
           type: NotificationType.CRITICAL_CASE_INCOMING,
           priority: notificationPriority,
-          title: `Critical ${caseType} Case Incoming - ${patient.firstName} ${patient.lastName}`,
-          message: `Critical ${caseType} case is incoming to ${hospital?.name || 'hospital'}. Patient: ${patient.firstName} ${patient.lastName}.`,
+          title: `Critical ${caseType} Case Incoming - ${patientFullName}`,
+          message,
           caseType,
           caseId,
           ticketId,
           patientId: patient.id,
-          patientName: `${patient.firstName} ${patient.lastName}`,
+          patientName: patientFullName,
           category: isRCCNotification ? NotificationCategory.TICKETS : NotificationCategory.HOSPITALS,
           sourceEntityType: isRCCNotification ? 'TICKET' : 'CASE',
           sourceEntityId: isRCCNotification ? ticketId : caseId,
@@ -1240,6 +1247,8 @@ export class NotificationsService {
             priority: ticket.priority,
             hospitalId,
             isRCCNotification,
+            originHospital: originHospital,
+            destinationHospital: destinationHospital,
           }),
         },
         await this.getSystemUserId(),
@@ -1371,9 +1380,15 @@ export class NotificationsService {
         ? `Critical Case Incoming - ${patient.firstName} ${patient.lastName}`
         : `Patient Incoming - ${patient.firstName} ${patient.lastName}`;
       
-      const message = isCriticalCase
-        ? `Critical ${caseType} case is incoming to ${hospital.name}. Patient: ${patient.firstName} ${patient.lastName}. Ticket: ${ticket.ticketNumber}`
-        : `Patient ${patient.firstName} ${patient.lastName} is assigned to ${hospital.name}. Ticket: ${ticket.ticketNumber}`;
+      let message: string;
+      if (isCriticalCase) {
+        const originHospital = ticket.originHospital?.name || 'Unknown';
+        const destinationHospital = ticket.destinationHospital?.name || hospital.name || 'Unknown';
+        const patientFullName = `${patient.firstName} ${patient.lastName}`;
+        message = `Critical ${caseType} case is incoming. Patient: [[PATIENT:${patientFullName}]]. From: [[ORIGIN:${originHospital}]] to [[DEST:${destinationHospital}]].`;
+      } else {
+        message = `Patient ${patient.firstName} ${patient.lastName} is assigned to ${hospital.name}. Ticket: ${ticket.ticketNumber}`;
+      }
 
       const notification = await this.createNotification(
         {

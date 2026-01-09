@@ -553,6 +553,11 @@ class TicketService {
     return response.data;
   }
 
+  async getRCCIncomingCases(): Promise<Ticket[]> {
+    const response = await apiClient.get('/tickets/rcc/incoming-cases');
+    return response.data;
+  }
+
   async getAccessLogs(filters?: {
     page?: number;
     limit?: number;

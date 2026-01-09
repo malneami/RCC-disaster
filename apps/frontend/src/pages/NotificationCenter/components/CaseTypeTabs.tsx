@@ -14,9 +14,11 @@ import {
   faBrain,
   faExclamationTriangle,
   faList,
+  faArrowDown,
 } from '@fortawesome/free-solid-svg-icons';
+import { useAuth } from '../../../contexts/AuthContext';
 
-export type CaseTypeFilter = 'ALL' | 'STEMI' | 'STROKE' | 'TRAUMA';
+export type CaseTypeFilter = 'ALL' | 'STEMI' | 'STROKE' | 'TRAUMA' | 'INCOMING_CRITICAL';
 
 interface CaseTypeTabsProps {
   activeCaseType: CaseTypeFilter;
@@ -30,45 +32,62 @@ const CaseTypeTabs: React.FC<CaseTypeTabsProps> = ({
   caseTypeCounts = {},
 }) => {
   const theme = useTheme();
+  const { user } = useAuth();
+  const isRCC = user?.role === 'RCC' || user?.role === 'ADMIN';
 
   const caseTypes: Array<{
     value: CaseTypeFilter;
     label: string;
     icon: any;
     color: string;
+    visible: boolean;
   }> = [
     {
       value: 'ALL',
       label: 'All',
       icon: faList,
       color: '#6366f1',
+      visible: true,
     },
     {
       value: 'STEMI',
       label: 'STEMI',
       icon: faHeartbeat,
       color: '#ef4444',
+      visible: true,
     },
     {
       value: 'STROKE',
       label: 'Stroke',
       icon: faBrain,
       color: '#06b6d4',
+      visible: true,
     },
     {
       value: 'TRAUMA',
       label: 'Trauma',
       icon: faExclamationTriangle,
       color: '#f59e0b',
+      visible: true,
+    },
+    {
+      value: 'INCOMING_CRITICAL',
+      label: 'Incoming Critical (24h)',
+      icon: faArrowDown,
+      color: '#dc2626',
+      visible: isRCC, 
     },
   ];
 
+  // Filter visible tabs
+  const visibleCaseTypes = caseTypes.filter(ct => ct.visible);
+
   const getTabIndex = (caseType: CaseTypeFilter) => {
-    return caseTypes.findIndex((c) => c.value === caseType);
+    return visibleCaseTypes.findIndex((c) => c.value === caseType);
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    const selectedCaseType = caseTypes[newValue].value;
+    const selectedCaseType = visibleCaseTypes[newValue].value;
     onCaseTypeChange(selectedCaseType);
   };
 
@@ -110,7 +129,7 @@ const CaseTypeTabs: React.FC<CaseTypeTabsProps> = ({
           },
         }}
       >
-        {caseTypes.map((caseType) => {
+        {visibleCaseTypes.map((caseType) => {
           const count = caseTypeCounts[caseType.value] || 0;
           const isActive = activeCaseType === caseType.value;
 
