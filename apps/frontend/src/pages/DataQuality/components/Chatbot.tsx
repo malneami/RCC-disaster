@@ -19,10 +19,12 @@ import {
   Send as SendIcon,
   Code as CodeIcon,
   TableChart as TableIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { reportGeneratorService, ReportResponse } from '../../../services/reportGeneratorService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { exportToXLSX } from '../../../utils/exportUtils';
 
 interface Message {
   type: 'user' | 'assistant' | 'error' | 'system';
@@ -88,7 +90,7 @@ const Chatbot: React.FC = () => {
 
     try {
       const result = await reportGeneratorService.generateReport(userInput);
-      
+
       if (result.success) {
         addMessage('assistant', result.report, result);
       } else {
@@ -200,6 +202,15 @@ const Chatbot: React.FC = () => {
                     size="small"
                     variant="outlined"
                   />
+                  <Box sx={{ flexGrow: 1 }} />
+                  <Button
+                    startIcon={<DownloadIcon />}
+                    size="small"
+                    variant="outlined"
+                    onClick={() => exportToXLSX(message.data!.data)}
+                  >
+                    Export XLSX
+                  </Button>
                 </Box>
                 <TableContainer sx={{ maxHeight: 400, overflow: 'auto' }}>
                   <Table size="small" stickyHeader>
