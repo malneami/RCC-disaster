@@ -7,7 +7,7 @@ import { useState } from 'react';
 export const useAmbulances = (initialFilter?: AmbulanceFilter) => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(initialFilter?.limit || 10);
   const [filter, setFilter] = useState<AmbulanceFilter>(initialFilter || {});
 
   const query = useQuery(

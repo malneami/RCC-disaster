@@ -10,6 +10,7 @@ export const useEMSAssignments = (filter?: AssignmentFilter) => {
     () => emsService.getEMSAssignments(filter),
     {
       refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+      keepPreviousData: true,
     }
   );
 

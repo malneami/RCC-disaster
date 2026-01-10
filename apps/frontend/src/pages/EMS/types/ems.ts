@@ -315,8 +315,9 @@ export interface AssignmentFilter {
   priority?: string;
   ambulanceId?: string;
   driverId?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  assignedFrom?: string;
+  assignedTo?: string;
+  search?: string;
 }
 
 export interface GPSTrackingFilter {

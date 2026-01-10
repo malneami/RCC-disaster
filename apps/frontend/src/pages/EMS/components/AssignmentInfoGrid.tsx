@@ -48,7 +48,12 @@ const AssignmentInfoGrid: React.FC<AssignmentInfoGridProps> = ({ assignment }) =
     };
 
     return (
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mb: 3 }}>
+        <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, // Stack on mobile, 2 cols on tablet+
+            gap: 3,
+            mb: 3
+        }}>
             {/* Left Column - Assignment Info */}
             <Box>
                 <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>

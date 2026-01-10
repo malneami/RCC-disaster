@@ -20,7 +20,7 @@ interface TimelineStep {
     icon: React.ReactElement;
     completed: boolean;
     active: boolean;
-    timestamp?: string;
+    dateObject?: Date;
 }
 
 interface PatientJourneyTimelineProps {
@@ -36,7 +36,7 @@ const PatientJourneyTimeline: React.FC<PatientJourneyTimelineProps> = ({ assignm
                 icon: <FontAwesomeIcon icon={faUserMd} />,
                 completed: assignment.status !== 'EMS_CONTACT',
                 active: assignment.status === 'EMS_CONTACT',
-                timestamp: assignment.emsContactTime ? new Date(assignment.emsContactTime).toLocaleTimeString() : undefined,
+                dateObject: assignment.emsContactTime ? new Date(assignment.emsContactTime) : undefined,
             },
             {
                 id: 'ems_arrival',
@@ -44,7 +44,7 @@ const PatientJourneyTimeline: React.FC<PatientJourneyTimelineProps> = ({ assignm
                 icon: <FontAwesomeIcon icon={faAmbulance} />,
                 completed: ['EMS_ARRIVAL', 'DEPARTED', 'ARRIVED'].includes(assignment.status),
                 active: assignment.status === 'EMS_ARRIVAL',
-                timestamp: assignment.actualArrivalTime ? new Date(assignment.actualArrivalTime).toLocaleTimeString() : undefined,
+                dateObject: assignment.actualArrivalTime ? new Date(assignment.actualArrivalTime) : undefined,
             },
             {
                 id: 'departed',
@@ -52,7 +52,7 @@ const PatientJourneyTimeline: React.FC<PatientJourneyTimelineProps> = ({ assignm
                 icon: <FontAwesomeIcon icon={faMapMarkerAlt} />,
                 completed: ['DEPARTED', 'ARRIVED'].includes(assignment.status),
                 active: assignment.status === 'DEPARTED',
-                timestamp: assignment.journeyStartTime ? new Date(assignment.journeyStartTime).toLocaleTimeString() : undefined,
+                dateObject: assignment.journeyStartTime ? new Date(assignment.journeyStartTime) : undefined,
             },
             {
                 id: 'arrived_destination',
@@ -61,7 +61,7 @@ const PatientJourneyTimeline: React.FC<PatientJourneyTimelineProps> = ({ assignm
                 // Completed if status is ARRIVED OR if journeyEndTime exists (timestamp is source of truth)
                 completed: assignment.status === 'ARRIVED' || !!assignment.journeyEndTime,
                 active: assignment.status === 'ARRIVED' || !!assignment.journeyEndTime,
-                timestamp: assignment.journeyEndTime ? new Date(assignment.journeyEndTime).toLocaleTimeString() : undefined,
+                dateObject: assignment.journeyEndTime ? new Date(assignment.journeyEndTime) : undefined,
             },
         ];
 
@@ -78,10 +78,24 @@ const PatientJourneyTimeline: React.FC<PatientJourneyTimelineProps> = ({ assignm
                 </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2 }}>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', xl: 'row' }, // Stack on mobile/tablet/laptop, row ONLY on huge screens
+                alignItems: { xs: 'flex-start', xl: 'center' },
+                justifyContent: 'space-between',
+                px: 2,
+                gap: { xs: 3, xl: 0 } // Add vertical gap when stacked
+            }}>
                 {timelineSteps.map((step, index) => (
                     <React.Fragment key={step.id}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'row', xl: 'column' }, // Horizontal content in vertical steps
+                            alignItems: 'center',
+                            flex: 1,
+                            width: { xs: '100%', xl: 'auto' },
+                            gap: { xs: 2, xl: 0 }
+                        }}>
                             <Avatar
                                 sx={{
                                     width: 40,
@@ -94,27 +108,35 @@ const PatientJourneyTimeline: React.FC<PatientJourneyTimelineProps> = ({ assignm
                                     color: step.completed || step.active ? 'white' : 'text.secondary',
                                     border: step.active ? '3px solid' : 'none',
                                     borderColor: 'primary.main',
-                                    mb: 1,
+                                    mb: { xs: 0, xl: 1 },
                                     boxShadow: step.completed || step.active ? '0 2px 8px rgba(25, 118, 210, 0.3)' : 'none',
                                     transition: 'all 0.3s ease',
                                 }}
                             >
                                 {step.icon}
                             </Avatar>
-                            <Typography variant="caption" sx={{ textAlign: 'center', fontWeight: step.active ? 600 : 400 }}>
-                                {step.label}
-                            </Typography>
-                            {step.timestamp && (
-                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                                    {step.timestamp}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', xl: 'center' } }}>
+                                <Typography variant="caption" sx={{ textAlign: { xs: 'left', xl: 'center' }, fontWeight: step.active ? 600 : 400 }}>
+                                    {step.label}
                                 </Typography>
-                            )}
+                                {step.dateObject && (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', xl: 'center' } }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.2 }}>
+                                            {step.dateObject.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.2 }}>
+                                            {step.dateObject.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
                         </Box>
 
-                        {/* Connection Line */}
+                        {/* Connection Line - Hidden on mobile/tablet/laptop, shown on XL+ */}
                         {index < timelineSteps.length - 1 && (
                             <Box
                                 sx={{
+                                    display: { xs: 'none', xl: 'block' },
                                     flex: 1,
                                     height: 3,
                                     bgcolor: step.completed ? 'primary.main' : alpha('#e0e0e0', 0.8),
@@ -124,6 +146,8 @@ const PatientJourneyTimeline: React.FC<PatientJourneyTimelineProps> = ({ assignm
                                 }}
                             />
                         )}
+                        {/* Hide horizontal separators on mobile, use the vertical line approach above or simpler: just hide lines on mobile for cleaner look if vertical lines are tricky to position perfectly without relative parents. 
+                           Actually, for simplicity and reliability: Hide lines on mobile stack, it looks cleaner as a list. */}
                     </React.Fragment>
                 ))}
             </Box>

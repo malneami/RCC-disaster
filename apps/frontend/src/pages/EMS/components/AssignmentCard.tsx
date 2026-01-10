@@ -450,7 +450,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
               Assignment #{assignment.id.slice(-8).toUpperCase()}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
               <Chip
                 label={statusInfo.label}
                 color={statusInfo.color as any}

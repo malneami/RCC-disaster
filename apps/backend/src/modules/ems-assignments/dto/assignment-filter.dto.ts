@@ -32,6 +32,11 @@ export class AssignmentFilterDto {
   @IsOptional()
   @IsDateString()
   assignedTo?: string;
+
+  @ApiPropertyOptional({ description: 'Search by ticket number, ambulance call sign, or driver name' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
 
 

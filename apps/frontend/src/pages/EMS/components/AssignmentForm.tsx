@@ -71,6 +71,21 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
     const journeyStartTime = formData.journeyStartTime ? new Date(formData.journeyStartTime).getTime() : null;
     const journeyEndTime = formData.journeyEndTime ? new Date(formData.journeyEndTime).getTime() : null;
 
+    // Status-based required field validations
+    if (formData.status === 'EMS_CONTACT' && !formData.emsContactTime) {
+      newErrors.emsContactTime = 'Contact time is required for EMS Contact status';
+    }
+    if (formData.status === 'EMS_ARRIVAL' && !formData.actualArrivalTime) {
+      newErrors.actualArrivalTime = 'Arrival time is required for EMS Arrival status';
+    }
+    if (formData.status === 'DEPARTED' && !formData.journeyStartTime) {
+      newErrors.journeyStartTime = 'Departure time is required for Departed status';
+    }
+    if (formData.status === 'ARRIVED' && !formData.journeyEndTime) {
+      newErrors.journeyEndTime = 'Arrived time is required for Arrived status';
+    }
+
+    // Timeline order validations
     if (emsContactTime && emsContactTime < assignedAt) {
       newErrors.emsContactTime = 'Cannot be before Assignment Time';
     }

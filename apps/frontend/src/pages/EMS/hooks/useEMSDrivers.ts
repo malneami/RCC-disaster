@@ -19,10 +19,10 @@ export interface EMSDriver {
   } | null;
 }
 
-export const useEMSDrivers = () => {
+export const useEMSDrivers = (initialOptions?: { pageSize?: number }) => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(initialOptions?.pageSize || 10);
   const [search, setSearch] = useState<string | undefined>(undefined);
   
   const query = useQuery(

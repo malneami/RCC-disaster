@@ -7,6 +7,9 @@ import {
   Tab,
   TextField,
   InputAdornment,
+  IconButton,
+  Badge,
+  Tooltip,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -16,6 +19,7 @@ import {
   faMapMarkerAlt,
   faAmbulance,
   faSearch,
+  faFilter,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useEMSAssignments } from '../hooks/useEMSAssignments';
@@ -23,6 +27,7 @@ import { useAmbulances } from '../hooks/useAmbulances';
 import { useEMSDrivers } from '../hooks/useEMSDrivers';
 import { EMSAssignment, AssignmentFilter } from '../types/ems';
 import AssignmentForm from './AssignmentForm';
+import AssignmentFilters from './AssignmentFilters';
 import AssignmentGrid from './AssignmentGrid';
 import GenericPageHeader from '../../../components/Common/GenericPageHeader';
 import EmptyState from '../../../components/Common/EmptyState';
@@ -43,9 +48,19 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 );
 
 const AssignmentManagement: React.FC = () => {
-  const [filters] = useState<AssignmentFilter>({});
+  const [filters, setFilters] = useState<AssignmentFilter>({});
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Debounce search query to prevent jarring UI reloads
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<EMSAssignment | null>(null);
@@ -77,10 +92,10 @@ const AssignmentManagement: React.FC = () => {
     markDeparted,
     loadPatient,
     completeAssignment,
-  } = useEMSAssignments({ ...filters });
+  } = useEMSAssignments({ ...filters, search: debouncedSearchQuery });
 
   const { ambulances } = useAmbulances({ limit: 1000 });
-  const { drivers } = useEMSDrivers();
+  const { drivers } = useEMSDrivers({ pageSize: 1000 });
 
   const [tickets, setTickets] = useState<any[]>([]);
   const [hospitals, setHospitals] = useState<Array<{ id: string; name: string }>>([]);
@@ -108,9 +123,10 @@ const AssignmentManagement: React.FC = () => {
     loadData();
   }, []);
 
-  // ... existing code ...
-
-
+  const handleToggleFilters = () => {
+    setShowFilters(!showFilters);
+  };
+  const activeFiltersCount = Object.keys(filters).length;
 
   const handleOpenDialog = (assignment?: EMSAssignment) => {
     if (assignment) {
@@ -449,9 +465,31 @@ const AssignmentManagement: React.FC = () => {
                 ),
               }}
             />
-            {/* Filters removed for fix branch */}
+            <Tooltip title="Filters">
+              <IconButton
+                onClick={handleToggleFilters}
+                color={activeFiltersCount > 0 ? 'primary' : 'default'}
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1
+                }}
+              >
+                <Badge badgeContent={activeFiltersCount} color="error">
+                  <FontAwesomeIcon icon={faFilter} />
+                </Badge>
+              </IconButton>
+            </Tooltip>
           </Box>
 
+          <AssignmentFilters
+            open={showFilters}
+            onClose={() => setShowFilters(false)}
+            filters={filters}
+            onChange={setFilters}
+            ambulances={ambulances}
+            drivers={drivers}
+          />
           <Tabs
             value={tabValue}
             onChange={(_, newValue) => setTabValue(newValue)}
@@ -500,7 +538,7 @@ const AssignmentManagement: React.FC = () => {
         loading={isSubmitting}
         loadingData={loadingData}
       />
-    </Box>
+    </Box >
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Alert } from '@mui/material';
+import { Box, Typography, Alert, Grid } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import AssignmentCard from './AssignmentCard';
@@ -31,10 +31,10 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   if (assignments.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Alert 
-          severity="info" 
+        <Alert
+          severity="info"
           icon={<FontAwesomeIcon icon={faExclamationTriangle} />}
-          sx={{ 
+          sx={{
             borderRadius: 2,
             '& .MuiAlert-message': {
               width: '100%',
@@ -53,21 +53,22 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Grid container spacing={2}>
       {assignments.map((assignment) => (
-        <AssignmentCard
-          key={assignment.id}
-          assignment={assignment}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onStartAssignment={onStartAssignment}
-          onMarkArrived={onMarkArrived}
-          onMarkDeparted={onMarkDeparted}
-          onCompleteAssignment={onCompleteAssignment}
-          onAssignAmbulance={onAssignAmbulance}
-        />
+        <Grid item xs={12} md={12} lg={6} key={assignment.id}>
+          <AssignmentCard
+            assignment={assignment}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onStartAssignment={onStartAssignment}
+            onMarkArrived={onMarkArrived}
+            onMarkDeparted={onMarkDeparted}
+            onCompleteAssignment={onCompleteAssignment}
+            onAssignAmbulance={onAssignAmbulance}
+          />
+        </Grid>
       ))}
-    </Box>
+    </Grid>
   );
 };
 
