@@ -13,6 +13,7 @@ import {
   Button,
   Typography,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import { EMSAssignment } from '../types/ems';
 import { formatForDateTimeLocal } from '../../../helpers';
@@ -60,12 +61,62 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
   loading = false,
   loadingData = false,
 }) => {
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+
+  const validate = React.useCallback(() => {
+    const newErrors: Record<string, string> = {};
+    const assignedAt = new Date(formData.assignedAt).getTime();
+    const emsContactTime = formData.emsContactTime ? new Date(formData.emsContactTime).getTime() : null;
+    const actualArrivalTime = formData.actualArrivalTime ? new Date(formData.actualArrivalTime).getTime() : null;
+    const journeyStartTime = formData.journeyStartTime ? new Date(formData.journeyStartTime).getTime() : null;
+    const journeyEndTime = formData.journeyEndTime ? new Date(formData.journeyEndTime).getTime() : null;
+
+    if (emsContactTime && emsContactTime < assignedAt) {
+      newErrors.emsContactTime = 'Cannot be before Assignment Time';
+    }
+
+    if (actualArrivalTime) {
+      if (emsContactTime && actualArrivalTime < emsContactTime) {
+        newErrors.actualArrivalTime = 'Cannot be before EMS Contact Time';
+      } else if (!emsContactTime && actualArrivalTime < assignedAt) {
+        newErrors.actualArrivalTime = 'Cannot be before Assignment Time';
+      }
+    }
+
+    if (journeyStartTime && actualArrivalTime && journeyStartTime < actualArrivalTime) {
+      newErrors.journeyStartTime = 'Cannot be before Arrival Time';
+    }
+
+    if (journeyEndTime && journeyStartTime && journeyEndTime < journeyStartTime) {
+      newErrors.journeyEndTime = 'Cannot be before Departed Time';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData]);
+
+  // Real-time validation
+  React.useEffect(() => {
+    validate();
+  }, [formData, validate]);
+
+  const handleSubmit = () => {
+    if (validate()) {
+      onSubmit();
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         {editingAssignment ? 'Edit Assignment' : 'Create New Assignment'}
       </DialogTitle>
       <DialogContent>
+        {errors.submit && (
+          <Alert severity="error" sx={{ mb: 2, mt: 1 }}>
+            {errors.submit}
+          </Alert>
+        )}
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} sm={6}>
             <SearchableSelect
@@ -117,6 +168,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
               value={formatForDateTimeLocal(formData.assignedAt)}
               onChange={(e) => onFormDataChange('assignedAt', e.target.value)}
               InputLabelProps={{ shrink: true }}
+              error={!!errors.assignedAt}
+              helperText={errors.assignedAt}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -143,6 +196,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
               value={formatForDateTimeLocal(formData.emsContactTime)}
               onChange={(e) => onFormDataChange('emsContactTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
+              error={!!errors.emsContactTime}
+              helperText={errors.emsContactTime}
             />
           </Grid>
 
@@ -200,7 +255,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
               value={formatForDateTimeLocal(formData.actualArrivalTime)}
               onChange={(e) => onFormDataChange('actualArrivalTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
-              helperText="When EMS arrived at pickup location"
+              helperText={errors.actualArrivalTime || "When EMS arrived at pickup location"}
+              error={!!errors.actualArrivalTime}
             />
           </Grid>
 
@@ -212,7 +268,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
               value={formatForDateTimeLocal(formData.journeyStartTime)}
               onChange={(e) => onFormDataChange('journeyStartTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
-              helperText="When EMS departed from pickup location"
+              helperText={errors.journeyStartTime || "When EMS departed from pickup location"}
+              error={!!errors.journeyStartTime}
             />
           </Grid>
 
@@ -224,7 +281,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
               value={formatForDateTimeLocal(formData.journeyEndTime)}
               onChange={(e) => onFormDataChange('journeyEndTime', e.target.value)}
               InputLabelProps={{ shrink: true }}
-              helperText="When EMS arrived at destination"
+              helperText={errors.journeyEndTime || "When EMS arrived at destination"}
+              error={!!errors.journeyEndTime}
             />
           </Grid>
 
@@ -243,9 +301,9 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>Cancel</Button>
         <Button
-          onClick={onSubmit}
+          onClick={handleSubmit}
           variant="contained"
-          disabled={loading}
+          disabled={loading || Object.keys(errors).length > 0}
           startIcon={loading ? <CircularProgress size={16} /> : null}
         >
           {loading ? 'Saving...' : (editingAssignment ? 'Update' : 'Create')}

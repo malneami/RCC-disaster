@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
   CardContent,
   Tabs,
   Tab,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -13,13 +15,13 @@ import {
   faCheck,
   faMapMarkerAlt,
   faAmbulance,
-  faHandPaper
+  faSearch,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useEMSAssignments } from '../hooks/useEMSAssignments';
 import { useAmbulances } from '../hooks/useAmbulances';
 import { useEMSDrivers } from '../hooks/useEMSDrivers';
-import { EMSAssignment } from '../types/ems';
+import { EMSAssignment, AssignmentFilter } from '../types/ems';
 import AssignmentForm from './AssignmentForm';
 import AssignmentGrid from './AssignmentGrid';
 import GenericPageHeader from '../../../components/Common/GenericPageHeader';
@@ -27,7 +29,6 @@ import EmptyState from '../../../components/Common/EmptyState';
 import { ticketService } from '../../../services/ticketService';
 import { hospitalService } from '../../../services/hospitalService';
 import { emsTicketSyncService } from '../../../services/emsTicketSyncService';
-import { useState, useEffect } from 'react';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -42,6 +43,28 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 );
 
 const AssignmentManagement: React.FC = () => {
+  const [filters] = useState<AssignmentFilter>({});
+  const [tabValue, setTabValue] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<EMSAssignment | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    ticketId: '',
+    ambulanceId: '',
+    driverId: '',
+    assignedAt: new Date().toISOString().slice(0, 16),
+    status: 'EMS_CONTACT',
+    emsContactTime: '',
+    journeyStartTime: '',
+    actualArrivalTime: '',
+    journeyEndTime: '',
+    notes: '',
+    originHospitalId: '',
+    destinationHospitalId: '',
+  });
+
   const {
     assignments,
     isLoading,
@@ -49,27 +72,14 @@ const AssignmentManagement: React.FC = () => {
     createAssignment,
     updateAssignment,
     deleteAssignment,
-    startAssignment: startAssignmentMutation,
-    markArrived: markArrivedMutation,
-    markDeparted: markDepartedMutation,
+    startAssignment,
+    markArrived,
+    markDeparted,
     loadPatient,
-    completeAssignment: completeAssignmentMutation,
-  } = useEMSAssignments();
+    completeAssignment,
+  } = useEMSAssignments({ ...filters });
 
-  // Wrap mutation functions to return void
-  const startAssignment = async (id: string) => {
-    await startAssignmentMutation(id);
-  };
-
-  const markArrived = async (id: string) => {
-    await markArrivedMutation(id);
-  };
-
-  const completeAssignment = async (id: string) => {
-    await completeAssignmentMutation(id);
-  };
-
-  const { ambulances } = useAmbulances();
+  const { ambulances } = useAmbulances({ limit: 1000 });
   const { drivers } = useEMSDrivers();
 
   const [tickets, setTickets] = useState<any[]>([]);
@@ -98,24 +108,9 @@ const AssignmentManagement: React.FC = () => {
     loadData();
   }, []);
 
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingAssignment, setEditingAssignment] = useState<EMSAssignment | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
-  const [formData, setFormData] = useState({
-    ticketId: '',
-    ambulanceId: '',
-    driverId: '',
-    assignedAt: new Date().toISOString().slice(0, 16),
-    status: 'EMS_CONTACT',
-    emsContactTime: '',
-    journeyStartTime: '',
-    actualArrivalTime: '',
-    journeyEndTime: '',
-    notes: '',
-    originHospitalId: '',
-    destinationHospitalId: '',
-  });
+  // ... existing code ...
+
+
 
   const handleOpenDialog = (assignment?: EMSAssignment) => {
     if (assignment) {
@@ -241,9 +236,21 @@ const AssignmentManagement: React.FC = () => {
           }
         }
       } else {
-        // For creation: include all fields including ticketId and assignedAt
+        // For creation: include all fields explicitly to ensure empty strings are converted to undefined
         const createData = {
-          ...formData,
+          ticketId: formData.ticketId,
+          ambulanceId: formData.ambulanceId && formData.ambulanceId.trim() !== ''
+            ? formData.ambulanceId
+            : undefined,
+          driverId: formData.driverId && formData.driverId.trim() !== ''
+            ? formData.driverId
+            : undefined,
+          originHospitalId: formData.originHospitalId && formData.originHospitalId.trim() !== ''
+            ? formData.originHospitalId
+            : undefined,
+          destinationHospitalId: formData.destinationHospitalId && formData.destinationHospitalId.trim() !== ''
+            ? formData.destinationHospitalId
+            : undefined,
           assignedAt: new Date(formData.assignedAt).toISOString(),
           emsContactTime: formData.emsContactTime && formData.emsContactTime.trim() !== ''
             ? new Date(formData.emsContactTime).toISOString()
@@ -257,8 +264,10 @@ const AssignmentManagement: React.FC = () => {
           journeyEndTime: formData.journeyEndTime && formData.journeyEndTime.trim() !== ''
             ? new Date(formData.journeyEndTime).toISOString()
             : undefined,
-          status: formData.status as 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED',
-        };
+          notes: formData.notes,
+          // Cast strict types or ensure interface matches DTO
+          status: formData.status as any,
+        } as any;
 
         await createAssignment(createData);
 
@@ -309,7 +318,7 @@ const AssignmentManagement: React.FC = () => {
   };
 
   const handleMarkDeparted = async (id: string): Promise<void> => {
-    await markDepartedMutation(id);
+    await markDeparted(id);
   };
 
   const handleCompleteAssignment = async (id: string): Promise<void> => {
@@ -329,74 +338,77 @@ const AssignmentManagement: React.FC = () => {
     return assignment.status || 'UNKNOWN';
   };
 
-  const assignedAssignments = assignments?.filter(a => {
-    const status = getInferredStatus(a);
-    return status === 'EMS_CONTACT';
-  }) || [];
 
-  const activeAssignments = assignments?.filter(a => {
-    const status = getInferredStatus(a);
-    return ['EMS_ARRIVAL', 'DEPARTED'].includes(status);
-  }) || [];
+  const assignedAssignments = (assignments || [])
+    .filter(a => getInferredStatus(a) === 'EMS_CONTACT');
 
-  const completedAssignments = assignments?.filter(a => {
-    const status = getInferredStatus(a);
-    return status === 'ARRIVED';
-  }) || [];
+  const activeAssignments = (assignments || [])
+    .filter(a => ['EMS_ARRIVAL', 'DEPARTED'].includes(getInferredStatus(a)));
+
+  const completedAssignments = (assignments || [])
+    .filter(a => getInferredStatus(a) === 'ARRIVED');
+
+  // Filter tickets to exclude those with active EMS assignments
+  const activeAssignmentTicketIds = new Set(
+    (assignments || [])
+      .filter(a => ['EMS_CONTACT', 'EMS_ARRIVAL', 'DEPARTED'].includes(getInferredStatus(a)))
+      .map(a => a.ticketId)
+  );
+  const availableTickets = tickets.filter(t =>
+    !activeAssignmentTicketIds.has(t.id) &&
+    (!t.emsAssignmentStatus || ['CANCELLED', 'ARRIVED'].includes(t.emsAssignmentStatus))
+  );
 
   if (isLoading || loadingData) return <Box>Loading...</Box>;
   if (error) return <Box>Error: {(error as Error)?.message || 'An error occurred'}</Box>;
 
-  // Show empty state if no assignments
-  if (!assignments || assignments.length === 0) {
-    return (
-      <Box>
-        <GenericPageHeader
-          title="EMS Assignment Management"
-          subtitle="Manage ambulance assignments and dispatch"
-          actions={[
-            {
-              icon: <FontAwesomeIcon icon={faHandPaper} />,
-              tooltip: "Manual Assignment",
-              onClick: () => handleOpenDialog(),
-              color: 'secondary',
-              isFab: false,
-            },
-            {
-              icon: <FontAwesomeIcon icon={faPlus} />,
-              tooltip: "Create New Assignment",
-              onClick: () => handleOpenDialog(),
-              color: 'primary',
-              isFab: false,
-            }
-          ]}
-        />
+  // Determine if we are in a "no results" state due to filtering
+  const hasActiveFilters = searchQuery || Object.keys(filters).length > 0;
 
+  const renderTabContent = (list: EMSAssignment[], tabIndex: number) => {
+    if (list.length > 0) {
+      return (
+        <AssignmentGrid
+          assignments={list}
+          onEdit={handleOpenDialog}
+          onDelete={deleteAssignment}
+          onStartAssignment={handleStartAssignment}
+          onMarkArrived={handleMarkArrived}
+          onMarkDeparted={handleMarkDeparted}
+          onLoadPatient={loadPatient}
+          onCompleteAssignment={handleCompleteAssignment}
+          onAssignAmbulance={handleAssignAmbulance}
+          getStatusColor={getStatusColor}
+        />
+      );
+    }
+
+    // Empty state handling
+    if (hasActiveFilters) {
+      return (
         <EmptyState
-          icon={<FontAwesomeIcon icon={faAmbulance} size="3x" />}
-          title="No EMS Assignments Yet"
-          description="You haven't created any EMS assignments yet. Manually assign ambulances to tickets or let the system auto-assign based on transport mode."
-          actionLabel="Manual Assignment"
-          onAction={() => handleOpenDialog()}
+          icon={<FontAwesomeIcon icon={faSearch} size="3x" />}
+          title="No assignments found"
+          description="Try adjusting your search or filters to find what you're looking for."
         />
+      );
+    }
 
-        <AssignmentForm
-          open={openDialog}
-          editingAssignment={editingAssignment}
-          formData={formData}
-          onClose={handleCloseDialog}
-          onSubmit={handleSubmit}
-          onFormDataChange={handleFormDataChange}
-          tickets={tickets}
-          ambulances={ambulances}
-          drivers={drivers}
-          hospitals={hospitals}
-          loading={isSubmitting}
-          loadingData={loadingData}
-        />
-      </Box>
+    // Generic empty state for the tab
+    return (
+      <EmptyState
+        icon={<FontAwesomeIcon icon={faAmbulance} size="3x" />}
+        title="No Assignments"
+        description={tabIndex === 0
+          ? "No assignments currently in EMS Contact phase."
+          : tabIndex === 1
+            ? "No assignments currently En Route."
+            : "No completed assignments found."}
+        actionLabel="Create Assignment"
+        onAction={() => handleOpenDialog()}
+      />
     );
-  }
+  };
 
   return (
     <Box>
@@ -415,7 +427,37 @@ const AssignmentManagement: React.FC = () => {
       />
       <Card sx={{ mt: 2 }}>
         <CardContent>
-          <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+          {/* Search and Filters */}
+          <Box sx={{
+            mb: 2,
+            display: 'flex',
+            gap: 2,
+            alignItems: 'center',
+            flexWrap: 'wrap' // Allow wrapping on small screens
+          }}>
+            <TextField
+              placeholder="Search by ticket, ambulance, or driver..."
+              size="small"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ width: { xs: '100%', md: 300 } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <FontAwesomeIcon icon={faSearch} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {/* Filters removed for fix branch */}
+          </Box>
+
+          <Tabs
+            value={tabValue}
+            onChange={(_, newValue) => setTabValue(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+          >
             <Tab
               label={`Contacted (${assignedAssignments.length})`}
               icon={<FontAwesomeIcon icon={faClock} />}
@@ -431,48 +473,15 @@ const AssignmentManagement: React.FC = () => {
           </Tabs>
 
           <TabPanel value={tabValue} index={0}>
-            <AssignmentGrid
-              assignments={assignedAssignments}
-              onEdit={handleOpenDialog}
-              onDelete={deleteAssignment}
-              onStartAssignment={handleStartAssignment}
-              onMarkArrived={handleMarkArrived}
-              onMarkDeparted={handleMarkDeparted}
-              onLoadPatient={loadPatient}
-              onCompleteAssignment={handleCompleteAssignment}
-              onAssignAmbulance={handleAssignAmbulance}
-              getStatusColor={getStatusColor}
-            />
+            {renderTabContent(assignedAssignments, 0)}
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
-            <AssignmentGrid
-              assignments={activeAssignments}
-              onEdit={handleOpenDialog}
-              onDelete={deleteAssignment}
-              onStartAssignment={handleStartAssignment}
-              onMarkArrived={handleMarkArrived}
-              onMarkDeparted={handleMarkDeparted}
-              onLoadPatient={loadPatient}
-              onCompleteAssignment={handleCompleteAssignment}
-              onAssignAmbulance={handleAssignAmbulance}
-              getStatusColor={getStatusColor}
-            />
+            {renderTabContent(activeAssignments, 1)}
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
-            <AssignmentGrid
-              assignments={completedAssignments}
-              onEdit={handleOpenDialog}
-              onDelete={deleteAssignment}
-              onStartAssignment={handleStartAssignment}
-              onMarkArrived={handleMarkArrived}
-              onMarkDeparted={handleMarkDeparted}
-              onLoadPatient={loadPatient}
-              onCompleteAssignment={handleCompleteAssignment}
-              onAssignAmbulance={handleAssignAmbulance}
-              getStatusColor={getStatusColor}
-            />
+            {renderTabContent(completedAssignments, 2)}
           </TabPanel>
         </CardContent>
       </Card>
@@ -484,7 +493,7 @@ const AssignmentManagement: React.FC = () => {
         onClose={handleCloseDialog}
         onSubmit={handleSubmit}
         onFormDataChange={handleFormDataChange}
-        tickets={tickets}
+        tickets={availableTickets}
         ambulances={ambulances}
         drivers={drivers}
         hospitals={hospitals}

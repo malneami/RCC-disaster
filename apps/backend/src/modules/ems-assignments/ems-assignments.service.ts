@@ -16,6 +16,7 @@ interface AssignmentFilters {
   driverId?: string;
   assignedFrom?: string;
   assignedTo?: string;
+  search?: string;
 }
 
 @Injectable()
@@ -31,7 +32,24 @@ export class EmsAssignmentsService {
 
   async create(createAssignmentDto: CreateEmsAssignmentDto, createdBy: string): Promise<EMSAssignment> {
     await this.validateAssignmentEntities(createAssignmentDto);
+
+    // Check if ticket already has an active EMS assignment
+    const activeStatuses: AssignmentStatus[] = ['EMS_CONTACT', 'EN_ROUTE', 'EMS_ARRIVAL', 'DEPARTED'];
+    const existingActiveAssignment = await this.prisma.eMSAssignment.findFirst({
+      where: {
+        ticketId: createAssignmentDto.ticketId,
+        status: { in: activeStatuses },
+        deletedAt: null,
+      },
+    });
+
+    if (existingActiveAssignment) {
+      throw new BadRequestException(
+        `Ticket already has an active EMS assignment (ID: ${existingActiveAssignment.id}, Status: ${existingActiveAssignment.status})`
+      );
+    }
     
+    try {
     // Only check availability if ambulance and driver are provided
     if (createAssignmentDto.ambulanceId) {
       await this.checkAmbulanceAvailability(createAssignmentDto.ambulanceId);
@@ -121,6 +139,10 @@ export class EmsAssignmentsService {
 
     this.logger.log(`EMS assignment created: ${assignment.id}`);
     return assignment;
+    } catch (error) {
+      this.logger.error('Error creating EMS assignment:', error);
+      throw error;
+    }
   }
 
   async findAll(filters: AssignmentFilters = {}): Promise<EMSAssignment[]> {
@@ -1011,6 +1033,17 @@ export class EmsAssignmentsService {
       where.assignedAt = {};
       if (filters.assignedFrom) where.assignedAt.gte = new Date(filters.assignedFrom);
       if (filters.assignedTo) where.assignedAt.lte = new Date(filters.assignedTo);
+    }
+
+    // Search across ticket number, ambulance call sign, driver name
+    if (filters.search) {
+      const searchTerm = filters.search.trim();
+      where.OR = [
+        { ticket: { ticketNumber: { contains: searchTerm, mode: 'insensitive' } } },
+        { ambulance: { callSign: { contains: searchTerm, mode: 'insensitive' } } },
+        { driver: { firstName: { contains: searchTerm, mode: 'insensitive' } } },
+        { driver: { lastName: { contains: searchTerm, mode: 'insensitive' } } },
+      ];
     }
 
     return where;
