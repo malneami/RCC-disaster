@@ -56,6 +56,72 @@ export class UsersService {
     });
   }
 
+  async createUser(createUserData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+    role: UserRole;
+    phoneNumber?: string;
+    hospitalId?: string;
+  }): Promise<{ user: any; temporaryPassword?: string }> {
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: createUserData.email, mode: 'insensitive' },
+        deletedAt: null,
+      },
+    });
+
+    if (existingUser) {
+      throw new Error('A user with this email already exists');
+    }
+    if (createUserData.hospitalId) {
+      const hospital = await this.prisma.hospital.findUnique({
+        where: { id: createUserData.hospitalId },
+      });
+
+      if (!hospital) {
+        throw new Error('Invalid hospital ID');
+      }
+    }
+    const passwordHash = await bcrypt.hash(createUserData.password, 12);
+    const user = await this.prisma.user.create({
+      data: {
+        email: createUserData.email.toLowerCase(),
+        firstName: createUserData.firstName,
+        lastName: createUserData.lastName,
+        passwordHash,
+        role: createUserData.role,
+        phoneNumber: createUserData.phoneNumber || null,
+        hospitalId: createUserData.hospitalId || null,
+        status: UserStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        phoneNumber: true,
+        hospitalId: true,
+        createdAt: true,
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(`User ${user.email} (${user.id}) created by admin`);
+
+    return {
+      user,
+    };
+  }
+
   async updateRefreshToken(userId: string, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     

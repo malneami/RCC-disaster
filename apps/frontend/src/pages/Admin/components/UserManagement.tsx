@@ -33,12 +33,14 @@ import {
   Email,
   Business,
   ContentCopy,
+  Add,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { userManagementService, User } from '../../../services/userManagementService';
 import { userRegistrationService } from '../../../services/userRegistrationService';
 import AdminStatsGrid from './AdminStatsGrid';
 import UserDetailDrawer from './UserDetailDrawer';
+import CreateUserDialog from './CreateUserDialog';
 
 const UserManagement: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -58,6 +60,7 @@ const UserManagement: React.FC = () => {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteResult, setDeleteResult] = useState<{ message: string; user: User } | null>(null);
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -200,22 +203,39 @@ const UserManagement: React.FC = () => {
             Control center for system access, security roles, and user accounts.
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Refresh />}
-          onClick={loadUsers}
-          disabled={loading}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            py: 1,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            textTransform: 'none',
-            fontWeight: 600
-          }}
-        >
-          Sync Data
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Add />}
+            onClick={() => setCreateDialogOpen(true)}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              py: 1,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              textTransform: 'none',
+              fontWeight: 600
+            }}
+          >
+            Create User
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={loadUsers}
+            disabled={loading}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              py: 1,
+              textTransform: 'none',
+              fontWeight: 600
+            }}
+          >
+            Sync Data
+          </Button>
+        </Box>
       </Box>
 
       <AdminStatsGrid stats={stats} />
@@ -422,6 +442,12 @@ const UserManagement: React.FC = () => {
         onClose={() => setDrawerOpen(false)}
         user={selectedUser}
         onUpdateSuccess={loadUsers}
+      />
+
+      <CreateUserDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onSuccess={loadUsers}
       />
 
       {/* Delete User Confirmation Dialog */}

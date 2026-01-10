@@ -17,6 +17,16 @@ export interface User {
   };
 }
 
+export interface CreateUserDto {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  role: string;
+  phoneNumber?: string;
+  hospitalId?: string;
+}
+
 export interface UpdateUserDto {
   role?: string;
   hospitalId?: string;
@@ -35,6 +45,10 @@ export interface UsersResponse {
   pages: number;
 }
 
+export interface CreateUserResponse {
+  user: User;
+}
+
 export interface ResetPasswordResponse {
   user: User;
 }
@@ -51,6 +65,11 @@ class UserManagementService {
     if (search) params.search = search;
     
     const response = await apiClient.get('/users', { params });
+    return response.data;
+  }
+
+  async createUser(userData: CreateUserDto): Promise<CreateUserResponse> {
+    const response = await apiClient.post('/users', userData);
     return response.data;
   }
 
@@ -74,3 +93,4 @@ class UserManagementService {
 }
 
 export const userManagementService = new UserManagementService();
+
