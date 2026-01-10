@@ -18,12 +18,18 @@ export class KpiStatusTrackerService {
   async hasCaseNotification(
     caseId: string,
     caseType: CaseType,
+    kpiId?: string,
   ): Promise<boolean> {
     try {
       const existingNotification = await this.prisma.notification.findFirst({
         where: {
           type: NotificationType.KPI_THRESHOLD_BREACH,
           caseId: caseId,
+          ...(kpiId ? {
+            metadata: {
+              contains: `"kpiId":"${kpiId}"`,
+            },
+          } : {}),
         },
         orderBy: {
           createdAt: 'desc',

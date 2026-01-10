@@ -317,7 +317,7 @@ export class KpiMonitorService implements OnModuleInit, OnModuleDestroy {
         return;
       }
       
-      const hasNotification = await this.kpiStatusTracker.hasCaseNotification(caseId, caseType);
+      const hasNotification = await this.kpiStatusTracker.hasCaseNotification(caseId, caseType, kpiId);
       
       if (hasNotification) {
         return;
@@ -1306,11 +1306,7 @@ export class KpiMonitorService implements OnModuleInit, OnModuleDestroy {
 
       this.logger.log(`Found ${failingKpis.length} failing KPIs for case ${caseId}`);
 
-      const hasNotification = await this.kpiStatusTracker.hasCaseNotification(caseId, caseType);
 
-      if (hasNotification) {
-        return;
-      }
 
       const systemUserId = await this.notificationsService.getSystemUserId();
 
@@ -1371,6 +1367,11 @@ export class KpiMonitorService implements OnModuleInit, OnModuleDestroy {
 
       // Create individual notifications for each failing KPI
       for (const kpi of failingKpis) {
+        const hasNotification = await this.kpiStatusTracker.hasCaseNotification(caseId, caseType, kpi.id);
+        if (hasNotification) {
+          continue;
+        }
+
         const percentage = kpi.value !== undefined ? 0 : 0; // For individual cases, percentage is not applicable
         
         let failingDependentKpis: Array<{ id: string; name: string; isFailing: boolean }> = [];

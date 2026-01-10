@@ -412,7 +412,7 @@ export class CriticalTimeMonitorService implements OnModuleInit, OnModuleDestroy
             ? CaseType.TRAUMA
             : CaseType.STEMI, // Default to STEMI as fallback for GENERAL pathway
           caseId: ticket.id,
-          patientId: ticket.patientId || systemPatientId,
+          patientId: ticket.patientId || systemPatientId.id,
           patientName,
           category: NotificationCategory.HOSPITALS,
           recipientUserIds: rccUserIds,

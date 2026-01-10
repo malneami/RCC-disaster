@@ -268,6 +268,21 @@ export class EmsLateMonitorService implements OnModuleInit, OnModuleDestroy {
     layer: 'first_warning' | 'escalation',
   ): Promise<void> {
     try {
+      // Check for duplicate notification for this layer
+      const existingNotification = await this.prisma.notification.findFirst({
+        where: {
+          type: NotificationType.EMS_LATE_CASE,
+          caseId: assignment.ticketId,
+          metadata: {
+            contains: `"layer":"${layer}"`,
+          },
+        },
+      });
+
+      if (existingNotification) {
+        return;
+      }
+
       const systemUserId = await this.notificationsService.getSystemUserId();
       const ticket = assignment.ticket;
       
