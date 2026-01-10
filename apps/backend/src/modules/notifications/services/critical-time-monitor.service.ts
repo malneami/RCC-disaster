@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject, forwardRef, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { NotificationsService } from '../notifications.service';
-import { NotificationType, NotificationPriority, NotificationCategory, UserRole } from '@prisma/client';
+import { NotificationType, NotificationPriority, NotificationCategory, UserRole, CaseType } from '@prisma/client';
 
 interface CriticalTimeConfig {
   pathway: 'STEMI' | 'STROKE' | 'TRAUMA' | 'GENERAL';
@@ -380,7 +380,7 @@ export class CriticalTimeMonitorService implements OnModuleInit, OnModuleDestroy
         ? `Patient ${patientName} (ID: ${patientNationalId}) at ${hospitalName} has exceeded the ${ticket.pathway} critical time limit. ${elapsedMinutes} minutes elapsed, limit is ${timeLimitMinutes} minutes. Immediate action required.`
         : `Patient ${patientName} (ID: ${patientNationalId}) at ${hospitalName} is approaching the ${ticket.pathway} critical time limit. ${elapsedMinutes} minutes elapsed, ${remainingMinutes} minutes remaining (limit: ${timeLimitMinutes} minutes).`;
 
-      const priority = exceeded ? NotificationPriority.HIGH : NotificationPriority.HIGH;
+      const priority = exceeded ? NotificationPriority.CRITICAL : NotificationPriority.HIGH;
 
       const metadata = JSON.stringify({
         ticketId: ticket.id,
@@ -405,12 +405,12 @@ export class CriticalTimeMonitorService implements OnModuleInit, OnModuleDestroy
           title,
           message,
           caseType: ticket.pathway === 'STEMI' 
-            ? 'STEMI' 
+            ? CaseType.STEMI 
             : ticket.pathway === 'STROKE' 
-            ? 'STROKE' 
+            ? CaseType.STROKE 
             : ticket.pathway === 'TRAUMA'
-            ? 'TRAUMA'
-            : 'GENERAL',
+            ? CaseType.TRAUMA
+            : CaseType.STEMI, // Default to STEMI as fallback for GENERAL pathway
           caseId: ticket.id,
           patientId: ticket.patientId || systemPatientId,
           patientName,

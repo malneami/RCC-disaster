@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject, forwardRef, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { NotificationsService } from '../notifications.service';
-import { NotificationType, NotificationPriority, NotificationCategory, UserRole, AssignmentStatus } from '@prisma/client';
+import { NotificationType, NotificationPriority, NotificationCategory, UserRole, AssignmentStatus, CaseType } from '@prisma/client';
 
 @Injectable()
 export class EmsLateMonitorService implements OnModuleInit, OnModuleDestroy {
@@ -335,15 +335,15 @@ export class EmsLateMonitorService implements OnModuleInit, OnModuleDestroy {
           title,
           message,
           caseType: ticket.pathway === 'STEMI' 
-            ? 'STEMI' 
+            ? CaseType.STEMI 
             : ticket.pathway === 'STROKE' 
-            ? 'STROKE' 
+            ? CaseType.STROKE 
             : ticket.pathway === 'TRAUMA'
-            ? 'TRAUMA'
-            : 'GENERAL',
+            ? CaseType.TRAUMA
+            : CaseType.STEMI, // Default to STEMI as fallback for GENERAL pathway
           caseId: ticket.id,
           ticketId: ticket.id,
-          patientId: ticket.patientId || systemPatientId,
+          patientId: ticket.patientId || (await this.notificationsService['getSystemPatientId']()).id,
           patientName,
           category: NotificationCategory.EMS,
           recipientUserIds,

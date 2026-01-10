@@ -217,7 +217,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     // Emit to category-specific room if category is available
     if (notification.category) {
-      this.server.to(`category-${NotificationCategory[notification.category as keyof typeof NotificationCategory]}`).emit('notification-created', eventData);
+      this.server.to(`category-${notification.category}`).emit('notification-created', eventData);
     }
 
     // Emit to role-specific rooms based on notification type (legacy support)
@@ -243,7 +243,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       timestamp: new Date().toISOString(),
     };
 
-    this.server.to(`category-${NotificationCategory[category as keyof typeof NotificationCategory]}`).emit('notification-created', eventData);
+    this.server.to(`category-${category}`).emit('notification-created', eventData);
     this.logger.log(`Emitted notification ${notification.id} to category room: category-${category}`);
   }
 

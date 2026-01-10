@@ -742,7 +742,7 @@ export class KpiMonitorService implements OnModuleInit, OnModuleDestroy {
           caseType: caseType === 'STEMI' ? PrismaCaseType.STEMI : caseType === 'STROKE' ? PrismaCaseType.STROKE : PrismaCaseType.TRAUMA,
           caseId: caseId,
           patientId: systemPatientId.id,
-          patientName: hospitalName,
+          patientName: patientName,
           category: NotificationCategory.HOSPITALS,
           recipientUserIds: rccUserIds,
           metadata,

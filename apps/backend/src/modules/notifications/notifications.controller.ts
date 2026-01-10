@@ -169,6 +169,27 @@ export class NotificationsController {
   }
 
   /**
+   * Get user notification preferences
+   */
+  @Get('preferences')
+  async getUserNotificationPreferences(@Request() req: any) {
+    const userId = req.user.id;
+    return this.notificationsService.getUserNotificationPreferences(userId);
+  }
+
+  /**
+   * Update user notification preferences
+   */
+  @Put('preferences')
+  async updateUserNotificationPreferences(
+    @Body() preferences: any,
+    @Request() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.notificationsService.updateUserNotificationPreferences(userId, preferences);
+  }
+
+  /**
    * Get notification by ID
    */
   @Get(':id')
@@ -205,24 +226,4 @@ export class NotificationsController {
     return this.notificationsService.deleteNotification(id, userId);
   }
 
-  /**
-   * Get user notification preferences
-   */
-  @Get('preferences')
-  async getUserNotificationPreferences(@Request() req: any) {
-    const userId = req.user.id;
-    return this.notificationsService.getUserNotificationPreferences(userId);
-  }
-
-  /**
-   * Update user notification preferences
-   */
-  @Put('preferences')
-  async updateUserNotificationPreferences(
-    @Body() preferences: any,
-    @Request() req: any,
-  ) {
-    const userId = req.user.id;
-    return this.notificationsService.updateUserNotificationPreferences(userId, preferences);
-  }
 }
