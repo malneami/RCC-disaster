@@ -28,6 +28,12 @@ export class UpdateEmsAssignmentDto {
   @IsEnum(AssignmentStatus)
   status?: AssignmentStatus;
 
+  @ApiPropertyOptional({ description: 'Assignment time', example: '2024-02-15T08:40:00Z' })
+  @IsOptional()
+  @ValidateIf((o) => o.assignedAt !== undefined && o.assignedAt !== null)
+  @IsDateString()
+  assignedAt?: string;
+
   @ApiPropertyOptional({ description: 'EMS contact time', example: '2024-02-15T08:45:00Z' })
   @IsOptional()
   @ValidateIf((o) => o.emsContactTime !== undefined && o.emsContactTime !== null)

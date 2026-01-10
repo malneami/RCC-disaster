@@ -199,6 +199,9 @@ const AssignmentManagement: React.FC = () => {
           driverId: formData.driverId && formData.driverId.trim() !== ''
             ? formData.driverId
             : undefined,
+          assignedAt: formData.assignedAt && formData.assignedAt.trim() !== ''
+            ? new Date(formData.assignedAt).toISOString()
+            : undefined,
           status: formData.status as 'EMS_CONTACT' | 'EMS_ARRIVAL' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED',
           emsContactTime: formData.emsContactTime && formData.emsContactTime.trim() !== ''
             ? new Date(formData.emsContactTime).toISOString()

@@ -313,9 +313,11 @@ export class EmsAssignmentsService {
       ? new Date(updateAssignmentDto.emsContactTime)
       : existingAssignment.emsContactTime
         ? new Date(existingAssignment.emsContactTime)
-        : existingAssignment.assignedAt
-          ? new Date(existingAssignment.assignedAt)
-          : null;
+        : updateAssignmentDto.assignedAt
+          ? new Date(updateAssignmentDto.assignedAt)
+          : existingAssignment.assignedAt
+            ? new Date(existingAssignment.assignedAt)
+            : null;
     
     const assignmentEnd = updateAssignmentDto.journeyEndTime 
       ? new Date(updateAssignmentDto.journeyEndTime)
@@ -332,7 +334,8 @@ export class EmsAssignmentsService {
       updateAssignmentDto.emsContactTime || 
       updateAssignmentDto.journeyEndTime ||
       updateAssignmentDto.journeyStartTime ||
-      updateAssignmentDto.actualArrivalTime
+      updateAssignmentDto.actualArrivalTime ||
+      updateAssignmentDto.assignedAt
     );
 
     // Check conflicts if ambulance/driver is being changed OR if times are being updated
@@ -1026,6 +1029,12 @@ export class EmsAssignmentsService {
 
     if (updateAssignmentDto.status !== undefined) {
       updateData.status = updateAssignmentDto.status;
+    }
+
+    if (updateAssignmentDto.assignedAt !== undefined) {
+      updateData.assignedAt = updateAssignmentDto.assignedAt 
+        ? new Date(updateAssignmentDto.assignedAt) 
+        : new Date(); // Default to now if null provided but field present (though validator prevents null)
     }
 
     if (updateAssignmentDto.emsContactTime !== undefined) {
