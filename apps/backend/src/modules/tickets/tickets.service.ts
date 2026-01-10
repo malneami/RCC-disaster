@@ -96,8 +96,32 @@ export class TicketsService {
       ) as any;
     }
 
-    // Generate ticket number
-    const ticketNumber = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    // Fetch patient and hospital names for ticket number
+    const [patient, originHospital, destinationHospital] = await Promise.all([
+      this.prisma.patient.findUnique({
+        where: { id: createTicketDto.patientId },
+        select: { firstName: true, lastName: true },
+      }),
+      this.prisma.hospital.findUnique({
+        where: { id: createTicketDto.originHospitalId },
+        select: { name: true },
+      }),
+      createTicketDto.destinationHospitalId
+        ? this.prisma.hospital.findUnique({
+            where: { id: createTicketDto.destinationHospitalId },
+            select: { name: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    // Generate ticket number with format: pathway | patientFullName | origin → destination
+    const patientFullName = patient
+      ? `${patient.firstName} ${patient.lastName}`.trim()
+      : 'Unknown Patient';
+    const pathway = createTicketDto.pathway || 'GENERAL';
+    const originName = originHospital?.name || 'Unknown Origin';
+    const destinationName = destinationHospital?.name ?? 'TBD';
+    const ticketNumber = `${pathway} | ${patientFullName} | ${originName} → ${destinationName}`;
 
     // Create ticket with audit trail
     const { requiredResources, triageTime, symptomOnsetTime, bedAssignment, ...ticketData } = createTicketDto;
