@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import {
   Send as SendIcon,
-  Code as CodeIcon,
   TableChart as TableIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
@@ -164,30 +163,7 @@ const Chatbot: React.FC = () => {
         {message.data && (
           <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* SQL Section */}
-            {message.data.sql && (
-              <Paper elevation={1} sx={{ p: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  <CodeIcon fontSize="small" />
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    Generated SQL
-                  </Typography>
-                </Box>
-                <Box
-                  component="pre"
-                  sx={{
-                    p: 1.5,
-                    backgroundColor: 'grey.900',
-                    color: 'grey.100',
-                    borderRadius: 1,
-                    overflow: 'auto',
-                    fontSize: '0.875rem',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {message.data.sql}
-                </Box>
-              </Paper>
-            )}
+
 
             {/* Data Preview Section */}
             {message.data.data && message.data.data.length > 0 && (
