@@ -22,7 +22,7 @@ export class PatientsController {
     private readonly medicalRecordsService: MedicalRecordsService,
     private readonly duplicateDetectionService: DuplicateDetectionService,
     private readonly patientMergeService: PatientMergeService,
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all patients with pagination and filtering' })
@@ -134,7 +134,7 @@ export class PatientsController {
       // Validate and parse pagination parameters
       const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
       const limitNum = limit ? Math.min(100, Math.max(1, parseInt(limit, 10))) : 50; // Max 100 per page
-      
+
       // Validate access type if provided
       const validAccessTypes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'SEARCH'];
       if (accessType && !validAccessTypes.includes(accessType)) {
@@ -147,7 +147,7 @@ export class PatientsController {
           pages: 0,
         };
       }
-      
+
       // Validate date format if provided
       if (startDate && !/^\d{4}-\d{2}-\d{2}/.test(startDate)) {
         throw new BadRequestException('Invalid startDate format. Expected YYYY-MM-DD');
@@ -155,7 +155,7 @@ export class PatientsController {
       if (endDate && !/^\d{4}-\d{2}-\d{2}/.test(endDate)) {
         throw new BadRequestException('Invalid endDate format. Expected YYYY-MM-DD');
       }
-      
+
       // Validate date range
       if (startDate && endDate) {
         const start = new Date(startDate);
@@ -167,7 +167,7 @@ export class PatientsController {
           throw new BadRequestException('startDate must be before or equal to endDate');
         }
       }
-      
+
       const result = await this.patientsService.getAccessLogs({
         page: pageNum,
         limit: limitNum,
@@ -177,7 +177,7 @@ export class PatientsController {
         startDate,
         endDate,
       });
-      
+
       // Ensure we return a proper response structure
       if (!result || typeof result !== 'object') {
         return {
@@ -188,7 +188,7 @@ export class PatientsController {
           pages: 0,
         };
       }
-      
+
       // Ensure data is an array and response has correct pagination
       return {
         data: Array.isArray(result.data) ? result.data : [],
@@ -267,9 +267,14 @@ export class PatientsController {
       req.user.id,
     );
 
+    // Sanitize filename for HTTP header - remove non-ASCII characters (including Arabic)
+    // HTTP headers only support ASCII characters; Arabic characters would cause ERR_INVALID_CHAR
+    const safeFilename = result.filename.replace(/[^\x00-\x7F]/g, '').replace(/[-]+/g, '-').replace(/^-|-$/g, '') || `patient-${id}.${format.toLowerCase()}`;
+
     res.setHeader('Content-Type', result.contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
     res.send(result.data);
+
   }
 
   @Get(':id/medical-records')

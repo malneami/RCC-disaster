@@ -2,13 +2,77 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import * as PDFDocument from 'pdfkit';
 import { AccessLogService, EntityType } from '../../../common/services/access-log.service';
+import * as path from 'path';
+import * as fs from 'fs';
+
+// Helper function to detect if text contains Arabic characters
+function hasArabicText(text: string): boolean {
+  if (!text) return false;
+  // Arabic Unicode range: \u0600-\u06FF (Arabic) and \u0750-\u077F (Arabic Supplement)
+  const arabicPattern = /[\u0600-\u06FF\u0750-\u077F]/;
+  return arabicPattern.test(text);
+}
+
+// Get the path to a font that supports Arabic
+function getArabicFontPath(): string | null {
+  const possiblePaths = [
+    'C:\\Windows\\Fonts\\arial.ttf',
+    'C:\\Windows\\Fonts\\tahoma.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', // Linux
+    '/System/Library/Fonts/Arial.ttf', // macOS
+  ];
+
+  for (const fontPath of possiblePaths) {
+    if (fs.existsSync(fontPath)) {
+      return fontPath;
+    }
+  }
+  return null;
+}
+
+// Sanitize text for use in PDF metadata/filename (remove Arabic characters)
+// This prevents PDFKit from crashing when processing document info with Arabic text
+function sanitizeForPdfMeta(text: string): string {
+  if (!text) return 'Unknown';
+  // Remove Arabic characters and replace with empty string
+  const sanitized = text.replace(/[\u0600-\u06FF\u0750-\u077F]/g, '').trim();
+  return sanitized || 'Patient';
+}
+
+// Sanitize text for PDF content - if Arabic is detected, indicate it clearly
+// PDFKit's Helvetica font cannot render Arabic and will hang/crash
+function safeText(text: string | null | undefined): string {
+  if (!text) return 'N/A';
+  const textStr = String(text);
+  if (hasArabicText(textStr)) {
+    // Strip Arabic characters and add indicator if content had Arabic
+    const sanitized = textStr.replace(/[\u0600-\u06FF\u0750-\u077F]/g, '').trim();
+    if (sanitized) {
+      return `${sanitized} [Arabic text removed - use JSON/CSV export]`;
+    }
+    return '[Arabic content - use JSON/CSV export]';
+  }
+  return textStr;
+}
+
 
 @Injectable()
 export class PatientsExportService {
+  private arabicFontPath: string | null = null;
+
   constructor(
     private prisma: PrismaService,
     private accessLogService: AccessLogService,
-  ) {}
+  ) {
+    // Try to find an Arabic-supporting font at initialization
+    this.arabicFontPath = getArabicFontPath();
+    if (this.arabicFontPath) {
+      console.log(`Arabic font found at: ${this.arabicFontPath}`);
+    } else {
+      console.warn('No Arabic-supporting font found. Arabic text in PDFs may not render correctly.');
+    }
+  }
+
 
   async exportPatient(
     id: string,
@@ -192,7 +256,7 @@ export class PatientsExportService {
 
     const jsonString = JSON.stringify(data, null, 2);
     const buffer = Buffer.from(jsonString, 'utf-8');
-    
+
     return {
       data: buffer,
       contentType: 'application/json',
@@ -251,7 +315,7 @@ export class PatientsExportService {
 
     const csvContent = csvRows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\\n');
     const buffer = Buffer.from(csvContent, 'utf-8');
-    
+
     return {
       data: buffer,
       contentType: 'text/csv',
@@ -265,24 +329,24 @@ export class PatientsExportService {
       try {
         const birthDate = new Date(patient.dateOfBirth);
         const today = new Date();
-        
+
         let years = today.getFullYear() - birthDate.getFullYear();
         let months = today.getMonth() - birthDate.getMonth();
         let days = today.getDate() - birthDate.getDate();
-        
+
         // Adjust for negative days
         if (days < 0) {
           months--;
           const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
           days += lastMonth.getDate();
         }
-        
+
         // Adjust for negative months
         if (months < 0) {
           years--;
           months += 12;
         }
-        
+
         const parts: string[] = [];
         if (years > 0) {
           parts.push(`${years} ${years === 1 ? 'year' : 'years'}`);
@@ -293,13 +357,13 @@ export class PatientsExportService {
         if (days > 0 || parts.length === 0) {
           parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
         }
-        
+
         return parts.join(', ');
       } catch (error) {
         // If DOB is invalid, fall through to stored values
       }
     }
-    
+
     return 'N/A';
   }
 
@@ -308,11 +372,13 @@ export class PatientsExportService {
     return new Promise<{ data: Buffer; contentType: string; filename: string }>((resolve, reject) => {
       try {
         console.log('Initializing PDFDocument...');
+        // Sanitize patient name for PDF metadata (PDFKit crashes with Arabic in metadata)
+        const safeName = sanitizeForPdfMeta(`${patient.firstName || ''} ${patient.lastName || ''}`);
         const doc = new PDFDocument({
           size: 'A4',
           margin: 50,
           info: {
-            Title: `Patient Report - ${patient.firstName} ${patient.lastName}`,
+            Title: `Patient Report - ${safeName}`,
             Author: 'RCC Healthcare Platform',
             Subject: 'Patient Information Report',
             Keywords: 'patient, medical, report',
@@ -320,10 +386,74 @@ export class PatientsExportService {
           },
         });
 
+        // Register Arabic-supporting font if available
+        let arabicFontRegistered = false;
+        if (this.arabicFontPath) {
+          try {
+            doc.registerFont('Arabic', this.arabicFontPath);
+            arabicFontRegistered = true;
+            console.log('Arabic font registered successfully for PDF');
+          } catch (fontError) {
+            console.error('Failed to register Arabic font:', fontError);
+          }
+        }
+
+        // Helper for section headers (always use Helvetica for headers)
+        const sectionHeader = (title: string) => {
+          doc.fontSize(16).font('Helvetica-Bold').text(title).moveDown(0.5);
+          doc.fontSize(10).font('Helvetica');
+        };
+
+        // Check if string contains only Arabic numerals (٠-٩) and non-letter characters
+        const isOnlyArabicNumerals = (text: string): boolean => {
+          if (!text) return false;
+          // Arabic-Indic digits: ٠١٢٣٤٥٦٧٨٩ (U+0660-U+0669)
+          // Extended Arabic-Indic: ۰۱۲۳۴۵۶۷۸۹ (U+06F0-U+06F9)
+          // Allow spaces, punctuation, and Western digits too
+          const onlyNumeralsPattern = /^[\u0660-\u0669\u06F0-\u06F9\s\d\-\+\(\)\.]+$/;
+          return onlyNumeralsPattern.test(text);
+        };
+
+        // Helper to reverse only Arabic numerals in a string
+        // This fixes RTL display for numbers while keeping letters correct
+        const fixArabicNumeralsOrder = (text: string): string => {
+          if (!text) return text;
+          // If string is only Arabic numerals, reverse the whole thing
+          if (isOnlyArabicNumerals(text)) {
+            return text.split('').reverse().join('');
+          }
+          // For mixed content, don't reverse - letters are more important to be readable
+          return text;
+        };
+
+        // Helper for labeled field with Arabic support
+        // Uses registered Arabic font (Arial) when Arabic text is detected
+        const labeledField = (label: string, value: string | null | undefined) => {
+          const textValue = value || 'N/A';
+          if (hasArabicText(textValue) && arabicFontRegistered) {
+            // Fix Arabic numeral order (only reverses if purely numerals)
+            const displayText = fixArabicNumeralsOrder(textValue);
+            doc.font('Helvetica').text(`${label}: `, { continued: true });
+            doc.font('Arabic').text(displayText);
+            doc.font('Helvetica');
+          } else if (hasArabicText(textValue)) {
+            // Arabic font not available - show placeholder
+            doc.text(`${label}: [Arabic text - font not available]`);
+          } else {
+            doc.text(`${label}: ${textValue}`);
+          }
+        };
+
+
+
+
+
+
+
         const chunks: Buffer[] = [];
-        
+
         doc.on('data', (chunk) => chunks.push(chunk));
-        
+
         doc.on('end', () => {
           console.log('PDF generation finished.');
           const buffer = Buffer.concat(chunks);
@@ -353,27 +483,25 @@ export class PatientsExportService {
 
         // Patient Details Section
         console.log('Writing Patient Details...');
-        doc.fontSize(16)
-          .font('Helvetica-Bold')
-          .text('PATIENT DETAILS')
-          .moveDown(0.5);
+        sectionHeader('PATIENT DETAILS');
 
-        doc.fontSize(10)
-          .font('Helvetica')
-          .text(`Name: ${patient.firstName} ${patient.middleName || ''} ${patient.lastName}`)
-          .text(`MRN: ${patient.mrn || 'N/A'}`)
-          .text(`National ID: ${this.normalizeNationalId(patient.nationalId) || 'N/A'}`);
-        
+
+        doc.fontSize(10).font('Helvetica');
+        // Patient name - may contain Arabic
+        labeledField('Name', `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.trim());
+        doc.text(`MRN: ${patient.mrn || 'N/A'}`);
+        doc.text(`National ID: ${this.normalizeNationalId(patient.nationalId) || 'N/A'}`);
+
         console.log('Writing Age...');
         // Safe Age Printing
         try {
-           const ageStr = this.formatAgeForDisplay(patient);
-           doc.text(`Age: ${ageStr}`);
+          const ageStr = this.formatAgeForDisplay(patient);
+          doc.text(`Age: ${ageStr}`);
         } catch (e) {
-           console.error('Error formatting age in PDF:', e);
-           doc.text('Age: Error');
+          console.error('Error formatting age in PDF:', e);
+          doc.text('Age: Error');
         }
-        
+
         // Only show date of birth if it exists
         if (patient.dateOfBirth) {
           try {
@@ -382,75 +510,55 @@ export class PatientsExportService {
             // If date is invalid, skip it
           }
         }
-        
-        doc.text(`Gender: ${patient.gender}`)
-          .text(`Marital Status: ${patient.maritalStatus || 'N/A'}`)
-          .moveDown(1);
+
+        doc.text(`Gender: ${patient.gender}`);
+        doc.text(`Marital Status: ${patient.maritalStatus || 'N/A'}`);
+        doc.moveDown(1);
 
         // Contact Information Section
-        doc.fontSize(16)
-          .font('Helvetica-Bold')
-          .text('CONTACT INFORMATION')
-          .moveDown(0.5);
-
-        doc.fontSize(10)
-          .font('Helvetica')
-          .text(`Phone: ${patient.phoneNumber || 'N/A'}`)
-          .text(`Email: ${patient.email || 'N/A'}`)
-          .text(`Address: ${patient.address || 'N/A'}`)
-          .text(`City: ${patient.city || 'N/A'}`)
-          .text(`State: ${patient.state || 'N/A'}`)
-          .text(`ZIP Code: ${patient.zipCode || 'N/A'}`)
-          .text(`Country: ${patient.country || 'N/A'}`)
-          .moveDown(1);
+        sectionHeader('CONTACT INFORMATION');
+        labeledField('Phone', patient.phoneNumber);
+        labeledField('Email', patient.email);
+        labeledField('Address', patient.address);
+        labeledField('City', patient.city);
+        labeledField('State', patient.state);
+        labeledField('ZIP Code', patient.zipCode);
+        labeledField('Country', patient.country);
+        doc.moveDown(1);
 
         // Emergency Contact Section
-        doc.fontSize(16)
-          .font('Helvetica-Bold')
-          .text('EMERGENCY CONTACT')
-          .moveDown(0.5);
-
-        doc.fontSize(10)
-          .font('Helvetica')
-          .text(`Name: ${patient.emergencyContact || 'N/A'}`)
-          .text(`Phone: ${patient.emergencyPhone || 'N/A'}`)
-          .text(`Email: ${patient.emergencyEmail || 'N/A'}`)
-          .text(`Relationship: ${patient.emergencyRelationship || 'N/A'}`)
-          .moveDown(1);
+        sectionHeader('EMERGENCY CONTACT');
+        labeledField('Name', patient.emergencyContact);
+        labeledField('Phone', patient.emergencyPhone);
+        labeledField('Email', patient.emergencyEmail);
+        labeledField('Relationship', patient.emergencyRelationship);
+        doc.moveDown(1);
 
         // Insurance Information Section
-        doc.fontSize(16)
-          .font('Helvetica-Bold')
-          .text('INSURANCE INFORMATION')
-          .moveDown(0.5);
+        sectionHeader('INSURANCE INFORMATION');
+        labeledField('Provider', patient.insuranceProvider);
+        labeledField('Policy Number', patient.insuranceNumber);
+        labeledField('Group', patient.insuranceGroup);
+        doc.text(`Expiry: ${patient.insuranceExpiry ? new Date(patient.insuranceExpiry).toLocaleDateString() : 'N/A'}`);
+        doc.moveDown(1);
 
-        doc.fontSize(10)
-          .font('Helvetica')
-          .text(`Provider: ${patient.insuranceProvider || 'N/A'}`)
-          .text(`Policy Number: ${patient.insuranceNumber || 'N/A'}`)
-          .text(`Group: ${patient.insuranceGroup || 'N/A'}`)
-          .text(`Expiry: ${patient.insuranceExpiry ? new Date(patient.insuranceExpiry).toLocaleDateString() : 'N/A'}`)
-          .moveDown(1);
 
         // Medical Information Section
-        doc.fontSize(16)
-          .font('Helvetica-Bold')
-          .text('MEDICAL INFORMATION')
-          .moveDown(0.5);
+        sectionHeader('MEDICAL INFORMATION');
 
-        doc.fontSize(10)
-          .font('Helvetica')
-          .text(`Blood Type: ${patient.bloodType || 'N/A'}`)
-          .text(`RH Factor: ${patient.rhFactor || 'N/A'}`)
-          .text(`Allergies: ${patient.allergies || 'N/A'}`)
-          .text(`Medications: ${patient.medications || 'N/A'}`)
-          .text(`Medical History: ${patient.medicalHistory || 'N/A'}`)
-          .text(`Risk Factors: ${patient.riskFactors || 'N/A'}`)
-          .text(`Chronic Conditions: ${patient.chronicConditions || 'N/A'}`)
-          .text(`Weight: ${patient.weight || 'N/A'} kg`)
-          .text(`Height: ${patient.height || 'N/A'} cm`)
-          .text(`BMI: ${patient.bmi || 'N/A'}`)
-          .moveDown(1);
+        // Fields that might contain Arabic text - use labeledField helper
+        labeledField('Blood Type', patient.bloodType);
+        labeledField('RH Factor', patient.rhFactor);
+        labeledField('Allergies', patient.allergies);
+        labeledField('Medications', patient.medications);
+        labeledField('Medical History', patient.medicalHistory);
+        labeledField('Risk Factors', patient.riskFactors);
+        labeledField('Chronic Conditions', patient.chronicConditions);
+        doc.text(`Weight: ${patient.weight || 'N/A'} kg`);
+        doc.text(`Height: ${patient.height || 'N/A'} cm`);
+        doc.text(`BMI: ${patient.bmi || 'N/A'}`);
+        doc.moveDown(1);
+
 
         // Privacy & Consent Section
         doc.fontSize(16)
@@ -477,9 +585,10 @@ export class PatientsExportService {
           .text(`Created At: ${new Date(patient.createdAt).toLocaleString()}`)
           .text(`Updated At: ${new Date(patient.updatedAt).toLocaleString()}`)
           .text(`Last Accessed At: ${patient.lastAccessedAt ? new Date(patient.lastAccessedAt).toLocaleString() : 'Never'}`)
-          .text(`Created By: ${patient.createdBy ? `${patient.createdBy.firstName} ${patient.createdBy.lastName}` : 'N/A'}`)
-          .text(`Last Accessed By: ${patient.lastAccessedByUser ? `${patient.lastAccessedByUser.firstName} ${patient.lastAccessedByUser.lastName}` : 'N/A'}`)
+          .text(`Created By: ${patient.createdBy ? `${safeText(patient.createdBy.firstName)} ${safeText(patient.createdBy.lastName)}` : 'N/A'}`)
+          .text(`Last Accessed By: ${patient.lastAccessedByUser ? `${safeText(patient.lastAccessedByUser.firstName)} ${safeText(patient.lastAccessedByUser.lastName)}` : 'N/A'}`)
           .moveDown(1);
+
 
         // Medical Records Section (if included)
         if (patient.medicalRecords && patient.medicalRecords.length > 0) {
@@ -491,19 +600,20 @@ export class PatientsExportService {
 
           patient.medicalRecords.forEach((record: any, index: number) => {
             doc.fontSize(12)
-            .font('Helvetica-Bold')
-            .text(`${index + 1}. ${record.title}`)
-            .moveDown(0.2);
+              .font('Helvetica-Bold')
+              .text(`${index + 1}. ${safeText(record.title)}`)
+              .moveDown(0.2);
 
             doc.fontSize(10)
-            .font('Helvetica')
-            .text(`Type: ${record.recordType}`)
-            .text(`Date: ${new Date(record.recordDate).toLocaleDateString()}`)
-            .text(`Description: ${record.description || 'N/A'}`)
-            .text(`Diagnosis: ${record.diagnosis || 'N/A'}`)
-            .text(`Treatment: ${record.treatment || 'N/A'}`)
-            .moveDown(0.5);
+              .font('Helvetica')
+              .text(`Type: ${record.recordType || 'N/A'}`)
+              .text(`Date: ${new Date(record.recordDate).toLocaleDateString()}`)
+              .text(`Description: ${safeText(record.description)}`)
+              .text(`Diagnosis: ${safeText(record.diagnosis)}`)
+              .text(`Treatment: ${safeText(record.treatment)}`)
+              .moveDown(0.5);
           });
+
         }
 
         // Tickets Section (if included)
@@ -516,18 +626,18 @@ export class PatientsExportService {
 
           patient.tickets.forEach((ticket: any, index: number) => {
             doc.fontSize(12)
-            .font('Helvetica-Bold')
-            .text(`${index + 1}. Ticket ID: ${ticket.id}`)
-            .moveDown(0.2);
+              .font('Helvetica-Bold')
+              .text(`${index + 1}. Ticket ID: ${ticket.id}`)
+              .moveDown(0.2);
 
             doc.fontSize(10)
-            .font('Helvetica')
-            .text(`Status: ${ticket.status}`)
-            .text(`Priority: ${ticket.priority}`)
-            .text(`Created: ${new Date(ticket.createdAt).toLocaleString()}`)
-            .text(`Origin: ${ticket.originHospital?.name || 'N/A'}`)
-            .text(`Destination: ${ticket.destinationHospital?.name || 'N/A'}`)
-            .moveDown(0.5);
+              .font('Helvetica')
+              .text(`Status: ${ticket.status}`)
+              .text(`Priority: ${ticket.priority}`)
+              .text(`Created: ${new Date(ticket.createdAt).toLocaleString()}`)
+              .text(`Origin: ${safeText(ticket.originHospital?.name)}`)
+              .text(`Destination: ${safeText(ticket.destinationHospital?.name)}`)
+              .moveDown(0.5);
           });
         }
 
@@ -541,17 +651,17 @@ export class PatientsExportService {
 
           patient.accessLogs.forEach((log: any, index: number) => {
             doc.fontSize(12)
-            .font('Helvetica-Bold')
-            .text(`${index + 1}. ${new Date(log.timestamp).toLocaleString()}`)
-            .moveDown(0.2);
+              .font('Helvetica-Bold')
+              .text(`${index + 1}. ${new Date(log.timestamp).toLocaleString()}`)
+              .moveDown(0.2);
 
             doc.fontSize(10)
-            .font('Helvetica')
-            .text(`User: ${log.user.firstName} ${log.user.lastName} (${log.user.role})`)
-            .text(`Access Type: ${log.accessType}`)
-            .text(`Method: ${log.accessMethod}`)
-            .text(`Reason: ${log.reason || 'N/A'}`)
-            .moveDown(0.5);
+              .font('Helvetica')
+              .text(`User: ${safeText(log.user?.firstName)} ${safeText(log.user?.lastName)} (${log.user?.role || 'N/A'})`)
+              .text(`Access Type: ${log.accessType}`)
+              .text(`Method: ${log.accessMethod}`)
+              .text(`Reason: ${safeText(log.reason)}`)
+              .moveDown(0.5);
           });
         }
 
