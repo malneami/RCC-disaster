@@ -172,7 +172,7 @@ const Sidebar: React.FC = () => {
       text: 'EMS Portal',
       icon: <FontAwesomeIcon icon={faShieldAlt} />,
       path: '/portals/ems',
-      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR'],
+      roles: ['ADMIN', 'RCC', 'EMS'],
       color: 'success',
     },
   ];
