@@ -8,10 +8,6 @@ import {
   Box,
   Typography,
   CircularProgress,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormLabel,
   Alert,
   Card,
   CardContent,
@@ -93,9 +89,9 @@ const BedAssignmentStep: React.FC<BedAssignmentStepProps> = ({
   const { beds, loading: bedsLoading } = useBeds(
     currentHospitalId || selectedUnitId
       ? {
-          hospitalId: currentHospitalId || undefined,
-          unitId: selectedUnitId || undefined,
-        }
+        hospitalId: currentHospitalId || undefined,
+        unitId: selectedUnitId || undefined,
+      }
       : undefined
   );
 
@@ -118,10 +114,10 @@ const BedAssignmentStep: React.FC<BedAssignmentStepProps> = ({
   const handleHospitalTypeChange = (type: 'origin' | 'destination' | '') => {
     setHospitalType(type);
     setSelectedUnitId('');
-    
+
     const hospitalId = type === 'origin' ? originHospitalId : destinationHospitalId;
     setSelectedHospitalId(hospitalId || '');
-    
+
     onChange({
       hospitalType: type as 'origin' | 'destination' | undefined,
       hospitalId: hospitalId || undefined,
@@ -135,7 +131,7 @@ const BedAssignmentStep: React.FC<BedAssignmentStepProps> = ({
 
   const handleUnitChange = (unitId: string) => {
     setSelectedUnitId(unitId);
-    
+
     onChange({
       unitId,
       bedId: undefined,
@@ -146,6 +142,20 @@ const BedAssignmentStep: React.FC<BedAssignmentStepProps> = ({
   };
 
   const handleBedSelection = (bedId: string, bed?: BedListItem) => {
+    // If bedId is empty (user selected "Auto-assign" or cleared selection), clear manual assignment
+    if (!bedId) {
+      onChange({
+        bedId: undefined,
+        bedNumber: undefined,
+        assignedBed: undefined,
+      });
+      setBedStatusError(null);
+      if (onValidationError) {
+        onValidationError(null);
+      }
+      return;
+    }
+
     const selectedBed = bed || availableBeds.find((b) => b.id === bedId);
     if (selectedBed) {
       if (selectedBed.status !== 'VACANT' && selectedBed.status !== 'RESERVED') {
@@ -161,12 +171,12 @@ const BedAssignmentStep: React.FC<BedAssignmentStepProps> = ({
         });
         return;
       }
-      
+
       setBedStatusError(null);
       if (onValidationError) {
         onValidationError(null);
       }
-      
+
       onChange({
         bedId,
         bedNumber: selectedBed.bedNumber,
@@ -212,30 +222,28 @@ const BedAssignmentStep: React.FC<BedAssignmentStepProps> = ({
         </Grid>
 
         {(originHospitalId || destinationHospitalId) && (
-          <Grid item xs={12}>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Select Hospital</FormLabel>
-              <RadioGroup
-                row
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Assign Bed At</InputLabel>
+              <Select
                 value={hospitalType}
                 onChange={(e) => handleHospitalTypeChange(e.target.value as 'origin' | 'destination' | '')}
+                label="Assign Bed At"
               >
-                {/* Only show origin option for direct tickets (no destination hospital) */}
+                <MenuItem value="">
+                  <em>None (Do not assign bed)</em>
+                </MenuItem>
                 {originHospitalId && !destinationHospitalId && (
-                  <FormControlLabel
-                    value="origin"
-                    control={<Radio />}
-                    label={`Origin: ${getHospitalName(originHospitalId)}`}
-                  />
+                  <MenuItem value="origin">
+                    Origin: {getHospitalName(originHospitalId)}
+                  </MenuItem>
                 )}
                 {destinationHospitalId && (
-                  <FormControlLabel
-                    value="destination"
-                    control={<Radio />}
-                    label={`Destination: ${getHospitalName(destinationHospitalId)}`}
-                  />
+                  <MenuItem value="destination">
+                    Destination: {getHospitalName(destinationHospitalId)}
+                  </MenuItem>
                 )}
-              </RadioGroup>
+              </Select>
             </FormControl>
           </Grid>
         )}
@@ -270,8 +278,8 @@ const BedAssignmentStep: React.FC<BedAssignmentStepProps> = ({
         {selectedUnitId && (
           <>
             <Grid item xs={12} sm={6}>
-              <FormControl 
-                fullWidth 
+              <FormControl
+                fullWidth
                 disabled={bedsLoading}
                 error={!!bedStatusError || !!validationErrors?.['bedAssignment.bedId']}
               >
