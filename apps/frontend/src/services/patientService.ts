@@ -303,8 +303,10 @@ class PatientService {
     return response.data;
   }
 
-  async getDuplicateGroups(): Promise<DuplicateGroup[]> {
-    const response = await apiClient.get('/patients/duplicates/groups');
+  async getDuplicateGroups(confidenceThreshold = 0.8): Promise<DuplicateGroup[]> {
+    const response = await apiClient.get('/patients/duplicates/groups', {
+      params: { confidenceThreshold }
+    });
     return response.data;
   }
 

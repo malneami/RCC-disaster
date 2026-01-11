@@ -131,38 +131,61 @@ export class DuplicateDetectionService {
   }
 
   /**
+  /**
    * Calculate confidence score between two patients
+   * Uses dynamic scoring based on available fields
    */
   private calculateMatchConfidence(patient1: any, patient2: any): number {
     let totalScore = 0;
     let maxScore = 0;
 
-    // Name matching (40% weight)
+    // Name matching (40% weight) - Critical, always included
     const nameScore = this.calculateNameSimilarity(patient1, patient2);
     totalScore += nameScore * 0.4;
     maxScore += 0.4;
 
-    // Date of birth matching (30% weight)
+    // Date of birth matching (30% weight) - Critical, always included
     const dobScore = this.calculateDOBSimilarity(patient1, patient2);
     totalScore += dobScore * 0.3;
     maxScore += 0.3;
 
-    // Gender matching (10% weight)
-    const genderScore = patient1.gender === patient2.gender ? 1 : 0;
-    totalScore += genderScore * 0.1;
-    maxScore += 0.1;
+    // Gender matching (10% weight) - Included if both have it
+    if (patient1.gender && patient2.gender) {
+        const genderScore = patient1.gender === patient2.gender ? 1 : 0;
+        totalScore += genderScore * 0.1;
+        maxScore += 0.1;
+    }
 
-    // Phone number matching (10% weight)
-    const phoneScore = this.calculatePhoneSimilarity(patient1, patient2);
-    totalScore += phoneScore * 0.1;
-    maxScore += 0.1;
+    // Phone number matching (10% weight) - Included if both have it
+    if (patient1.phoneNumber && patient2.phoneNumber) {
+        const phoneScore = this.calculatePhoneSimilarity(patient1, patient2);
+        totalScore += phoneScore * 0.1;
+        maxScore += 0.1;
+    }
 
-    // Address matching (10% weight)
-    const addressScore = this.calculateAddressSimilarity(patient1, patient2);
-    totalScore += addressScore * 0.1;
-    maxScore += 0.1;
+    // Address matching (10% weight) - Included if both have it
+    if (patient1.address && patient2.address) {
+        const addressScore = this.calculateAddressSimilarity(patient1, patient2);
+        totalScore += addressScore * 0.1;
+        maxScore += 0.1;
+    }
 
-    return totalScore / maxScore;
+    // Calculate base confidence
+    let confidence = maxScore > 0 ? totalScore / maxScore : 0;
+
+    // Creation Time Boost (Bonus)
+    // If created within 24 hours of each other, likely a double-entry
+    if (patient1.createdAt && patient2.createdAt) {
+        const created1 = new Date(patient1.createdAt);
+        const created2 = new Date(patient2.createdAt);
+        const diffHours = Math.abs(created1.getTime() - created2.getTime()) / (1000 * 60 * 60);
+        
+        if (diffHours <= 24) {
+            confidence += 0.05; // 5% boost
+        }
+    }
+
+    return Math.min(confidence, 1.0);
   }
 
   /**
@@ -328,87 +351,89 @@ export class DuplicateDetectionService {
   /**
    * Get duplicate groups
    */
+  /**
+   * Get duplicate groups using both exact and fuzzy matching
+   */
   async getDuplicateGroups(confidenceThreshold: number = 0.8) {
+    // 1. Fetch all active patients with necessary fields
     const allPatients = await this.prisma.patient.findMany({
-      where: { deletedAt: null, isPrimaryRecord: true },
+      where: { deletedAt: null },
       include: {
         createdBy: {
           select: { firstName: true, lastName: true, email: true },
         },
       },
+      orderBy: { createdAt: 'desc' }, // Process newer patients first
     });
 
-    const duplicateGroups: any[] = [];
-    const processed = new Set<string>();
+    const duplicateGroups: DuplicateGroup[] = [];
+    const processedPatientIds = new Set<string>();
 
     for (const patient of allPatients) {
-      if (processed.has(patient.id)) continue;
+      if (processedPatientIds.has(patient.id)) continue;
 
-      const duplicates = await this.prisma.patient.findMany({
-        where: {
-          deletedAt: null,
-          id: { not: patient.id },
-          OR: [
-            ...(patient.mrn ? [{ mrn: patient.mrn }] : []),
-            ...(patient.nationalId ? [{ nationalId: patient.nationalId }] : []),
-            ...(patient.phoneNumber ? [{ phoneNumber: patient.phoneNumber }] : []),
-          ],
-        },
-        include: {
-          createdBy: {
-            select: { firstName: true, lastName: true, email: true },
-          },
-        },
-      });
+      const groupMatches: DuplicateMatch[] = [];
+      const potentialDuplicates: any[] = [];
 
-      if (duplicates.length > 0) {
-        const group: any = {
+      // Find all matches for this patient
+      for (const candidate of allPatients) {
+        if (patient.id === candidate.id) continue;
+        if (processedPatientIds.has(candidate.id)) continue; // Skip if already part of another group
+
+        // Calculate confidence
+        const confidence = this.calculateMatchConfidence(patient, candidate);
+
+        if (confidence >= confidenceThreshold) {
+          potentialDuplicates.push(candidate);
+          const matchedFields = this.getMatchedFields(patient, candidate);
+          
+          groupMatches.push({
+            patientId: candidate.id,
+            confidence,
+            matchReason: this.getMatchReason(confidence, matchedFields),
+            matchedFields,
+          });
+        }
+      }
+
+      // If we found any duplicates, create a group
+      if (groupMatches.length > 0) {
+        // Add the primary patient (the current one in the loop)
+        groupMatches.unshift({
+          patientId: patient.id,
+          confidence: 1.0,
+          matchReason: 'Primary record',
+          matchedFields: [],
+        });
+
+        // Mark all as processed
+        processedPatientIds.add(patient.id);
+        potentialDuplicates.forEach(d => processedPatientIds.add(d.id));
+
+        // Construct the group object with full patient details for the frontend
+        const fullGroupMatches = groupMatches.map(match => {
+          const p = match.patientId === patient.id ? patient : potentialDuplicates.find(d => d.id === match.patientId);
+          return {
+            ...match,
+            patient: {
+              id: p.id,
+              firstName: p.firstName,
+              lastName: p.lastName,
+              mrn: p.mrn,
+              nationalId: p.nationalId,
+              phoneNumber: p.phoneNumber,
+              createdAt: p.createdAt,
+              createdBy: p.createdBy,
+            }
+          };
+        });
+
+        duplicateGroups.push({
           groupId: `group-${patient.id}`,
-          primaryPatientId: patient.id,
-          patients: [
-            {
-              patientId: patient.id,
-              confidence: 1.0,
-              matchReason: 'Primary record',
-              matchedFields: [],
-              patient: {
-                id: patient.id,
-                firstName: patient.firstName,
-                lastName: patient.lastName,
-                mrn: patient.mrn,
-                nationalId: patient.nationalId,
-                phoneNumber: patient.phoneNumber,
-                createdAt: patient.createdAt,
-                createdBy: patient.createdBy,
-              },
-            },
-            ...duplicates.map((dup) => ({
-              patientId: dup.id,
-              confidence: 0.9,
-              matchReason: 'Potential duplicate',
-              matchedFields: [
-                ...(patient.mrn && dup.mrn === patient.mrn ? ['mrn'] : []),
-                ...(patient.nationalId && dup.nationalId === patient.nationalId ? ['nationalId'] : []),
-                ...(patient.phoneNumber && dup.phoneNumber === patient.phoneNumber ? ['phoneNumber'] : []),
-              ],
-              patient: {
-                id: dup.id,
-                firstName: dup.firstName,
-                lastName: dup.lastName,
-                mrn: dup.mrn,
-                nationalId: dup.nationalId,
-                phoneNumber: dup.phoneNumber,
-                createdAt: dup.createdAt,
-                createdBy: dup.createdBy,
-              },
-            })),
-          ],
-          totalConfidence: 0.95,
-        };
-
-        duplicateGroups.push(group);
-        processed.add(patient.id);
-        duplicates.forEach((d) => processed.add(d.id));
+          primaryPatientId: patient.id, // Default to the one we started with
+          patients: fullGroupMatches,
+          totalConfidence: groupMatches.reduce((acc, curr) => acc + (curr.patientId === patient.id ? 0 : curr.confidence), 0) / (groupMatches.length - 1 || 1),
+        });
       }
     }
 

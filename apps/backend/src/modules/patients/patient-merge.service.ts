@@ -103,6 +103,76 @@ export class PatientMergeService {
             data: { patientId: primaryPatient.id }
           });
 
+          // Update STEMI cases
+          await tx.stemiCase.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // Update Trauma cases
+          await tx.traumaCase.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // Update Stroke Assessment Scores
+          await tx.strokeAssessmentScore.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // Update Stroke Rehabilitation
+          await tx.strokeRehabilitation.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // Update Beds
+          await tx.bed.updateMany({
+            where: { currentPatientId: duplicate.id },
+            data: { currentPatientId: primaryPatient.id }
+          });
+
+          // Update Bed Requests
+          await tx.bedRequest.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // Update Bed Status History
+          await tx.bedStatusHistory.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // Update Notifications
+          await tx.notification.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // Update Case Notes
+          await tx.caseNote.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // Update Replies
+          await tx.reply.updateMany({
+            where: { patientId: duplicate.id },
+            data: { patientId: primaryPatient.id }
+          });
+
+          // --- SAFETY CHECK: Verify all critical records were moved ---
+          const remainingTrauma = await tx.traumaCase.count({ where: { patientId: duplicate.id } });
+          const remainingStemi = await tx.stemiCase.count({ where: { patientId: duplicate.id } });
+          const remainingStroke = await tx.strokeCase.count({ where: { patientId: duplicate.id } });
+
+          if (remainingTrauma > 0 || remainingStemi > 0 || remainingStroke > 0) {
+            throw new Error(`Merge Validation Failed: Duplicate patient ${duplicate.id} still has orphaned cases (Trauma: ${remainingTrauma}, STEMI: ${remainingStemi}, Stroke: ${remainingStroke}). Transaction rolled back.`);
+          }
+          // -----------------------------------------------------------
+
           // Soft delete the duplicate patient
           await tx.patient.update({
             where: { id: duplicate.id },

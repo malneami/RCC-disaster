@@ -9,6 +9,8 @@ import {
     Alert,
     Avatar,
     Button,
+    Chip,
+    Checkbox,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { DuplicateGroup, DuplicateMatch } from '@/services/patientService';
@@ -19,7 +21,7 @@ interface DuplicateMergeDialogProps {
     onClose: () => void;
     selectedGroup: DuplicateGroup | null;
     primaryPatientId: string;
-    handleMerge: () => void;
+    handleMerge: (primaryId: string, duplicateIds: string[]) => void;
     loading: boolean;
     selectedDuplicates: string[];
 }
@@ -33,6 +35,50 @@ const DuplicateMergeDialog: React.FC<DuplicateMergeDialogProps> = ({
     loading,
     selectedDuplicates,
 }) => {
+    const [selectedPrimaryId, setSelectedPrimaryId] = React.useState<string>(primaryPatientId);
+    const [selectedMergeIds, setSelectedMergeIds] = React.useState<string[]>([]);
+
+    // Sync state when props change
+    React.useEffect(() => {
+        if (open) {
+            setSelectedPrimaryId(primaryPatientId);
+            // Default: Select all duplicates passed from parent (which usually excludes primary)
+            setSelectedMergeIds(selectedDuplicates);
+        }
+    }, [open, primaryPatientId, selectedDuplicates]);
+
+    const handlePrimaryChange = (newPrimaryId: string) => {
+        const oldPrimaryId = selectedPrimaryId;
+        setSelectedPrimaryId(newPrimaryId);
+
+        // When primary changes:
+        // 1. Remove new primary from merge list (if present)
+        // 2. Add old primary to merge list (it becomes a duplicate)
+        setSelectedMergeIds(prev => {
+            const newIds = prev.filter(id => id !== newPrimaryId);
+            if (oldPrimaryId && oldPrimaryId !== newPrimaryId && !newIds.includes(oldPrimaryId)) {
+                newIds.push(oldPrimaryId);
+            }
+            return newIds;
+        });
+    };
+
+    const handleToggleMerge = (patientId: string) => {
+        if (patientId === selectedPrimaryId) return; // Cannot toggle primary
+
+        setSelectedMergeIds(prev => {
+            if (prev.includes(patientId)) {
+                return prev.filter(id => id !== patientId);
+            } else {
+                return [...prev, patientId];
+            }
+        });
+    };
+
+    const handleMergeClick = () => {
+        handleMerge(selectedPrimaryId, selectedMergeIds);
+    };
+
     return (
         <Dialog
             open={open}
@@ -88,8 +134,10 @@ const DuplicateMergeDialog: React.FC<DuplicateMergeDialogProps> = ({
                                 background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
                             }}
                         >
-                            Merging will combine all duplicate records into the primary patient. This action cannot be undone.
+                            Select the <strong>Primary Record</strong> to keep, and check the <strong>Duplicate Records</strong> to merge into it.
+                            Unchecked records will remain as independent patients (false positives).
                         </Alert>
+
                         <Typography
                             variant="subtitle2"
                             gutterBottom
@@ -101,95 +149,124 @@ const DuplicateMergeDialog: React.FC<DuplicateMergeDialogProps> = ({
                                 fontSize: '0.9375rem',
                             }}
                         >
-                            Primary Patient (will be kept):
+                            Select Primary & Duplicates:
                         </Typography>
-                        {selectedGroup.patients
-                            .filter((p: DuplicateMatch & { patientId: string }) => p.patientId === primaryPatientId)
-                            .map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
+
+                        {selectedGroup.patients.map((p: DuplicateMatch & { patientId: string; patient?: any }) => {
+                            const isSelectedPrimary = p.patientId === selectedPrimaryId;
+                            const isCheckedForMerge = selectedMergeIds.includes(p.patientId);
+
+                            return (
                                 <Box
                                     key={p.patientId}
                                     sx={{
-                                        background: 'linear-gradient(135deg, #e8f5ff 0%, #d6e7ff 100%)',
-                                        borderRadius: '12px',
-                                        padding: '16px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
                                         mb: 2,
-                                        border: '2px solid rgba(110, 198, 255, 0.4)',
                                     }}
                                 >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        <Avatar
+                                    {/* Selection Controls */}
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            mr: 1
+                                        }}
+                                    >
+                                        <Box
+                                            onClick={() => handlePrimaryChange(p.patientId)}
                                             sx={{
-                                                width: 48,
-                                                height: 48,
-                                                background: GRADIENT_COLORS.primary,
-                                                fontSize: '1.2rem',
-                                                fontWeight: 700,
+                                                width: 24,
+                                                height: 24,
+                                                borderRadius: '50%',
+                                                border: isSelectedPrimary ? '6px solid #2196f3' : '2px solid #bdbdbd',
+                                                backgroundColor: 'white',
+                                                cursor: 'pointer',
+                                                '&:hover': { borderColor: '#2196f3' },
+                                                mb: 0.5
                                             }}
-                                        >
-                                            {p.patient?.firstName?.charAt(0)?.toUpperCase() || 'P'}
-                                            {p.patient?.lastName?.charAt(0)?.toUpperCase() || ''}
-                                        </Avatar>
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography sx={{ fontWeight: 600, color: '#1a237e', mb: 0.5 }}>
-                                                {p.patient?.firstName} {p.patient?.lastName}
-                                            </Typography>
-                                            <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8125rem' }}>
-                                                MRN: {p.patient?.mrn || 'N/A'} | National ID: {p.patient?.nationalId || 'N/A'}
-                                            </Typography>
+                                            title="Set as Primary"
+                                        />
+                                        <Checkbox
+                                            checked={isCheckedForMerge}
+                                            onChange={() => handleToggleMerge(p.patientId)}
+                                            disabled={isSelectedPrimary}
+                                            sx={{
+                                                p: 0,
+                                                color: isSelectedPrimary ? 'transparent' : '#bdbdbd',
+                                                '&.Mui-checked': { color: '#ef5350' },
+                                            }}
+                                            title={isSelectedPrimary ? "Primary record cannot be merged" : "Merge this record"}
+                                        />
+                                    </Box>
+
+                                    {/* Patient Card */}
+                                    <Box
+                                        onClick={() => !isSelectedPrimary && handleToggleMerge(p.patientId)}
+                                        sx={{
+                                            flex: 1,
+                                            cursor: !isSelectedPrimary ? 'pointer' : 'default',
+                                            background: isSelectedPrimary
+                                                ? 'linear-gradient(135deg, #e8f5ff 0%, #d6e7ff 100%)'
+                                                : (isCheckedForMerge
+                                                    ? 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)' // Reddish for "will be deleted/merged"
+                                                    : 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)'),
+                                            borderRadius: '12px',
+                                            padding: '16px',
+                                            border: isSelectedPrimary
+                                                ? '2px solid #2196f3'
+                                                : (isCheckedForMerge ? '1px solid #ef5350' : '1px solid rgba(0,0,0,0.12)'),
+                                            transition: 'all 0.2s',
+                                            opacity: (!isSelectedPrimary && !isCheckedForMerge) ? 0.7 : 1, // Dim if ignored
+                                            '&:hover': {
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                                            }
+                                        }}
+                                    >
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Avatar
+                                                sx={{
+                                                    width: 48,
+                                                    height: 48,
+                                                    background: isSelectedPrimary ? GRADIENT_COLORS.primary : (isCheckedForMerge ? '#ef5350' : '#bdbdbd'),
+                                                    fontSize: '1.2rem',
+                                                    fontWeight: 700,
+                                                }}
+                                            >
+                                                {p.patient?.firstName?.charAt(0)?.toUpperCase() || 'P'}
+                                                {p.patient?.lastName?.charAt(0)?.toUpperCase() || ''}
+                                            </Avatar>
+                                            <Box sx={{ flex: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography sx={{ fontWeight: 600, color: '#1a237e' }}>
+                                                        {p.patient?.firstName} {p.patient?.lastName}
+                                                    </Typography>
+                                                    {isSelectedPrimary && (
+                                                        <Chip label="Primary (To Keep)" size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                                    )}
+                                                    {isCheckedForMerge && (
+                                                        <Chip label="Duplicate (To Merge)" size="small" color="error" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                                    )}
+                                                    {!isSelectedPrimary && !isCheckedForMerge && (
+                                                        <Chip label="Ignored" size="small" sx={{ height: 20, fontSize: '0.7rem', opacity: 0.7 }} />
+                                                    )}
+                                                </Box>
+                                                <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8125rem', mt: 0.5 }}>
+                                                    MRN: {p.patient?.mrn || 'N/A'} | National ID: {p.patient?.nationalId || 'N/A'}
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: '#999', display: 'block', mt: 0.5 }}>
+                                                    {p.patient?.createdAt ? `Created: ${new Date(p.patient.createdAt).toLocaleDateString()}` : ''} ({Math.round(p.confidence * 100)}% Match)
+                                                </Typography>
+                                            </Box>
                                         </Box>
                                     </Box>
                                 </Box>
-                            ))}
-                        <Typography
-                            variant="subtitle2"
-                            gutterBottom
-                            sx={{
-                                mt: 2,
-                                mb: 1.5,
-                                fontWeight: 600,
-                                color: '#1a237e',
-                                fontSize: '0.9375rem',
-                            }}
-                        >
-                            Duplicates to merge (will be deleted):
-                        </Typography>
-                        {selectedGroup.patients
-                            .filter((p: DuplicateMatch & { patientId: string }) => p.patientId !== primaryPatientId)
-                            .map((p: DuplicateMatch & { patientId: string; patient?: any }) => (
-                                <Box
-                                    key={p.patientId}
-                                    sx={{
-                                        background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
-                                        borderRadius: '12px',
-                                        padding: '16px',
-                                        mb: 1.5,
-                                        border: '1px solid rgba(110, 198, 255, 0.15)',
-                                    }}
-                                >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        <Avatar
-                                            sx={{
-                                                width: 48,
-                                                height: 48,
-                                                background: GRADIENT_COLORS.primary,
-                                                fontSize: '1.2rem',
-                                                fontWeight: 700,
-                                            }}
-                                        >
-                                            {p.patient?.firstName?.charAt(0)?.toUpperCase() || 'P'}
-                                            {p.patient?.lastName?.charAt(0)?.toUpperCase() || ''}
-                                        </Avatar>
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography sx={{ fontWeight: 600, color: '#1a237e', mb: 0.5 }}>
-                                                {p.patient?.firstName} {p.patient?.lastName}
-                                            </Typography>
-                                            <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8125rem' }}>
-                                                MRN: {p.patient?.mrn || 'N/A'} | National ID: {p.patient?.nationalId || 'N/A'}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Box>
-                            ))}
+                            );
+                        })}
                     </Box>
                 )}
             </DialogContent>
@@ -209,9 +286,9 @@ const DuplicateMergeDialog: React.FC<DuplicateMergeDialogProps> = ({
                     Cancel
                 </Button>
                 <Button
-                    onClick={handleMerge}
+                    onClick={handleMergeClick}
                     variant="contained"
-                    disabled={loading || !primaryPatientId || selectedDuplicates.length === 0}
+                    disabled={loading || !selectedPrimaryId || selectedMergeIds.length === 0}
                     sx={{
                         background: GRADIENT_COLORS.success,
                         color: '#ffffff',
@@ -230,7 +307,7 @@ const DuplicateMergeDialog: React.FC<DuplicateMergeDialogProps> = ({
                         },
                     }}
                 >
-                    Merge Patients
+                    Merge {selectedMergeIds.length} Record{selectedMergeIds.length !== 1 ? 's' : ''}
                 </Button>
             </DialogActions>
         </Dialog>

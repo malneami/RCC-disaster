@@ -23,7 +23,7 @@ const DuplicateDetection: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await patientService.getDuplicateGroups();
+      const data = await patientService.getDuplicateGroups(confidenceThreshold);
       setDuplicateGroups(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load duplicates');
@@ -36,15 +36,18 @@ const DuplicateDetection: React.FC = () => {
     loadDuplicates();
   }, [confidenceThreshold]);
 
-  const handleMerge = async () => {
-    if (!primaryPatientId || selectedDuplicates.length === 0) {
+  const handleMerge = async (primaryId?: string, duplicateIds?: string[]) => {
+    const pid = primaryId || primaryPatientId;
+    const dids = duplicateIds || selectedDuplicates;
+
+    if (!pid || dids.length === 0) {
       setError('Please select a primary patient and at least one duplicate to merge');
       return;
     }
 
     try {
       setLoading(true);
-      await patientService.mergeDuplicates(primaryPatientId, selectedDuplicates);
+      await patientService.mergeDuplicates(pid, dids);
       setMergeDialogOpen(false);
       setPrimaryPatientId('');
       setSelectedDuplicates([]);
