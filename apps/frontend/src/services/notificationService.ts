@@ -330,7 +330,7 @@ export const notificationService = {
 
   // Users API (for recipient selection)
   async getUsers(): Promise<User[]> {
-    const response = await apiClient.get('/users/for-communication?page=1&limit=100');
+    const response = await apiClient.get('/users/for-communication?page=1&limit=10000');
     return response.data.data; // The backend returns { data: users[], total, page, limit, pages }
   },
 };

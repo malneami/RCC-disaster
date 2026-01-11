@@ -12,31 +12,23 @@ import {
   MenuItem,
   FormControlLabel,
   Checkbox,
+  Autocomplete,
   Box,
   Typography,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Checkbox as MuiCheckbox,
   IconButton,
   CircularProgress,
   Alert,
   Card,
   CardContent,
   Avatar,
-  Divider,
   Stack,
-  Paper,
   alpha,
   useTheme,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faComment,
-  faEye,
-  faEyeSlash,
   faPaperPlane,
   faTimes,
   faUser,
@@ -81,7 +73,6 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
 
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [showRecipients, setShowRecipients] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
 
@@ -107,14 +98,6 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleUserSelection = (userId: string) => {
-    setSelectedUsers(prev =>
-      prev.includes(userId)
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
-    );
   };
 
   const handleSelectAll = () => {
@@ -159,7 +142,6 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
       deliveryMethod: 'IN_APP',
     });
     setSelectedUsers([]);
-    setShowRecipients(false);
     setUsersError(null);
     onClose();
   };
@@ -229,7 +211,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
       maxWidth="sm"
       fullWidth
       PaperProps={{
-        sx: { 
+        sx: {
           maxHeight: '85vh',
           borderRadius: 2,
           boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
@@ -237,7 +219,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
       }}
     >
       {/* Enhanced Header */}
-      <DialogTitle sx={{ 
+      <DialogTitle sx={{
         background: `linear-gradient(135deg, ${getCaseTypeColor(caseType)} 0%, ${alpha(getCaseTypeColor(caseType), 0.8)} 100%)`,
         color: 'white',
         p: 2,
@@ -247,9 +229,9 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
         <Box sx={{ position: 'relative', zIndex: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ 
-                bgcolor: 'rgba(255,255,255,0.2)', 
-                width: 48, 
+              <Avatar sx={{
+                bgcolor: 'rgba(255,255,255,0.2)',
+                width: 48,
                 height: 48,
                 backdropFilter: 'blur(10px)'
               }}>
@@ -260,15 +242,15 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
                   Quick Case Note
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Chip 
-                    label={caseType} 
-                    size="small" 
-                    sx={{ 
-                      bgcolor: 'rgba(255,255,255,0.2)', 
+                  <Chip
+                    label={caseType}
+                    size="small"
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
                       color: 'white',
                       backdropFilter: 'blur(10px)',
                       border: '1px solid rgba(255,255,255,0.3)'
-                    }} 
+                    }}
                   />
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
                     Patient: {patientName}
@@ -276,10 +258,10 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
                 </Box>
               </Box>
             </Box>
-            <IconButton 
-              onClick={handleClose} 
+            <IconButton
+              onClick={handleClose}
               size="small"
-              sx={{ 
+              sx={{
                 color: 'white',
                 bgcolor: 'rgba(255,255,255,0.1)',
                 backdropFilter: 'blur(10px)',
@@ -292,7 +274,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
             </IconButton>
           </Box>
         </Box>
-        
+
         {/* Background decoration */}
         <Box sx={{
           position: 'absolute',
@@ -309,7 +291,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
       <DialogContent sx={{ p: 2 }}>
         <Stack spacing={2}>
           {/* Note Content Card */}
-          <Card sx={{ 
+          <Card sx={{
             border: '2px solid',
             borderColor: formData.content.trim() ? getPriorityColor(formData.priority) : 'divider',
             borderRadius: 2,
@@ -351,7 +333,7 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
                 <FontAwesomeIcon icon={faBell} />
                 Notification Settings
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap' }}>
                 <FormControl sx={{ minWidth: 150 }}>
                   <InputLabel>Priority Level</InputLabel>
@@ -422,141 +404,107 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
 
           {/* Enhanced Recipients Section */}
           {formData.notifyTeam && (
-            <Card sx={{ borderRadius: 2 }}>
+            <Card sx={{ borderRadius: 2, overflow: 'visible' }}>
               <CardContent sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <FontAwesomeIcon icon={faUsers} />
                     Team Recipients
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => setShowRecipients(!showRecipients)}
-                      startIcon={<FontAwesomeIcon icon={showRecipients ? faEyeSlash : faEye} />}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      {showRecipients ? 'Hide' : 'View'} Users
-                    </Button>
-                    <Button 
-                      variant="outlined" 
-                      size="small" 
-                      onClick={handleSelectAll}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      {selectedUsers.length === users.length ? 'Deselect All' : 'Select All'}
-                    </Button>
-                  </Box>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleSelectAll}
+                    disabled={usersLoading}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    {selectedUsers.length === users.length ? 'Deselect All' : 'Select All'}
+                  </Button>
                 </Box>
 
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 2, 
-                  p: 2, 
-                  bgcolor: alpha(getCaseTypeColor(caseType), 0.05),
-                  borderRadius: 2,
-                  border: `1px solid ${alpha(getCaseTypeColor(caseType), 0.2)}`
-                }}>
-                  <Avatar sx={{ bgcolor: getCaseTypeColor(caseType), width: 40, height: 40 }}>
-                    <FontAwesomeIcon icon={faUser} />
-                  </Avatar>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {selectedUsers.length} of {users.length} users selected
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {selectedUsers.length === 0 
-                        ? 'No recipients selected - note will be saved without notifications'
-                        : `Notifications will be sent to ${selectedUsers.length} team member${selectedUsers.length > 1 ? 's' : ''}`
-                      }
-                    </Typography>
+                {usersLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                    <CircularProgress size={24} />
                   </Box>
-                </Box>
-
-                {showRecipients && (
-                  <Paper sx={{ 
-                    mt: 2, 
-                    maxHeight: 300, 
-                    overflow: 'auto',
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'divider'
-                  }}>
-                    {usersLoading ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                        <CircularProgress size={32} />
-                      </Box>
-                    ) : usersError ? (
-                      <Alert severity="error" sx={{ m: 2 }}>
-                        {usersError}
-                      </Alert>
-                    ) : (
-                      <List sx={{ p: 1 }}>
-                        {users.map((user, index) => (
-                          <React.Fragment key={user.id}>
-                            <ListItem 
-                              sx={{ 
-                                borderRadius: 2,
-                                mb: 0.5,
-                                '&:hover': {
-                                  bgcolor: alpha(getCaseTypeColor(caseType), 0.05),
-                                }
-                              }}
-                            >
-                              <MuiCheckbox
-                                checked={selectedUsers.includes(user.id)}
-                                onChange={() => handleUserSelection(user.id)}
-                                sx={{
-                                  color: getCaseTypeColor(caseType),
-                                  '&.Mui-checked': {
-                                    color: getCaseTypeColor(caseType),
-                                  }
-                                }}
-                              />
-                              <Avatar sx={{ 
-                                width: 32, 
-                                height: 32, 
-                                mr: 2,
-                                bgcolor: getRoleColor(user.role) === 'primary' ? theme.palette.primary.main :
-                                         getRoleColor(user.role) === 'secondary' ? theme.palette.secondary.main :
-                                         getRoleColor(user.role) === 'error' ? theme.palette.error.main :
-                                         getRoleColor(user.role) === 'success' ? theme.palette.success.main :
-                                         theme.palette.info.main
-                              }}>
-                                <Typography variant="caption" sx={{ color: 'white', fontWeight: 600 }}>
-                                  {user.firstName[0]}{user.lastName[0]}
-                                </Typography>
-                              </Avatar>
-                              <ListItemText
-                                primary={
-                                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                                    {user.firstName} {user.lastName}
-                                  </Typography>
-                                }
-                                secondary={
-                                  <Typography variant="body2" color="text.secondary">
-                                    {user.email}
-                                  </Typography>
-                                }
-                              />
-                              <ListItemSecondaryAction>
-                                <Chip
-                                  label={user.role.replace(/_/g, ' ')}
-                                  size="small"
-                                  color={getRoleColor(user.role) as any}
-                                  variant="outlined"
-                                  sx={{ borderRadius: 2 }}
-                                />
-                              </ListItemSecondaryAction>
-                            </ListItem>
-                            {index < users.length - 1 && <Divider sx={{ mx: 2 }} />}
-                          </React.Fragment>
-                        ))}
-                      </List>
+                ) : usersError ? (
+                  <Alert severity="error">{usersError}</Alert>
+                ) : (
+                  <Autocomplete
+                    multiple
+                    id="recipients-autocomplete"
+                    options={users}
+                    disableCloseOnSelect
+                    getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+                    value={users.filter(u => selectedUsers.includes(u.id))}
+                    onChange={(_, newValue) => {
+                      setSelectedUsers(newValue.map(u => u.id));
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        variant="outlined"
+                        placeholder="Type to search users..."
+                        helperText={`${selectedUsers.length} users selected`}
+                      />
                     )}
-                  </Paper>
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    filterOptions={(options, state) => {
+                      const displayOptions = options.filter((option) => {
+                        const searchStr = (state.inputValue || '').toLowerCase();
+                        const firstName = option.firstName || '';
+                        const lastName = option.lastName || '';
+                        const fullName = `${firstName} ${lastName}`.toLowerCase();
+                        const email = (option.email || '').toLowerCase();
+                        return fullName.includes(searchStr) || email.includes(searchStr);
+                      });
+                      return displayOptions;
+                    }}
+                    renderOption={(props, option, { selected }) => {
+                      const { key, ...otherProps } = props;
+                      return (
+                        <li key={option.id} {...otherProps}>
+                          <Checkbox
+                            checked={selected}
+                            sx={{ mr: 1 }}
+                          />
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar sx={{
+                              width: 28,
+                              height: 28,
+                              fontSize: '0.8rem',
+                              bgcolor: getRoleColor(option.role) === 'primary' ? theme.palette.primary.main :
+                                getRoleColor(option.role) === 'secondary' ? theme.palette.secondary.main :
+                                  getRoleColor(option.role) === 'error' ? theme.palette.error.main :
+                                    getRoleColor(option.role) === 'success' ? theme.palette.success.main :
+                                      theme.palette.info.main
+                            }}>
+                              <Typography variant="caption" sx={{ color: 'white', fontWeight: 600 }}>
+                                {option.firstName?.[0] || '?'}{option.lastName?.[0] || '?'}
+                              </Typography>
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                {option.firstName} {option.lastName}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                {option.email} • <span style={{ textTransform: 'capitalize' }}>{option.role?.toLowerCase().replace(/_/g, ' ') || ''}</span>
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </li>
+                      );
+                    }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          maxHeight: 300,
+                          borderRadius: 2,
+                          mt: 1,
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+                        }
+                      }
+                    }}
+                  />
                 )}
               </CardContent>
             </Card>
@@ -565,8 +513,8 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ p: 2, bgcolor: alpha(theme.palette.grey[100], 0.5) }}>
-        <Button 
-          onClick={handleClose} 
+        <Button
+          onClick={handleClose}
           disabled={loading}
           sx={{ borderRadius: 2, px: 3 }}
         >
@@ -577,8 +525,8 @@ const CaseNoteModal: React.FC<CaseNoteModalProps> = ({
           variant="contained"
           disabled={loading || !formData.content.trim()}
           startIcon={loading ? <CircularProgress size={16} /> : <FontAwesomeIcon icon={faPaperPlane} />}
-          sx={{ 
-            borderRadius: 2, 
+          sx={{
+            borderRadius: 2,
             px: 3,
             bgcolor: getCaseTypeColor(caseType),
             '&:hover': {
