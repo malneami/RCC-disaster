@@ -44,11 +44,11 @@ const FleetMetrics: React.FC<FleetMetricsProps> = ({ metrics }) => {
             subtitle: 'Operational Fleet (Target ≥95%)'
         },
         {
-            title: 'Driver Utilization',
+            title: 'Ambulance Utilization',
             value: `${metrics.driverUtilization}%`,
             icon: faTachometerAlt,
             color: metrics.driverUtilization >= 80 ? '#4caf50' : '#1976d2', // Target ≥80%
-            subtitle: 'Driving / Shift Hours (Target ≥80%)'
+            subtitle: 'Ambulance / Shift Hours (Target ≥80%)'
         }
     ];
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Grid, useMediaQuery, Tooltip as MuiTooltip } from '@mui/material';
+import { Box, Typography, TextField, Tabs, Tab, Grid, useMediaQuery, Tooltip as MuiTooltip } from '@mui/material';
 import { useQuery } from 'react-query';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -38,14 +38,21 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 );
 
 const PerformanceAnalytics: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [startDate, setStartDate] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [activeCategory, setActiveCategory] = useState<'overall' | 'stroke' | 'stemi' | 'trauma'>('overall');
-  const { data: performanceData, isLoading, error } = useEMSPerformance(selectedPeriod);
+
+  const customRange = {
+    startDate: new Date(startDate),
+    endDate: new Date(endDate)
+  };
+
+  const { data: performanceData, isLoading, error } = useEMSPerformance(undefined, customRange);
   const [tabValue, setTabValue] = useState(0);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  const { data: responseTimeData = [] } = useQuery(['ems-response-time-trends', selectedPeriod], () => emsService.getResponseTimeTrends(selectedPeriod), { refetchInterval: 300000, staleTime: 60000 });
-  const { data: assignmentStatusData = [] } = useQuery(['ems-assignment-status-distribution', selectedPeriod], () => emsService.getAssignmentStatusDistribution(selectedPeriod), { refetchInterval: 300000, staleTime: 60000 });
+  const { data: responseTimeData = [] } = useQuery(['ems-response-time-trends', customRange], () => emsService.getResponseTimeTrends(undefined, customRange), { refetchInterval: 300000, staleTime: 60000 });
+  const { data: assignmentStatusData = [] } = useQuery(['ems-assignment-status-distribution', customRange], () => emsService.getAssignmentStatusDistribution(undefined, customRange), { refetchInterval: 300000, staleTime: 60000 });
 
   const activeStats = performanceData?.breakdown?.[activeCategory] || performanceData?.summary;
   const kpis: Record<string, number> = {
@@ -152,27 +159,26 @@ const PerformanceAnalytics: React.FC = () => {
             EMS Performance Analytics
           </Typography>
         </Box>
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: '100%', sm: 130 },
-            bgcolor: '#F1F5F9',
-            borderRadius: 2
-          }}
-        >
-          <InputLabel>Time Period</InputLabel>
-          <Select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            label="Time Period"
-            aria-label="Select time period"
-          >
-            <MenuItem value="24h">Last 24 Hours</MenuItem>
-            <MenuItem value="7d">Last 7 Days</MenuItem>
-            <MenuItem value="30d">Last 30 Days</MenuItem>
-            <MenuItem value="90d">Last 90 Days</MenuItem>
-          </Select>
-        </FormControl>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <TextField
+            label="From"
+            type="date"
+            size="small"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ bgcolor: '#F1F5F9', borderRadius: 2 }}
+          />
+          <TextField
+            label="To"
+            type="date"
+            size="small"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ bgcolor: '#F1F5F9', borderRadius: 2 }}
+          />
+        </Box>
       </Box>
 
       {/* Category Tabs */}

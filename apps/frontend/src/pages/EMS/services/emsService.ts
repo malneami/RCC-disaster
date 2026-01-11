@@ -339,27 +339,32 @@ class EMSService {
   }
 
   // Performance Analytics
-  async getPerformanceData(period?: string): Promise<any> {
+  async getPerformanceData(period?: string, customRange?: { startDate: Date; endDate: Date }): Promise<any> {
     try {
       // Convert period to startDate and endDate
-      const endDate = new Date();
+      let endDate = new Date();
       let startDate = new Date();
       
-      switch (period) {
-        case '24h':
-          startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
-          break;
-        case '7d':
-          startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30d':
-          startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '90d':
-          startDate = new Date(endDate.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Default to 7 days
+      if (customRange) {
+        startDate = customRange.startDate;
+        endDate = customRange.endDate;
+      } else {
+        switch (period) {
+          case '24h':
+            startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+            break;
+          case '7d':
+            startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30d':
+            startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case '90d':
+            startDate = new Date(endDate.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Default to 7 days
+        }
       }
       
       const response = await apiClient.get(`${this.baseUrl}/ems-dashboard/performance-report`, {
@@ -394,26 +399,31 @@ class EMSService {
     return response.data;
   }
 
-  async getAssignmentStatusDistribution(period?: string): Promise<any> {
+  async getAssignmentStatusDistribution(period?: string, customRange?: { startDate: Date; endDate: Date }): Promise<any> {
     try {
-      const endDate = new Date();
+      let endDate = new Date();
       let startDate = new Date();
       
-      switch (period) {
-        case '24h':
-          startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
-          break;
-        case '7d':
-          startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30d':
-          startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '90d':
-          startDate = new Date(endDate.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      if (customRange) {
+        startDate = customRange.startDate;
+        endDate = customRange.endDate;
+      } else {
+        switch (period) {
+          case '24h':
+            startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+            break;
+          case '7d':
+            startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30d':
+            startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case '90d':
+            startDate = new Date(endDate.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+        }
       }
       
       const response = await apiClient.get(`${this.baseUrl}/ems-dashboard/assignment-status-distribution`, {
@@ -429,26 +439,31 @@ class EMSService {
     }
   }
 
-  async getResponseTimeTrends(period?: string): Promise<any> {
+  async getResponseTimeTrends(period?: string, customRange?: { startDate: Date; endDate: Date }): Promise<any> {
     try {
-      const endDate = new Date();
+      let endDate = new Date();
       let startDate = new Date();
       
-      switch (period) {
-        case '24h':
-          startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
-          break;
-        case '7d':
-          startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30d':
-          startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '90d':
-          startDate = new Date(endDate.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      if (customRange) {
+        startDate = customRange.startDate;
+        endDate = customRange.endDate;
+      } else {
+        switch (period) {
+          case '24h':
+            startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+            break;
+          case '7d':
+            startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30d':
+            startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case '90d':
+            startDate = new Date(endDate.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+        }
       }
       
       const response = await apiClient.get(`${this.baseUrl}/ems-dashboard/response-time-trends`, {
