@@ -203,10 +203,16 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
               });
             }}
             label="National ID"
-            required
+            required={!data.nationalIdNotAvailable}
             error={!!validationErrors['patientInfo.nationalId']}
             helperText={validationErrors['patientInfo.nationalId']}
             portalType="stemi"
+            notAvailable={data.nationalIdNotAvailable || false}
+            onNotAvailableChange={(checked) => onChange({
+              ...data,
+              nationalIdNotAvailable: checked,
+              nationalId: checked ? '' : data.nationalId
+            })}
           />
         </Grid>
 

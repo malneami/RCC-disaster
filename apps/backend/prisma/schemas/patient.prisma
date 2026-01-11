@@ -5,6 +5,7 @@ model Patient {
   // Basic Demographics
   mrn             String?        @unique @map("medical_record_number")
   nationalId      String?        @unique @map("national_id")
+  nationalIdNotAvailable Boolean @default(false) @map("national_id_not_available")
   firstName       String         @map("first_name")
   lastName        String         @map("last_name")
   middleName      String?        @map("middle_name")

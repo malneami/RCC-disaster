@@ -366,10 +366,15 @@ const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
               onPatientSelect={handlePatientSelect}
               onBlur={() => onFieldBlur?.('nationalId')}
               label="National ID"
-              required
+              required={!formData.nationalIdNotAvailable}
               error={touched.nationalId && !!validationErrors.nationalId}
               helperText={touched.nationalId && validationErrors.nationalId ? validationErrors.nationalId : ''}
               portalType="patient"
+              notAvailable={formData.nationalIdNotAvailable || false}
+              onNotAvailableChange={(checked) => onDataChange({
+                nationalIdNotAvailable: checked,
+                nationalId: checked ? '' : formData.nationalId
+              })}
             />
           </Grid>
           <Grid item xs={12} sm={6}>

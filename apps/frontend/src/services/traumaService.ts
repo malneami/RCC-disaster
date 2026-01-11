@@ -11,6 +11,7 @@ export type TraumaInjurySeverity = 'NO_INJURY' | 'MINOR' | 'MODERATE' | 'SERIOUS
 export interface PatientInfo {
   mrn?: string;
   nationalId?: string;
+  nationalIdNotAvailable?: boolean;
   firstName: string;
   lastName: string;
   middleName?: string;
@@ -233,6 +234,7 @@ export class TraumaService {
       firstName: data.patientInfo.firstName, // Required, don't clean
       lastName: data.patientInfo.lastName, // Required, don't clean
       nationalId: data.patientInfo.nationalId, // Required, don't clean
+      nationalIdNotAvailable: data.patientInfo.nationalIdNotAvailable,
       gender: data.patientInfo.gender, // Required, don't clean
       age: data.patientInfo.age !== undefined && data.patientInfo.age !== null ? data.patientInfo.age : undefined, // Optional but keep if provided
       phoneNumber: cleanValue(data.patientInfo.phoneNumber), // Optional

@@ -7,6 +7,7 @@ import { AccessLogService, EntityType } from '../../../common/services/access-lo
 export interface PatientInfo {
   mrn?: string;
   nationalId?: string;
+  nationalIdNotAvailable?: boolean;
   firstName: string;
   lastName: string;
   middleName?: string;
@@ -99,7 +100,8 @@ export class TraumaPatientService {
       const patientData: any = {
         firstName: patientInfo.firstName.trim(),
         lastName: patientInfo.lastName.trim(),
-        nationalId: patientInfo.nationalId?.trim() || null,
+        nationalId: patientInfo.nationalIdNotAvailable ? null : (patientInfo.nationalId?.trim() || null),
+        nationalIdNotAvailable: patientInfo.nationalIdNotAvailable || false,
         mrn: patientInfo.mrn?.trim() || null,
         phoneNumber: patientInfo.phoneNumber?.trim() || null,
         email: patientInfo.email?.trim() || null,
@@ -223,6 +225,14 @@ export class TraumaPatientService {
     }
     if (patientInfo.medications !== undefined) {
       patientUpdateData.medications = patientInfo.medications ? patientInfo.medications.trim() : null;
+    }
+    // Handle nationalIdNotAvailable flag
+    if (patientInfo.nationalIdNotAvailable !== undefined) {
+      patientUpdateData.nationalIdNotAvailable = patientInfo.nationalIdNotAvailable;
+      // If nationalIdNotAvailable is true, clear the nationalId
+      if (patientInfo.nationalIdNotAvailable) {
+        patientUpdateData.nationalId = null;
+      }
     }
     
     if (Object.keys(patientUpdateData).length > 0) {

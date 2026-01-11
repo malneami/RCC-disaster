@@ -19,6 +19,7 @@ const initializeFormData = (patient?: Patient | null): CreatePatientData => {
     return {
       mrn: patient.mrn || '',
       nationalId: patient.nationalId || '',
+      nationalIdNotAvailable: (patient as any).nationalIdNotAvailable || false,
       firstName: patient.firstName,
       lastName: patient.lastName,
       middleName: patient.middleName || '',
@@ -61,6 +62,7 @@ const initializeFormData = (patient?: Patient | null): CreatePatientData => {
   return {
     firstName: '',
     lastName: '',
+    nationalIdNotAvailable: false,
     age: undefined,
     gender: 'MALE',
     privacyLevel: 'PRIVATE',
@@ -72,6 +74,7 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
   const [formData, setFormData] = useState<CreatePatientData>({
     firstName: '',
     lastName: '',
+    nationalIdNotAvailable: false,
     age: undefined,
     gender: 'MALE',
     privacyLevel: 'PRIVATE',
@@ -179,14 +182,14 @@ export const usePatientForm = ({ patient, open, onPatientCreated, onPatientUpdat
         }
         return '';
       case 'nationalId':
+        // Skip validation if nationalIdNotAvailable is checked
+        if (formData.nationalIdNotAvailable) {
+          return '';
+        }
         if (!value || (typeof value === 'string' && value.trim() === '')) {
           return 'Please enter the patient\'s National ID';
         }
         const nationalIdStr = String(value).trim();
-        // Allow "00000000000000" to be used multiple times (for new babies)
-        if (nationalIdStr === '00000000000000') {
-          return '';
-        }
         // Check if National ID contains only numbers
         if (!/^\d+$/.test(nationalIdStr)) {
           return 'National ID can only contain numbers. Please remove any letters or special characters';

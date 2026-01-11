@@ -76,8 +76,14 @@ const patientInfoSchema = yup.object({
   nationalId: yup
     .string()
     .trim()
-    .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
-    .required('National ID is required'),
+    .when('nationalIdNotAvailable', {
+      is: true,
+      then: (schema) => schema.notRequired(),
+      otherwise: (schema) => schema
+        .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
+        .required('National ID is required'),
+    }),
+  nationalIdNotAvailable: yup.boolean(),
   age: yup
     .number()
     .typeError('Age must be a number')
@@ -128,6 +134,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       firstName: '',
       lastName: '',
       nationalId: '',
+      nationalIdNotAvailable: false,
       mrn: '',
       age: undefined,
     },
@@ -146,6 +153,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
         firstName: '',
         lastName: '',
         nationalId: '',
+        nationalIdNotAvailable: false,
         mrn: '',
         age: undefined,
       },
@@ -449,7 +457,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
   // Track which steps have issues
   const stepIssues = useMemo(() => {
     const issues = [false, false, false, false, false, false];
-    
+
     // Step 0 (Patient) - check validation errors and transfer warnings
     if (Object.keys(validationErrors).some(key => key.startsWith('patientInfo.') || key === 'originHospitalId' || key === 'destinationHospitalId' || key === 'modeOfArrival') ||
       Object.keys(timelineWarnings).some(key =>
@@ -491,17 +499,17 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
     )) {
       issues[3] = true;
     }
-    
+
     // Step 4 (Bed Assignment) - check validation errors
     if (Object.keys(validationErrors).some(key => key.startsWith('bedAssignment.'))) {
       issues[4] = true;
     }
-    
+
     // Step 5 (Review) - has timeline warnings
     if (hasTimelineWarnings) {
       issues[5] = true;
     }
-    
+
     return issues;
   }, [validationErrors, timelineWarnings, hasTimelineWarnings]);
 
@@ -703,7 +711,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
       setLoading(true);
       setError(null);
       const createdCase = await onSubmit(formData);
-      
+
       const bedAssignment = formData.bedAssignment as any;
       if (bedAssignment && bedAssignment.bedId) {
         if (createdCase?.id && createdCase?.patientId) {
@@ -718,7 +726,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
             // Invalidate hospitals queries and dispatch event to trigger refetch
             queryClient.invalidateQueries('hospitals');
             window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
-            
+
             // Refetch the case to get updated bed assignment data
             try {
               const refreshedCase = await StrokeService.getStrokeCase(createdCase.id);
@@ -739,7 +747,7 @@ const CreateStrokeCaseDialog: React.FC<CreateStrokeCaseDialogProps> = ({
           enqueueSnackbar('Stroke case created but bed assignment skipped (missing case or patient ID)', { variant: 'warning' });
         }
       }
-      
+
       handleClose();
     } catch (err: any) {
       console.error('Error creating stroke case:', err);

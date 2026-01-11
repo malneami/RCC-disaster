@@ -6,6 +6,8 @@ import {
   Typography,
   Chip,
   CircularProgress,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { Person as PersonIcon } from '@mui/icons-material';
 import { patientService, Patient } from '../../services/patientService';
@@ -20,6 +22,8 @@ interface NationalIdInputProps {
   error?: boolean;
   helperText?: string;
   portalType?: 'stroke' | 'trauma' | 'stemi' | 'patient';
+  notAvailable?: boolean;
+  onNotAvailableChange?: (checked: boolean) => void;
 }
 
 const NationalIdInput: React.FC<NationalIdInputProps> = ({
@@ -32,6 +36,8 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   error = false,
   helperText,
   portalType = 'patient',
+  notAvailable = false,
+  onNotAvailableChange,
 }) => {
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,14 +73,6 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
 
   // Debounced search function
   const searchPatients = useCallback(async (nationalId: string) => {
-    // Don't search if the ID starts with "000" (special case for new babies)
-    if (nationalId.startsWith('000')) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setLatestCaseInfo(null);
-      return;
-    }
-
     if (nationalId.length < 4) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -85,16 +83,16 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     try {
       setLoading(true);
       const results = await patientService.searchPatients(nationalId);
-      
+
       // Filter results that match the National ID pattern
-      const matchingPatients = results.filter(patient => 
-        patient.nationalId && 
+      const matchingPatients = results.filter(patient =>
+        patient.nationalId &&
         patient.nationalId.toLowerCase().includes(nationalId.toLowerCase())
       );
-      
+
       setSuggestions(matchingPatients);
       setShowSuggestions(matchingPatients.length > 0);
-      
+
       // Get latest case info for the first matching patient
       if (matchingPatients.length > 0) {
         await getLatestCaseInfo(matchingPatients[0].nationalId!);
@@ -112,14 +110,6 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   // Debounce the search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      // Don't search if the ID starts with "000" (special case for new babies)
-      if (value && value.startsWith('000')) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-        setLatestCaseInfo(null);
-        return;
-      }
-      
       if (value && value.length >= 4) {
         searchPatients(value);
       } else {
@@ -142,8 +132,8 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
 
       const inputElement = inputRef.current;
       const rect = inputElement.getBoundingClientRect();
-      
-      const isVisible = 
+
+      const isVisible =
         rect.bottom > 0 &&
         rect.right > 0 &&
         rect.top < (window.innerHeight || document.documentElement.clientHeight) &&
@@ -156,7 +146,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
 
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
-    
+
     document.addEventListener('scroll', handleScroll, true);
     document.body.addEventListener('scroll', handleScroll, true);
 
@@ -209,7 +199,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
     if (!latestCaseInfo || !latestCaseInfo.caseType) {
       return 'No previous cases';
     }
-    
+
     const caseType = latestCaseInfo.caseType.toUpperCase();
     const date = latestCaseInfo.createdAt ? new Date(latestCaseInfo.createdAt).toLocaleDateString() : '';
     return `Latest: ${caseType} (${date})`;
@@ -225,23 +215,16 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
       <Autocomplete
         freeSolo
         options={suggestions}
-        getOptionLabel={(option) => 
+        getOptionLabel={(option) =>
           typeof option === 'string' ? option : option.nationalId || ''
         }
         value={value}
         onInputChange={(_, newInputValue) => {
+          // Don't trigger onChange when disabled - the parent already handles value clearing
+          // via onNotAvailableChange, and calling onChange here would use stale closure data
+          if (notAvailable) return;
           // Only allow numeric input
           const numericValue = newInputValue.replace(/\D/g, '');
-          
-          // Auto-complete to "00000000000000" when user starts typing "000"
-          if (numericValue.startsWith('000') && numericValue.length >= 3) {
-            onChange('00000000000000');
-            setSuggestions([]);
-            setShowSuggestions(false);
-            setLatestCaseInfo(null);
-            return;
-          }
-          
           onChange(numericValue);
         }}
         onChange={(_, newValue) => {
@@ -252,7 +235,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
         loading={loading}
         loadingText="Searching patients..."
         noOptionsText={
-          value.length >= 4 
+          value.length >= 4
             ? "No patients found with this National ID"
             : "Enter at least 4 digits to search"
         }
@@ -323,55 +306,89 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
             <Box component="li" key={key} {...otherProps}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
                 <PersonIcon sx={{ color: getPortalColor() }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                <Typography variant="body1" fontWeight="medium">
-                  {getPatientDisplayName(option)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {getPatientSubtitle(option)}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                  <Chip 
-                    label={getLatestCaseLabel()}
-                    size="small" 
-                    sx={{ 
-                      color: getLatestCaseColor(latestCaseInfo?.caseType || null),
-                      borderColor: getLatestCaseColor(latestCaseInfo?.caseType || null),
-                    }}
-                    variant="outlined"
-                  />
-                  {latestCaseInfo?.status && (
-                    <Chip 
-                      label={formatCaseStatus(latestCaseInfo.status)}
-                      size="small" 
-                      sx={{ 
-                        backgroundColor: getLatestCaseColor(latestCaseInfo.caseType),
+                <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                  <Typography variant="body1" fontWeight="medium">
+                    {getPatientDisplayName(option)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {getPatientSubtitle(option)}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                    <Chip
+                      label={getLatestCaseLabel()}
+                      size="small"
+                      sx={{
+                        color: getLatestCaseColor(latestCaseInfo?.caseType || null),
+                        borderColor: getLatestCaseColor(latestCaseInfo?.caseType || null),
+                      }}
+                      variant="outlined"
+                    />
+                    {latestCaseInfo?.status && (
+                      <Chip
+                        label={formatCaseStatus(latestCaseInfo.status)}
+                        size="small"
+                        sx={{
+                          backgroundColor: getLatestCaseColor(latestCaseInfo.caseType),
+                          color: 'white',
+                          fontSize: '0.7rem',
+                        }}
+                      />
+                    )}
+                    <Chip
+                      label={`${getLatestCaseIcon(latestCaseInfo?.caseType || null)} ${latestCaseInfo?.caseType?.toUpperCase() || 'NEW'}`}
+                      size="small"
+                      sx={{
+                        backgroundColor: latestCaseInfo?.caseType ? getLatestCaseColor(latestCaseInfo.caseType) : getPortalColor(),
                         color: 'white',
-                        fontSize: '0.7rem',
                       }}
                     />
-                  )}
-                  <Chip 
-                    label={`${getLatestCaseIcon(latestCaseInfo?.caseType || null)} ${latestCaseInfo?.caseType?.toUpperCase() || 'NEW'}`}
-                    size="small" 
-                    sx={{ 
-                      backgroundColor: latestCaseInfo?.caseType ? getLatestCaseColor(latestCaseInfo.caseType) : getPortalColor(),
-                      color: 'white',
-                    }}
-                  />
+                  </Box>
                 </Box>
               </Box>
             </Box>
-          </Box>
           );
         }}
-        open={showSuggestions && suggestions.length > 0 && !value.startsWith('000')}
+        open={showSuggestions && suggestions.length > 0 && !notAvailable}
         onClose={() => setShowSuggestions(false)}
         onOpen={() => {
-          if (value.length >= 4 && suggestions.length > 0 && !value.startsWith('000')) {
+          if (value.length >= 4 && suggestions.length > 0 && !notAvailable) {
             setShowSuggestions(true);
           }
         }}
+        disabled={notAvailable}
+      />
+
+      {/* Checkbox for "National ID not available" */}
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={notAvailable}
+            onChange={(e) => {
+              onNotAvailableChange?.(e.target.checked);
+              // Clear local state when checked - BUT don't call onChange('')
+              // because the parent already handles clearing nationalId in the onNotAvailableChange callback
+              if (e.target.checked) {
+                setSuggestions([]);
+                setShowSuggestions(false);
+                setLatestCaseInfo(null);
+              }
+            }}
+            size="small"
+            sx={{
+              color: getPortalColor(),
+              '&.Mui-checked': {
+                color: getPortalColor(),
+              },
+              py: 0,
+            }}
+          />
+        }
+        label={
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+            National ID not available
+          </Typography>
+        }
+        sx={{ mt: 0.25, ml: 0 }}
       />
     </Box>
   );

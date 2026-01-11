@@ -121,7 +121,7 @@ export const validateTraumaCaseForm = (data: any): string[] => {
   // Check patient info
   if (!data.patientInfo?.firstName) errors.push('Patient first name is required');
   if (!data.patientInfo?.lastName) errors.push('Patient last name is required');
-  if (!data.patientInfo?.nationalId) errors.push('Patient national ID is required');
+  if (!data.patientInfo?.nationalIdNotAvailable && !data.patientInfo?.nationalId) errors.push('Patient national ID is required');
   
   // Check incident details (nested structure)
   if (!data.incidentDetails?.arrivalDateTime) errors.push('Arrival date time is required');

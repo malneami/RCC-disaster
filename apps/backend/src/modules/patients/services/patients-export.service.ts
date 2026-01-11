@@ -184,25 +184,14 @@ export class PatientsExportService {
     }
   }
 
-  /**
-   * Normalize National ID for display/export
-   * Removes the UUID suffix from "00000000000000-XXXXXX" format
-   */
-  private normalizeNationalId(nationalId: string | null | undefined): string {
-    if (!nationalId) return '';
-    // If it starts with "00000000000000-", normalize it back to "00000000000000"
-    if (nationalId.startsWith('00000000000000-')) {
-      return '00000000000000';
-    }
-    return nationalId;
-  }
 
   private generateJsonExport(patient: any) {
     const data = {
       patient: {
         id: patient.id,
         mrn: patient.mrn,
-        nationalId: this.normalizeNationalId(patient.nationalId),
+        nationalId: patient.nationalId || '',
+        nationalIdNotAvailable: !!patient.nationalIdNotAvailable,
         firstName: patient.firstName,
         lastName: patient.lastName,
         middleName: patient.middleName,
@@ -270,7 +259,7 @@ export class PatientsExportService {
       ['Field', 'Value'],
       ['ID', patient.id],
       ['MRN', patient.mrn || ''],
-      ['National ID', this.normalizeNationalId(patient.nationalId)],
+      ['National ID', patient.nationalIdNotAvailable ? 'Not Available' : (patient.nationalId || '')],
       ['First Name', patient.firstName],
       ['Last Name', patient.lastName],
       ['Middle Name', patient.middleName || ''],
@@ -490,8 +479,8 @@ export class PatientsExportService {
         // Patient name - may contain Arabic
         labeledField('Name', `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.trim());
         doc.text(`MRN: ${patient.mrn || 'N/A'}`);
-        doc.text(`National ID: ${this.normalizeNationalId(patient.nationalId) || 'N/A'}`);
-
+        const nationalIdDisplay = patient.nationalIdNotAvailable ? 'Not Available' : (patient.nationalId || 'N/A');
+        doc.text(`National ID: ${nationalIdDisplay}`);
         console.log('Writing Age...');
         // Safe Age Printing
         try {

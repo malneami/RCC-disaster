@@ -32,6 +32,11 @@ export class CreatePatientDto {
   @IsString()
   nationalId?: string;
 
+  @ApiPropertyOptional({ description: 'National ID not available flag' })
+  @IsOptional()
+  @IsBoolean()
+  nationalIdNotAvailable?: boolean;
+
   @ApiProperty({ description: 'First Name' })
   @IsString()
   firstName!: string;
@@ -227,6 +232,11 @@ export class UpdatePatientDto {
   @IsOptional()
   @IsString()
   nationalId?: string;
+
+  @ApiPropertyOptional({ description: 'National ID not available flag' })
+  @IsOptional()
+  @IsBoolean()
+  nationalIdNotAvailable?: boolean;
 
   @ApiPropertyOptional({ description: 'First Name' })
   @IsOptional()

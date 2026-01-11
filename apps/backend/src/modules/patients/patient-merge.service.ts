@@ -11,7 +11,6 @@ export class PatientMergeService {
   /**
    * Find and merge duplicate patients based on National ID
    * Returns the primary patient ID to use
-   * Special case: "00000000000000" can be used multiple times (for new babies without ID)
    */
   async findAndMergeDuplicatesByNationalId(nationalId: string): Promise<string | null> {
     if (!nationalId || nationalId.trim().length === 0) {
@@ -19,13 +18,6 @@ export class PatientMergeService {
     }
 
     const trimmedNationalId = nationalId.trim();
-    
-    // Special case: "00000000000000" can be used multiple times for new babies
-    // Skip duplicate checking for this ID
-    if (trimmedNationalId === '00000000000000') {
-      this.logger.log(`National ID "00000000000000" detected - allowing multiple uses (for new babies)`);
-      return null; // Allow creating new patient with this ID
-    }
 
     this.logger.log(`Checking for duplicates with National ID: ${trimmedNationalId}`);
 

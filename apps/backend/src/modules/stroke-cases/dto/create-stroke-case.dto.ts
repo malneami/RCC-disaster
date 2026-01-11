@@ -24,6 +24,10 @@ export class PatientInfoDto {
   @IsString()
   nationalId?: string;
 
+  @IsOptional()
+  @IsBoolean()
+  nationalIdNotAvailable?: boolean;
+
   @IsString()
   @IsNotEmpty()
   firstName!: string;

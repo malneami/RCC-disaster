@@ -27,6 +27,10 @@ export class PatientInfoV2Dto {
   nationalId?: string;
 
   @IsOptional()
+  @IsBoolean()
+  nationalIdNotAvailable?: boolean;
+
+  @IsOptional()
   @IsString()
   mrn?: string;
 

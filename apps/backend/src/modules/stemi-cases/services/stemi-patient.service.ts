@@ -15,6 +15,7 @@ export class StemiPatientService {
       firstName,
       lastName,
       nationalId,
+      nationalIdNotAvailable,
       gender,
       phoneNumber,
       address,
@@ -29,9 +30,9 @@ export class StemiPatientService {
 
     try {
       // Try to find existing patient by national ID
-      let patient = await this.prisma.patient.findUnique({
+      let patient = nationalId ? await this.prisma.patient.findUnique({
         where: { nationalId },
-      });
+      }) : null;
 
       if (patient) {
         // Update existing patient
@@ -72,7 +73,8 @@ export class StemiPatientService {
           data: {
             firstName,
             lastName,
-            nationalId,
+            nationalId: nationalIdNotAvailable ? null : nationalId,
+            nationalIdNotAvailable: nationalIdNotAvailable || false,
             dateOfBirth: patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth) : undefined,
             gender,
             phoneNumber: phoneNumber || null,
@@ -153,6 +155,7 @@ export class StemiPatientService {
       firstName,
       lastName,
       nationalId,
+      nationalIdNotAvailable,
       gender,
       phoneNumber,
       address,
@@ -191,8 +194,17 @@ export class StemiPatientService {
         updatedAt: new Date(),
       };
 
-      // Only update nationalId if it's different from the current value
-      if (nationalId && nationalId !== currentPatient.nationalId) {
+      // Handle nationalIdNotAvailable flag
+      if (nationalIdNotAvailable !== undefined) {
+        updateData.nationalIdNotAvailable = nationalIdNotAvailable;
+        // If nationalIdNotAvailable is true, clear the nationalId
+        if (nationalIdNotAvailable) {
+          updateData.nationalId = null;
+        }
+      }
+
+      // Only update nationalId if it's different from the current value and nationalIdNotAvailable is not true
+      if (!nationalIdNotAvailable && nationalId && nationalId !== currentPatient.nationalId) {
         // Check if the new nationalId already exists for another patient
         const existingPatient = await this.prisma.patient.findUnique({
           where: { nationalId },

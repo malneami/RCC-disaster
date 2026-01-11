@@ -9,8 +9,13 @@ export class PatientInfoDto {
   @IsString()
   lastName!: string;
 
+  @IsOptional()
   @IsString()
-  nationalId!: string;
+  nationalId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  nationalIdNotAvailable?: boolean;
 
   @IsOptional()
   @IsDateString()

@@ -5,6 +5,7 @@ export interface Patient {
   id: string;
   mrn?: string;
   nationalId?: string;
+  nationalIdNotAvailable?: boolean;
   firstName: string;
   lastName: string;
   middleName?: string;
@@ -65,6 +66,7 @@ export interface Patient {
 export interface CreatePatientData {
   mrn?: string;
   nationalId?: string;
+  nationalIdNotAvailable?: boolean;
   firstName: string;
   lastName: string;
   middleName?: string;

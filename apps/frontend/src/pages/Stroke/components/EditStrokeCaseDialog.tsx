@@ -60,8 +60,14 @@ const patientInfoSchema = yup.object({
   nationalId: yup
     .string()
     .trim()
-    .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
-    .required('National ID is required'),
+    .when('nationalIdNotAvailable', {
+      is: true,
+      then: (schema) => schema.notRequired(),
+      otherwise: (schema) => schema
+        .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
+        .required('National ID is required'),
+    }),
+  nationalIdNotAvailable: yup.boolean(),
   age: yup
     .number()
     .typeError('Age must be a number')
@@ -134,6 +140,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
       firstName: '',
       lastName: '',
       nationalId: '',
+      nationalIdNotAvailable: false,
       mrn: '',
       age: undefined,
       gender: 'MALE',
@@ -155,6 +162,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
         firstName: '',
         lastName: '',
         nationalId: '',
+        nationalIdNotAvailable: false,
         mrn: '',
         age: undefined,
         gender: 'MALE',
@@ -534,6 +542,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
             firstName: strokeCase.patient?.firstName || '',
             lastName: strokeCase.patient?.lastName || '',
             nationalId: strokeCase.patient?.nationalId || '',
+            nationalIdNotAvailable: (strokeCase.patient as any)?.nationalIdNotAvailable || false,
             mrn: strokeCase.patient?.mrn || '',
             dateOfBirth,
             age,

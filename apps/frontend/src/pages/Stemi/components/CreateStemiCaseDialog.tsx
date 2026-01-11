@@ -69,8 +69,14 @@ const patientInfoSchema = yup.object({
   nationalId: yup
     .string()
     .trim()
-    .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
-    .required('National ID is required'),
+    .when('nationalIdNotAvailable', {
+      is: true,
+      then: (schema) => schema.notRequired(),
+      otherwise: (schema) => schema
+        .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
+        .required('National ID is required'),
+    }),
+  nationalIdNotAvailable: yup.boolean(),
   age: yup
     .number()
     .typeError('Age must be a number')
@@ -122,6 +128,7 @@ const CreateStemiCaseDialog: React.FC<CreateStemiCaseDialogProps> = ({
     firstName: '',
     lastName: '',
     nationalId: '',
+    nationalIdNotAvailable: false,
     age: undefined,
     gender: 'MALE',
     phoneNumber: '',

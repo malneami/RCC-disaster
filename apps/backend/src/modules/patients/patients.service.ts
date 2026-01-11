@@ -46,21 +46,13 @@ export class PatientsService {
       this.prisma.patient.count({ where: whereClause }),
     ]);
 
-    // Normalize "00000000000000-*" back to "00000000000000" for display
-    const normalizedPatients = patients.map(patient => {
-      if (patient.nationalId && patient.nationalId.startsWith('00000000000000-')) {
-        return { ...patient, nationalId: '00000000000000' };
-      }
-      return patient;
-    });
-
     // Log search operations for HIPAA compliance
-    if (filters?.search && userId && normalizedPatients.length > 0) {
-      this.logSearchAccess(normalizedPatients, userId, filters.search, ipAddress, userAgent);
+    if (filters?.search && userId && patients.length > 0) {
+      this.logSearchAccess(patients, userId, filters.search, ipAddress, userAgent);
     }
 
     return {
-      data: normalizedPatients,
+      data: patients,
       total,
       page,
       limit,
@@ -286,11 +278,6 @@ export class PatientsService {
       },
     });
 
-    // Normalize "00000000000000-*" back to "00000000000000" for display
-    if (patient && patient.nationalId && patient.nationalId.startsWith('00000000000000-')) {
-      patient.nationalId = '00000000000000';
-    }
-
     return patient;
   }
 
@@ -339,12 +326,6 @@ export class PatientsService {
       );
     }
 
-    if (sanitizedQuery === '00000000000000' || sanitizedQuery.includes('00000000000000')) {
-      searchConditions.push({
-        nationalId: { startsWith: '00000000000000-', mode: 'insensitive' },
-      });
-    }
-
     const patients = await this.prisma.patient.findMany({
       where: {
         deletedAt: null,
@@ -357,26 +338,21 @@ export class PatientsService {
       ],
     });
 
-    // Normalize "00000000000000-*" back to "00000000000000" for display
-    return patients.map(patient => {
-      if (patient.nationalId && patient.nationalId.startsWith('00000000000000-')) {
-        return { ...patient, nationalId: '00000000000000' };
-      }
-      return patient;
-    });
+    return patients;
   }
 
   async create(createPatientDto: CreatePatientDto, userId: string): Promise<Patient & { createdBy: { firstName: string; lastName: string; email: string | null } }> {
     try {
-      // Process nationalId using helper
-      const nationalId = await this.ensureUniqueNationalId(createPatientDto.nationalId);
-
       // Prepare and clean data
       const patientData: any = {
         ...createPatientDto,
-        nationalId,
         createdById: userId,
       };
+
+      // If nationalIdNotAvailable is true, set nationalId to null
+      if (createPatientDto.nationalIdNotAvailable) {
+        patientData.nationalId = null;
+      }
 
       this.cleanupPatientData(patientData);
 
@@ -392,11 +368,6 @@ export class PatientsService {
           },
         },
       });
-
-      // Return normalized ID for display
-      if (this.isOriginalNationalId(createPatientDto.nationalId)) {
-        result.nationalId = '00000000000000';
-      }
 
       this.logAccess(result.id, userId, 'CREATE', 'Patient created via create endpoint');
 
@@ -460,20 +431,17 @@ export class PatientsService {
     }
 
     try {
-      // Handle national ID updates
-      let nationalId = updatePatientDto.nationalId;
-      if (nationalId) {
-        nationalId = await this.ensureUniqueNationalId(nationalId, existingPatient.nationalId || undefined);
-      }
-
-
       // Prepare update data
       const updateData: any = {
         ...updatePatientDto,
-        nationalId: nationalId || updatePatientDto.nationalId, // Use processed or original (if no change)
         lastAccessedAt: new Date(),
         lastAccessedBy: userId,
       };
+
+      // If nationalIdNotAvailable is true, set nationalId to null
+      if (updatePatientDto.nationalIdNotAvailable) {
+        updateData.nationalId = null;
+      }
 
       this.cleanupPatientData(updateData);
 
@@ -499,13 +467,6 @@ export class PatientsService {
         },
       });
 
-      // Return the original nationalId value to the frontend (not the unique variant)
-      if (updatePatientDto.nationalId && updatePatientDto.nationalId.trim() === '00000000000000') {
-        updatedPatient.nationalId = '00000000000000';
-      } else if (updatedPatient.nationalId && updatedPatient.nationalId.startsWith('00000000000000-')) {
-        updatedPatient.nationalId = '00000000000000';
-      }
-
       // Audit logs
       const changeDescription = this.generateChangeDescription(existingPatient, updateData);
       const reason = changeDescription !== 'No fields changed'
@@ -516,6 +477,8 @@ export class PatientsService {
 
       return updatedPatient;
     } catch (error: any) {
+      console.error('[PatientsService.update] Error updating patient:', error);
+      console.error('[PatientsService.update] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       this.handlePatientError(error, 'updating');
       throw error;
     }
@@ -759,53 +722,20 @@ export class PatientsService {
 
   // --- Helpers ---
 
-  /**
-   * Generates a unique national ID if the input is the special "00000000000000" placeholder.
-   * If existingId is provided (update scenario), it preserves the existing unique suffix if the base matches.
-   */
-  private async ensureUniqueNationalId(nationalId: string | null | undefined, existingId?: string): Promise<string | null | undefined> {
-    if (!nationalId) return nationalId;
-
-    // Check if input is the placeholder "00000000000000"
-    if (nationalId.trim() === '00000000000000') {
-      // If updating, and the existing ID is already a variant of this placeholder, keep it
-      if (existingId && existingId.startsWith('00000000000000-')) {
-        return existingId;
-      }
-      // Otherwise generate a new unique variant
-      const suffix = require('crypto').randomUUID().replace(/-/g, '').substring(26);
-      return `00000000000000-${suffix}`;
-    }
-
-    // Check for duplicates in the database (including deleted patients)
-    if (existingId && nationalId === existingId) {
-      return nationalId;
-    }
-
-    const duplicate = await this.prisma.patient.findFirst({
-      where: {
-        nationalId: nationalId,
-        // Check ALL patients (implicitly included as we don't filter deletedAt)
-      },
-    });
-
-    if (duplicate) {
-      throw new ConflictException('A patient with this National ID already exists (possibly deleted). Please use a different National ID.');
-    }
-
-    return nationalId;
-  }
-
-  private isOriginalNationalId(id: string | null | undefined): boolean {
-    return !!id && id.trim() === '00000000000000';
-  }
-
   private cleanupPatientData(data: any) {
     if (data.dateOfBirth) {
       data.dateOfBirth = data.dateOfBirth === '' ? null : new Date(data.dateOfBirth);
     }
     if (data.insuranceExpiry) {
       data.insuranceExpiry = data.insuranceExpiry === '' ? null : new Date(data.insuranceExpiry);
+    }
+
+    // Convert empty unique fields to null to avoid unique constraint violations
+    if (data.mrn === '' || data.mrn === undefined) {
+      data.mrn = null;
+    }
+    if (data.nationalId === '' || data.nationalId === undefined) {
+      data.nationalId = null;
     }
 
     // Remove transient/frontend-only fields

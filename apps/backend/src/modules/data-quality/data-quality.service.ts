@@ -327,11 +327,13 @@ export class DataQualityService {
     let validRecords = 0;
 
     for (const record of allRecords) {
+      // Skip records where nationalIdNotAvailable is explicitly set
+      if (record.patient?.nationalIdNotAvailable) {
+        validRecords++;
+        continue;
+      }
       if (record.patient?.nationalId && record.patient.nationalId.trim() !== '') {
-        // Exclude the placeholder ID for new babies
-        if (record.patient.nationalId !== '00000000000000') {
-          validRecords++;
-        }
+        validRecords++;
       }
     }
 
@@ -607,7 +609,7 @@ export class DataQualityService {
 
     const processCases = (cases: any[], type: string) => {
       for (const caseRecord of cases) {
-        if (!caseRecord.patient?.nationalId || caseRecord.patient.nationalId === '00000000000000') {
+        if (!caseRecord.patient?.nationalId && !caseRecord.patient?.nationalIdNotAvailable) {
           continue; // Skip records without national ID or placeholder ID
         }
 
@@ -992,10 +994,13 @@ export class DataQualityService {
 
     for (const { type, record, recordId } of allRecords) {
       const failureReasons: string[] = [];
+      // Skip records where nationalIdNotAvailable is explicitly set
+      if (record.patient?.nationalIdNotAvailable) {
+        // This is valid - patient explicitly has no national ID
+        continue;
+      }
       if (!record.patient?.nationalId || record.patient.nationalId.trim() === '') {
         failureReasons.push('Missing patient national ID');
-      } else if (record.patient.nationalId === '00000000000000') {
-        failureReasons.push('Placeholder national ID (00000000000000)');
       }
 
       if (failureReasons.length > 0) {
@@ -1159,7 +1164,8 @@ export class DataQualityService {
 
     const processCases = (cases: any[], type: RecordType) => {
       for (const caseRecord of cases) {
-        if (!caseRecord.patient?.nationalId || caseRecord.patient.nationalId === '00000000000000') {
+        // Skip records where nationalIdNotAvailable is set or nationalId is missing
+        if (!caseRecord.patient?.nationalId || caseRecord.patient?.nationalIdNotAvailable) {
           continue;
         }
         const caseDate = (caseRecord as any).dateOfAdmission || caseRecord.createdAt;

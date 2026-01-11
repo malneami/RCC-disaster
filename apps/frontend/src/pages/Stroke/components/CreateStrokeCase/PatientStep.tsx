@@ -315,10 +315,16 @@ const PatientStep: React.FC<PatientInformationStepProps> = ({
           })}
           onPatientSelect={handlePatientSelect}
           label="National ID"
-          required
+          required={!formData.patientInfo?.nationalIdNotAvailable}
           error={!!validationErrors['patientInfo.nationalId']}
           helperText={validationErrors['patientInfo.nationalId']}
           portalType="stroke"
+          notAvailable={formData.patientInfo?.nationalIdNotAvailable || false}
+          onNotAvailableChange={(checked) => updateFormData('patientInfo', {
+            ...formData.patientInfo,
+            nationalIdNotAvailable: checked,
+            nationalId: checked ? '' : formData.patientInfo?.nationalId
+          })}
         />
       </Grid>
       <Grid item xs={12} sm={6}>

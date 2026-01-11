@@ -83,20 +83,22 @@ export class StrokeCasesService {
           } catch (error) {
             console.error('Error checking for duplicate patients:', error);
             // If there's an error with duplicate checking, try to find the patient directly
-            try {
-              const existingPatient = await this.prisma.patient.findUnique({
-                where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
-              });
-              if (existingPatient) {
-                console.log('Found existing patient after error:', existingPatient.id);
-                patientId = existingPatient.id;
-              } else {
-                console.log('No existing patient found, will create new patient');
+            if (createStrokeCaseDto.patientInfo.nationalId) {
+              try {
+                const existingPatient = await this.prisma.patient.findUnique({
+                  where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
+                });
+                if (existingPatient) {
+                  console.log('Found existing patient after error:', existingPatient.id);
+                  patientId = existingPatient.id;
+                } else {
+                  console.log('No existing patient found, will create new patient');
+                }
+              } catch (findError) {
+                console.error('Error finding patient directly:', findError);
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                throw new BadRequestException(`Error checking for duplicate patients: ${errorMessage}`);
               }
-            } catch (findError) {
-              console.error('Error finding patient directly:', findError);
-              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-              throw new BadRequestException(`Error checking for duplicate patients: ${errorMessage}`);
             }
           }
         }
@@ -113,7 +115,8 @@ export class StrokeCasesService {
           const patientData: any = {
             firstName: createStrokeCaseDto.patientInfo.firstName.trim(),
             lastName: createStrokeCaseDto.patientInfo.lastName.trim(),
-            nationalId: createStrokeCaseDto.patientInfo.nationalId?.trim() || null,
+            nationalId: createStrokeCaseDto.patientInfo.nationalIdNotAvailable ? null : (createStrokeCaseDto.patientInfo.nationalId?.trim() || null),
+            nationalIdNotAvailable: createStrokeCaseDto.patientInfo.nationalIdNotAvailable || false,
             mrn: createStrokeCaseDto.patientInfo.mrn?.trim() || null,
             phoneNumber: createStrokeCaseDto.patientInfo.phoneNumber?.trim() || null,
             email: createStrokeCaseDto.patientInfo.email?.trim() || null,
@@ -148,8 +151,8 @@ export class StrokeCasesService {
             if (error.code === 'P2002') {
               console.log('Unique constraint violation, attempting to find existing patient...');
               
-              // Try to find by National ID first
               if (createStrokeCaseDto.patientInfo.nationalId) {
+                // Try to find by National ID first
                 const existingPatient = await this.prisma.patient.findUnique({
                   where: { nationalId: createStrokeCaseDto.patientInfo.nationalId.trim() }
                 });
@@ -1007,12 +1010,12 @@ export class StrokeCasesService {
 
         // Only update nationalId if it's different from the current value
         if (patientInfo.nationalId !== undefined) {
+          const trimmedNationalId = patientInfo.nationalId ? patientInfo.nationalId.trim() : null;
           const currentPatient = await this.prisma.patient.findUnique({
             where: { id: existingCase.patientId },
             select: { nationalId: true }
           });
           
-          const trimmedNationalId = patientInfo.nationalId ? patientInfo.nationalId.trim() : null;
           if (currentPatient && currentPatient.nationalId !== trimmedNationalId) {
             patientUpdateData.nationalId = trimmedNationalId;
           } else if (!currentPatient?.nationalId && trimmedNationalId) {
@@ -1023,6 +1026,15 @@ export class StrokeCasesService {
         // Update MRN if provided
         if (patientInfo.mrn !== undefined) {
           patientUpdateData.mrn = patientInfo.mrn ? patientInfo.mrn.trim() : null;
+        }
+
+        // Handle nationalIdNotAvailable flag
+        if (patientInfo.nationalIdNotAvailable !== undefined) {
+          patientUpdateData.nationalIdNotAvailable = patientInfo.nationalIdNotAvailable;
+          // If nationalIdNotAvailable is true, clear the nationalId
+          if (patientInfo.nationalIdNotAvailable) {
+            patientUpdateData.nationalId = null;
+          }
         }
 
         // Only update if there are fields to update (besides updatedAt)

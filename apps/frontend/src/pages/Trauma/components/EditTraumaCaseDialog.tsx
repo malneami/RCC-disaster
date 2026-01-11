@@ -51,8 +51,14 @@ const patientInfoSchema = yup.object({
   nationalId: yup
     .string()
     .trim()
-    .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
-    .required('National ID is required'),
+    .when('nationalIdNotAvailable', {
+      is: true,
+      then: (schema) => schema.notRequired(),
+      otherwise: (schema) => schema
+        .matches(ALPHANUMERIC_REGEX, 'National ID can only contain letters and numbers.')
+        .required('National ID is required'),
+    }),
+  nationalIdNotAvailable: yup.boolean(),
   age: yup
     .number()
     .typeError('Age must be a number')
@@ -114,6 +120,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       firstName: '',
       lastName: '',
       nationalId: '',
+      nationalIdNotAvailable: false,
       dateOfBirth: undefined as string | undefined,
       age: undefined as number | undefined,
       gender: 'MALE' as 'MALE' | 'FEMALE',
@@ -233,6 +240,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
           firstName: traumaCase.patient?.firstName || '',
           lastName: traumaCase.patient?.lastName || '',
           nationalId: traumaCase.patient?.nationalId || '',
+          nationalIdNotAvailable: (traumaCase.patient as any)?.nationalIdNotAvailable || false,
           dateOfBirth,
           age,
           gender: (traumaCase.patient?.gender as 'MALE' | 'FEMALE') || ('MALE' as 'MALE' | 'FEMALE'),

@@ -22,6 +22,7 @@ export type StrokeEventType = 'ARRIVAL' | 'TRIAGE' | 'ASSESSMENT' | 'IMAGING' | 
 export interface PatientInfo {
   mrn?: string;
   nationalId?: string;
+  nationalIdNotAvailable?: boolean;
   firstName: string;
   lastName: string;
   middleName?: string;
