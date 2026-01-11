@@ -665,6 +665,7 @@ const TraumaPortalPage: React.FC = () => {
 
         {/* Edit Case Dialog */}
         <EditTraumaCaseDialog
+          key={selectedCase?.id}
           open={editDialogOpen}
           onClose={() => setEditDialogOpen(false)}
           onSubmit={handleUpdateCase}

@@ -180,7 +180,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           error={!!errors.firstName || !!validationErrors['patientInfo.firstName']}
           helperText={errors.firstName || validationErrors['patientInfo.firstName']}
           required
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -193,7 +192,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           error={!!errors.lastName || !!validationErrors['patientInfo.lastName']}
           helperText={errors.lastName || validationErrors['patientInfo.lastName']}
           required
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -212,6 +210,7 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
             nationalIdNotAvailable: checked,
             nationalId: checked ? '' : data.nationalId
           })}
+          disabled={!isAdmin}
         />
       </Grid>
 
@@ -221,7 +220,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           <Select
             value={data.gender}
             onChange={handleChange('gender')}
-            disabled={!isAdmin}
             label="Gender"
           >
             {GENDER_OPTIONS.map((option) => (
@@ -249,7 +247,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           inputProps={{ max: new Date().toISOString().split('T')[0] }}
           error={!!errors.dateOfBirth || !!validationErrors['patientInfo.dateOfBirth']}
           helperText={errors.dateOfBirth || validationErrors['patientInfo.dateOfBirth'] || 'Age calculated automatically'}
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -263,7 +260,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
               onChange={(e) => handleAgePartChange('days', e.target.value)}
               type="number"
               inputProps={{ min: 0 }}
-              disabled={!isAdmin}
             />
           </Grid>
           <Grid item xs={4}>
@@ -274,7 +270,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
               onChange={(e) => handleAgePartChange('months', e.target.value)}
               type="number"
               inputProps={{ min: 0 }}
-              disabled={!isAdmin}
             />
           </Grid>
           <Grid item xs={4}>
@@ -286,7 +281,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
               type="number"
               inputProps={{ min: 0, max: 150 }}
               error={!!errors.age || !!validationErrors['patientInfo.age']}
-              disabled={!isAdmin}
             />
           </Grid>
           <Grid item xs={12}>
@@ -307,7 +301,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('phoneNumber')}
           error={!!errors.phoneNumber || !!validationErrors['patientInfo.phoneNumber']}
           helperText={errors.phoneNumber || validationErrors['patientInfo.phoneNumber']}
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -320,7 +313,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('email')}
           error={!!errors.email || !!validationErrors['patientInfo.email']}
           helperText={errors.email || validationErrors['patientInfo.email']}
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -334,7 +326,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('address')}
           error={!!errors.address}
           helperText={errors.address}
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -346,7 +337,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('emergencyContact')}
           error={!!errors.emergencyContact}
           helperText={errors.emergencyContact}
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -358,7 +348,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('emergencyPhone')}
           error={!!errors.emergencyPhone || !!validationErrors['patientInfo.emergencyPhone']}
           helperText={errors.emergencyPhone || validationErrors['patientInfo.emergencyPhone']}
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -372,7 +361,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('medicalHistory')}
           error={!!errors.medicalHistory}
           helperText={errors.medicalHistory}
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -384,7 +372,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('allergies')}
           error={!!errors.allergies}
           helperText={errors.allergies}
-          disabled={!isAdmin}
         />
       </Grid>
 
@@ -396,7 +383,6 @@ const PatientInfoStep: React.FC<PatientInfoStepProps> = ({
           onChange={handleChange('medications')}
           error={!!errors.medications}
           helperText={errors.medications}
-          disabled={!isAdmin}
         />
       </Grid>
 

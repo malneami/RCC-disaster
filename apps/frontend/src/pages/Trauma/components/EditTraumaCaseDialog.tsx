@@ -232,7 +232,8 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
 
       // Calculate age from dateOfBirth if age is not present
       let age = traumaCase.patient?.age;
-      if (!age && dateOfBirth) {
+      // If age is missing or null, try to calculate from DoB
+      if ((age === undefined || age === null) && dateOfBirth) {
         try {
           age = calculateAge(dateOfBirth).years;
         } catch (error) {
@@ -682,11 +683,9 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         disposition: formData.disposition.disposition,
       };
 
-      // Add patient info for admins only (exclude hospital IDs as they're already at top level)
-      if (isAdmin) {
-        const { originHospitalId, destinationHospitalId, ...patientInfoOnly } = formData.patientInfo;
-        submitData.patientInfo = patientInfoOnly;
-      }
+      // Add patient info (exclude hospital IDs as they're already at top level)
+      const { originHospitalId, destinationHospitalId, ...patientInfoOnly } = formData.patientInfo;
+      submitData.patientInfo = patientInfoOnly;
 
       await onSubmit(traumaCase.id, submitData);
       onClose();
@@ -703,8 +702,31 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
 
     switch (stepIndex) {
       case 0: // Patient Info
+        let patientDataToValidate = { ...formData.patientInfo };
+
+        // Self-healing: Update age if missing but Date of Birth exists
+        // This handles cases where age wasn't explicitly saved in DB or cleared
+        if ((patientDataToValidate.age === undefined || patientDataToValidate.age === null) && patientDataToValidate.dateOfBirth) {
+          try {
+            const calculatedAge = calculateAge(patientDataToValidate.dateOfBirth).years;
+            patientDataToValidate.age = calculatedAge;
+
+            // Also update the form state so the user sees it and submission uses it
+            // We use a functional update to ensure we don't overwrite other concurrent changes
+            setFormData(prev => ({
+              ...prev,
+              patientInfo: {
+                ...prev.patientInfo,
+                age: calculatedAge
+              }
+            }));
+          } catch (e) {
+            console.error("Error auto-calculating age during validation", e);
+          }
+        }
+
         try {
-          await patientInfoSchema.validate(formData.patientInfo, { abortEarly: false });
+          await patientInfoSchema.validate(patientDataToValidate, { abortEarly: false });
         } catch (err: any) {
           if (err.inner) {
             err.inner.forEach((error: any) => {

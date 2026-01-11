@@ -109,37 +109,37 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
     const sorted = [...cases].sort((a, b) => {
       const aValue = a[sortConfig.field];
       const bValue = b[sortConfig.field];
-      
+
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
-      
+
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortConfig.direction === 'asc' 
+        return sortConfig.direction === 'asc'
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
-      
+
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
       }
-      
+
       if (aValue instanceof Date && bValue instanceof Date) {
-        return sortConfig.direction === 'asc' 
+        return sortConfig.direction === 'asc'
           ? aValue.getTime() - bValue.getTime()
           : bValue.getTime() - aValue.getTime();
       }
-      
+
       // Handle string dates
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         const aDate = new Date(aValue);
         const bDate = new Date(bValue);
         if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
-          return sortConfig.direction === 'asc' 
+          return sortConfig.direction === 'asc'
             ? aDate.getTime() - bDate.getTime()
             : bDate.getTime() - aDate.getTime();
         }
       }
-      
+
       return 0;
     });
 
@@ -213,7 +213,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
 
   const handleDeleteConfirm = async () => {
     if (!selectedCase) return;
-    
+
     try {
       setDeleting(true);
       setError(null);
@@ -352,10 +352,10 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
                 <TableRow key={case_.id} hover>
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={1} justifyContent="space-between">
-                      <Box 
-                        display="flex" 
-                        alignItems="center" 
-                        gap={2} 
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={2}
                         flex={1}
                       >
                         <Avatar sx={{ bgcolor: 'primary.main' }}>
@@ -416,9 +416,9 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
                   </TableCell>
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={1}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
+                      <Typography
+                        variant="body2"
+                        sx={{
                           color: TraumaService.getDoorToTransferTimeColor(case_),
                           fontWeight: 'medium'
                         }}
@@ -459,7 +459,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
             </TableBody>
           </Table>
         </TableContainer>
-        
+
         <TablePagination
           rowsPerPageOptions={[5, 10, 15, 20, 50]}
           component="div"
@@ -528,9 +528,9 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
-            color="error" 
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
             variant="contained"
             disabled={deleting || loading}
           >
@@ -543,6 +543,7 @@ const TraumaCasesList: React.FC<TraumaCasesListProps> = ({
 
       {/* Edit Dialog */}
       <EditTraumaCaseDialog
+        key={selectedCase?.id}
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
         onSubmit={handleUpdateCase}

@@ -24,6 +24,7 @@ interface NationalIdInputProps {
   portalType?: 'stroke' | 'trauma' | 'stemi' | 'patient';
   notAvailable?: boolean;
   onNotAvailableChange?: (checked: boolean) => void;
+  disabled?: boolean;
 }
 
 const NationalIdInput: React.FC<NationalIdInputProps> = ({
@@ -38,6 +39,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
   portalType = 'patient',
   notAvailable = false,
   onNotAvailableChange,
+  disabled = false,
 }) => {
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -355,7 +357,7 @@ const NationalIdInput: React.FC<NationalIdInputProps> = ({
             setShowSuggestions(true);
           }
         }}
-        disabled={notAvailable}
+        disabled={notAvailable || disabled}
       />
 
       {/* Checkbox for "National ID not available" */}
