@@ -64,8 +64,8 @@ export const HospitalCard: React.FC<HospitalCardProps> = ({
             elevation={0}
             onClick={onClick}
             sx={{
-                p: { xs: 2, md: 2.5 },
-                borderRadius: 3,
+                p: { xs: 1.5, md: 2.5 },
+                borderRadius: 2.5,
                 border: `1px solid ${isSelected ? theme.palette.primary.main : theme.palette.divider}`,
                 backgroundColor: isSelected ? alpha(theme.palette.primary.main, 0.02) : 'white',
                 cursor: 'pointer',
@@ -82,14 +82,14 @@ export const HospitalCard: React.FC<HospitalCardProps> = ({
                 display: 'flex',
                 flexDirection: { xs: 'column', sm: 'row' },
                 alignItems: { xs: 'stretch', sm: 'flex-start' },
-                gap: { xs: 2, sm: 2.5 },
+                gap: { xs: 1.5, sm: 2.5 },
                 flexWrap: 'wrap',
             }}>
                 {/* Hospital Avatar + Info Row */}
                 <Box sx={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 2,
+                    gap: 1.5,
                     flex: { xs: '1 1 100%', sm: '1 1 auto' },
                     minWidth: { sm: 200 },
                 }}>
@@ -127,7 +127,7 @@ export const HospitalCard: React.FC<HospitalCardProps> = ({
                 <Box sx={{
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: { xs: 2, md: 3 },
+                    gap: { xs: 1.5, md: 3 },
                     alignItems: 'center',
                     flex: { xs: '1 1 100%', sm: '0 0 auto' },
                     justifyContent: { xs: 'space-between', sm: 'flex-start' },
@@ -135,12 +135,12 @@ export const HospitalCard: React.FC<HospitalCardProps> = ({
                     {/* Bed Stats */}
                     <Box sx={{
                         display: 'flex',
-                        gap: { xs: 2, md: 3 },
+                        gap: { xs: 1.5, md: 3 },
                         alignItems: 'center',
                         flexWrap: 'wrap',
                     }}>
                         <Box sx={{ textAlign: 'center', minWidth: 40 }}>
-                            <Typography sx={{ fontWeight: 700, color: '#ef4444', fontSize: { xs: '0.85rem', md: '0.95rem' } }}>
+                            <Typography sx={{ fontWeight: 700, color: '#ef4444', fontSize: { xs: '0.8rem', md: '0.95rem' } }}>
                                 {hospital.icuBedsAvailable}/{hospital.icuBeds}
                             </Typography>
                             <Typography sx={{ fontSize: { xs: '0.6rem', md: '0.65rem' }, color: 'text.secondary', textTransform: 'uppercase', fontWeight: 500 }}>
@@ -148,7 +148,7 @@ export const HospitalCard: React.FC<HospitalCardProps> = ({
                             </Typography>
                         </Box>
                         <Box sx={{ textAlign: 'center', minWidth: 40 }}>
-                            <Typography sx={{ fontWeight: 700, color: '#f59e0b', fontSize: { xs: '0.85rem', md: '0.95rem' } }}>
+                            <Typography sx={{ fontWeight: 700, color: '#f59e0b', fontSize: { xs: '0.8rem', md: '0.95rem' } }}>
                                 {hospital.picuBedsAvailable}/{hospital.picuBeds}
                             </Typography>
                             <Typography sx={{ fontSize: { xs: '0.6rem', md: '0.65rem' }, color: 'text.secondary', textTransform: 'uppercase', fontWeight: 500 }}>
@@ -156,7 +156,7 @@ export const HospitalCard: React.FC<HospitalCardProps> = ({
                             </Typography>
                         </Box>
                         <Box sx={{ textAlign: 'center', minWidth: 40 }}>
-                            <Typography sx={{ fontWeight: 700, fontSize: { xs: '0.85rem', md: '0.95rem' } }}>
+                            <Typography sx={{ fontWeight: 700, fontSize: { xs: '0.8rem', md: '0.95rem' } }}>
                                 {availableBeds}/{totalBeds}
                             </Typography>
                             <Typography sx={{ fontSize: { xs: '0.6rem', md: '0.65rem' }, color: 'text.secondary', textTransform: 'uppercase', fontWeight: 500 }}>

@@ -56,12 +56,12 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                         },
                     }}
                 >
-                    <CardContent sx={{ p: 3 }}>
+                    <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
                             <Box
                                 sx={{
-                                    width: 48,
-                                    height: 48,
+                                    width: { xs: 40, md: 48 },
+                                    height: { xs: 40, md: 48 },
                                     borderRadius: spacing.borderRadius.md,
                                     backgroundColor: alpha(skyBlue[600], 0.15),
                                     display: 'flex',
@@ -69,7 +69,7 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                                     justifyContent: 'center',
                                 }}
                             >
-                                <FontAwesomeIcon icon={faExclamationTriangle} style={{ fontSize: 22, color: skyBlue[700] }} />
+                                <FontAwesomeIcon icon={faExclamationTriangle} style={{ fontSize: 20, color: skyBlue[700] }} />
                             </Box>
                         </Box>
                         <Typography
@@ -77,13 +77,13 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                             sx={{
                                 fontWeight: 700,
                                 color: skyBlue[600],
-                                fontSize: '2.5rem',
+                                fontSize: { xs: '2rem', md: '2.5rem' },
                                 lineHeight: 1,
                                 mb: 1,
                             }}
                         >
                             {loading ? (
-                                <CircularProgress size={32} sx={{ color: skyBlue[600] }} />
+                                <CircularProgress size={28} sx={{ color: skyBlue[600] }} />
                             ) : (
                                 (() => {
                                     const criticalCasesCount = criticalCases?.filter(c =>
@@ -99,7 +99,7 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                         </Typography>
                         <Typography
                             sx={{
-                                fontSize: '0.875rem',
+                                fontSize: { xs: '0.75rem', md: '0.875rem' },
                                 fontWeight: 500,
                                 color: '#64748B',
                                 textTransform: 'uppercase',
@@ -131,12 +131,12 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                         },
                     }}
                 >
-                    <CardContent sx={{ p: 3 }}>
+                    <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
                             <Box
                                 sx={{
-                                    width: 48,
-                                    height: 48,
+                                    width: { xs: 40, md: 48 },
+                                    height: { xs: 40, md: 48 },
                                     borderRadius: spacing.borderRadius.md,
                                     backgroundColor: alpha(skyBlue[600], 0.15),
                                     display: 'flex',
@@ -144,7 +144,7 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                                     justifyContent: 'center',
                                 }}
                             >
-                                <FontAwesomeIcon icon={faTicketAlt} style={{ fontSize: 22, color: skyBlue[700] }} />
+                                <FontAwesomeIcon icon={faTicketAlt} style={{ fontSize: 20, color: skyBlue[700] }} />
                             </Box>
                         </Box>
                         <Typography
@@ -152,13 +152,13 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                             sx={{
                                 fontWeight: 700,
                                 color: skyBlue[600],
-                                fontSize: '2.5rem',
+                                fontSize: { xs: '2rem', md: '2.5rem' },
                                 lineHeight: 1,
                                 mb: 1,
                             }}
                         >
                             {loading ? (
-                                <CircularProgress size={32} sx={{ color: skyBlue[600] }} />
+                                <CircularProgress size={28} sx={{ color: skyBlue[600] }} />
                             ) : (
                                 (() => {
                                     const openHospitalTickets = relatedTickets?.filter(t =>
@@ -173,7 +173,7 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                         </Typography>
                         <Typography
                             sx={{
-                                fontSize: '0.875rem',
+                                fontSize: { xs: '0.75rem', md: '0.875rem' },
                                 fontWeight: 500,
                                 color: '#64748B',
                                 textTransform: 'uppercase',
@@ -205,12 +205,12 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                         },
                     }}
                 >
-                    <CardContent sx={{ p: 3 }}>
+                    <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
                             <Box
                                 sx={{
-                                    width: 48,
-                                    height: 48,
+                                    width: { xs: 40, md: 48 },
+                                    height: { xs: 40, md: 48 },
                                     borderRadius: spacing.borderRadius.md,
                                     backgroundColor: alpha(skyBlue[600], 0.15),
                                     display: 'flex',
@@ -218,7 +218,7 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                                     justifyContent: 'center',
                                 }}
                             >
-                                <FontAwesomeIcon icon={faBed} style={{ fontSize: 22, color: skyBlue[700] }} />
+                                <FontAwesomeIcon icon={faBed} style={{ fontSize: 20, color: skyBlue[700] }} />
                             </Box>
                         </Box>
                         <Typography
@@ -226,20 +226,20 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                             sx={{
                                 fontWeight: 700,
                                 color: skyBlue[600],
-                                fontSize: '2.5rem',
+                                fontSize: { xs: '2rem', md: '2.5rem' },
                                 lineHeight: 1,
                                 mb: 1,
                             }}
                         >
                             {loading ? (
-                                <CircularProgress size={32} sx={{ color: skyBlue[600] }} />
+                                <CircularProgress size={28} sx={{ color: skyBlue[600] }} />
                             ) : (
                                 `${hospital ? getAvailabilityPercentage(hospital) : 0}%`
                             )}
                         </Typography>
                         <Typography
                             sx={{
-                                fontSize: '0.875rem',
+                                fontSize: { xs: '0.75rem', md: '0.875rem' },
                                 fontWeight: 500,
                                 color: '#64748B',
                                 textTransform: 'uppercase',
@@ -271,12 +271,12 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                         },
                     }}
                 >
-                    <CardContent sx={{ p: 3 }}>
+                    <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
                             <Box
                                 sx={{
-                                    width: 48,
-                                    height: 48,
+                                    width: { xs: 40, md: 48 },
+                                    height: { xs: 40, md: 48 },
                                     borderRadius: spacing.borderRadius.md,
                                     backgroundColor: alpha(skyBlue[600], 0.15),
                                     display: 'flex',
@@ -284,7 +284,7 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                                     justifyContent: 'center',
                                 }}
                             >
-                                <FontAwesomeIcon icon={faMedkit} style={{ fontSize: 22, color: skyBlue[700] }} />
+                                <FontAwesomeIcon icon={faMedkit} style={{ fontSize: 20, color: skyBlue[700] }} />
                             </Box>
                         </Box>
                         <Typography
@@ -292,13 +292,13 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                             sx={{
                                 fontWeight: 700,
                                 color: skyBlue[600],
-                                fontSize: '2.5rem',
+                                fontSize: { xs: '2rem', md: '2.5rem' },
                                 lineHeight: 1,
                                 mb: 1,
                             }}
                         >
                             {loading ? (
-                                <CircularProgress size={32} sx={{ color: skyBlue[600] }} />
+                                <CircularProgress size={28} sx={{ color: skyBlue[600] }} />
                             ) : (
                                 hospital ? [
                                     hospital.hasStemiService,
@@ -313,7 +313,7 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
                         </Typography>
                         <Typography
                             sx={{
-                                fontSize: '0.875rem',
+                                fontSize: { xs: '0.75rem', md: '0.875rem' },
                                 fontWeight: 500,
                                 color: '#64748B',
                                 textTransform: 'uppercase',

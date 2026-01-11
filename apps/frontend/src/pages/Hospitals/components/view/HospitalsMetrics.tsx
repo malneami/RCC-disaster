@@ -26,14 +26,13 @@ export const HospitalsMetrics: React.FC<HospitalsMetricsProps> = ({ stats }) => 
     return (
         <Box
             sx={{
-                px: 4,
-                py: 2,
+                px: { xs: 2, md: 4 },
+                py: { xs: 2, md: 2 },
                 backgroundColor: 'white',
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 display: 'flex',
-                gap: 2,
-                overflowX: 'auto',
-                '&::-webkit-scrollbar': { display: 'none' },
+                flexWrap: 'wrap',
+                gap: { xs: 1.5, md: 2 },
             }}
         >
             <StatPill label="Total" value={stats.total} color="#3b82f6" icon={<HospitalIcon sx={{ fontSize: 18 }} />} />

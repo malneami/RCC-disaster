@@ -44,7 +44,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  // const [_initialPatientsLoaded, setInitialPatientsLoaded] = useState(false);
+
 
   const [newPatient, setNewPatient] = useState<CreatePatientData>({
     firstName: '',
@@ -58,6 +58,7 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
       setLoading(true);
       const response = await patientService.getPatients(1, 50);
       setPatients(response.data);
+
     } catch (error) {
       console.error('Error loading patients:', error);
     } finally {

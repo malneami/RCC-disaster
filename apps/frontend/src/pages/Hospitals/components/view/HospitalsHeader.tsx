@@ -37,7 +37,7 @@ export const HospitalsHeader: React.FC<HospitalsHeaderProps> = ({
         <Box
             sx={{
                 px: { xs: 2, md: 4 },
-                py: { xs: 2, md: 2.5 },
+                py: { xs: 1.5, md: 2.5 },
                 backgroundColor: 'white',
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 position: 'sticky',
@@ -50,14 +50,14 @@ export const HospitalsHeader: React.FC<HospitalsHeaderProps> = ({
                 flexDirection: { xs: 'column', md: 'row' },
                 alignItems: { xs: 'stretch', md: 'center' },
                 justifyContent: 'space-between',
-                gap: { xs: 2, md: 3 }
+                gap: { xs: 1.5, md: 3 }
             }}>
                 {/* Title */}
                 <Box sx={{ flexShrink: 0 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '1.1rem', md: '1.5rem' } }}>
                         Hospital Network
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
                         {totalHospitals} facilities in the network
                     </Typography>
                 </Box>
