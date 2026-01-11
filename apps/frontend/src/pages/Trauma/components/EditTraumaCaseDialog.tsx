@@ -145,6 +145,11 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       mechanismOfInjury: 'MOTOR_VEHICLE_ACCIDENT',
       primarySurveyFindings: '',
       additionalNotes: '',
+      edStabilizationDateTime: '',
+      hemorrhageControlDateTime: '',
+      isMtpActivated: false,
+      mtpActivationDateTime: '',
+      firstBloodUnitTransfusionDateTime: '',
     },
     vitalsAssessment: {
       vitalSigns: {
@@ -265,6 +270,12 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
           mechanismOfInjury: traumaCase.mechanismOfInjury || 'MOTOR_VEHICLE_ACCIDENT',
           primarySurveyFindings: traumaCase.primarySurveyFindings || '',
           additionalNotes: traumaCase.additionalNotes || '',
+          // New KPI Fields - Initialization
+          edStabilizationDateTime: (traumaCase as any).edStabilizationDateTime ? new Date((traumaCase as any).edStabilizationDateTime).toISOString().slice(0, 16) : '',
+          hemorrhageControlDateTime: (traumaCase as any).hemorrhageControlDateTime ? new Date((traumaCase as any).hemorrhageControlDateTime).toISOString().slice(0, 16) : '',
+          isMtpActivated: (traumaCase as any).isMtpActivated || false,
+          mtpActivationDateTime: (traumaCase as any).mtpActivationDateTime ? new Date((traumaCase as any).mtpActivationDateTime).toISOString().slice(0, 16) : '',
+          firstBloodUnitTransfusionDateTime: (traumaCase as any).firstBloodUnitTransfusionDateTime ? new Date((traumaCase as any).firstBloodUnitTransfusionDateTime).toISOString().slice(0, 16) : '',
         },
         vitalsAssessment: {
           vitalSigns: {
@@ -378,6 +389,12 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
     const transferRequestTime = parseDate(formData.incidentDetails.transferRequestDateTime);
     const transferArrivalTime = parseDate(formData.incidentDetails.transferArrivalDateTime);
 
+    // New KPI timestamps for validation
+    const edStabilizationTime = parseDate(formData.incidentDetails.edStabilizationDateTime);
+    const hemorrhageControlTime = parseDate(formData.incidentDetails.hemorrhageControlDateTime);
+    const mtpActivationTime = parseDate(formData.incidentDetails.mtpActivationDateTime);
+    const firstTransfusionTime = parseDate(formData.incidentDetails.firstBloodUnitTransfusionDateTime);
+
     if (incidentTime && arrivalTime && incidentTime > arrivalTime) {
       addWarning(
         'incidentDetails.incidentDateTime',
@@ -406,6 +423,23 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
       );
     }
 
+    // Validate Logical Order of Clinical Events
+    if (edStabilizationTime && arrivalTime && edStabilizationTime < arrivalTime) {
+      addWarning('incidentDetails.edStabilizationDateTime', 'ED Stabilization cannot be before Arrival Time.');
+    }
+
+    if (hemorrhageControlTime && edStabilizationTime && hemorrhageControlTime < edStabilizationTime) {
+      addWarning('incidentDetails.hemorrhageControlDateTime', 'Hemorrhage control cannot be before stabilization.');
+    }
+
+    if (mtpActivationTime && arrivalTime && mtpActivationTime < arrivalTime) {
+      addWarning('incidentDetails.mtpActivationDateTime', 'MTP Activation cannot be before Arrival Time.');
+    }
+
+    if (firstTransfusionTime && mtpActivationTime && firstTransfusionTime < mtpActivationTime) {
+      addWarning('incidentDetails.firstBloodUnitTransfusionDateTime', 'Transfusion cannot happen before MTP Activation.');
+    }
+
     // KPI VIOLATIONS (Yellow)
     // KPI 1: Response Time (Incident to Arrival) > 60 mins (approx 1 hour golden window concept for trauma)
     if (incidentTime && arrivalTime) {
@@ -414,6 +448,28 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         addViolation(
           'incidentDetails.arrivalDateTime',
           `Time from Incident to Arrival is ${Math.round(diffMinutes)} mins (Target: < 60 mins).`
+        );
+      }
+    }
+
+    // KPI: Time to Hemorrhage Control (Target <= 60 mins from stabilization)
+    if (hemorrhageControlTime && edStabilizationTime) {
+      const diffMinutes = (hemorrhageControlTime.getTime() - edStabilizationTime.getTime()) / (1000 * 60);
+      if (diffMinutes > 60) {
+        addViolation(
+          'incidentDetails.hemorrhageControlDateTime',
+          `Time to Hemorrhage Control is ${Math.round(diffMinutes)} mins (Target: ≤ 60 mins).`
+        );
+      }
+    }
+
+    // KPI: Time to First Blood Unit (Target <= 15 mins from MTP activation)
+    if (firstTransfusionTime && mtpActivationTime) {
+      const diffMinutes = (firstTransfusionTime.getTime() - mtpActivationTime.getTime()) / (1000 * 60);
+      if (diffMinutes > 15) {
+        addViolation(
+          'incidentDetails.firstBloodUnitTransfusionDateTime',
+          `Time to First Blood Unit is ${Math.round(diffMinutes)} mins (Target: ≤ 15 mins).`
         );
       }
     }
@@ -607,6 +663,13 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
         systolicBloodPressure: formData.vitalsAssessment.systolicBloodPressure || undefined,
         respiratoryRate: formData.vitalsAssessment.respiratoryRate || undefined,
         additionalVitalSigns: formData.vitalsAssessment.additionalVitalSigns || undefined,
+        // New KPI Fields - Submission
+        edStabilizationDateTime: formData.incidentDetails.edStabilizationDateTime || undefined,
+        hemorrhageControlDateTime: formData.incidentDetails.hemorrhageControlDateTime || undefined,
+        isMtpActivated: formData.incidentDetails.isMtpActivated,
+        mtpActivationDateTime: formData.incidentDetails.mtpActivationDateTime || undefined,
+        firstBloodUnitTransfusionDateTime: formData.incidentDetails.firstBloodUnitTransfusionDateTime || undefined,
+
         headAndNeckInjury: formData.injuryAssessment.headAndNeckInjury as any,
         faceInjury: formData.injuryAssessment.faceInjury as any,
         chestInjury: formData.injuryAssessment.chestInjury as any,

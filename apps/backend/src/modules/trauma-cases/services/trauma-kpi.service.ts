@@ -58,6 +58,12 @@ export class TraumaKpiService {
         transferDurationMinutes: true,
         edDisposition: true,
         createdAt: true,
+        // New KPI Fields - Data Fetching
+        edStabilizationDateTime: true,
+        hemorrhageControlDateTime: true,
+        isMtpActivated: true,
+        mtpActivationDateTime: true,
+        firstBloodUnitTransfusionDateTime: true,
       },
     });
 
@@ -142,6 +148,71 @@ export class TraumaKpiService {
         percentage: Math.round(transferTimeKpiPercentage * 10) / 10,
         withinTarget: transferTimePass,
         totalCases: transferTimeCases.length,
+      },
+      ...this.calculateNewTraumaKPIs(allCases),
+    };
+  }
+
+  /**
+   * Calculate new Trauma Leading KPIs
+   * 1. Time to Hemorrhage Control (OR or Angiography) (Target: ≤60 min)
+   * 2. Time to First Blood Unit Transfusion (Target: ≤15 min)
+   */
+  private calculateNewTraumaKPIs(allCases: any[]): any {
+    // 1. Hemorrhage Control KPI
+    const hemorrhageCases = allCases.filter(c => 
+      c.edStabilizationDateTime && c.hemorrhageControlDateTime
+    );
+    
+    let hemorrhagePassCount = 0;
+    
+    hemorrhageCases.forEach(c => {
+      const start = new Date(c.edStabilizationDateTime);
+      const end = new Date(c.hemorrhageControlDateTime);
+      const diffMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+      
+      // Target <= 60 minutes
+      if (diffMinutes >= 0 && diffMinutes <= 60) {
+        hemorrhagePassCount++;
+      }
+    });
+    
+    const hemorrhagePercentage = hemorrhageCases.length > 0 
+      ? (hemorrhagePassCount / hemorrhageCases.length) * 100 
+      : 0;
+
+    // 2. MTP Transfusion KPI
+    const mtpCases = allCases.filter(c => 
+      c.isMtpActivated && c.mtpActivationDateTime && c.firstBloodUnitTransfusionDateTime
+    );
+    
+    let mtpPassCount = 0;
+    
+    mtpCases.forEach(c => {
+      const start = new Date(c.mtpActivationDateTime);
+      const end = new Date(c.firstBloodUnitTransfusionDateTime);
+      const diffMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+      
+      // Target <= 15 minutes
+      if (diffMinutes >= 0 && diffMinutes <= 15) {
+        mtpPassCount++;
+      }
+    });
+    
+    const mtpPercentage = mtpCases.length > 0 
+      ? (mtpPassCount / mtpCases.length) * 100 
+      : 0;
+
+    return {
+      hemorrhageControlTimeKPI: {
+        percentage: Math.round(hemorrhagePercentage * 10) / 10,
+        withinTarget: hemorrhagePassCount,
+        totalCases: hemorrhageCases.length,
+      },
+      mtpTransfusionTimeKPI: {
+        percentage: Math.round(mtpPercentage * 10) / 10,
+        withinTarget: mtpPassCount,
+        totalCases: mtpCases.length,
       },
     };
   }

@@ -25,6 +25,14 @@ model TraumaCase {
   responseTimeMinutes     Int?                    @map("response_time_minutes")
   criticalCase            Boolean                 @default(false) @map("critical_case")
   transferCase            Boolean                 @default(false) @map("transfer_case")
+  
+  // New KPI Fields - Urgency & Time Critical
+  edStabilizationDateTime DateTime?               @map("ed_stabilization_date_time")
+  hemorrhageControlDateTime DateTime?             @map("hemorrhage_control_date_time")
+  mtpActivationDateTime   DateTime?               @map("mtp_activation_date_time")
+  firstBloodUnitTransfusionDateTime DateTime?     @map("first_blood_unit_transfusion_date_time")
+  isMtpActivated          Boolean                 @default(false) @map("is_mtp_activated")
+
   createdAt               DateTime                @default(now()) @map("created_at")
   updatedAt               DateTime                @updatedAt @map("updated_at")
   deletedAt               DateTime?               @map("deleted_at")

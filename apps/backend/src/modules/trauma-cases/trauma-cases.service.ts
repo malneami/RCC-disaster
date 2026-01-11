@@ -111,6 +111,12 @@ export class TraumaCasesService {
         responseTimeMinutes: responseTimeMinutes,
         criticalCase: criticalCase,
         transferCase: transferCase,
+        // New KPI Fields
+        edStabilizationDateTime: createTraumaCaseDto.edStabilizationDateTime ? new Date(createTraumaCaseDto.edStabilizationDateTime) : null,
+        hemorrhageControlDateTime: createTraumaCaseDto.hemorrhageControlDateTime ? new Date(createTraumaCaseDto.hemorrhageControlDateTime) : null,
+        isMtpActivated: createTraumaCaseDto.isMtpActivated || false,
+        mtpActivationDateTime: createTraumaCaseDto.mtpActivationDateTime ? new Date(createTraumaCaseDto.mtpActivationDateTime) : null,
+        firstBloodUnitTransfusionDateTime: createTraumaCaseDto.firstBloodUnitTransfusionDateTime ? new Date(createTraumaCaseDto.firstBloodUnitTransfusionDateTime) : null,
         createdById: validUserId,
       };
 
@@ -313,6 +319,20 @@ export class TraumaCasesService {
     }
     if (updateData.transferArrivalDateTime) {
       updateData.transferArrivalDateTime = new Date(updateData.transferArrivalDateTime);
+    }
+    
+    // New KPI Fields Date Conversion
+    if (updateData.edStabilizationDateTime) {
+      updateData.edStabilizationDateTime = new Date(updateData.edStabilizationDateTime);
+    }
+    if (updateData.hemorrhageControlDateTime) {
+      updateData.hemorrhageControlDateTime = new Date(updateData.hemorrhageControlDateTime);
+    }
+    if (updateData.mtpActivationDateTime) {
+      updateData.mtpActivationDateTime = new Date(updateData.mtpActivationDateTime);
+    }
+    if (updateData.firstBloodUnitTransfusionDateTime) {
+      updateData.firstBloodUnitTransfusionDateTime = new Date(updateData.firstBloodUnitTransfusionDateTime);
     }
 
     // Stringify JSON fields before saving to database

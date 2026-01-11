@@ -54,6 +54,13 @@ export interface TraumaCase {
   systolicBloodPressure?: number;
   respiratoryRate?: number;
   additionalVitalSigns?: string;
+
+  // New KPI Fields - Data Entry
+  edStabilizationDateTime?: string;
+  hemorrhageControlDateTime?: string;
+  isMtpActivated?: boolean;
+  mtpActivationDateTime?: string;
+  firstBloodUnitTransfusionDateTime?: string;
   
   // Injury Information - Body Regions
   headAndNeckInjury?: TraumaInjurySeverity;
@@ -167,6 +174,13 @@ export interface CreateTraumaCaseData {
   systolicBloodPressure?: number;
   respiratoryRate?: number;
   additionalVitalSigns?: string;
+
+  // New KPI Fields - Data Entry
+  edStabilizationDateTime?: string;
+  hemorrhageControlDateTime?: string;
+  isMtpActivated?: boolean;
+  mtpActivationDateTime?: string;
+  firstBloodUnitTransfusionDateTime?: string;
   
   // Injury Information - Body Regions
   headAndNeckInjury?: TraumaInjurySeverity;
@@ -280,6 +294,12 @@ export class TraumaService {
       systolicBloodPressure: cleanValue(data.systolicBloodPressure),
       respiratoryRate: cleanValue(data.respiratoryRate),
       additionalVitalSigns: cleanValue(data.additionalVitalSigns),
+      // New KPI Fields
+      edStabilizationDateTime: cleanValue(data.edStabilizationDateTime),
+      hemorrhageControlDateTime: cleanValue(data.hemorrhageControlDateTime),
+      isMtpActivated: data.isMtpActivated,
+      mtpActivationDateTime: cleanValue(data.mtpActivationDateTime),
+      firstBloodUnitTransfusionDateTime: cleanValue(data.firstBloodUnitTransfusionDateTime),
       headAndNeckInjury: cleanValue(data.headAndNeckInjury),
       faceInjury: cleanValue(data.faceInjury),
       chestInjury: cleanValue(data.chestInjury),

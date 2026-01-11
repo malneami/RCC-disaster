@@ -239,6 +239,43 @@ const TraumaKPIDashboardMain: React.FC<TraumaKPIDashboardMainProps> = ({
           />
         </Grid>
       </Grid>
+      <Grid container spacing={3} mb={4}>
+        {/* KPI: Time to Hemorrhage Control */}
+        <Grid item xs={12} md={6}>
+          <UnifiedKPICard
+            variant="secondary"
+            title="Reasonable time to hemostasis"
+            value={`${kpiSummary.hemorrhageControlTimeKPI?.percentage || 0}%`}
+            target="Target: 100% within 60 min"
+            percentage={kpiSummary.hemorrhageControlTimeKPI?.percentage || 0}
+            status={
+              (kpiSummary.hemorrhageControlTimeKPI?.percentage || 0) >= 80 ? 'good' :
+                (kpiSummary.hemorrhageControlTimeKPI?.percentage || 0) >= 65 ? 'fair' : 'poor'
+            }
+            icon={<Schedule />}
+            casesInfo={`${kpiSummary.hemorrhageControlTimeKPI?.withinTarget || 0} / ${kpiSummary.hemorrhageControlTimeKPI?.totalCases || 0} cases`}
+            portalType={portalType}
+          />
+        </Grid>
+
+        {/* KPI: Time to MTP Transfusion */}
+        <Grid item xs={12} md={6}>
+          <UnifiedKPICard
+            variant="secondary"
+            title="Time MTP Activation to 1st Unit"
+            value={`${kpiSummary.mtpTransfusionTimeKPI?.percentage || 0}%`}
+            target="Target: 100% within 15 min"
+            percentage={kpiSummary.mtpTransfusionTimeKPI?.percentage || 0}
+            status={
+              (kpiSummary.mtpTransfusionTimeKPI?.percentage || 0) >= 80 ? 'good' :
+                (kpiSummary.mtpTransfusionTimeKPI?.percentage || 0) >= 65 ? 'fair' : 'poor'
+            }
+            icon={<LocalHospital />}
+            casesInfo={`${kpiSummary.mtpTransfusionTimeKPI?.withinTarget || 0} / ${kpiSummary.mtpTransfusionTimeKPI?.totalCases || 0} cases`}
+            portalType={portalType}
+          />
+        </Grid>
+      </Grid>
 
       {/* Additional Stats */}
       <Typography variant="h5" sx={{ fontWeight: 600, color: kpiTheme.textPrimary, mb: 3 }}>

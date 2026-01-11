@@ -35,6 +35,11 @@ export interface IncidentDetailsFormData {
   mechanismOfInjury: string;
   primarySurveyFindings: string;
   additionalNotes: string;
+  edStabilizationDateTime?: string;
+  hemorrhageControlDateTime?: string;
+  isMtpActivated?: boolean;
+  mtpActivationDateTime?: string;
+  firstBloodUnitTransfusionDateTime?: string;
 }
 
 export interface VitalsAssessmentFormData {
@@ -241,6 +246,16 @@ export interface TraumaKPIsResponse {
   transferRate: number;
   casesThisMonth: number;
   casesThisWeek: number;
+  hemorrhageControlTimeKPI: {
+    percentage: number;
+    withinTarget: number;
+    totalCases: number;
+  };
+  mtpTransfusionTimeKPI: {
+    percentage: number;
+    withinTarget: number;
+    totalCases: number;
+  };
 }
 
 // Error types

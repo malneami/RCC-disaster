@@ -160,6 +160,27 @@ export class CreateTraumaCaseDto {
   @Min(0)
   transferDurationMinutes?: number;
 
+  // New KPI Fields
+  @IsOptional()
+  @IsDateString()
+  edStabilizationDateTime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  hemorrhageControlDateTime?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isMtpActivated?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  mtpActivationDateTime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  firstBloodUnitTransfusionDateTime?: string;
+
   // Chief Complaint and Mechanism
   @IsOptional()
   @IsString()
