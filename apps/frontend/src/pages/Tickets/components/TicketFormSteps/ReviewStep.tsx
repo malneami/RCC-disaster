@@ -8,16 +8,47 @@ import {
   Chip,
   Divider,
   Alert,
+  Skeleton,
 } from '@mui/material';
+import { useQuery } from 'react-query';
 import { CreateTicketData } from '../../../../services/ticketService';
+import { patientService } from '../../../../services/patientService';
+import { hospitalService } from '../../../../services/hospitalService';
 
 interface ReviewStepProps {
   formData: Partial<CreateTicketData>;
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
-  // For now, we'll show the data as-is without fetching additional details
-  // In a real implementation, you would fetch patient and hospital details here
+  // Fetch Patient Details
+  const { data: patient, isLoading: isLoadingPatient } = useQuery(
+    ['patient', formData.patientId],
+    () => patientService.getPatientById(formData.patientId!),
+    {
+      enabled: !!formData.patientId,
+      staleTime: 5 * 60 * 1000,
+    }
+  );
+
+  // Fetch Origin Hospital Details
+  const { data: originHospital, isLoading: isLoadingOrigin } = useQuery(
+    ['hospital', formData.originHospitalId],
+    () => hospitalService.getHospitalById(formData.originHospitalId!),
+    {
+      enabled: !!formData.originHospitalId,
+      staleTime: 5 * 60 * 1000,
+    }
+  );
+
+  // Fetch Destination Hospital Details
+  const { data: destinationHospital, isLoading: isLoadingDestination } = useQuery(
+    ['hospital', formData.destinationHospitalId],
+    () => hospitalService.getHospitalById(formData.destinationHospitalId!),
+    {
+      enabled: !!formData.destinationHospitalId,
+      staleTime: 5 * 60 * 1000,
+    }
+  );
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -47,6 +78,38 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
     return requirements.length > 0 ? requirements.join(', ') : 'None';
   };
 
+  const renderVitals = () => {
+    if (!formData.vitals) return 'No vitals recorded';
+
+    // Check if vitals is an object or string (based on Ticket interface vs CreateTicketData)
+    if (typeof formData.vitals === 'string') return formData.vitals;
+
+    const vitalsList = [];
+    const v = formData.vitals as any;
+    if (v.bloodPressure) vitalsList.push(`BP: ${v.bloodPressure}`);
+    if (v.heartRate) vitalsList.push(`HR: ${v.heartRate}`);
+    if (v.temperature) vitalsList.push(`Temp: ${v.temperature}`);
+    if (v.oxygenSaturation) vitalsList.push(`O2: ${v.oxygenSaturation}%`);
+    if (v.respiratoryRate) vitalsList.push(`RR: ${v.respiratoryRate}`);
+
+    return vitalsList.length > 0 ? vitalsList.join(', ') : 'No vitals recorded';
+  };
+
+  const renderDiagnostics = () => {
+    if (!formData.diagnostics) return 'No diagnostics recorded';
+
+    if (typeof formData.diagnostics === 'string') return formData.diagnostics;
+
+    const diagnosticsList = [];
+    const d = formData.diagnostics as any;
+    if (d.ecg) diagnosticsList.push(`ECG: ${d.ecg}`);
+    if (d.labResults) diagnosticsList.push(`Labs: ${d.labResults}`);
+    if (d.ctScan) diagnosticsList.push(`CT: ${d.ctScan}`);
+    if (d.otherTests) diagnosticsList.push(`Other: ${d.otherTests}`);
+
+    return diagnosticsList.length > 0 ? diagnosticsList.join(' | ') : 'No diagnostics recorded';
+  };
+
   return (
     <Box sx={{ py: 2 }}>
       <Typography variant="h6" gutterBottom>
@@ -69,17 +132,25 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                   <Typography variant="body2" color="text.secondary">
                     Patient Name
                   </Typography>
-                  <Typography variant="body1">
-                    Patient ID: {formData.patientId}
-                  </Typography>
+                  {isLoadingPatient ? (
+                    <Skeleton width="60%" />
+                  ) : (
+                    <Typography variant="body1">
+                      {patient ? `${patient.firstName} ${patient.lastName}` : formData.patientId}
+                    </Typography>
+                  )}
                 </Grid>
                 <Grid item xs={12} md={6}>
                   <Typography variant="body2" color="text.secondary">
                     MRN
                   </Typography>
-                  <Typography variant="body1">
-                    N/A
-                  </Typography>
+                  {isLoadingPatient ? (
+                    <Skeleton width="40%" />
+                  ) : (
+                    <Typography variant="body1">
+                      {patient?.mrn || 'N/A'}
+                    </Typography>
+                  )}
                 </Grid>
               </Grid>
             </CardContent>
@@ -98,17 +169,27 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                   <Typography variant="body2" color="text.secondary">
                     Origin Hospital
                   </Typography>
-                  <Typography variant="body1">
-                    Hospital ID: {formData.originHospitalId}
-                  </Typography>
+                  {isLoadingOrigin ? (
+                    <Skeleton width="80%" />
+                  ) : (
+                    <Typography variant="body1">
+                      {originHospital ? originHospital.name : formData.originHospitalId}
+                    </Typography>
+                  )}
                 </Grid>
                 <Grid item xs={12} md={6}>
                   <Typography variant="body2" color="text.secondary">
                     Destination Hospital
                   </Typography>
-                  <Typography variant="body1">
-                    {formData.destinationHospitalId ? `Hospital ID: ${formData.destinationHospitalId}` : 'Not specified'}
-                  </Typography>
+                  {isLoadingDestination ? (
+                    <Skeleton width="80%" />
+                  ) : (
+                    <Typography variant="body1">
+                      {formData.destinationHospitalId
+                        ? (destinationHospital ? destinationHospital.name : formData.destinationHospitalId)
+                        : 'Not specified'}
+                    </Typography>
+                  )}
                 </Grid>
               </Grid>
             </CardContent>
@@ -127,8 +208,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                   <Typography variant="body2" color="text.secondary">
                     Priority
                   </Typography>
-                  <Chip 
-                    label={formData.priority} 
+                  <Chip
+                    label={formData.priority}
                     color={getPriorityColor(formData.priority || 'MEDIUM') as any}
                     size="small"
                   />
@@ -141,10 +222,53 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                     {formData.pathway}
                   </Typography>
                 </Grid>
+
+                {/* Triage & Symptom Onset */}
+                {formData.triageTime && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Triage Time
+                    </Typography>
+                    <Typography variant="body1">
+                      {new Date(formData.triageTime).toLocaleString()}
+                    </Typography>
+                  </Grid>
+                )}
+                {formData.symptomOnsetTime && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Symptom Onset Time
+                    </Typography>
+                    <Typography variant="body1">
+                      {new Date(formData.symptomOnsetTime).toLocaleString()}
+                    </Typography>
+                  </Grid>
+                )}
+
+                {/* Vitals */}
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Vitals
+                  </Typography>
+                  <Typography variant="body1">
+                    {renderVitals()}
+                  </Typography>
+                </Grid>
+
+                {/* Diagnostics */}
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Diagnostics
+                  </Typography>
+                  <Typography variant="body1">
+                    {renderDiagnostics()}
+                  </Typography>
+                </Grid>
+
                 {formData.treatmentPlan && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="text.secondary">
-                      Note
+                      Treatment Plan / Note
                     </Typography>
                     <Typography variant="body1">
                       {formData.treatmentPlan}
