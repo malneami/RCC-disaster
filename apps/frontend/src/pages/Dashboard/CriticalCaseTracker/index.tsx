@@ -11,7 +11,7 @@ import {
   alpha,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
+import {
   faExclamationTriangle,
   faRedo,
   faHeart,
@@ -32,17 +32,24 @@ const CriticalCaseTracker: React.FC = () => {
     if (case_.pathway !== 'STEMI' && case_.pathway !== 'STROKE') {
       return false;
     }
-    
+
     // Exclude completed cases
     if (case_.status === 'COMPLETED') {
       return false;
     }
-    
+
     // Exclude cases older than 24 hours
-    const creationTime = new Date(case_.createdAt).getTime();
+    // Exclude cases older than 24 hours from start time
+    let startTime = new Date(case_.createdAt).getTime();
+    if (case_.pathway === 'STEMI' && case_.triageTime) {
+      startTime = new Date(case_.triageTime).getTime();
+    } else if (case_.pathway === 'STROKE' && case_.symptomOnset) {
+      startTime = new Date(case_.symptomOnset).getTime();
+    }
+
     const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    const isWithin24Hours = (Date.now() - creationTime) < twentyFourHours;
-    
+    const isWithin24Hours = (Date.now() - startTime) < twentyFourHours;
+
     return isWithin24Hours;
   }) || [];
 
@@ -50,10 +57,17 @@ const CriticalCaseTracker: React.FC = () => {
   useEffect(() => {
     if (stemiStrokeCases.length > 0) {
       const criticalCases = stemiStrokeCases.filter(case_ => {
-        const elapsed = Date.now() - new Date(case_.createdAt).getTime();
+        let startTime = new Date(case_.createdAt).getTime();
+        if (case_.pathway === 'STEMI' && case_.triageTime) {
+          startTime = new Date(case_.triageTime).getTime();
+        } else if (case_.pathway === 'STROKE' && case_.symptomOnset) {
+          startTime = new Date(case_.symptomOnset).getTime();
+        }
+
+        const elapsed = Date.now() - startTime;
         const timeLimit = case_.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000; // 120 min or 4.5 hr
         const remaining = timeLimit - elapsed;
-        
+
         // Play alert if less than 10 minutes remaining
         return remaining < 10 * 60 * 1000 && remaining > 0;
       });
@@ -82,9 +96,9 @@ const CriticalCaseTracker: React.FC = () => {
         <CardContent sx={{ p: 3 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <FontAwesomeIcon 
-              icon={faExclamationTriangle} 
-              style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }} 
+            <FontAwesomeIcon
+              icon={faExclamationTriangle}
+              style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }}
             />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 600, color: '#d32f2f' }}>
@@ -97,16 +111,16 @@ const CriticalCaseTracker: React.FC = () => {
           </Box>
 
           {/* Error Card */}
-          <Card sx={{ 
-            borderRadius: 2, 
+          <Card sx={{
+            borderRadius: 2,
             border: '1px solid rgba(211, 47, 47, 0.3)',
             backgroundColor: alpha('#d32f2f', 0.05),
           }}>
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <FontAwesomeIcon 
-                  icon={faExclamationTriangle} 
-                  style={{ color: '#d32f2f', marginRight: '8px' }} 
+                <FontAwesomeIcon
+                  icon={faExclamationTriangle}
+                  style={{ color: '#d32f2f', marginRight: '8px' }}
                 />
                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#d32f2f' }}>
                   Error Loading Alerts
@@ -142,9 +156,9 @@ const CriticalCaseTracker: React.FC = () => {
       <CardContent sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <FontAwesomeIcon 
-            icon={faExclamationTriangle} 
-            style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }} 
+          <FontAwesomeIcon
+            icon={faExclamationTriangle}
+            style={{ color: '#d32f2f', marginRight: '16px', fontSize: '28px' }}
           />
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 600, color: '#d32f2f' }}>

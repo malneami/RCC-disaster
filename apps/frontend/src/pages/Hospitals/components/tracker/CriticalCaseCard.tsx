@@ -52,10 +52,18 @@ export const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({ criticalCase
                 return;
             }
 
-            // Check if case is within 24 hours of creation
-            const creationTime = new Date(criticalCase.createdAt).getTime();
+            // Determine start time based on pathway
+            let startTime = new Date(criticalCase.createdAt).getTime();
+            console.log('criticalCase', criticalCase.symptomOnset);
+            if (criticalCase.pathway === 'STEMI' && criticalCase.triageTime) {
+                startTime = new Date(criticalCase.triageTime).getTime();
+            } else if (criticalCase.pathway === 'STROKE' && criticalCase.symptomOnset) {
+                startTime = new Date(criticalCase.symptomOnset).getTime();
+            }
+
+            // Check if case is within 24 hours of start time
             const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-            const isWithin24Hours = (Date.now() - creationTime) < twentyFourHours;
+            const isWithin24Hours = (Date.now() - startTime) < twentyFourHours;
 
             // Don't show countdown if more than 24 hours have passed
             if (!isWithin24Hours) {
@@ -65,7 +73,7 @@ export const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({ criticalCase
                 return;
             }
 
-            const elapsed = Date.now() - creationTime;
+            const elapsed = Date.now() - startTime;
             const timeLimit = criticalCase.pathway === 'STEMI'
                 ? 120 * 60 * 1000  // 120 minutes
                 : 4.5 * 60 * 60 * 1000; // 4.5 hours
@@ -82,7 +90,7 @@ export const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({ criticalCase
         const interval = setInterval(calculateTime, 1000); // Update every second
 
         return () => clearInterval(interval);
-    }, [showTimer, criticalCase.createdAt, criticalCase.pathway, criticalCase.status]);
+    }, [showTimer, criticalCase.createdAt, criticalCase.pathway, criticalCase.status, criticalCase.triageTime, criticalCase.symptomOnset]);
 
     const formatTime = (milliseconds: number) => {
         const totalSeconds = Math.floor(milliseconds / 1000);

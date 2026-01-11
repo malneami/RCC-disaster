@@ -287,9 +287,21 @@ export class TicketsService {
 
     // Apply filters
     if (filters) {
-      if (filters.status) where.status = filters.status;
+      if (filters.status) {
+        if (typeof filters.status === 'string' && filters.status.includes(',')) {
+          where.status = { in: filters.status.split(',') };
+        } else {
+          where.status = filters.status;
+        }
+      }
       if (filters.priority) where.priority = filters.priority;
-      if (filters.pathway) where.pathway = filters.pathway;
+      if (filters.pathway) {
+        if (typeof filters.pathway === 'string' && filters.pathway.includes(',')) {
+          where.pathway = { in: filters.pathway.split(',') };
+        } else {
+          where.pathway = filters.pathway;
+        }
+      }
       if (filters.originHospitalId) where.originHospitalId = filters.originHospitalId;
       if (filters.destinationHospitalId) where.destinationHospitalId = filters.destinationHospitalId;
       if (filters.patientId) where.patientId = filters.patientId;
@@ -460,6 +472,19 @@ export class TicketsService {
             },
             orderBy: {
               assignedAt: 'desc',
+            },
+          },
+          stemiCases: {
+            select: {
+              triageTime: true,
+              symptomOnset: true,
+            },
+          },
+          strokeCases: {
+            select: {
+              timeOfTriage: true,
+              timeOfSymptomOnset: true,
+              symptomOnset: true,
             },
           },
         },

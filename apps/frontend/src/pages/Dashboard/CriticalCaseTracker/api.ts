@@ -37,13 +37,64 @@ export interface CriticalCase {
   isEmergency: boolean;
   requiresBlood: boolean;
   requiresSpecialist: boolean;
+  triageTime?: string;
+  symptomOnset?: string;
 }
 
 export const criticalCaseApi = {
   async getCriticalCases(): Promise<CriticalCase[]> {
     try {
-      const response = await apiClient.get('/critical-cases/active');
-      return response.data || [];
+      const response = await apiClient.get('/tickets', {
+        params: {
+          status: 'PENDING,ASSIGNED,IN_TRANSPORT',
+          pathway: 'STEMI,STROKE',
+          limit: 100,
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        }
+      });
+      
+      const tickets = response.data.data || [];
+      
+      return tickets.map((ticket: any) => {
+          let triageTime = undefined;
+          let symptomOnset = undefined;
+          let chiefComplaint = '';
+
+          if (ticket.pathway === 'STEMI' && ticket.stemiCases && ticket.stemiCases.length > 0) {
+             triageTime = ticket.stemiCases[0].triageTime;
+             symptomOnset = ticket.stemiCases[0].symptomOnset;
+             chiefComplaint = ticket.stemiCases[0].presentingSymptoms || '';
+          } else if (ticket.pathway === 'STROKE' && ticket.strokeCases && ticket.strokeCases.length > 0) {
+             triageTime = ticket.strokeCases[0].timeOfTriage;
+             symptomOnset = ticket.strokeCases[0].timeOfSymptomOnset || ticket.strokeCases[0].symptomOnset;
+             chiefComplaint = ticket.strokeCases[0].chiefComplaint || '';
+          }
+
+          return {
+            id: ticket.id,
+            ticketNumber: ticket.ticketNumber,
+            pathway: ticket.pathway,
+            priority: ticket.priority,
+            status: ticket.status,
+            createdAt: ticket.createdAt,
+            updatedAt: ticket.updatedAt,
+            patient: ticket.patient,
+            originHospital: ticket.originHospital,
+            destinationHospital: ticket.destinationHospital,
+            chiefComplaint: chiefComplaint || ticket.notes || '',
+            createdBy: ticket.createdBy,
+            estimatedArrival: ticket.estimatedArrival || ticket.transferArrivalDateTime,
+            triageTime,
+            symptomOnset,
+            isEmergency: ticket.isEmergency,
+            requiresBlood: ticket.requiresBlood,
+            requiresSpecialist: ticket.requiresSpecialist,
+            emsAssignmentStatus: ticket.emsAssignmentStatus,
+            transportMode: ticket.transportMode,
+            emsUnit: ticket.emsUnit,
+          };
+      });
     } catch (error) {
       console.error('Error fetching critical cases:', error);
       // Return mock data for development
@@ -88,6 +139,7 @@ export const criticalCaseApi = {
           email: 'sarah.wilson@hospital.com',
         },
         estimatedArrival: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
+        triageTime: new Date(now.getTime() - 15 * 60 * 1000).toISOString(), // 15 mins ago
         transportMode: 'Ambulance',
         emsUnit: 'EMS-001',
         isEmergency: true,
@@ -125,6 +177,7 @@ export const criticalCaseApi = {
           email: 'michael.chen@hospital.com',
         },
         estimatedArrival: new Date(now.getTime() + 45 * 60 * 1000).toISOString(),
+        symptomOnset: new Date(now.getTime() - 90 * 60 * 1000).toISOString(), // 90 mins ago
         transportMode: 'Helicopter',
         emsUnit: 'HELI-002',
         isEmergency: true,

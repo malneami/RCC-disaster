@@ -12,7 +12,7 @@ import {
   Chip,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
+import {
   faExclamationTriangle,
   faRedo,
   faHeart,
@@ -32,16 +32,16 @@ interface GlobalCriticalCaseTrackerProps {
   onHospitalChange?: (hospitalId: string) => void;
 }
 
-const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({ 
+const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
   selectedHospital = 'all',
   onHospitalChange: _onHospitalChange,
 }) => {
-  
+
   // Build filters for the hook with stable reference
   const filters: CriticalCasesFilters = useMemo(() => ({
     hospitalId: selectedHospital !== 'all' ? selectedHospital : undefined,
   }), [selectedHospital]);
-  
+
   const { data: criticalCases, isLoading, error, refetch } = useCriticalCases(filters);
   const { data: hospitals } = useHospitals();
   const { playAlert } = useAudioAlerts();
@@ -52,24 +52,30 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
     if (case_.pathway !== 'STEMI' && case_.pathway !== 'STROKE') {
       return false;
     }
-    
+
     // Exclude completed cases
     if (case_.status === 'COMPLETED') {
       return false;
     }
-    
+
     // Exclude acknowledged cases
     if (case_.acknowledgedAt
 
     ) {
       return false;
     }
-    
-    // Exclude cases older than 24 hours
-    const creationTime = new Date(case_.createdAt).getTime();
+
+    // Exclude cases older than 24 hours from start time
+    let startTime = new Date(case_.createdAt).getTime();
+    if (case_.pathway === 'STEMI' && case_.triageTime) {
+      startTime = new Date(case_.triageTime).getTime();
+    } else if (case_.pathway === 'STROKE' && case_.symptomOnset) {
+      startTime = new Date(case_.symptomOnset).getTime();
+    }
+
     const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    const isWithin24Hours = (Date.now() - creationTime) < twentyFourHours;
-    
+    const isWithin24Hours = (Date.now() - startTime) < twentyFourHours;
+
     return isWithin24Hours && case_.acknowledgedAt === null;
   }) || [];
 
@@ -77,11 +83,18 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
   useEffect(() => {
     if (filteredCases.length > 0) {
       const criticalCases = filteredCases.filter((case_: CriticalCase) => {
-        const elapsed = Date.now() - new Date(case_.createdAt).getTime();
-        const timeLimit = case_.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000; 
+        let startTime = new Date(case_.createdAt).getTime();
+        if (case_.pathway === 'STEMI' && case_.triageTime) {
+          startTime = new Date(case_.triageTime).getTime();
+        } else if (case_.pathway === 'STROKE' && case_.symptomOnset) {
+          startTime = new Date(case_.symptomOnset).getTime();
+        }
+
+        const elapsed = Date.now() - startTime;
+        const timeLimit = case_.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000;
         const percentage = Math.min(100, (elapsed / timeLimit) * 100);
-        
-        
+
+
         // Play alert only when deadline is missed (100%)
         return percentage >= 100;
       });
@@ -111,10 +124,17 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
           return;
         }
 
-        // Check if case is within 24 hours of creation
-        const creationTime = new Date(criticalCase.createdAt).getTime();
+        // Determine start time based on pathway
+        let startTime = new Date(criticalCase.createdAt).getTime();
+        if (criticalCase.pathway === 'STEMI' && criticalCase.triageTime) {
+          startTime = new Date(criticalCase.triageTime).getTime();
+        } else if (criticalCase.pathway === 'STROKE' && criticalCase.symptomOnset) {
+          startTime = new Date(criticalCase.symptomOnset).getTime();
+        }
+
+        // Check if case is within 24 hours of start time
         const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-        const isWithin24Hours = (Date.now() - creationTime) < twentyFourHours;
+        const isWithin24Hours = (Date.now() - startTime) < twentyFourHours;
 
         // Don't show countdown if more than 24 hours have passed
         if (!isWithin24Hours) {
@@ -124,14 +144,14 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
           return;
         }
 
-        const elapsed = Date.now() - creationTime;
-        const timeLimit = criticalCase.pathway === 'STEMI' 
+        const elapsed = Date.now() - startTime;
+        const timeLimit = criticalCase.pathway === 'STEMI'
           ? 120 * 60 * 1000  // 120 minutes
           : 4.5 * 60 * 60 * 1000; // 4.5 hours
-        
+
         const remaining = Math.max(0, timeLimit - elapsed);
         const percentage = Math.min(100, (elapsed / timeLimit) * 100);
-        
+
         setTimeRemaining(remaining);
         setProgressPercentage(percentage);
         setIsCritical(percentage >= 100); // Critical only when deadline is missed
@@ -141,7 +161,7 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
       const interval = setInterval(calculateTime, 1000); // Update every second
 
       return () => clearInterval(interval);
-    }, [criticalCase.createdAt, criticalCase.pathway, criticalCase.status]);
+    }, [criticalCase.createdAt, criticalCase.pathway, criticalCase.status, criticalCase.triageTime, criticalCase.symptomOnset]);
 
     const formatTime = (milliseconds: number) => {
       const totalSeconds = Math.floor(milliseconds / 1000);
@@ -202,20 +222,20 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
       <Card
         sx={{
           borderRadius: 2,
-          border: isCritical 
-            ? '2px solid #d32f2f' 
+          border: isCritical
+            ? '2px solid #d32f2f'
             : '1px solid rgba(255,255,255,0.1)',
-          backgroundColor: isCritical 
-            ? alpha('#d32f2f', 0.1) 
+          backgroundColor: isCritical
+            ? alpha('#d32f2f', 0.1)
             : 'rgba(255,255,255,0.05)',
           transition: 'all 0.3s ease-in-out',
           '&:hover': {
-            boxShadow: isCritical 
-              ? '0 8px 25px rgba(211, 47, 47, 0.3)' 
+            boxShadow: isCritical
+              ? '0 8px 25px rgba(211, 47, 47, 0.3)'
               : '0 4px 12px rgba(255,255,255,0.1)',
             transform: 'translateY(-2px)',
-            backgroundColor: isCritical 
-              ? alpha('#d32f2f', 0.15) 
+            backgroundColor: isCritical
+              ? alpha('#d32f2f', 0.15)
               : 'rgba(255,255,255,0.08)',
           },
         }}
@@ -224,13 +244,13 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
           {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-              <FontAwesomeIcon 
-                icon={getPathwayIcon()} 
-                style={{ 
-                  color: getPathwayColor(), 
-                  marginRight: '12px', 
-                  fontSize: '20px' 
-                }} 
+              <FontAwesomeIcon
+                icon={getPathwayIcon()}
+                style={{
+                  color: getPathwayColor(),
+                  marginRight: '12px',
+                  fontSize: '20px'
+                }}
               />
               <Box sx={{ flex: 1 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, color: '#ffffff' }}>
@@ -242,7 +262,7 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
                 </Typography>
               </Box>
             </Box>
-            
+
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <Chip
                 label={criticalCase.priority}
@@ -278,9 +298,9 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
                 />
               )}
               {isCritical && (
-                <FontAwesomeIcon 
-                  icon={faExclamationTriangle} 
-                  style={{ color: '#d32f2f', fontSize: '16px' }} 
+                <FontAwesomeIcon
+                  icon={faExclamationTriangle}
+                  style={{ color: '#d32f2f', fontSize: '16px' }}
                 />
               )}
             </Box>
@@ -292,49 +312,49 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
               {/* Left side - Time info */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <FontAwesomeIcon 
-                    icon={faClock} 
-                    style={{ 
-                      color: isCritical ? '#d32f2f' : '#666', 
+                  <FontAwesomeIcon
+                    icon={faClock}
+                    style={{
+                      color: isCritical ? '#d32f2f' : '#666',
                       marginRight: '8px',
                       fontSize: '14px'
-                    }} 
+                    }}
                   />
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
+                  <Typography
+                    variant="h6"
+                    sx={{
                       fontWeight: 600,
                       color: isCritical ? '#d32f2f' : '#ffffff'
                     }}
                   >
-                    {criticalCase.status === 'COMPLETED' 
-                      ? 'COMPLETED' 
-                      : timeRemaining > 0 
-                        ? formatTime(timeRemaining) 
+                    {criticalCase.status === 'COMPLETED'
+                      ? 'COMPLETED'
+                      : timeRemaining > 0
+                        ? formatTime(timeRemaining)
                         : 'TIME EXPIRED'}
                   </Typography>
                   <Typography variant="body2" sx={{ ml: 1, color: '#b0b0b0' }}>
-                    {criticalCase.status === 'COMPLETED' 
-                      ? '' 
-                      : timeRemaining > 0 
-                        ? 'remaining' 
+                    {criticalCase.status === 'COMPLETED'
+                      ? ''
+                      : timeRemaining > 0
+                        ? 'remaining'
                         : ''}
                   </Typography>
                 </Box>
                 <Typography variant="caption" sx={{ textAlign: 'center', color: '#b0b0b0' }}>
-                  {criticalCase.status === 'COMPLETED' 
-                    ? 'Case completed successfully' 
+                  {criticalCase.status === 'COMPLETED'
+                    ? 'Case completed successfully'
                     : `${Math.round(progressPercentage)}% of time limit elapsed`}
                 </Typography>
               </Box>
-              
+
               {/* Middle - Route Information */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mx: 2 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                    <FontAwesomeIcon 
-                      icon={faMapMarkerAlt} 
-                      style={{ color: '#666', marginRight: '8px', fontSize: '14px' }} 
+                    <FontAwesomeIcon
+                      icon={faMapMarkerAlt}
+                      style={{ color: '#666', marginRight: '8px', fontSize: '14px' }}
                     />
                     <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                       From: {criticalCase.originHospital?.name}
@@ -364,7 +384,7 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
                   />
                 </Box>
               </Box>
-              
+
               {/* Right side - Circular Progress Bar */}
               <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <Box sx={{ position: 'relative', display: 'inline-flex' }}>
@@ -474,8 +494,8 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
 
   if (isLoading) {
     return (
-      <Card sx={{ 
-        borderRadius: 3, 
+      <Card sx={{
+        borderRadius: 3,
         border: '1px solid #333',
         backgroundColor: '#1e1e1e',
         background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%)'
@@ -491,8 +511,8 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
 
   if (error) {
     return (
-      <Card sx={{ 
-        borderRadius: 3, 
+      <Card sx={{
+        borderRadius: 3,
         border: '1px solid #333',
         backgroundColor: '#1e1e1e',
         background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%)'
@@ -500,9 +520,9 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
         <CardContent sx={{ p: 3 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <FontAwesomeIcon 
-              icon={faExclamationTriangle} 
-              style={{ color: '#ff9800', marginRight: '16px', fontSize: '28px' }} 
+            <FontAwesomeIcon
+              icon={faExclamationTriangle}
+              style={{ color: '#ff9800', marginRight: '16px', fontSize: '28px' }}
             />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 600, color: '#ffffff' }}>
@@ -515,16 +535,16 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
           </Box>
 
           {/* Error Card */}
-          <Card sx={{ 
-            borderRadius: 2, 
+          <Card sx={{
+            borderRadius: 2,
             border: '1px solid #d32f2f',
             backgroundColor: '#2d1b1b',
           }}>
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <FontAwesomeIcon 
-                  icon={faExclamationTriangle} 
-                  style={{ color: '#f44336', marginRight: '8px' }} 
+                <FontAwesomeIcon
+                  icon={faExclamationTriangle}
+                  style={{ color: '#f44336', marginRight: '8px' }}
                 />
                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#f44336' }}>
                   Error Loading Alerts
@@ -556,8 +576,8 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
   }
 
   return (
-    <Card sx={{ 
-      borderRadius: 3, 
+    <Card sx={{
+      borderRadius: 3,
       border: '1px solid #333',
       backgroundColor: '#1e1e1e',
       background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%)'
@@ -566,9 +586,9 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
         {/* Header with Hospital Filter */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <FontAwesomeIcon 
-              icon={faExclamationTriangle} 
-              style={{ color: '#ff9800', marginRight: '16px', fontSize: '28px' }} 
+            <FontAwesomeIcon
+              icon={faExclamationTriangle}
+              style={{ color: '#ff9800', marginRight: '16px', fontSize: '28px' }}
             />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 600, color: '#ffffff' }}>
@@ -617,7 +637,12 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
                 <Chip label="CRITICAL (OVERDUE)" size="small" sx={{ backgroundColor: '#d32f2f', color: 'white', mr: 1 }} />
                 <Typography variant="body2" sx={{ color: '#ffffff' }}>
                   {filteredCases.filter((c: CriticalCase) => {
-                    const elapsed = Date.now() - new Date(c.createdAt).getTime();
+                    const startTime = (c.pathway === 'STEMI' && c.triageTime)
+                      ? new Date(c.triageTime).getTime()
+                      : (c.pathway === 'STROKE' && c.symptomOnset)
+                        ? new Date(c.symptomOnset).getTime()
+                        : new Date(c.createdAt).getTime();
+                    const elapsed = Date.now() - startTime;
                     const timeLimit = c.pathway === 'STEMI' ? 120 * 60 * 1000 : 4.5 * 60 * 60 * 1000;
                     return (elapsed / timeLimit) >= 1;
                   }).length}
@@ -629,10 +654,10 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
 
         {/* Cases Display */}
         {filteredCases.length === 0 ? (
-          <Alert 
-            severity="success" 
-            sx={{ 
-              borderRadius: 2, 
+          <Alert
+            severity="success"
+            sx={{
+              borderRadius: 2,
               backgroundColor: 'rgba(76, 175, 80, 0.1)',
               border: '1px solid rgba(76, 175, 80, 0.3)',
               '& .MuiAlert-message': {
@@ -643,7 +668,7 @@ const GlobalCriticalCaseTracker: React.FC<GlobalCriticalCaseTrackerProps> = ({
               }
             }}
           >
-            {selectedHospital === 'all' 
+            {selectedHospital === 'all'
               ? 'No unacknowledged STEMI or Stroke cases requiring critical tracking across all hospitals.'
               : `No unacknowledged STEMI or Stroke cases for the selected hospital.`
             }

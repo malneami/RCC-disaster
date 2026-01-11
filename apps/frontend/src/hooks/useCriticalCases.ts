@@ -31,6 +31,8 @@ export interface CriticalCase {
     id: string;
     name: string;
   };
+  triageTime?: string;
+  symptomOnset?: string;
 }
 
 export interface CriticalCasesFilters {
@@ -71,22 +73,37 @@ export const useCriticalCases = (filters?: CriticalCasesFilters) => {
         }
 
         // Transform to our interface
-        return criticalCases.map((ticket: any): CriticalCase => ({
-          id: ticket.id,
-          pathway: ticket.pathway,
-          priority: ticket.priority,
-          status: ticket.status,
-          chiefComplaint: ticket.chiefComplaint,
-          createdAt: ticket.createdAt,
-          estimatedArrival: ticket.estimatedArrival,
-          emsAssignmentStatus: ticket.emsAssignmentStatus,
-          acknowledgedAt: ticket.acknowledgedAt,
-          isEmergency: ticket.isEmergency,
-          acknowledgedBy: ticket.acknowledgedBy,
-          patient: ticket.patient,
-          originHospital: ticket.originHospital,
-          destinationHospital: ticket.destinationHospital,
-        }));
+        return criticalCases.map((ticket: any): CriticalCase => {
+          let triageTime = undefined;
+          let symptomOnset = undefined;
+
+          if (ticket.pathway === 'STEMI' && ticket.stemiCases && ticket.stemiCases.length > 0) {
+             triageTime = ticket.stemiCases[0].triageTime;
+             symptomOnset = ticket.stemiCases[0].symptomOnset;
+          } else if (ticket.pathway === 'STROKE' && ticket.strokeCases && ticket.strokeCases.length > 0) {
+             triageTime = ticket.strokeCases[0].timeOfTriage;
+             symptomOnset = ticket.strokeCases[0].timeOfSymptomOnset || ticket.strokeCases[0].symptomOnset;
+          }
+
+          return {
+            id: ticket.id,
+            pathway: ticket.pathway,
+            priority: ticket.priority,
+            status: ticket.status,
+            chiefComplaint: ticket.chiefComplaint,
+            createdAt: ticket.createdAt,
+            estimatedArrival: ticket.estimatedArrival,
+            emsAssignmentStatus: ticket.emsAssignmentStatus,
+            acknowledgedAt: ticket.acknowledgedAt,
+            isEmergency: ticket.isEmergency,
+            acknowledgedBy: ticket.acknowledgedBy,
+            patient: ticket.patient,
+            originHospital: ticket.originHospital,
+            destinationHospital: ticket.destinationHospital,
+            triageTime,
+            symptomOnset,
+          };
+        });
       } catch (error) {
         console.error('Error fetching critical cases:', error);
         throw error;

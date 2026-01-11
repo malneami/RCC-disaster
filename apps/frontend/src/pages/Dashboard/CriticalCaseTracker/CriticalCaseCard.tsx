@@ -11,7 +11,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
+import {
   faHeart,
   faBrain,
   faClock,
@@ -42,6 +42,8 @@ interface CriticalCase {
   };
   chiefComplaint: string;
   estimatedArrival?: string;
+  triageTime?: string;
+  symptomOnset?: string;
 }
 
 interface CriticalCaseCardProps {
@@ -68,10 +70,20 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
         return;
       }
 
-      // Check if case is within 24 hours of creation
-      const creationTime = new Date(criticalCase.createdAt).getTime();
+      // Determine start time based on pathway
+      let startTime = new Date(criticalCase.createdAt).getTime();
+      console.log("startTime", criticalCase.triageTime);
+      console.log("startTime", criticalCase.symptomOnset  );
+      if (criticalCase.pathway === 'STEMI' && criticalCase.triageTime) {
+        startTime = new Date(criticalCase.triageTime).getTime();
+      } else if (criticalCase.pathway === 'STROKE' && criticalCase.symptomOnset) {
+        console.log("startTime", criticalCase.symptomOnset);
+        startTime = new Date(criticalCase.symptomOnset).getTime();
+      }
+
+      // Check if case is within 24 hours of start time
       const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-      const isWithin24Hours = (Date.now() - creationTime) < twentyFourHours;
+      const isWithin24Hours = (Date.now() - startTime) < twentyFourHours;
 
       // Don't show countdown if more than 24 hours have passed
       if (!isWithin24Hours) {
@@ -81,14 +93,14 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
         return;
       }
 
-      const elapsed = Date.now() - creationTime;
-      const timeLimit = criticalCase.pathway === 'STEMI' 
+      const elapsed = Date.now() - startTime;
+      const timeLimit = criticalCase.pathway === 'STEMI'
         ? 120 * 60 * 1000  // 120 minutes
         : 4.5 * 60 * 60 * 1000; // 4.5 hours
-      
+
       const remaining = Math.max(0, timeLimit - elapsed);
       const percentage = Math.min(100, (elapsed / timeLimit) * 100);
-      
+
       setTimeRemaining(remaining);
       setProgressPercentage(percentage);
       setIsCritical(remaining < 10 * 60 * 1000 && remaining > 0); // Less than 10 minutes
@@ -98,7 +110,7 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
     const interval = setInterval(calculateTime, 1000); // Update every second
 
     return () => clearInterval(interval);
-  }, [criticalCase.createdAt, criticalCase.pathway, criticalCase.status]);
+  }, [criticalCase.createdAt, criticalCase.pathway, criticalCase.status, criticalCase.triageTime, criticalCase.symptomOnset]);
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -159,16 +171,16 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
     <Card
       sx={{
         borderRadius: 2,
-        border: isCritical 
-          ? '2px solid #d32f2f' 
+        border: isCritical
+          ? '2px solid #d32f2f'
           : '1px solid rgba(0,0,0,0.08)',
-        backgroundColor: isCritical 
-          ? alpha('#d32f2f', 0.05) 
+        backgroundColor: isCritical
+          ? alpha('#d32f2f', 0.05)
           : 'white',
         transition: 'all 0.3s ease-in-out',
         '&:hover': {
-          boxShadow: isCritical 
-            ? '0 8px 25px rgba(211, 47, 47, 0.3)' 
+          boxShadow: isCritical
+            ? '0 8px 25px rgba(211, 47, 47, 0.3)'
             : '0 4px 12px rgba(0,0,0,0.15)',
           transform: 'translateY(-2px)',
         },
@@ -178,13 +190,13 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-            <FontAwesomeIcon 
-              icon={getPathwayIcon()} 
-              style={{ 
-                color: getPathwayColor(), 
-                marginRight: '12px', 
-                fontSize: '20px' 
-              }} 
+            <FontAwesomeIcon
+              icon={getPathwayIcon()}
+              style={{
+                color: getPathwayColor(),
+                marginRight: '12px',
+                fontSize: '20px'
+              }}
             />
             <Box sx={{ flex: 1 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
@@ -196,7 +208,7 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
               </Typography>
             </Box>
           </Box>
-          
+
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Chip
               label={criticalCase.priority}
@@ -233,9 +245,9 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
             )}
             {isCritical && (
               <Tooltip title="Critical Time Warning">
-                <FontAwesomeIcon 
-                  icon={faExclamationTriangle} 
-                  style={{ color: '#d32f2f', fontSize: '16px' }} 
+                <FontAwesomeIcon
+                  icon={faExclamationTriangle}
+                  style={{ color: '#d32f2f', fontSize: '16px' }}
                 />
               </Tooltip>
             )}
@@ -245,36 +257,36 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
         {/* Time Remaining */}
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <FontAwesomeIcon 
-              icon={faClock} 
-              style={{ 
-                color: isCritical ? '#d32f2f' : '#666', 
+            <FontAwesomeIcon
+              icon={faClock}
+              style={{
+                color: isCritical ? '#d32f2f' : '#666',
                 marginRight: '8px',
                 fontSize: '14px'
-              }} 
+              }}
             />
-            <Typography 
-              variant="h6" 
-              sx={{ 
+            <Typography
+              variant="h6"
+              sx={{
                 fontWeight: 600,
                 color: isCritical ? '#d32f2f' : 'inherit'
               }}
             >
-              {criticalCase.status === 'COMPLETED' 
-                ? 'COMPLETED' 
-                : timeRemaining > 0 
-                  ? formatTime(timeRemaining) 
+              {criticalCase.status === 'COMPLETED'
+                ? 'COMPLETED'
+                : timeRemaining > 0
+                  ? formatTime(timeRemaining)
                   : 'TIME EXPIRED'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-              {criticalCase.status === 'COMPLETED' 
-                ? '' 
-                : timeRemaining > 0 
-                  ? 'remaining' 
+              {criticalCase.status === 'COMPLETED'
+                ? ''
+                : timeRemaining > 0
+                  ? 'remaining'
                   : ''}
             </Typography>
           </Box>
-          
+
           {/* Progress Bar */}
           <LinearProgress
             variant="determinate"
@@ -290,8 +302,8 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
             }}
           />
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            {criticalCase.status === 'COMPLETED' 
-              ? 'Case completed successfully' 
+            {criticalCase.status === 'COMPLETED'
+              ? 'Case completed successfully'
               : `${Math.round(progressPercentage)}% of time limit elapsed`}
           </Typography>
         </Box>
@@ -299,9 +311,9 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
         {/* Route Information */}
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <FontAwesomeIcon 
-              icon={faMapMarkerAlt} 
-              style={{ color: '#666', marginRight: '8px', fontSize: '14px' }} 
+            <FontAwesomeIcon
+              icon={faMapMarkerAlt}
+              style={{ color: '#666', marginRight: '8px', fontSize: '14px' }}
             />
             <Typography variant="body2" color="text.secondary">
               From: {criticalCase.originHospital.name}
@@ -327,8 +339,8 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
         {/* Actions */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Tooltip title="View Details">
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={onViewDetails}
               sx={{
                 backgroundColor: alpha(getPathwayColor(), 0.1),

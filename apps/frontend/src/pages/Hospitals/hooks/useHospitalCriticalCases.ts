@@ -42,6 +42,8 @@ export interface HospitalCriticalCase {
   isEmergency: boolean;
   requiresBlood: boolean;
   requiresSpecialist: boolean;
+  triageTime?: string;
+  symptomOnset?: string;
 }
 
 export const useHospitalCriticalCases = (hospitalId: string) => {
@@ -77,28 +79,44 @@ export const useHospitalCriticalCases = (hospitalId: string) => {
         );
 
         // Transform to our interface
-        return criticalCases.map((ticket: any): HospitalCriticalCase => ({
-          id: ticket.id,
-          ticketNumber: ticket.ticketNumber,
-          pathway: ticket.pathway,
-          priority: ticket.priority,
-          status: ticket.status,
-          createdAt: ticket.createdAt,
-          updatedAt: ticket.updatedAt,
-          acknowledgedAt: ticket.acknowledgedAt,
-          acknowledgedBy: ticket.acknowledgedBy,
-          patient: ticket.patient,
-          originHospital: ticket.originHospital,
-          destinationHospital: ticket.destinationHospital,
-          chiefComplaint: ticket.chiefComplaint,
-          estimatedArrival: ticket.estimatedArrival,
-          actualArrival: ticket.actualArrival,
-          transportMode: ticket.transportMode,
-          emsUnit: ticket.emsUnit,
-          isEmergency: ticket.isEmergency,
-          requiresBlood: ticket.requiresBlood,
-          requiresSpecialist: ticket.requiresSpecialist,
-        }));
+        return criticalCases.map((ticket: any): HospitalCriticalCase => {
+          // Extract triageTime and symptomOnset
+          let triageTime = undefined;
+          let symptomOnset = undefined;
+
+          if (ticket.pathway === 'STEMI' && ticket.stemiCases && ticket.stemiCases.length > 0) {
+             triageTime = ticket.stemiCases[0].triageTime;
+             symptomOnset = ticket.stemiCases[0].symptomOnset;
+          } else if (ticket.pathway === 'STROKE' && ticket.strokeCases && ticket.strokeCases.length > 0) {
+             triageTime = ticket.strokeCases[0].timeOfTriage;
+             symptomOnset = ticket.strokeCases[0].timeOfSymptomOnset || ticket.strokeCases[0].symptomOnset;
+          }
+
+          return {
+            id: ticket.id,
+            ticketNumber: ticket.ticketNumber,
+            pathway: ticket.pathway,
+            priority: ticket.priority,
+            status: ticket.status,
+            createdAt: ticket.createdAt,
+            updatedAt: ticket.updatedAt,
+            acknowledgedAt: ticket.acknowledgedAt,
+            acknowledgedBy: ticket.acknowledgedBy,
+            patient: ticket.patient,
+            originHospital: ticket.originHospital,
+            destinationHospital: ticket.destinationHospital,
+            chiefComplaint: ticket.chiefComplaint,
+            estimatedArrival: ticket.estimatedArrival,
+            actualArrival: ticket.actualArrival,
+            transportMode: ticket.transportMode,
+            emsUnit: ticket.emsUnit,
+            isEmergency: ticket.isEmergency,
+            requiresBlood: ticket.requiresBlood,
+            requiresSpecialist: ticket.requiresSpecialist,
+            triageTime,
+            symptomOnset,
+          };
+        });
       } catch (error) {
         console.error('Error fetching hospital critical cases:', error);
         // Return mock data for development
