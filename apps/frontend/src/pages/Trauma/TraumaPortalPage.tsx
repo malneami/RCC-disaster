@@ -18,6 +18,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { TraumaExportService } from './services/traumaExportService';
 import apiClient from '../../services/apiClient';
 import { TRAUMA_FILTER_FIELDS } from './constants/traumaConstants';
+import { useDebounce } from '../../hooks/useDebounce';
 
 import { TraumaCaseFilters } from './components/TraumaCasesList';
 
@@ -82,6 +83,13 @@ const TraumaPortalPage: React.FC = () => {
     hospitalId: '',
   });
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  // Update appliedFilters when debounced search term changes
+  useEffect(() => {
+    setAppliedFilters(prev => ({ ...prev, search: debouncedSearchTerm }));
+  }, [debouncedSearchTerm]);
 
   // ... portalSteps
 
@@ -112,7 +120,7 @@ const TraumaPortalPage: React.FC = () => {
       setError(null);
 
       const filters: any = {};
-      
+
       if (appliedFilters.modeOfArrival) filters.modeOfArrival = appliedFilters.modeOfArrival;
       if (appliedFilters.mechanismOfInjury) filters.mechanismOfInjury = appliedFilters.mechanismOfInjury;
       if (appliedFilters.edDisposition) filters.edDisposition = appliedFilters.edDisposition;
@@ -233,7 +241,7 @@ const TraumaPortalPage: React.FC = () => {
   const handleFiltersChange = (filters: TraumaCaseFilters) => {
     setAppliedFilters((prev) => {
       // Only update if filters have actually changed to prevent unnecessary re-renders
-      const hasChanged = 
+      const hasChanged =
         prev.search !== filters.search ||
         prev.modeOfArrival !== filters.modeOfArrival ||
         prev.mechanismOfInjury !== filters.mechanismOfInjury ||
@@ -243,17 +251,17 @@ const TraumaPortalPage: React.FC = () => {
         prev.dateFrom !== filters.dateFrom ||
         prev.dateTo !== filters.dateTo ||
         prev.hospitalId !== filters.hospitalId;
-      
+
       if (hasChanged) {
-        setPage(0); 
+        setPage(0);
       }
-      
+
       return hasChanged ? filters : prev;
     });
   };
 
   const handleSearchChange = (value: string) => {
-    setAppliedFilters((prev: TraumaCaseFilters) => ({ ...prev, search: value }));
+    setSearchTerm(value);
   };
 
   const handleFilterDialogApply = (newFilters: any) => {
@@ -282,12 +290,41 @@ const TraumaPortalPage: React.FC = () => {
       }
     }
     handleFiltersChange(processedFilters);
-    setFilterDialogOpen(false);
+    // User requested "Apply" button does NOT close the popup (Stemi behavior)
+    // setFilterDialogOpen(false); 
+  };
+
+  const handleLiveFilterUpdate = (newFilters: any) => {
+    // Logic similar to handleFilterDialogApply but for live updates
+    const processedFilters: any = { ...newFilters };
+    if (processedFilters.criticalCase !== undefined) {
+      if (typeof processedFilters.criticalCase === 'string') {
+        if (processedFilters.criticalCase === 'true') {
+          processedFilters.criticalCase = true;
+        } else if (processedFilters.criticalCase === 'false') {
+          processedFilters.criticalCase = false;
+        } else {
+          processedFilters.criticalCase = null;
+        }
+      }
+    }
+    if (processedFilters.transferCase !== undefined) {
+      if (typeof processedFilters.transferCase === 'string') {
+        if (processedFilters.transferCase === 'true') {
+          processedFilters.transferCase = true;
+        } else if (processedFilters.transferCase === 'false') {
+          processedFilters.transferCase = false;
+        } else {
+          processedFilters.transferCase = null;
+        }
+      }
+    }
+    handleFiltersChange(processedFilters);
   };
 
   const handleClearFilters = () => {
     const clearedFilters: TraumaCaseFilters = {
-      search: '',
+      search: searchTerm, // Keep current search term
       modeOfArrival: '',
       mechanismOfInjury: '',
       edDisposition: '',
@@ -350,13 +387,8 @@ const TraumaPortalPage: React.FC = () => {
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress size={60} />
-      </Box>
-    );
-  }
+  // Removed early return for loading to prevent UI flicker/unmount
+  // if (loading) { ... }
 
   if (error) {
     return (
@@ -364,7 +396,7 @@ const TraumaPortalPage: React.FC = () => {
         <Box textAlign="center">
           <h2>Error Loading Trauma Portal</h2>
           <p>{error}</p>
-          <button onClick={loadData}>Retry</button>
+          <Button onClick={() => loadData()}>Retry</Button>
         </Box>
       </Box>
     );
@@ -497,7 +529,7 @@ const TraumaPortalPage: React.FC = () => {
             <TextField
               fullWidth
               placeholder="Search trauma cases..."
-              value={appliedFilters.search || ''}
+              value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
               InputProps={{
                 startAdornment: (
@@ -518,7 +550,9 @@ const TraumaPortalPage: React.FC = () => {
             hospitals={hospitals}
             onApply={handleFilterDialogApply}
             onClearFilters={handleClearFilters}
+            onChange={handleLiveFilterUpdate}
           />
+
 
           {/* Cases View */}
           {viewMode === 'table' ? (
@@ -556,6 +590,7 @@ const TraumaPortalPage: React.FC = () => {
                 setEditDialogOpen(true);
               }}
               isAdmin={isAdmin}
+              loading={loading}
             />
           )}
         </TabPanel>

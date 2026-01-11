@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Button,
@@ -22,6 +22,7 @@ interface TraumaCasesFiltersProps {
   hospitals?: Array<{ id: string; name: string }>;
   onApply: (values: Record<string, any>) => void;
   onClearFilters: () => void;
+  onChange?: (values: Record<string, any>) => void; // New prop for live updates
 }
 
 const TraumaCasesFilters: React.FC<TraumaCasesFiltersProps> = ({
@@ -32,51 +33,20 @@ const TraumaCasesFilters: React.FC<TraumaCasesFiltersProps> = ({
   hospitals = [],
   onApply,
   onClearFilters,
+  onChange,
 }) => {
-  const [localValues, setLocalValues] = useState<Record<string, any>>(values);
-
-  // Update local values when values prop changes
-  useEffect(() => {
-    setLocalValues(values);
-  }, [values]);
-
-  // Reset local values when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setLocalValues(values);
-    }
-  }, [open, values]);
+  // Controlled component: use values prop directly
 
   const handleFilterChange = (key: string, value: any) => {
-    setLocalValues(prev => ({ ...prev, [key]: value }));
+    // If onChange prop is present (for live filtering)
+    if (onChange) {
+      onChange({ ...values, [key]: value });
+    }
   };
 
   const handleApply = () => {
-    // Convert string boolean values to actual booleans for criticalCase and transferCase
-    const processedFilters: any = { ...localValues };
-    if (processedFilters.criticalCase !== undefined) {
-      if (typeof processedFilters.criticalCase === 'string') {
-        if (processedFilters.criticalCase === 'true') {
-          processedFilters.criticalCase = true;
-        } else if (processedFilters.criticalCase === 'false') {
-          processedFilters.criticalCase = false;
-        } else {
-          processedFilters.criticalCase = null;
-        }
-      }
-    }
-    if (processedFilters.transferCase !== undefined) {
-      if (typeof processedFilters.transferCase === 'string') {
-        if (processedFilters.transferCase === 'true') {
-          processedFilters.transferCase = true;
-        } else if (processedFilters.transferCase === 'false') {
-          processedFilters.transferCase = false;
-        } else {
-          processedFilters.transferCase = null;
-        }
-      }
-    }
-    onApply(processedFilters);
+    // Just trigger onApply with current values
+    onApply(values);
   };
 
   const handleClear = () => {
@@ -84,7 +54,7 @@ const TraumaCasesFilters: React.FC<TraumaCasesFiltersProps> = ({
   };
 
   // Check for active filters (excluding search which is shown separately)
-  const hasActiveFilters = Object.entries(localValues).some(([key, value]) => {
+  const hasActiveFilters = Object.entries(values).some(([key, value]) => {
     if (key === 'search') return false;
     // Handle boolean values (criticalCase, transferCase can be true/false/null)
     if (typeof value === 'boolean') return true;
@@ -92,7 +62,7 @@ const TraumaCasesFilters: React.FC<TraumaCasesFiltersProps> = ({
     return value !== undefined && value !== '';
   });
 
-  const activeFiltersCount = Object.entries(localValues).filter(([key, value]) => {
+  const activeFiltersCount = Object.entries(values).filter(([key, value]) => {
     if (key === 'search') return false;
     // Handle boolean values
     if (typeof value === 'boolean') return true;
@@ -107,24 +77,24 @@ const TraumaCasesFilters: React.FC<TraumaCasesFiltersProps> = ({
 
   // Add hospital field if hospitals are provided and not already in fields
   const hasHospitalField = filterFields.some(f => f.key === 'hospitalId');
-  const fieldsWithHospital = hasHospitalField 
-    ? filterFields 
+  const fieldsWithHospital = hasHospitalField
+    ? filterFields
     : [
-        ...filterFields,
-        {
-          key: 'hospitalId',
-          label: 'Hospital',
-          type: 'select' as const,
-          options: hospitals.map(h => ({ value: h.id, label: h.name })),
-        }
-      ];
+      ...filterFields,
+      {
+        key: 'hospitalId',
+        label: 'Hospital',
+        type: 'select' as const,
+        options: hospitals.map(h => ({ value: h.id, label: h.name })),
+      }
+    ];
 
   return (
-    <Paper 
-      elevation={2} 
-      sx={{ 
-        p: 2, 
-        mb: 3, 
+    <Paper
+      elevation={2}
+      sx={{
+        p: 2,
+        mb: 3,
         borderRadius: 2,
         backgroundColor: '#fdfdfd',
         border: '1px solid #e0e0e0'
@@ -153,7 +123,7 @@ const TraumaCasesFilters: React.FC<TraumaCasesFiltersProps> = ({
         {fieldsWithHospital.map((field) => {
           // Handle special cases for boolean fields (criticalCase, transferCase)
           // These come as booleans/null but need to be displayed as strings in the select
-          let currentValue = localValues[field.key];
+          let currentValue = values[field.key];
           if ((field.key === 'criticalCase' || field.key === 'transferCase')) {
             if (currentValue === true) {
               currentValue = 'true';

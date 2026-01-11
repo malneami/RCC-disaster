@@ -5,6 +5,7 @@ import {
   Typography,
   TablePagination,
   Paper,
+  CircularProgress,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -39,6 +40,7 @@ interface TraumaCasesCardsProps {
   onViewDetails: (case_: TraumaCase) => void;
   onEditCase: (case_: TraumaCase) => void;
   isAdmin: boolean;
+  loading?: boolean;
 }
 
 const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
@@ -51,6 +53,7 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
   onDeleteCase,
   onViewDetails,
   onEditCase,
+  loading = false,
 }) => {
   const [showCaseNoteModal, setShowCaseNoteModal] = useState(false);
   const [selectedCaseForNote, setSelectedCaseForNote] = useState<TraumaCase | null>(null);
@@ -379,6 +382,14 @@ const TraumaCasesCards: React.FC<TraumaCasesCardsProps> = ({
     onRowsPerPageChange(newRowsPerPage);
     onPageChange(0);
   };
+
+  if (loading && cases.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   if (cases.length === 0) {
     return (
