@@ -204,18 +204,21 @@ const PatientSelect: React.FC<PatientSelectProps> = ({
             }}
           />
         )}
-        renderOption={(props, option) => (
-          <Box component="li" {...props}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-              <Typography variant="body1" fontWeight="medium">
-                {getPatientDisplayName(option)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {getPatientSubtitle(option)}
-              </Typography>
+        renderOption={(props, option) => {
+          const { key, ...otherProps } = props;
+          return (
+            <Box component="li" key={key} {...otherProps}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                <Typography variant="body1" fontWeight="medium">
+                  {getPatientDisplayName(option)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {getPatientSubtitle(option)}
+                </Typography>
+              </Box>
             </Box>
-          </Box>
-        )}
+          );
+        }}
         noOptionsText={
           searchQuery.length > 0
             ? "No patients found. Click 'New' to create a patient."

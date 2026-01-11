@@ -21,8 +21,8 @@ export class PatientInfoDto {
   @IsDateString()
   dateOfBirth?: string; // Will be removed after migration
 
-  @IsEnum(['MALE', 'FEMALE'])
-  gender!: 'MALE' | 'FEMALE';
+  @IsEnum(['MALE', 'FEMALE', 'OTHER', 'UNKNOWN'])
+  gender!: 'MALE' | 'FEMALE' | 'OTHER' | 'UNKNOWN';
 
   @IsOptional()
   @IsString()
@@ -52,8 +52,9 @@ export class PatientInfoDto {
   @IsString()
   medications?: string;
 
+  @IsOptional()
   @IsString()
-  originHospitalId!: string;
+  originHospitalId?: string;
 
   @IsOptional()
   @IsString()
@@ -139,6 +140,10 @@ export class ClinicalAssessmentDto {
 }
 
 export class CreateStemiCaseDto {
+  @IsOptional()
+  @IsString()
+  ticketId?: string; // Link to existing ticket if available
+
   @ValidateNested()
   @Type(() => PatientInfoDto)
   patientInfo!: PatientInfoDto;

@@ -54,6 +54,7 @@ export interface EMSAssignment {
     status: string;
     pathway?: string;
     createdAt?: string;
+    triageTime?: string;
     isEmergency?: boolean;
     patient?: {
       id: string;
@@ -68,6 +69,12 @@ export interface EMSAssignment {
       id: string;
       name: string;
     };
+    stemiCases?: Array<{
+      triageTime?: string;
+    }>;
+    strokeCases?: Array<{
+      timeOfTriage?: string;
+    }>;
   };
   ambulance?: {
     id: string;

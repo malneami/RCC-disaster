@@ -27,6 +27,10 @@ const CriticalCaseTimer: React.FC<CriticalCaseTimerProps> = ({ assignment }) => 
         const pathway = assignment.ticket?.pathway;
         const createdAt = assignment.ticket?.createdAt;
 
+        // Check for specific case times from nested arrays
+        const stemiTriageTime = assignment.ticket?.stemiCases?.[0]?.triageTime || assignment.ticket?.triageTime;
+        const strokeTriageTime = assignment.ticket?.strokeCases?.[0]?.timeOfTriage;
+
         // Only show countdown for STEMI or STROKE cases
         if (pathway !== 'STEMI' && pathway !== 'STROKE') {
             setTimeRemaining(0);
@@ -35,7 +39,15 @@ const CriticalCaseTimer: React.FC<CriticalCaseTimerProps> = ({ assignment }) => 
             return;
         }
 
-        if (!createdAt) {
+        // Determine start time: Use triageTime for STEMI/STROKE if available, otherwise fallback to createdAt
+        let startTimeStr = createdAt;
+        if (pathway === 'STEMI' && stemiTriageTime) {
+            startTimeStr = stemiTriageTime;
+        } else if (pathway === 'STROKE' && strokeTriageTime) {
+            startTimeStr = strokeTriageTime;
+        }
+
+        if (!startTimeStr) {
             setTimeRemaining(0);
             setProgressPercentage(0);
             setIsCritical(false);
@@ -43,8 +55,8 @@ const CriticalCaseTimer: React.FC<CriticalCaseTimerProps> = ({ assignment }) => 
         }
 
         const calculateTime = () => {
-            const creationTime = new Date(createdAt).getTime();
-            const elapsed = Date.now() - creationTime;
+            const startTime = new Date(startTimeStr).getTime();
+            const elapsed = Date.now() - startTime;
             const timeLimit = pathway === 'STEMI'
                 ? 120 * 60 * 1000  // 120 minutes
                 : 4.5 * 60 * 60 * 1000; // 4.5 hours
@@ -60,7 +72,13 @@ const CriticalCaseTimer: React.FC<CriticalCaseTimerProps> = ({ assignment }) => 
         const interval = setInterval(calculateTime, 1000);
 
         return () => clearInterval(interval);
-    }, [assignment.ticket?.pathway, assignment.ticket?.createdAt]);
+    }, [
+        assignment.ticket?.pathway,
+        assignment.ticket?.createdAt,
+        assignment.ticket?.triageTime,
+        assignment.ticket?.stemiCases,
+        assignment.ticket?.strokeCases
+    ]);
 
     if (!assignment.ticket?.pathway || (assignment.ticket.pathway !== 'STEMI' && assignment.ticket.pathway !== 'STROKE') || timeRemaining <= 0) {
         return null;

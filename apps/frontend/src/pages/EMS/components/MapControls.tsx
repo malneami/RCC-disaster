@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
+import {
   faRefresh,
   faMapMarkerAlt,
   faAmbulance,
@@ -84,7 +84,7 @@ const MapControls: React.FC<MapControlsProps> = ({
       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
         Fleet Status
       </Typography>
-      
+
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <FontAwesomeIcon icon={faAmbulance} color="#4caf50" style={{ marginRight: 8 }} />
@@ -119,17 +119,21 @@ const MapControls: React.FC<MapControlsProps> = ({
             {isConnected ? 'Connected' : 'Disconnected'}
           </Typography>
         </Box>
-        
+
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
           <Tooltip title="Refresh Locations">
-            <IconButton size="small" onClick={onRefresh}>
-              <FontAwesomeIcon icon={faRefresh} />
-            </IconButton>
+            <span>
+              <IconButton size="small" onClick={onRefresh}>
+                <FontAwesomeIcon icon={faRefresh} />
+              </IconButton>
+            </span>
           </Tooltip>
           <Tooltip title="Center Map">
-            <IconButton size="small" onClick={onCenterMap}>
-              <FontAwesomeIcon icon={faMapMarkerAlt} />
-            </IconButton>
+            <span>
+              <IconButton size="small" onClick={onCenterMap}>
+                <FontAwesomeIcon icon={faMapMarkerAlt} />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       </Box>

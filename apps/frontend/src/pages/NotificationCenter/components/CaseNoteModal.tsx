@@ -31,7 +31,6 @@ import {
   faComment,
   faPaperPlane,
   faTimes,
-  faUser,
   faUsers,
   faBell,
   faExclamationTriangle,

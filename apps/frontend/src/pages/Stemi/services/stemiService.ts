@@ -8,7 +8,7 @@ export interface PatientInfo {
   nationalIdNotAvailable?: boolean;
   dateOfBirth?: string; // Will be removed after migration
   age?: number; // Age in years
-  gender: 'MALE' | 'FEMALE';
+  gender: 'MALE' | 'FEMALE' | 'OTHER' | 'UNKNOWN';
   phoneNumber?: string;
   address?: string;
   emergencyContact?: string;

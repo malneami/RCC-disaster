@@ -40,37 +40,43 @@ const GenericPageHeader: React.FC<GenericPageHeaderProps> = ({
           </Typography>
         )}
       </Box>
-      
+
       <Box display="flex" alignItems="center" gap={1}>
         {actions.map((action, index) => {
           if (action.isFab) {
             return (
               <Tooltip key={index} title={action.tooltip}>
-                <Fab 
-                  color={action.fabColor || 'primary'} 
-                  size={action.fabSize || 'small'} 
-                  onClick={action.onClick}
-                >
-                  {action.icon}
-                </Fab>
+                <span>
+                  <Fab
+                    color={action.fabColor || 'primary'}
+                    size={action.fabSize || 'small'}
+                    onClick={action.onClick}
+                    disabled={(action as any).disabled}
+                  >
+                    {action.icon}
+                  </Fab>
+                </span>
               </Tooltip>
             );
           }
 
           return (
             <Tooltip key={index} title={action.tooltip}>
-              <IconButton 
-                onClick={action.onClick}
-                color={action.color || 'primary'}
-              >
-                {action.badgeContent ? (
-                  <Badge badgeContent={action.badgeContent} color={action.badgeColor || 'primary'}>
-                    {action.icon}
-                  </Badge>
-                ) : (
-                  action.icon
-                )}
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={action.onClick}
+                  color={action.color || 'primary'}
+                  disabled={(action as any).disabled} // Cast to allow disabled if passed dynamically
+                >
+                  {action.badgeContent ? (
+                    <Badge badgeContent={action.badgeContent} color={action.badgeColor || 'primary'}>
+                      {action.icon}
+                    </Badge>
+                  ) : (
+                    action.icon
+                  )}
+                </IconButton>
+              </span>
             </Tooltip>
           );
         })}

@@ -205,7 +205,9 @@ class AutoCaseCreationService {
           lastName: patient.lastName,
           nationalId: patient.nationalId || '',
           dateOfBirth: patient.dateOfBirth,
-          gender: patient.gender as 'MALE' | 'FEMALE',
+          gender: (['MALE', 'FEMALE', 'OTHER', 'UNKNOWN'].includes(patient.gender?.toUpperCase()) 
+            ? patient.gender.toUpperCase() 
+            : 'UNKNOWN') as 'MALE' | 'FEMALE' | 'OTHER' | 'UNKNOWN',
           phoneNumber: patient.phoneNumber,
           address: patient.address,
           emergencyContact: patient.emergencyContact,

@@ -556,6 +556,76 @@ export class PatientsService {
     };
   }
 
+  async getCasesWithBeds(id: string) {
+    const patient = await this.prisma.patient.findUnique({
+      where: { id },
+      include: {
+        stemiCases: {
+          where: { deletedAt: null },
+          include: {
+            ticket: {
+              include: { destinationHospital: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        strokeCases: {
+          where: { deletedAt: null },
+          include: {
+            ticket: {
+              include: { destinationHospital: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        traumaCases: {
+          where: { deletedAt: null },
+          include: {
+            ticket: {
+              include: { destinationHospital: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!patient) {
+      throw new NotFoundException('Patient not found');
+    }
+
+    // Combine and format cases
+    const cases = [
+      ...(patient.stemiCases || []).map(c => ({
+        id: c.id,
+        type: 'STEMI',
+        status: c.currentStatus,
+        createdAt: c.createdAt,
+        hospital: c.ticket?.destinationHospital?.name || 'N/A',
+        ticketId: c.ticketId
+      })),
+      ...(patient.strokeCases || []).map(c => ({
+        id: c.id,
+        type: 'STROKE',
+        status: c.currentStatus,
+        createdAt: c.createdAt,
+        hospital: c.ticket?.destinationHospital?.name || 'N/A',
+        ticketId: c.ticketId
+      })),
+      ...(patient.traumaCases || []).map(c => ({
+        id: c.id,
+        type: 'TRAUMA',
+        status: c.disposition,
+        createdAt: c.createdAt,
+        hospital: c.ticket?.destinationHospital?.name || 'N/A',
+        ticketId: c.ticketId
+      }))
+    ];
+
+    // Sort by most recent
+    return cases.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
   async getStatistics(filters?: { startDate?: string; endDate?: string; hospitalId?: string }) {
     return this.patientsStatisticsService.getStatistics(filters);
   }

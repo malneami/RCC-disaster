@@ -945,6 +945,16 @@ export class EmsAssignmentsService {
               name: true,
             },
           },
+          stemiCases: {
+            select: {
+              triageTime: true,
+            },
+          },
+          strokeCases: {
+            select: {
+              timeOfTriage: true,
+            },
+          },
         },
       },
       ambulance: {
@@ -995,6 +1005,16 @@ export class EmsAssignmentsService {
             select: {
               id: true,
               name: true,
+            },
+          },
+          stemiCases: {
+            select: {
+              triageTime: true,
+            },
+          },
+          strokeCases: {
+            select: {
+              timeOfTriage: true,
             },
           },
         },

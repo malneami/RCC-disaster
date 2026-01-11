@@ -277,6 +277,14 @@ export class PatientsController {
 
   }
 
+
+  @Get(':id/cases-with-beds')
+  @ApiOperation({ summary: 'Get active cases with bed information for a patient' })
+  @ApiParam({ name: 'id', description: 'Patient ID' })
+  async getCasesWithBeds(@Param('id') id: string) {
+    return this.patientsService.getCasesWithBeds(id);
+  }
+
   @Get(':id/medical-records')
   @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR, UserRole.CATH_LAB_USER)
   @ApiOperation({ summary: 'Get medical records for a specific patient' })
