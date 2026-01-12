@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -20,6 +20,7 @@ import { useFilteredCriticalCases } from '../hooks/useFilteredCriticalCases';
 import { CriticalCaseCard } from './tracker/CriticalCaseCard';
 import { TrackerStats } from './tracker/TrackerStats';
 import { TrackerHeader } from './tracker/TrackerHeader';
+import { useFullscreen } from '../../../contexts/FullscreenContext';
 
 interface HospitalCriticalCaseTrackerProps {
   hospitalId: string;
@@ -28,6 +29,9 @@ interface HospitalCriticalCaseTrackerProps {
 const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = ({
   hospitalId,
 }) => {
+  const trackerRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, setIsFullscreen } = useFullscreen();
+
   const {
     criticalCases: allCriticalCases,
     stemiStrokeCases,
@@ -37,9 +41,45 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
     refetch,
   } = useFilteredCriticalCases(hospitalId);
 
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, [setIsFullscreen]);
+
+  const handleFullscreenToggle = async () => {
+    try {
+      if (!isFullscreen) {
+        const element = trackerRef.current;
+        if (element && element.requestFullscreen) {
+          await element.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling fullscreen:', error);
+    }
+  };
+
   if (isLoading) {
     return (
-      <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+      <Card ref={trackerRef} sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
         <CardContent sx={{ p: 3 }}>
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
             <CircularProgress />
@@ -51,7 +91,7 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
 
   if (error) {
     return (
-      <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+      <Card ref={trackerRef} sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <FontAwesomeIcon
@@ -110,15 +150,25 @@ const HospitalCriticalCaseTracker: React.FC<HospitalCriticalCaseTrackerProps> = 
 
   return (
     <Card
+      ref={trackerRef}
       sx={{
         borderRadius: '16px',
         border: '1px solid rgba(0, 0, 0, 0.04)',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
         backgroundColor: '#FFFFFF',
+        height: isFullscreen ? '100vh' : 'auto',
+        display: isFullscreen ? 'flex' : 'block',
+        flexDirection: isFullscreen ? 'column' : undefined,
       }}
     >
-      <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-        <TrackerHeader />
+      <CardContent sx={{ 
+        p: isFullscreen ? 3 : { xs: 2, md: 4 },
+        flex: isFullscreen ? 1 : undefined,
+        display: isFullscreen ? 'flex' : 'block',
+        flexDirection: isFullscreen ? 'column' : undefined,
+        overflow: isFullscreen ? 'auto' : 'visible'
+      }}>
+        <TrackerHeader onFullscreenToggle={handleFullscreenToggle} />
 
         {allCriticalCases.length > 0 && (
           <TrackerStats
