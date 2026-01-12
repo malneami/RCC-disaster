@@ -71,7 +71,7 @@ const TicketsPage: React.FC = () => {
 
   const getEmsStatusForTab = (tab: number): string | undefined => {
     if (tab === 1) return 'EMS_CONTACT';
-    if (tab === 2) return 'ASSIGNED'; 
+    if (tab === 2) return 'ASSIGNED';
     if (tab === 3) return 'DEPARTED';
     if (tab === 4) return 'ARRIVED';
     return undefined;
@@ -81,18 +81,32 @@ const TicketsPage: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const emsStatus = getEmsStatusForTab(tabValue);
+
       const filtersWithTab = { ...filters };
-      if (emsStatus) {
-        filtersWithTab.emsStatus = emsStatus;
-      } else {
-        delete filtersWithTab.emsStatus;
+      delete filtersWithTab.emsStatus; // Clear emsStatus to avoid conflicts
+
+      switch (tabValue) {
+        case 1: // Pending
+          filtersWithTab.status = 'PENDING';
+          break;
+        case 2: // Assigned
+          filtersWithTab.status = 'ASSIGNED';
+          break;
+        case 3: // In Transport
+          filtersWithTab.status = 'IN_TRANSPORT';
+          break;
+        case 4: // Completed
+          filtersWithTab.status = 'COMPLETED';
+          break;
+        default:
+          // Tab 0 (All) - do nothing, show all
+          break;
       }
-      
+
       // Prepare statistics filters (exclude emsStatus from statistics to get accurate counts for all tabs)
       const statisticsFilters: TicketFilter = { ...filters };
       // Don't pass emsStatus to statistics since we want counts for all statuses
-      
+
       const [ticketsResponse, statsResponse] = await Promise.all([
         ticketService.getTickets(1, 50, filtersWithTab),
         ticketService.getStatistics(statisticsFilters),
@@ -127,6 +141,8 @@ const TicketsPage: React.FC = () => {
           message: `Ticket ${event.ticket.ticketNumber} status updated to ${event.ticket.status}`,
           type: 'info',
         });
+        // Reload data to ensure correct list filtering (item might move tabs)
+        loadData();
       }
     };
 
@@ -137,6 +153,7 @@ const TicketsPage: React.FC = () => {
         message: `Emergency ticket created: ${event.ticket.ticketNumber}`,
         type: 'error',
       });
+      loadData();
     };
 
     // Subscribe based on user role and hospital
@@ -166,7 +183,7 @@ const TicketsPage: React.FC = () => {
   // Load initial data
   useEffect(() => {
     loadData();
-  }, [filters]);
+  }, [filters, loadData]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -200,29 +217,6 @@ const TicketsPage: React.FC = () => {
   };
 
   const getFilteredTickets = () => {
-    if (tabValue === 0) return tickets; // All tickets
-
-    // Pending: Ticket status is PENDING (waiting for assignment)
-    if (tabValue === 1) return tickets.filter(t => t.status === 'PENDING');
-
-    // Assigned: Show assigned/contacted statuses only
-    if (tabValue === 2) return tickets.filter(t => {
-      const status = t?.emsAssignments?.[0]?.status;
-      return status && ['ASSIGNED', 'EMS_CONTACT'].includes(status);
-    });
-
-    // In Transport: Show Active Mission statuses (En Route, Arrival, Pickup, Departed)
-    if (tabValue === 3) return tickets.filter(t => {
-      const status = t?.emsAssignments?.[0]?.status;
-      return status && ['EN_ROUTE', 'EMS_ARRIVAL', 'AT_PICKUP', 'PATIENT_LOADED', 'DEPARTED'].includes(status);
-    });
-
-    // Completed: Show ARRIVED or COMPLETED tickets
-    if (tabValue === 4) return tickets.filter(t => {
-      const emsStatus = t?.emsAssignments?.[0]?.status;
-      return emsStatus === 'ARRIVED' || t.status === 'COMPLETED';
-    });
-
     return tickets;
   };
 
@@ -231,12 +225,12 @@ const TicketsPage: React.FC = () => {
     try {
       setExportLoading(true);
       const exportFilters: TicketFilter & { emsStatus?: string } = {};
-      
+
       Object.entries(filters).forEach(([key, value]) => {
         if (key === 'sortBy' || key === 'sortOrder') {
           return;
         }
-        
+
         if (key === 'search') {
           if (value && typeof value === 'string' && value.trim()) {
             exportFilters[key as keyof TicketFilter] = value.trim() as any;
@@ -245,12 +239,12 @@ const TicketsPage: React.FC = () => {
           exportFilters[key as keyof TicketFilter] = value as any;
         }
       });
-      
+
       const emsStatus = getEmsStatusForTab(tabValue);
       if (emsStatus) {
         exportFilters.emsStatus = emsStatus;
       }
-      
+
       await TicketExportService.exportToExcel(exportFilters);
       setNotification({ message: 'Tickets exported successfully', type: 'success' });
     } catch (error) {

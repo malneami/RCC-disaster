@@ -113,9 +113,9 @@ export class TicketsService {
       }),
       createTicketDto.destinationHospitalId
         ? this.prisma.hospital.findUnique({
-            where: { id: createTicketDto.destinationHospitalId },
-            select: { name: true },
-          })
+          where: { id: createTicketDto.destinationHospitalId },
+          select: { name: true },
+        })
         : Promise.resolve(null),
     ]);
 
@@ -410,7 +410,7 @@ export class TicketsService {
         };
 
         const hasOtherFilters = Object.keys(where).filter(k => k !== 'deletedAt' && k !== 'emsAssignments' && k !== 'OR').length > 0;
-        
+
         // If we have an existing OR condition (e.g. from hospital filter), we need to handle it carefully
         if (where.OR && Array.isArray(where.OR)) {
           if (!where.AND) {
@@ -682,7 +682,7 @@ export class TicketsService {
     }
 
     const allCaseIds: string[] = [];
-    
+
     (ticket.traumaCases || []).forEach((case_: any) => {
       allCaseIds.push(case_.id);
     });
@@ -764,15 +764,15 @@ export class TicketsService {
     const caseBedMap = new Map(caseBeds.map(bed => [bed.caseId!, bed]));
 
     const calculateAge = (dob: Date | null) => {
-        if (!dob) return undefined;
-        const today = new Date();
-        const birthDate = new Date(dob);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-        }
-        return age;
+      if (!dob) return undefined;
+      const today = new Date();
+      const birthDate = new Date(dob);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
     };
 
     const enrichedTraumaCases = (ticket.traumaCases || []).map((case_: any) => {
@@ -898,7 +898,7 @@ export class TicketsService {
       traumaCases: enrichedTraumaCases,
       strokeCases: enrichedStrokeCases,
       stemiCases: enrichedStemiCases,
-      patientBeds: formattedPatientBeds, 
+      patientBeds: formattedPatientBeds,
     };
   }
 
@@ -1298,7 +1298,7 @@ export class TicketsService {
       if (filters.destinationHospitalId) where.destinationHospitalId = filters.destinationHospitalId;
       if (filters.patientId) where.patientId = filters.patientId;
       if (filters.assignedToId) where.assignedToId = filters.assignedToId;
-      
+
       // Apply date filters
       if (filters.startDate || filters.endDate) {
         where.createdAt = {};
@@ -1331,47 +1331,32 @@ export class TicketsService {
 
     const [total, pending, assigned, inTransport, completed, cancelled] = await Promise.all([
       this.prisma.ticket.count({ where }),
-      // Pending: Status is PENDING (waiting for assignment)
+      // Pending
       this.prisma.ticket.count({
         where: {
           ...where,
-          status: 'PENDING'
+          status: TicketStatus.PENDING
         }
       }),
-      // Assigned: Contacted only (Assigned/Contacted)
+      // Assigned
       this.prisma.ticket.count({
         where: {
           ...where,
-          emsAssignments: {
-            some: {
-              status: {
-                in: ['ASSIGNED', 'EMS_CONTACT']
-              }
-            }
-          }
+          status: TicketStatus.ASSIGNED
         }
       }),
-      // In Transport: En Route (Active Mission - En Route, Arrival, Pickup, Departed)
+      // In Transport
       this.prisma.ticket.count({
         where: {
           ...where,
-          emsAssignments: {
-            some: {
-              status: {
-                in: ['EN_ROUTE', 'EMS_ARRIVAL', 'AT_PICKUP', 'PATIENT_LOADED', 'DEPARTED']
-              }
-            }
-          }
+          status: TicketStatus.IN_TRANSPORT
         }
       }),
-      // Completed: Arrived or Ticket Completed
+      // Completed
       this.prisma.ticket.count({
         where: {
           ...where,
-          OR: [
-            { status: 'COMPLETED' },
-            { emsAssignments: { some: { status: 'ARRIVED' } } }
-          ]
+          status: TicketStatus.COMPLETED
         }
       }),
       this.prisma.ticket.count({ where: { ...where, status: TicketStatus.CANCELLED } }),
@@ -1973,18 +1958,18 @@ export class TicketsService {
     const recommendations = await Promise.all(
       allAmbulances.map(async (amb) => {
         const score = await this.scoreAmbulance(amb, ticket);
-        
+
         // VIRTUAL ZONE LOG INJECTION
         // If the ambulance is physically in the zone (< 2.5km) but has no OPEN log (all logs have exitTime),
         // we inject a "Virtual" log so the frontend correctly identifies it as "At Hospital".
         // This handles cases where the entry log was missed or the exit log was premature.
         let patchedZoneLogs = [...amb.zoneLogs];
-        
+
         // Check physical presence (using the distance calculated in scoreAmbulance or re-calculating)
         // score.distanceKm is the distance to Origin from calculateMissionEstimates
         if (score.distanceKm !== null && score.distanceKm < 2.5) {
           // Check if there is an active log for the origin hospital
-          const hasActiveLog = patchedZoneLogs.some(l => 
+          const hasActiveLog = patchedZoneLogs.some(l =>
             l.hospitalId === ticket.originHospitalId && !l.exitTime
           );
 
@@ -2435,15 +2420,15 @@ export class TicketsService {
     ambulance: any,
     originHospital: any,
     destinationHospital: any
-  ): Promise<{ 
-    etaToOrigin: number | null; 
-    etaToDestination: number | null; 
-    distanceToOrigin: number | null 
+  ): Promise<{
+    etaToOrigin: number | null;
+    etaToDestination: number | null;
+    distanceToOrigin: number | null
   }> {
-    const result: { 
-        etaToOrigin: number | null; 
-        etaToDestination: number | null; 
-        distanceToOrigin: number | null 
+    const result: {
+      etaToOrigin: number | null;
+      etaToDestination: number | null;
+      distanceToOrigin: number | null
     } = {
       etaToOrigin: null,
       etaToDestination: null,
@@ -2504,8 +2489,8 @@ export class TicketsService {
         );
         result.etaToDestination = destRoute.durationMinutes;
       } catch (error) {
-         // Fallback for Destination
-         const dist = this.calculateHaversineDistance(
+        // Fallback for Destination
+        const dist = this.calculateHaversineDistance(
           originHospital.latitude,
           originHospital.longitude,
           destinationHospital.latitude,
