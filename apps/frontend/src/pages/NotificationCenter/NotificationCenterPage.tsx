@@ -432,11 +432,7 @@ const NotificationCenterPage: React.FC = () => {
               )}
 
               {activeCaseType === 'INCOMING_CRITICAL' && (user?.role === 'RCC' || user?.role === 'ADMIN') ? (
-                <RCCIncomingCasesList 
-                  onCaseAcknowledged={() => {
-                    queryClient.invalidateQueries(['caseTypeCounts']);
-                  }}
-                />
+                <RCCIncomingCasesList />
               ) : (
                 <NotificationList 
                   filters={filters} 

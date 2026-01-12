@@ -28,11 +28,7 @@ import { useSnackbar } from 'notistack';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-interface RCCIncomingCasesListProps {
-  onCaseAcknowledged?: () => void;
-}
-
-const RCCIncomingCasesList: React.FC<RCCIncomingCasesListProps> = ({ onCaseAcknowledged }) => {
+const RCCIncomingCasesList: React.FC = () => {
   const theme = useTheme();
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useAuth();
@@ -80,15 +76,37 @@ const RCCIncomingCasesList: React.FC<RCCIncomingCasesListProps> = ({ onCaseAckno
   const handleAcknowledge = async (ticketId: string) => {
     try {
       setAcknowledging(ticketId);
-      await ticketService.acknowledgeTicket(ticketId);
+      const updatedTicket = await ticketService.acknowledgeTicket(ticketId);
       enqueueSnackbar('Case acknowledged successfully', { variant: 'success' });
-      await loadIncomingCases();
-      if (onCaseAcknowledged) {
-        onCaseAcknowledged();
-      }
+      
+      // Optimistically update the local state instead of refetching
+      // Only update this component's state
+      setCases(prevCases => {
+        if (!prevCases) return prevCases;
+        return prevCases.map(case_ => {
+          if (case_.id === ticketId) {
+            const acknowledgedAtValue = updatedTicket.acknowledgedAt 
+              ? (typeof updatedTicket.acknowledgedAt === 'string' 
+                  ? updatedTicket.acknowledgedAt 
+                  : new Date(updatedTicket.acknowledgedAt as any).toISOString())
+              : undefined;
+            
+            return {
+              ...case_,
+              acknowledgedAt: acknowledgedAtValue,
+              acknowledgedById: updatedTicket.acknowledgedById,
+              acknowledgedBy: updatedTicket.acknowledgedBy,
+            };
+          }
+          return case_;
+        });
+      });
+      
     } catch (err: any) {
       console.error('Error acknowledging case:', err);
       enqueueSnackbar(err.message || 'Failed to acknowledge case', { variant: 'error' });
+      // On error, refetch to ensure consistency
+      await loadIncomingCases();
     } finally {
       setAcknowledging(null);
     }
