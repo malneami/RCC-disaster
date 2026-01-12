@@ -246,7 +246,7 @@ const EditTraumaCaseDialog: React.FC<EditTraumaCaseDialogProps> = ({
           firstName: traumaCase.patient?.firstName || '',
           lastName: traumaCase.patient?.lastName || '',
           nationalId: traumaCase.patient?.nationalId || '',
-          nationalIdNotAvailable: (traumaCase.patient as any)?.nationalIdNotAvailable || false,
+          nationalIdNotAvailable: (traumaCase.patient as any)?.nationalIdNotAvailable || !traumaCase.patient?.nationalId,
           dateOfBirth,
           age,
           gender: (traumaCase.patient?.gender as 'MALE' | 'FEMALE') || ('MALE' as 'MALE' | 'FEMALE'),

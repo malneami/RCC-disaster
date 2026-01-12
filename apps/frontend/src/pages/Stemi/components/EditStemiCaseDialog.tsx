@@ -587,7 +587,7 @@ const EditStemiCaseDialog: React.FC<EditStemiCaseDialogProps> = ({
         firstName: stemiCase.patient?.firstName || '',
         lastName: stemiCase.patient?.lastName || '',
         nationalId: stemiCase.patient?.nationalId || '',
-        nationalIdNotAvailable: (stemiCase.patient as any)?.nationalIdNotAvailable || false,
+        nationalIdNotAvailable: (stemiCase.patient as any)?.nationalIdNotAvailable || !stemiCase.patient?.nationalId,
         dateOfBirth,
         age,
         gender: (stemiCase.patient?.gender as 'MALE' | 'FEMALE') || 'MALE',

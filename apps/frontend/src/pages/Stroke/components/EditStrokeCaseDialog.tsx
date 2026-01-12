@@ -542,7 +542,7 @@ const EditStrokeCaseDialog: React.FC<EditStrokeCaseDialogProps> = ({
             firstName: strokeCase.patient?.firstName || '',
             lastName: strokeCase.patient?.lastName || '',
             nationalId: strokeCase.patient?.nationalId || '',
-            nationalIdNotAvailable: (strokeCase.patient as any)?.nationalIdNotAvailable || false,
+            nationalIdNotAvailable: (strokeCase.patient as any)?.nationalIdNotAvailable || !strokeCase.patient?.nationalId,
             mrn: strokeCase.patient?.mrn || '',
             dateOfBirth,
             age,
