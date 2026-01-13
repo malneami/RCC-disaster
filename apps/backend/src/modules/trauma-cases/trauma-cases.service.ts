@@ -9,6 +9,7 @@ import { TraumaKpiService } from './services/trauma-kpi.service';
 import { TraumaDatetimeService } from './services/trauma-datetime.service';
 import { TraumaQueryService } from './services/trauma-query.service';
 import { KpiMonitorService } from '../notifications/services/kpi-monitor.service';
+import { CaseCompletenessMonitorService } from '../notifications/services/case-completeness-monitor.service';
 
 @Injectable()
 export class TraumaCasesService {
@@ -22,6 +23,9 @@ export class TraumaCasesService {
     @Inject(forwardRef(() => KpiMonitorService))
     @Optional()
     private readonly kpiMonitorService?: KpiMonitorService,
+    @Inject(forwardRef(() => CaseCompletenessMonitorService))
+    @Optional()
+    private readonly completenessMonitorService?: CaseCompletenessMonitorService,
   ) {}
 
   async create(createTraumaCaseDto: CreateTraumaCaseDto, userId: string): Promise<TraumaCase> {
@@ -152,6 +156,27 @@ export class TraumaCasesService {
           },
         ).catch((error: any) => {
           console.error('Error scheduling KPI threshold checks for Trauma case:', error);
+        });
+      }
+      // Schedule completeness monitoring 
+      if (this.completenessMonitorService && traumaCase) {
+        this.completenessMonitorService.scheduleCompletenessMonitoring(
+          traumaCase.id,
+          'TRAUMA',
+          validUserId,
+          false,
+          {
+            arrivalDateTime: traumaCase.arrivalDateTime,
+            modeOfArrival: traumaCase.modeOfArrival,
+            mechanismOfInjury: traumaCase.mechanismOfInjury,
+            chiefComplaint: traumaCase.chiefComplaint,
+            glasgowComaScale: traumaCase.glasgowComaScale,
+            disposition: traumaCase.disposition,
+            systolicBloodPressure: traumaCase.systolicBloodPressure,
+            respiratoryRate: traumaCase.respiratoryRate,
+          },
+        ).catch((error: any) => {
+          console.error('Error scheduling completeness monitoring for Trauma case:', error);
         });
       }
 
@@ -396,6 +421,32 @@ export class TraumaCasesService {
         },
       ).catch((error: any) => {
         console.error('Error rescheduling KPI threshold checks for Trauma case:', error);
+      });
+    }
+
+    // Reschedule completeness monitoring after update
+    if (this.completenessMonitorService && updatedCase) {
+      // Cancel existing timer
+      this.completenessMonitorService.cancelTimer(`TRAUMA:${id}`);
+      
+      // Reschedule completeness monitoring
+      this.completenessMonitorService.scheduleCompletenessMonitoring(
+        id,
+        'TRAUMA',
+        validUserId,
+        true,
+        {
+          arrivalDateTime: updatedCase.arrivalDateTime,
+          modeOfArrival: updatedCase.modeOfArrival,
+          mechanismOfInjury: updatedCase.mechanismOfInjury,
+          chiefComplaint: updatedCase.chiefComplaint,
+          glasgowComaScale: updatedCase.glasgowComaScale,
+          disposition: updatedCase.disposition,
+          systolicBloodPressure: updatedCase.systolicBloodPressure,
+          respiratoryRate: updatedCase.respiratoryRate,
+        },
+      ).catch((error: any) => {
+        console.error('Error rescheduling completeness monitoring for Trauma case:', error);
       });
     }
 
