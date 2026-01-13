@@ -44,8 +44,8 @@ export const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({ criticalCase
         }
 
         const calculateTime = () => {
-            // Don't run countdown if ticket is completed
-            if (criticalCase.status === 'COMPLETED') {
+            // Don't run countdown if EMS has arrived
+            if (criticalCase.emsAssignmentStatus === 'ARRIVED') {
                 setTimeRemaining(0);
                 setProgressPercentage(100);
                 setIsCritical(false);
@@ -90,7 +90,7 @@ export const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({ criticalCase
         const interval = setInterval(calculateTime, 1000); // Update every second
 
         return () => clearInterval(interval);
-    }, [showTimer, criticalCase.createdAt, criticalCase.pathway, criticalCase.status, criticalCase.triageTime, criticalCase.symptomOnset]);
+    }, [showTimer, criticalCase.createdAt, criticalCase.pathway, criticalCase.status, criticalCase.triageTime, criticalCase.symptomOnset, criticalCase.emsAssignmentStatus]);
 
     const formatTime = (milliseconds: number) => {
         const totalSeconds = Math.floor(milliseconds / 1000);
@@ -255,14 +255,14 @@ export const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({ criticalCase
                                             color: isCritical ? '#d32f2f' : 'inherit'
                                         }}
                                     >
-                                        {criticalCase.status === 'COMPLETED'
-                                            ? 'COMPLETED'
+                                        {criticalCase.emsAssignmentStatus === 'ARRIVED'
+                                            ? 'ARRIVED'
                                             : timeRemaining > 0
                                                 ? formatTime(timeRemaining)
                                                 : 'TIME EXPIRED'}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                                        {criticalCase.status === 'COMPLETED'
+                                        {criticalCase.emsAssignmentStatus === 'ARRIVED'
                                             ? ''
                                             : timeRemaining > 0
                                                 ? 'remaining'
@@ -270,8 +270,8 @@ export const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({ criticalCase
                                     </Typography>
                                 </Box>
                                 <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                                    {criticalCase.status === 'COMPLETED'
-                                        ? 'Case completed successfully'
+                                    {criticalCase.emsAssignmentStatus === 'ARRIVED'
+                                        ? 'EMS has arrived'
                                         : `${Math.round(progressPercentage)}% of time limit elapsed`}
                                 </Typography>
                             </Box>

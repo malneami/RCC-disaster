@@ -39,6 +39,14 @@ const CriticalCaseTimer: React.FC<CriticalCaseTimerProps> = ({ assignment }) => 
             return;
         }
 
+        // Stop timer if assignment has arrived
+        if (assignment.status === 'ARRIVED') {
+            setTimeRemaining(0);
+            setProgressPercentage(100);
+            setIsCritical(false);
+            return;
+        }
+
         // Determine start time: Use triageTime for STEMI/STROKE if available, otherwise fallback to createdAt
         let startTimeStr = createdAt;
         if (pathway === 'STEMI' && stemiTriageTime) {
@@ -77,7 +85,8 @@ const CriticalCaseTimer: React.FC<CriticalCaseTimerProps> = ({ assignment }) => 
         assignment.ticket?.createdAt,
         assignment.ticket?.triageTime,
         assignment.ticket?.stemiCases,
-        assignment.ticket?.strokeCases
+        assignment.ticket?.strokeCases,
+        assignment.status
     ]);
 
     if (!assignment.ticket?.pathway || (assignment.ticket.pathway !== 'STEMI' && assignment.ticket.pathway !== 'STROKE') || timeRemaining <= 0) {

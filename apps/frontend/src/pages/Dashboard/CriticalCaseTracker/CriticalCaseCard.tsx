@@ -62,8 +62,8 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
   // Calculate time remaining and progress
   useEffect(() => {
     const calculateTime = () => {
-      // Don't run countdown if ticket is completed
-      if (criticalCase.status === 'COMPLETED') {
+      // Don't run countdown if EMS has arrived
+      if (criticalCase.emsAssignmentStatus === 'ARRIVED') {
         setTimeRemaining(0);
         setProgressPercentage(100);
         setIsCritical(false);
@@ -110,7 +110,7 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
     const interval = setInterval(calculateTime, 1000); // Update every second
 
     return () => clearInterval(interval);
-  }, [criticalCase.createdAt, criticalCase.pathway, criticalCase.status, criticalCase.triageTime, criticalCase.symptomOnset]);
+  }, [criticalCase.createdAt, criticalCase.pathway, criticalCase.status, criticalCase.triageTime, criticalCase.symptomOnset, criticalCase.emsAssignmentStatus]);
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -272,14 +272,14 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
                 color: isCritical ? '#d32f2f' : 'inherit'
               }}
             >
-              {criticalCase.status === 'COMPLETED'
-                ? 'COMPLETED'
+              {criticalCase.emsAssignmentStatus === 'ARRIVED'
+                ? 'ARRIVED'
                 : timeRemaining > 0
                   ? formatTime(timeRemaining)
                   : 'TIME EXPIRED'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-              {criticalCase.status === 'COMPLETED'
+              {criticalCase.emsAssignmentStatus === 'ARRIVED'
                 ? ''
                 : timeRemaining > 0
                   ? 'remaining'
@@ -302,8 +302,8 @@ const CriticalCaseCard: React.FC<CriticalCaseCardProps> = ({
             }}
           />
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            {criticalCase.status === 'COMPLETED'
-              ? 'Case completed successfully'
+            {criticalCase.emsAssignmentStatus === 'ARRIVED'
+              ? 'EMS has arrived'
               : `${Math.round(progressPercentage)}% of time limit elapsed`}
           </Typography>
         </Box>
