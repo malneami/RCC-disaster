@@ -24,8 +24,9 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from 'react-query';
 import { useNotificationSocket } from '../../contexts/NotificationSocketContext';
 import { notificationService, Notification } from '../../services/notificationService';
+import { useSnackbar } from 'notistack';
 
-interface NotificationBellProps {}
+interface NotificationBellProps { }
 
 const NotificationBell: React.FC<NotificationBellProps> = () => {
   const theme = useTheme();
@@ -38,6 +39,7 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
   const [hasNewNotification, setHasNewNotification] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { enqueueSnackbar } = useSnackbar();
 
   // Use React Query for automatic revalidation of unread count
   const { data: notificationSummary, refetch: refetchUnreadCount } = useQuery(
@@ -52,43 +54,138 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
   );
 
   const unreadCount = notificationSummary || 0;
+  const prevUnreadCountRef = useRef<number>(unreadCount);
+  const isFirstRender = useRef(true);
 
-  // Initialize audio for notification sound
-  useEffect(() => {
-    const createDingSound = () => {
-      try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        
-        // First ding - lower pitch
-        const oscillator1 = audioContext.createOscillator();
-        const gainNode1 = audioContext.createGain();
-
-        oscillator1.connect(gainNode1);
-        gainNode1.connect(audioContext.destination);
-
-        oscillator1.frequency.value = 800; // First ding pitch
-        oscillator1.type = 'sine';
-
-        gainNode1.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode1.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.05);
-        gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
-
-        oscillator1.start(audioContext.currentTime);
-        oscillator1.stop(audioContext.currentTime + 0.25);
-      } catch (error) {
-        console.warn('Could not play notification sound:', error);
-        try {
-          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77+efTRAMUKfj8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBlou+/nn00QDFCn4/C2YxwGOJHX8sx5LAUkd8fw3ZBAC');
-          audio.volume = 0.5;
-          audio.play().catch(() => {});
-        } catch (e) {
-          // Silent fail if audio not supported
-        }
+  const playAudioAlert = useCallback((_pathway: 'GENERAL' | 'STEMI' | 'STROKE' | 'TRAUMA' = 'GENERAL') => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) {
+        return;
       }
-    };
+      const audioContext = new AudioContext();
 
-    (window as any).playNotificationSound = createDingSound;
+      const generateBeep = (frequency: number, duration: number, delay: number = 0) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + delay);
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime + delay);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + delay + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + duration);
+
+        oscillator.start(audioContext.currentTime + delay);
+        oscillator.stop(audioContext.currentTime + delay + duration);
+      };
+
+      generateBeep(800, 0.2, 0);
+      generateBeep(800, 0.2, 0.3);
+      generateBeep(800, 0.2, 0.6);
+
+    } catch (error) {
+      console.warn('Audio alert failed:', error);
+    }
   }, []);
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    handleClose();
+
+    // Navigate based on notification type
+    if (notification.ticketId) {
+      navigate(`/tickets/${notification.ticketId}`);
+    } else if (notification.caseId) {
+      navigate(`/notifications`);
+    } else {
+      navigate('/notifications');
+    }
+  };
+
+  // Helper to show the latest notification from existing data
+  const showLatestNotification = useCallback((notification?: Notification) => {
+    try {
+      // If notificationis provided (from WebSocket), use it directly
+      if (notification) {
+        enqueueSnackbar(
+          <Box
+            onClick={() => handleNotificationClick(notification)}
+            sx={{ cursor: 'pointer' }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              {notification.title || 'New Notification'}
+            </Typography>
+          </Box>,
+          {
+            variant: 'info',
+            anchorOrigin: {
+              vertical: 'top',
+              horizontal: 'right'
+            },
+            autoHideDuration: 6000,
+          }
+        );
+        return;
+      }
+
+      // Otherwise, use the notifications state (from loadNotifications fetch)
+      if (notifications.length === 0) return;
+
+      // Sort by createdAt descending to ensure we get the absolute latest
+      const sorted = [...notifications].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      const latest = sorted[0];
+
+      if (latest) {
+        enqueueSnackbar(
+          <Box
+            onClick={() => handleNotificationClick(latest)}
+            sx={{ cursor: 'pointer' }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              {latest.title || 'New Notification'}
+            </Typography>
+          </Box>,
+          {
+            variant: 'info',
+            anchorOrigin: {
+              vertical: 'top',
+              horizontal: 'right'
+            },
+            autoHideDuration: 6000,
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Failed to show latest notification:', error);
+    }
+  }, [enqueueSnackbar, handleNotificationClick, notifications]);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      prevUnreadCountRef.current = unreadCount;
+      return;
+    }
+
+    if (unreadCount > prevUnreadCountRef.current) {
+      console.debug(`Unread count increased from ${prevUnreadCountRef.current} to ${unreadCount}, playing alert.`);
+      playAudioAlert('GENERAL');
+      showLatestNotification();
+    }
+
+    prevUnreadCountRef.current = unreadCount;
+  }, [unreadCount, playAudioAlert, showLatestNotification]);
+
 
   const triggerVibration = useCallback(() => {
     if ('vibrate' in navigator) {
@@ -107,10 +204,10 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
       // Load only unread notifications - backend handles the filtering
       const data = await notificationService.getNotifications({
         isRead: 'false',
-        limit: '10',
+        limit: '100',
         page: '1',
       });
-      
+
       setNotifications(data.notifications || []);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -125,19 +222,21 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
       return;
     }
 
-    const handleNotificationCreated = (notification: Notification) => {
+    const handleNotificationCreated = (eventData: { notification: Notification; timestamp?: string } | Notification) => {
+      const notification = 'notification' in eventData ? eventData.notification : eventData;
+
       setHasNewNotification(true);
-      // Invalidate and refetch notification summary using React Query
       queryClient.invalidateQueries('notificationSummary');
-      
+
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500); // Animation duration
-      
-      // Play ring sound when new notification arrives
-      if ((window as any).playNotificationSound) {
-        (window as any).playNotificationSound();
-      }
-      
+
+      console.log('Notification received:', notification);
+
+      // Play sound and show toast notification immediately
+      playAudioAlert(notification.caseType || 'GENERAL');
+      showLatestNotification(notification);
+
       if (!notification.isRead) {
         setNotifications(prev => {
           const exists = prev.some(n => n.id === notification.id);
@@ -145,19 +244,19 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
             return prev;
           }
           const updated = [notification, ...prev];
-          return updated.slice(0, 10);
+          return updated
         });
       }
-      
+
       const isImportant = notification.priority === 'HIGH' || notification.priority === 'CRITICAL';
-      
+
       if (isImportant) {
         triggerVibration();
-        
+
         if (vibrationIntervalRef.current) {
           clearInterval(vibrationIntervalRef.current);
         }
-        
+
         let vibrationCount = 0;
         vibrationIntervalRef.current = setInterval(() => {
           vibrationCount++;
@@ -187,7 +286,7 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
         clearInterval(vibrationIntervalRef.current);
       }
     };
-  }, [socket, isConnected, queryClient, triggerVibration]);
+  }, [socket, isConnected, queryClient, triggerVibration, playAudioAlert, showLatestNotification]);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -200,26 +299,10 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
     refetchUnreadCount();
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleNotificationClick = async (notification: Notification) => {
-    handleClose();
-    
-    // Navigate based on notification type
-    if (notification.ticketId) {
-      navigate(`/tickets/${notification.ticketId}`);
-    } else if (notification.caseId) {
-      navigate(`/notifications`);
-    } else {
-      navigate('/notifications');
-    }
-  };
 
   const handleMarkAsRead = async (e: React.MouseEvent, notification: Notification) => {
     e.stopPropagation(); // Prevent triggering the notification click
-    
+
     try {
       await notificationService.markNotificationsAsRead([notification.id]);
       queryClient.invalidateQueries('notificationSummary');
@@ -258,10 +341,10 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
           position: 'relative',
           color: unreadCount > 0 ? theme.palette.primary.main : theme.palette.text.secondary,
           transition: 'all 0.3s ease',
-          animation: hasNewNotification 
-            ? 'pulse 2s infinite' 
-            : isShaking 
-              ? 'shake 0.5s ease-in-out' 
+          animation: hasNewNotification
+            ? 'pulse 2s infinite'
+            : isShaking
+              ? 'shake 0.5s ease-in-out'
               : 'none',
           '&:hover': {
             color: theme.palette.primary.dark,
@@ -310,12 +393,12 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
             },
           }}
         >
-          <FontAwesomeIcon 
-            icon={faBell} 
-            style={{ 
+          <FontAwesomeIcon
+            icon={faBell}
+            style={{
               fontSize: '1.2rem',
               color: 'inherit',
-            }} 
+            }}
           />
         </Badge>
       </IconButton>
@@ -346,21 +429,21 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
           },
         }}
       >
-        <Box 
-          sx={{ 
-            p: 2, 
+        <Box
+          sx={{
+            p: 2,
             borderBottom: `1px solid ${theme.palette.divider}`,
             backgroundColor: alpha(theme.palette.primary.main, 0.05),
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FontAwesomeIcon 
-                icon={faBell} 
-                style={{ 
+              <FontAwesomeIcon
+                icon={faBell}
+                style={{
                   color: theme.palette.primary.main,
                   fontSize: '1.2rem',
-                }} 
+                }}
               />
               <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
                 Notifications
@@ -383,8 +466,8 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
                 </Box>
               )}
             </Box>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={handleClose}
               sx={{
                 '&:hover': {
@@ -424,7 +507,7 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
                     transition: 'background-color 0.2s ease',
                   }}
                 >
-                  <ListItemButton 
+                  <ListItemButton
                     onClick={() => handleNotificationClick(notification)}
                     sx={{
                       py: 1.5,
@@ -506,9 +589,9 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
                               }}
                               title="Mark as read"
                             >
-                              <FontAwesomeIcon 
-                                icon={faCheck} 
-                                style={{ fontSize: '0.875rem' }} 
+                              <FontAwesomeIcon
+                                icon={faCheck}
+                                style={{ fontSize: '0.875rem' }}
                               />
                             </IconButton>
                           )}
@@ -524,9 +607,9 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
         )}
 
         {notifications.length > 0 && (
-          <Box 
-            sx={{ 
-              p: 2, 
+          <Box
+            sx={{
+              p: 2,
               borderTop: `1px solid ${theme.palette.divider}`,
               backgroundColor: alpha(theme.palette.background.default, 0.5),
             }}
@@ -535,7 +618,7 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
               fullWidth
               variant="contained"
               onClick={handleViewAll}
-              sx={{ 
+              sx={{
                 textTransform: 'none',
                 fontWeight: 600,
                 borderRadius: 2,
