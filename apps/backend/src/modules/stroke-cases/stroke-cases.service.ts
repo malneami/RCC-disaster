@@ -7,6 +7,7 @@ import { StrokeCase, StrokeStatus, StrokeType, StrokeModeOfArrival, TicketPriori
 import { PatientMergeService } from '../patients/patient-merge.service';
 import { StrokeKPICalculatorService } from './services/stroke-kpi-calculator.service';
 import { KpiMonitorService } from '../notifications/services/kpi-monitor.service';
+import { CaseCompletenessMonitorService } from '../notifications/services/case-completeness-monitor.service';
 
 @Injectable()
 export class StrokeCasesService {
@@ -17,6 +18,9 @@ export class StrokeCasesService {
     @Inject(forwardRef(() => KpiMonitorService))
     @Optional()
     private readonly kpiMonitorService?: KpiMonitorService,
+    @Inject(forwardRef(() => CaseCompletenessMonitorService))
+    @Optional()
+    private readonly completenessMonitorService?: CaseCompletenessMonitorService,
   ) {}
 
   private calculateAge(dob: Date | null | undefined): number | undefined {
@@ -420,6 +424,37 @@ export class StrokeCasesService {
     });
 
     console.log('Stroke case and initial timeline event created successfully');
+
+    // Schedule completeness monitoring (fire and forget)
+    if (this.completenessMonitorService && strokeCase) {
+      this.completenessMonitorService.scheduleCompletenessMonitoring(
+        strokeCase.id,
+        'STROKE',
+        validUserId,
+        false,
+        {
+          modeOfArrival: strokeCase.modeOfArrival,
+          timeOfTriage: strokeCase.timeOfTriage,
+          timeOfPhysicianAssessment: strokeCase.timeOfPhysicianAssessment,
+          strokeTypeDetailed: strokeCase.strokeTypeDetailed,
+          ctScanPerformed: strokeCase.ctScanPerformed,
+          candidateForIVThrombolysis: strokeCase.candidateForIVThrombolysis,
+          candidateForMechanicalThrombectomy: strokeCase.candidateForMechanicalThrombectomy,
+          disposition: strokeCase.disposition,
+          timeOfCtScanStart: strokeCase.timeOfCtScanStart,
+          timeOfCtReportFinal: strokeCase.timeOfCtReportFinal,
+          ctFindings: strokeCase.ctFindings,
+          thrombolysisOrderTime: strokeCase.thrombolysisOrderTime,
+          ivThrombolysisAdministrationTime: strokeCase.ivThrombolysisAdministrationTime,
+          ivThrombolysisGiven: strokeCase.ivThrombolysisGiven,
+          mechanicalThrombectomyPerformed: strokeCase.mechanicalThrombectomyPerformed,
+          timeOfMechanicalThrombectomyPuncture: strokeCase.timeOfMechanicalThrombectomyPuncture,
+          timeOfThrombectomyComplete: strokeCase.timeOfThrombectomyComplete,
+        },
+      ).catch((error: any) => {
+        console.error('Error scheduling completeness monitoring for Stroke case:', error);
+      });
+    }
 
     return strokeCase;
     } catch (error) {
@@ -1242,6 +1277,46 @@ export class StrokeCasesService {
           });
         }
       }
+
+      // Reschedule completeness monitoring after update
+      if (this.completenessMonitorService && result) {
+        // Cancel existing timer
+        this.completenessMonitorService.cancelTimer(`STROKE:${id}`);
+        
+        // Reschedule if case is not completed
+        if (!result.outcomeFormCompleted) {
+          this.completenessMonitorService.scheduleCompletenessMonitoring(
+            id,
+            'STROKE',
+            userId,
+            true,
+            {
+              modeOfArrival: result.modeOfArrival,
+              timeOfTriage: result.timeOfTriage,
+              timeOfPhysicianAssessment: result.timeOfPhysicianAssessment,
+              strokeTypeDetailed: result.strokeTypeDetailed,
+              ctScanPerformed: result.ctScanPerformed,
+              candidateForIVThrombolysis: result.candidateForIVThrombolysis,
+              candidateForMechanicalThrombectomy: result.candidateForMechanicalThrombectomy,
+              disposition: result.disposition,
+              timeOfCtScanStart: result.timeOfCtScanStart,
+              timeOfCtReportFinal: result.timeOfCtReportFinal,
+              ctFindings: result.ctFindings,
+              thrombolysisOrderTime: result.thrombolysisOrderTime,
+              ivThrombolysisAdministrationTime: result.ivThrombolysisAdministrationTime,
+              ivThrombolysisGiven: result.ivThrombolysisGiven,
+              mechanicalThrombectomyPerformed: result.mechanicalThrombectomyPerformed,
+              timeOfMechanicalThrombectomyPuncture: result.timeOfMechanicalThrombectomyPuncture,
+              timeOfThrombectomyComplete: result.timeOfThrombectomyComplete,
+            },
+          ).catch((error: any) => {
+            console.error('Error rescheduling completeness monitoring for Stroke case:', error);
+          });
+        } else {
+          // Case is completed, cancel timer
+          this.completenessMonitorService.cancelTimer(`STROKE:${id}`);
+        }
+      }
       
       return result;
     } catch (error) {
@@ -1804,4 +1879,10 @@ export class StrokeCasesService {
     };
   }
 
+  private ensureValidUserId(userId: string): string {
+    if (!userId || userId === '4600ecc0-c41b-4d99-8ddd-78ef909182cb') {
+      throw new BadRequestException('A valid user ID is required to create or update stroke cases.');
+    }
+    return userId;
+  }
 }

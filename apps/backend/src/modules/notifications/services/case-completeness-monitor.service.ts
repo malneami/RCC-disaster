@@ -14,13 +14,13 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
   private readonly logger = new Logger(CaseCompletenessMonitorService.name);
   private timers = new Map<string, NodeJS.Timeout>(); // Key: `${caseType}:${caseId}`
   private readonly ESCALATION_HOURS = 24; // 24 hours
-  private readonly ESCALATION_MS = this.ESCALATION_HOURS * 60 * 60 * 1000; 
+  private readonly ESCALATION_MS = this.ESCALATION_HOURS * 60 * 60 * 1000;
 
   constructor(
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => NotificationsService))
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   /**
    * Initialize timers on module startup - recover from incomplete cases in database
@@ -54,16 +54,16 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
     caseId: string,
     caseType: CaseType,
     createdById: string,
-    updated?:boolean,
+    updated?: boolean,
     caseData?: any,
   ): Promise<void> {
     try {
 
       const completeness = await this.checkCaseCompleteness(caseId, caseType, caseData);
-      
+
       if (!completeness.isComplete) {
-        await this.notifyCreator(caseId, caseType, createdById, completeness.missingFields , updated);
-        
+        await this.notifyCreator(caseId, caseType, createdById, completeness.missingFields, updated);
+
         // Only schedule 24-hour escalation check if case is incomplete
         const timerKey = `${caseType}:${caseId}`;
         this.cancelTimer(timerKey);
@@ -138,6 +138,8 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
       switch (caseType) {
         case 'STEMI':
           return this.checkStemiCompleteness(caseData);
+        case 'STROKE':
+          return this.checkStrokeCompleteness(caseData);
         default:
           this.logger.warn(`Unknown case type: ${caseType}`);
           return {
@@ -211,6 +213,101 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
   }
 
   /**
+   * Check Stroke case completeness
+   */
+  private checkStrokeCompleteness(caseData: any): CaseCompletenessResult {
+    const requiredFields = [
+      { key: 'modeOfArrival', label: 'Mode of Arrival' },
+      { key: 'timeOfTriage', label: 'Time of Triage' },
+      { key: 'timeOfPhysicianAssessment', label: 'Time of Physician Assessment' },
+      { key: 'strokeTypeDetailed', label: 'Stroke Type Detailed' },
+      { key: 'ctScanPerformed', label: 'CT Scan Performed' },
+      { key: 'candidateForIVThrombolysis', label: 'Candidate for IV Thrombolysis' },
+      { key: 'candidateForMechanicalThrombectomy', label: 'Candidate for Mechanical Thrombectomy' },
+      { key: 'disposition', label: 'Disposition' },
+    ];
+
+    const missingFields: string[] = [];
+    let completedFields = 0;
+    let totalFields = requiredFields.length;
+
+    requiredFields.forEach(field => {
+      const value = caseData[field.key];
+      if (value === null || value === undefined || value === '') {
+        missingFields.push(field.label);
+      } else {
+        completedFields++;
+      }
+    });
+
+    // If CT scan was performed, check CT-related fields
+    if (caseData.ctScanPerformed === true) {
+      const ctFields = [
+        { key: 'timeOfCtScanStart', label: 'CT Scan Start Time' },
+        { key: 'timeOfCtReportFinal', label: 'CT Report Final Time' },
+        { key: 'ctFindings', label: 'CT Findings' },
+      ];
+
+      ctFields.forEach(field => {
+        const value = caseData[field.key];
+        totalFields++;
+        if (value === null || value === undefined || value === '') {
+          missingFields.push(field.label);
+        } else {
+          completedFields++;
+        }
+      });
+    }
+
+    // If candidate for IV thrombolysis, check thrombolysis fields
+    if (caseData.candidateForIVThrombolysis === 'YES') {
+      const thrombolysisFields = [
+        { key: 'thrombolysisOrderTime', label: 'Thrombolysis Order Time' },
+        { key: 'ivThrombolysisAdministrationTime', label: 'IV Thrombolysis Administration Time' },
+        { key: 'ivThrombolysisGiven', label: 'IV Thrombolysis Given' },
+      ];
+
+      thrombolysisFields.forEach(field => {
+        const value = caseData[field.key];
+        totalFields++;
+        if (value === null || value === undefined || value === '') {
+          missingFields.push(field.label);
+        } else {
+          completedFields++;
+        }
+      });
+    }
+
+    // If candidate for mechanical thrombectomy, check thrombectomy fields
+    if (caseData.candidateForMechanicalThrombectomy === 'YES') {
+      const thrombectomyFields = [
+        { key: 'mechanicalThrombectomyPerformed', label: 'Mechanical Thrombectomy Performed' },
+        { key: 'timeOfMechanicalThrombectomyPuncture', label: 'Thrombectomy Start Time' },
+        { key: 'timeOfThrombectomyComplete', label: 'Thrombectomy Completion Time' },
+      ];
+
+      thrombectomyFields.forEach(field => {
+        const value = caseData[field.key];
+        totalFields++;
+        if (value === null || value === undefined || value === '') {
+          missingFields.push(field.label);
+        } else {
+          completedFields++;
+        }
+      });
+    }
+
+    const completenessPercentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+
+    return {
+      isComplete: missingFields.length === 0,
+      missingFields,
+      completenessPercentage,
+    };
+  }
+
+
+  /**
    * Fetch case data from database
    */
   private async fetchCaseData(caseId: string, caseType: CaseType): Promise<any> {
@@ -221,6 +318,12 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
             where: { id: caseId, deletedAt: null },
           });
           return stemiCase;
+        }
+        case 'STROKE': {
+          const strokeCase = await this.prisma.strokeCase.findUnique({
+            where: { id: caseId, deletedAt: null },
+          });
+          return strokeCase;
         }
         default:
           return null;
@@ -263,7 +366,7 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
       // Determine appropriate recipients: prefer DATA_COLLECTOR, fall back to creator
       const creator = await this.prisma.user.findUnique({
         where: { id: createdById },
-        select: { id: true, role: true},
+        select: { id: true, role: true },
       });
 
       let recipientUserIds: string[] = [];
@@ -310,7 +413,7 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
             },
           },
         });
-  
+
         if (existingNotification) {
           return;
         }
@@ -454,7 +557,7 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
   private async recoverTimersFromIncompleteCases(): Promise<void> {
     try {
 
-      const [stemiCases] = await Promise.all([
+      const [stemiCases, strokeCases] = await Promise.all([
         this.prisma.stemiCase.findMany({
           where: {
             deletedAt: null,
@@ -476,7 +579,38 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
             balloonInflationTime: true,
           },
         }),
+        this.prisma.strokeCase.findMany({
+          where: {
+            deletedAt: null,
+            createdAt: {
+              gte: new Date(Date.now() - this.ESCALATION_MS * 2),
+            },
+          },
+          select: {
+            id: true,
+            createdAt: true,
+            createdById: true,
+            modeOfArrival: true,
+            timeOfTriage: true,
+            timeOfPhysicianAssessment: true,
+            strokeTypeDetailed: true,
+            ctScanPerformed: true,
+            candidateForIVThrombolysis: true,
+            candidateForMechanicalThrombectomy: true,
+            disposition: true,
+            timeOfCtScanStart: true,
+            timeOfCtReportFinal: true,
+            ctFindings: true,
+            thrombolysisOrderTime: true,
+            ivThrombolysisAdministrationTime: true,
+            ivThrombolysisGiven: true,
+            mechanicalThrombectomyPerformed: true,
+            timeOfMechanicalThrombectomyPuncture: true,
+            timeOfThrombectomyComplete: true,
+          },
+        }),
       ]);
+
 
       let recoveredCount = 0;
 
@@ -500,7 +634,27 @@ export class CaseCompletenessMonitorService implements OnModuleInit, OnModuleDes
             await this.checkAndEscalateIfIncomplete(caseData.id, 'STEMI');
           }
         }
-      }      
+      }
+
+      // Recover Stroke cases
+      for (const caseData of strokeCases) {
+        const completeness = this.checkStrokeCompleteness(caseData);
+        if (!completeness.isComplete) {
+          const timeSinceCreation = Date.now() - caseData.createdAt.getTime();
+          if (timeSinceCreation < this.ESCALATION_MS) {
+            const remainingMs = this.ESCALATION_MS - timeSinceCreation;
+            const timerKey = `STROKE:${caseData.id}`;
+            const timer = setTimeout(async () => {
+              await this.checkAndEscalateIfIncomplete(caseData.id, 'STROKE');
+              this.timers.delete(timerKey);
+            }, remainingMs);
+            this.timers.set(timerKey, timer);
+            recoveredCount++;
+          } else {
+            await this.checkAndEscalateIfIncomplete(caseData.id, 'STROKE');
+          }
+        }
+      }
 
     } catch (error) {
       this.logger.error('Error recovering timers from incomplete cases:', error);
