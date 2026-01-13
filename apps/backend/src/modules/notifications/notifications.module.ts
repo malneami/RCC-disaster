@@ -12,6 +12,7 @@ import { KpiStatusTrackerService } from './services/kpi-status-tracker.service';
 import { KpiMonitorService } from './services/kpi-monitor.service';
 import { CriticalTimeMonitorService } from './services/critical-time-monitor.service';
 import { EmsLateMonitorService } from './services/ems-late-monitor.service';
+import { CaseCompletenessMonitorService } from './services/case-completeness-monitor.service';
 import { StemiCasesModule } from '../stemi-cases/stemi-cases.module';
 import { StrokeCasesModule } from '../stroke-cases/stroke-cases.module';
 import { TraumaCasesModule } from '../trauma-cases/trauma-cases.module';
@@ -37,6 +38,7 @@ import { TraumaCasesModule } from '../trauma-cases/trauma-cases.module';
     KpiMonitorService,
     CriticalTimeMonitorService,
     EmsLateMonitorService,
+    CaseCompletenessMonitorService,
   ],
   exports: [
     CaseNotesService,
@@ -45,6 +47,7 @@ import { TraumaCasesModule } from '../trauma-cases/trauma-cases.module';
     KpiMonitorService,
     CriticalTimeMonitorService,
     EmsLateMonitorService,
+    CaseCompletenessMonitorService,
   ],
 })
 export class NotificationsModule {}

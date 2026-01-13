@@ -6,6 +6,7 @@ import { StemiQueryService } from './stemi-query.service';
 import { StemiPatientService } from './stemi-patient.service';
 import { StemiKpiService } from './stemi-kpi.service';
 import { KpiMonitorService } from '../../notifications/services/kpi-monitor.service';
+import { CaseCompletenessMonitorService } from '../../notifications/services/case-completeness-monitor.service';
 
 @Injectable()
 export class StemiCasesService {
@@ -17,6 +18,9 @@ export class StemiCasesService {
     @Inject(forwardRef(() => KpiMonitorService))
     @Optional()
     private readonly kpiMonitorService?: KpiMonitorService,
+    @Inject(forwardRef(() => CaseCompletenessMonitorService))
+    @Optional()
+    private readonly completenessMonitorService?: CaseCompletenessMonitorService,
   ) {}
 
   private calculateAge(dob: Date | null | undefined): number | undefined {
@@ -253,6 +257,28 @@ export class StemiCasesService {
           },
         ).catch((error: any) => {
           console.error('Error scheduling KPI threshold checks for STEMI case:', error);
+        });
+      }
+
+      // Schedule completeness monitoring 
+      if (this.completenessMonitorService && createdCase) {
+        this.completenessMonitorService.scheduleCompletenessMonitoring(
+          createdCase.id,
+          'STEMI',
+          validUserId,
+          false,
+          {
+            triageTime: createdCase.triageTime,
+            firstEcgTime: createdCase.firstEcgTime,
+            eligibleForPrimaryPci: createdCase.eligibleForPrimaryPci,
+            thrombolyticGiven: createdCase.thrombolyticGiven,
+            pciType: createdCase.pciType,
+            pciLocation: createdCase.pciLocation,
+            doorOutTime: createdCase.doorOutTime,
+            balloonInflationTime: createdCase.balloonInflationTime,
+          },
+        ).catch((error: any) => {
+          console.error('Error scheduling completeness monitoring for STEMI case:', error);
         });
       }
 
@@ -621,6 +647,37 @@ export class StemiCasesService {
           ).catch((error: any) => {
             console.error('Error rescheduling KPI threshold checks for STEMI case:', error);
           });
+        }
+      }
+
+      // Reschedule completeness monitoring after update
+      if (this.completenessMonitorService && updatedCaseForKpi) {
+        // Cancel existing timer
+        this.completenessMonitorService.cancelTimer(`STEMI:${id}`);
+        
+        // Reschedule if case is not completed
+        if (!updatedCaseForKpi.outcomeFormCompleted) {
+          this.completenessMonitorService.scheduleCompletenessMonitoring(
+            id,
+            'STEMI',
+            userId,
+            true,
+            {
+              triageTime: updatedCaseForKpi.triageTime,
+              firstEcgTime: updatedCaseForKpi.firstEcgTime,
+              eligibleForPrimaryPci: updatedCaseForKpi.eligibleForPrimaryPci,
+              thrombolyticGiven: updatedCaseForKpi.thrombolyticGiven,
+              pciType: updatedCaseForKpi.pciType,
+              pciLocation: updatedCaseForKpi.pciLocation,
+              doorOutTime: updatedCaseForKpi.doorOutTime,
+              balloonInflationTime: updatedCaseForKpi.balloonInflationTime,
+            },
+          ).catch((error: any) => {
+            console.error('Error rescheduling completeness monitoring for STEMI case:', error);
+          });
+        } else {
+          // Case is completed, cancel timer
+          this.completenessMonitorService.cancelTimer(`STEMI:${id}`);
         }
       }
 
