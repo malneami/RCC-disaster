@@ -40,6 +40,19 @@ services:
     networks:
       - rcc_network
 
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: rcc-livekit
+    command: >
+      --dev --bind 0.0.0.0 --port 7880
+    environment:
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: secret
+    ports:
+      - "7880:7880"
+    networks:
+      - rcc_network
+
 volumes:
   postgres_data:
   redis_data:
