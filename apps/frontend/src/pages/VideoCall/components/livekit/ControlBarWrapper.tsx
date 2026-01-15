@@ -52,10 +52,12 @@ const controlBarStyles = {
     },
 
     '& .lk-disconnect-button': {
+        color: '#e8eaed',
         bgcolor: '#ea4335 !important',
         borderRadius: '24px !important',
         '&:hover': {
             bgcolor: '#d33b2c !important',
+            transform: 'scale(1.05)',
         },
     },
 
