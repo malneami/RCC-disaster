@@ -52,13 +52,13 @@ interface UserListProps {
   callUser: (targetUser?: User, email?: string) => void;
   stream: MediaStream | null;
   socket: any;
+  actionLabel?: string;
 }
 
 export const UserList: React.FC<UserListProps> = ({
   users,
   callUser,
-  stream,
-  socket,
+  actionLabel = 'Call',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -296,7 +296,7 @@ export const UserList: React.FC<UserListProps> = ({
                       size="small"
                       startIcon={<PhoneIcon sx={{ fontSize: '1rem !important' }} />}
                       onClick={() => callUser(user)}
-                      disabled={!stream || !socket}
+                      disabled={false} // Always enabled in LiveKit flow
                       sx={{
                         minWidth: 'auto',
                         px: 1.5,
@@ -315,7 +315,7 @@ export const UserList: React.FC<UserListProps> = ({
                         },
                       }}
                     >
-                      Call
+                      {actionLabel}
                     </Button>
                   </Card>
                 ))}

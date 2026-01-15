@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogActions, Button, Box, Typography, Avatar } from '@mui/material';
 import {
   Phone as PhoneIcon,
@@ -20,6 +20,27 @@ export const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({
   onDecline,
   onClose,
 }) => {
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape to decline
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onDecline();
+      }
+      // Enter to answer
+      else if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        onAnswer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onAnswer, onDecline]);
+
   return (
     <Dialog
       open={open}
@@ -32,6 +53,9 @@ export const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({
           overflow: 'hidden',
         },
       }}
+      aria-labelledby="incoming-call-title"
+      aria-describedby="incoming-call-description"
+      role="alertdialog"
     >
       <Box
         sx={{
@@ -54,10 +78,10 @@ export const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({
         >
           {callerInfo?.name?.charAt(0).toUpperCase() || '?'}
         </Avatar>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+        <Typography id="incoming-call-title" variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
           {callerInfo?.name || 'Someone'}
         </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+        <Typography id="incoming-call-description" variant="body1" sx={{ opacity: 0.9 }}>
           Incoming Communication...
         </Typography>
       </Box>
@@ -86,6 +110,7 @@ export const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({
             },
           }}
           startIcon={<PhoneDisabledIcon />}
+          aria-label="Decline incoming call"
         >
           Decline
         </Button>
@@ -104,6 +129,8 @@ export const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({
             },
           }}
           startIcon={<PhoneIcon />}
+          aria-label="Answer incoming call"
+          autoFocus
         >
           Answer
         </Button>
