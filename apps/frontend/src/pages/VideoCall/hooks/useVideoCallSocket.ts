@@ -1,7 +1,15 @@
 import { useEffect } from 'react';
 import { Socket } from 'socket.io-client';
 import { useSnackbar } from 'notistack';
-import { PeerObject } from './usePeerManagement';
+
+export interface PeerObject {
+  peerID: string;
+  peer: any;
+  targetSocketId?: string;
+  targetUserId?: string;
+  targetEmail?: string;
+  hasReceivedAnswer?: boolean;
+}
 
 interface UseVideoCallSocketParams {
   socket: Socket | null;
@@ -40,7 +48,6 @@ export const useVideoCallSocket = ({
     if (!socket) {
       return;
     }
-
 
     const handleMe = (data: { socketId: string; userId: string; userInfo: any }) => {
       setSocketId(data.socketId);
@@ -93,7 +100,7 @@ export const useVideoCallSocket = ({
             peersRef.current = peersRef.current.filter((p) => p.peerID !== peerObj!.peerID);
             return;
           }
-          
+
           peerObj.peer.signal(data.signal);
           peerObj.hasReceivedAnswer = true;
         } catch (error) {
@@ -108,9 +115,10 @@ export const useVideoCallSocket = ({
       }
     };
 
-    const handleCallEnded = (data: { from: string; userId?: string }) => {
-      setCallEnded(true);
+    const handleCallEnded = (data: { from: string; userId?: string; name?: string }) => {
+      // Only remove that specific participant from our local state
       if (data.from) {
+        // Remove the specific peer who left
         removePeer(data.from);
         setRemoteStreams((prev) => {
           const newStreams = { ...prev };
@@ -122,24 +130,13 @@ export const useVideoCallSocket = ({
           delete newStates[data.from];
           return newStates;
         });
-      } else {
-        // Clean up all peers
-        peersRef.current.forEach((peerObj) => {
-          if (peerObj.peer) {
-            try {
-              if (!(peerObj.peer as any).destroyed) {
-                peerObj.peer.destroy();
-              }
-            } catch (error) {
-              console.warn('[VideoCallPage] Error destroying peer in handleCallEnded:', error);
-            }
-          }
-        });
-        peersRef.current = [];
-        setRemoteStreams({});
-        setRemoteMediaStates({});
+
+        if (data.name) {
+          enqueueSnackbar(`${data.name} left the call`, { variant: 'info' });
+        }
       }
-      resetCallState();
+      // The call should only end for the local user when they explicitly disconnect
+      // via the onDisconnected callback from LiveKitCallInterface
     };
 
     const handleMediaStateChanged = (data: { from: string; video: boolean; audio: boolean; userId?: string }) => {
@@ -152,7 +149,7 @@ export const useVideoCallSocket = ({
     const handleCallError = (data: { error?: string; message?: string; targetUserId?: string; targetEmail?: string }) => {
       console.error('Call error:', data);
       const errorMessage = data.error || data.message || 'Call failed';
-      
+
       // Show user-friendly error message with better formatting
       let displayMessage = errorMessage;
       if (errorMessage.toLowerCase().includes('not online')) {
@@ -162,20 +159,20 @@ export const useVideoCallSocket = ({
       } else if (errorMessage.toLowerCase().includes('no target')) {
         displayMessage = 'No user specified to call';
       }
-      
+
       enqueueSnackbar(displayMessage, { variant: 'error' });
-      
+
       // Clean up any pending peers when call fails
       // Find the peer that matches the failed call target
       const peersToRemove: string[] = [];
-      
+
       // First, try to match by specific target info if provided
       if (data.targetUserId || data.targetEmail) {
         peersRef.current.forEach((peerObj) => {
-          const matchesTarget = 
+          const matchesTarget =
             (data.targetUserId && peerObj.targetUserId === data.targetUserId) ||
             (data.targetEmail && peerObj.targetEmail === data.targetEmail);
-          
+
           if (matchesTarget && !peerObj.hasReceivedAnswer) {
             // Clean up the peer
             if (peerObj.peer && !(peerObj.peer as any).destroyed) {
@@ -205,7 +202,7 @@ export const useVideoCallSocket = ({
         const pendingPeers = peersRef.current.filter((p) => !p.hasReceivedAnswer);
         if (pendingPeers.length > 0) {
           const mostRecentPeer = pendingPeers[pendingPeers.length - 1];
-          
+
           // Clean up the peer
           if (mostRecentPeer.peer && !(mostRecentPeer.peer as any).destroyed) {
             try {
@@ -228,7 +225,7 @@ export const useVideoCallSocket = ({
           peersToRemove.push(mostRecentPeer.peerID);
         }
       }
-      
+
       // Remove peers from the list
       if (peersToRemove.length > 0) {
         peersRef.current = peersRef.current.filter((p) => !peersToRemove.includes(p.peerID));
@@ -244,7 +241,6 @@ export const useVideoCallSocket = ({
 
 
     return () => {
-      console.log('[VideoCallPage] Cleaning up socket event listeners');
       socket.off('me', handleMe);
       socket.off('callUser', handleCallUser);
       socket.off('callAccepted', handleCallAccepted);

@@ -4,8 +4,10 @@ import { Box } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
 import { FullscreenProvider } from './contexts/FullscreenContext';
 import { VideoCallSocketProvider } from './contexts/VideoCallSocketContext';
+import { VideoCallProvider } from './contexts/VideoCallContext';
 import { NotificationSocketProvider } from './contexts/NotificationSocketContext';
 import Layout from './components/Layout/Layout';
+import { PersistentCallPanel } from './components/VideoCall/PersistentCallPanel';
 import LoginPage from './pages/Auth/LoginPage';
 import UserRegistrationPage from './pages/Auth/UserRegistrationPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
@@ -55,11 +57,13 @@ function App() {
   return (
     <FullscreenProvider>
       <VideoCallSocketProvider>
-        <NotificationSocketProvider>
-        <Layout>
-          <Box sx={{ flexGrow: 1 }}>
-            <IncomingCallNotification />
-            <Routes>
+        <VideoCallProvider>
+          <NotificationSocketProvider>
+            <Layout>
+              <Box sx={{ flexGrow: 1 }}>
+                <IncomingCallNotification />
+                <PersistentCallPanel />
+                <Routes>
               <Route 
                 path="/" 
                 element={
@@ -191,10 +195,11 @@ function App() {
                   />
                 } 
               />
-            </Routes>
-          </Box>
-        </Layout>
-        </NotificationSocketProvider>
+                </Routes>
+              </Box>
+            </Layout>
+          </NotificationSocketProvider>
+        </VideoCallProvider>
       </VideoCallSocketProvider>
     </FullscreenProvider>
   );
