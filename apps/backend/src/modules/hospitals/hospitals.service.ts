@@ -18,8 +18,74 @@ export class HospitalsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createHospitalDto: CreateHospitalDto) {
-    return this.prisma.hospital.create({
-      data: createHospitalDto,
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Create the hospital
+      const hospital = await tx.hospital.create({
+        data: createHospitalDto,
+      });
+
+      // 2. Define bed types mapping
+      const bedTypes = [
+        { type: BedType.ICU, total: createHospitalDto.icuBeds, available: createHospitalDto.icuBedsAvailable, name: 'ICU Unit' },
+        { type: BedType.PICU, total: createHospitalDto.picuBeds, available: createHospitalDto.picuBedsAvailable, name: 'PICU Unit' },
+        { type: BedType.NICU, total: createHospitalDto.nicuBeds, available: createHospitalDto.nicuBedsAvailable, name: 'NICU Unit' },
+        { type: BedType.MALE_WARD, total: createHospitalDto.maleBeds, available: createHospitalDto.maleBedsAvailable, name: 'Male Ward' },
+        { type: BedType.FEMALE_WARD, total: createHospitalDto.femaleBeds, available: createHospitalDto.femaleBedsAvailable, name: 'Female Ward' },
+        { type: BedType.PEDIATRIC_WARD, total: createHospitalDto.pediatricBeds, available: createHospitalDto.pediatricBedsAvailable, name: 'Pediatric Ward' },
+        { type: BedType.STANDARD_WARD, total: createHospitalDto.standardBeds, available: createHospitalDto.standardBedsAvailable, name: 'Standard Ward' },
+      ];
+
+      // 3. Create units and beds
+      for (const config of bedTypes) {
+        if (config.total && config.total > 0) {
+          // Create Unit
+          const unit = await tx.unit.create({
+            data: {
+              hospitalId: hospital.id,
+              name: config.name,
+              bedType: config.type,
+              description: `Automatically created ${config.name}`,
+              isActive: true,
+            },
+          });
+
+          // Create Beds
+          const availableCount = config.available || 0;
+          const occupiedCount = config.total - availableCount;
+          
+          // Helper to pad numbers
+          const pad = (num: number) => num.toString().padStart(2, '0');
+          let bedCounter = 1;
+
+          // Create Available Beds
+          for (let i = 0; i < availableCount; i++) {
+            await tx.bed.create({
+              data: {
+                hospitalId: hospital.id,
+                unitId: unit.id,
+                bedNumber: `${config.type}-${pad(bedCounter++)}`,
+                status: BedStatus.VACANT,
+                isOperational: true,
+              },
+            });
+          }
+
+          // Create Occupied Beds
+          for (let i = 0; i < occupiedCount; i++) {
+            await tx.bed.create({
+              data: {
+                hospitalId: hospital.id,
+                unitId: unit.id,
+                bedNumber: `${config.type}-${pad(bedCounter++)}`,
+                status: BedStatus.OCCUPIED,
+                isOperational: true,
+              },
+            });
+          }
+        }
+      }
+
+      return hospital;
     });
   }
 
