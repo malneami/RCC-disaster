@@ -10,7 +10,7 @@ export interface MedicalRecord {
   treatment?: string;
   medications?: string;
   testResults?: string;
-  attachments?: string;
+  attachments?: MedicalRecordAttachment[];
   recordDate: string;
   createdAt: string;
   updatedAt: string;
@@ -21,7 +21,15 @@ export interface MedicalRecord {
   };
 }
 
-export type MedicalRecordType = 
+export interface MedicalRecordAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
+export type MedicalRecordType =
   | 'CONSULTATION'
   | 'LABORATORY'
   | 'RADIOLOGY'
@@ -45,7 +53,13 @@ export interface CreateMedicalRecordData {
   treatment?: string;
   medications?: string;
   testResults?: string;
-  attachments?: string;
+  attachments?: {
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+    fileData: string;
+    file?: File; 
+  }[];
   recordDate: string;
 }
 
@@ -95,12 +109,36 @@ class MedicalRecordService {
   }
 
   async updateMedicalRecord(id: string, data: Partial<CreateMedicalRecordData>): Promise<MedicalRecord> {
-    const response = await apiClient.put(`/medical-records/${id}`, data);
+    const response = await apiClient.patch(`/medical-records/${id}`, data);
     return response.data;
   }
 
   async deleteMedicalRecord(id: string): Promise<void> {
     await apiClient.delete(`/medical-records/${id}`);
+  }
+
+  async getAttachment(attachmentId: string): Promise<MedicalRecordAttachment & { fileData: string }> {
+    const response = await apiClient.get(`/medical-records/attachments/${attachmentId}`);
+    return response.data;
+  }
+
+  async deleteAttachment(attachmentId: string): Promise<void> {
+    await apiClient.delete(`/medical-records/attachments/${attachmentId}`);
+  }
+
+  async uploadAttachment(medicalRecordId: string, file: File): Promise<MedicalRecordAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post(
+      `/medical-records/${medicalRecordId}/attachments`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
   }
 
   async getAccessLogs(filters?: {

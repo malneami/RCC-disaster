@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { medicalRecordService, CreateMedicalRecordData, MedicalRecord } from '../../../services/medicalRecordService';
+import { useMutation } from 'react-query';
 
 export interface UseMedicalRecordFormProps {
   patientId: string;
@@ -20,7 +21,7 @@ const initializeFormData = (medicalRecord: MedicalRecord | null): CreateMedicalR
       treatment: medicalRecord.treatment || '',
       medications: medicalRecord.medications || '',
       testResults: medicalRecord.testResults || '',
-      attachments: medicalRecord.attachments || '',
+      attachments: [],
       recordDate: medicalRecord.recordDate,
     };
   }
@@ -34,7 +35,7 @@ const initializeFormData = (medicalRecord: MedicalRecord | null): CreateMedicalR
     treatment: '',
     medications: '',
     testResults: '',
-    attachments: '',
+    attachments: [],
     recordDate: new Date().toISOString().split('T')[0],
   };
 };
@@ -47,7 +48,6 @@ export const useMedicalRecordForm = ({
   onMedicalRecordUpdated,
 }: UseMedicalRecordFormProps) => {
   const [formData, setFormData] = useState<CreateMedicalRecordData>(initializeFormData(medicalRecord || null));
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Initialize form with medical record data if editing
@@ -64,48 +64,73 @@ export const useMedicalRecordForm = ({
       ...prev,
       ...newData,
     }));
-    
+
     if (error) {
       setError(null);
     }
   };
 
-  const handleComplete = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  const { mutateAsync: saveRecord, isLoading } = useMutation(
+    async () => {
       if (!formData.title || !formData.recordType || !formData.recordDate) {
-        setError('Title, record type, and record date are required.');
-        return;
+        throw new Error('Title, record type, and record date are required.');
       }
+
+      // Extract attachments with raw files for separate upload
+      const attachmentsWithFiles = formData.attachments?.filter(att => att.file) || [];
 
       const submitData = {
         ...formData,
+        attachments: undefined, // Don't send attachments in JSON body
         recordDate: new Date(formData.recordDate).toISOString(),
       };
 
+      let resultRecord: MedicalRecord;
+
       if (medicalRecord) {
-        const updatedMedicalRecord = await medicalRecordService.updateMedicalRecord(
+        resultRecord = await medicalRecordService.updateMedicalRecord(
           medicalRecord.id,
           submitData
         );
-        onMedicalRecordUpdated?.(updatedMedicalRecord);
       } else {
-        const newMedicalRecord = await medicalRecordService.createMedicalRecord(submitData);
-        onMedicalRecordCreated?.(newMedicalRecord);
+        resultRecord = await medicalRecordService.createMedicalRecord(submitData);
       }
-    } catch (err) {
-      console.error('Error saving medical record:', err);
-      setError('Failed to save medical record. Please try again.');
-    } finally {
-      setLoading(false);
+
+      // Upload new attachments
+      for (const attachment of attachmentsWithFiles) {
+        if (attachment.file) {
+          await medicalRecordService.uploadAttachment(resultRecord.id, attachment.file);
+
+        }
+      }
+
+      return resultRecord;
+    },
+    {
+      onSuccess: (data) => {
+        if (medicalRecord) {
+          onMedicalRecordUpdated?.(data);
+        } else {
+          onMedicalRecordCreated?.(data);
+        }
+      },
+      onError: (err: any) => {
+        console.error('Error saving medical record:', err);
+        setError(err.message || 'Failed to save medical record. Please try again.');
+      }
     }
+  );
+
+  const handleComplete = async () => {
+    setError(null);
+
+    await saveRecord();
+
   };
 
   return {
     formData,
-    loading,
+    loading: isLoading,
     error,
     handleDataChange,
     handleComplete,
