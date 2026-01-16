@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,12 +11,14 @@ import {
   IconButton,
   alpha,
 } from '@mui/material';
+import { useQuery } from 'react-query';
 import { Close, Edit, Delete, Security, Description, MedicalServices, Science, History, Person, CalendarToday, AttachFile, Healing, LocalPharmacy } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { MedicalRecord, medicalRecordService } from '../../../../services/medicalRecordService';
 import { useAuth } from '../../../../contexts/AuthContext';
 import GenericTabs from '../../../../components/Common/GenericTabs';
 import MedicalRecordAccessLogsTab from './MedicalRecordAccessLogsTab';
+import MedicalRecordAttachmentViewer from '../../../../components/MedicalRecords/MedicalRecordAttachmentViewer';
 import {
   getRecordTypeColor,
   getRecordTypeIcon,
@@ -41,13 +43,41 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
+  const [recordData, setRecordData] = useState<MedicalRecord | null>(medicalRecord);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'RCC';
 
-  if (!medicalRecord) return null;
+  const { data: fetchedRecord, isLoading } = useQuery(
+    ['medicalRecord', medicalRecord?.id],
+    () => medicalRecordService.getMedicalRecord(medicalRecord!.id),
+    {
+      enabled: !!medicalRecord?.id && open,
+      onSuccess: (data) => setRecordData(data),
+      onError: (err) => console.error('Failed to fetch medical record details:', err),
+    }
+  );
 
-  const recordColor = getRecordTypeColor(medicalRecord.recordType);
-  const recordIcon = getRecordTypeIcon(medicalRecord.recordType);
-  const recordTypeLabel = getRecordTypeLabel(medicalRecord.recordType);
+  useEffect(() => {
+    if (fetchedRecord) {
+      setRecordData(fetchedRecord);
+    }
+  }, [fetchedRecord]);
+
+  const handleDeleteAttachmentCallback = (attachmentId: string) => {
+    if (recordData) {
+      setRecordData({
+        ...recordData,
+        attachments: recordData.attachments?.filter((a) => a.id !== attachmentId),
+      });
+    }
+  };
+
+  if (!medicalRecord || !recordData) return null;
+
+  const currentRecord = recordData;
+
+  const recordColor = getRecordTypeColor(currentRecord.recordType);
+  const recordIcon = getRecordTypeIcon(currentRecord.recordType);
+  const recordTypeLabel = getRecordTypeLabel(currentRecord.recordType);
 
   const formatField = (value: string | null | undefined) => {
     if (!value || value.trim() === '') return 'Not specified';
@@ -94,7 +124,7 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 1.5, fontSize: '1.5rem' }}>
-                {medicalRecord.title}
+                {currentRecord.title}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Chip
@@ -102,7 +132,7 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
                   sx={{ backgroundColor: alpha(recordColor, 0.1), color: recordColor, fontWeight: 600, fontSize: '0.8rem', height: '28px' }}
                 />
                 <Chip
-                  label={format(new Date(medicalRecord.recordDate), 'PPP')}
+                  label={format(new Date(currentRecord.recordDate), 'PPP')}
                   sx={{ backgroundColor: alpha(recordColor, 0.05), color: 'text.secondary', fontWeight: 500, fontSize: '0.8rem', height: '28px', border: `1px solid ${alpha(recordColor, 0.2)}` }}
                   variant="outlined"
                 />
@@ -111,25 +141,40 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
           </Box>
 
           <SectionCard icon={<Description sx={{ color: '#ffffff', fontSize: '20px' }} />} title="Basic Information" color={recordColor}>
-            <DetailField icon={<Description sx={{ color: recordColor, fontSize: '18px' }} />} label="Description" value={formatField(medicalRecord.description)} color={recordColor} fullWidth />
-            <DetailField icon={<Person sx={{ color: recordColor, fontSize: '18px' }} />} label="Created By" value={medicalRecord.createdBy ? `${medicalRecord.createdBy.firstName} ${medicalRecord.createdBy.lastName}` : 'Unknown'} color={recordColor} />
-            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Record Date" value={format(new Date(medicalRecord.recordDate), 'PPP')} color={recordColor} />
+            <DetailField icon={<Description sx={{ color: recordColor, fontSize: '18px' }} />} label="Description" value={formatField(currentRecord.description)} color={recordColor} fullWidth />
+            <DetailField icon={<Person sx={{ color: recordColor, fontSize: '18px' }} />} label="Created By" value={currentRecord.createdBy ? `${currentRecord.createdBy.firstName} ${currentRecord.createdBy.lastName}` : 'Unknown'} color={recordColor} />
+            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Record Date" value={format(new Date(currentRecord.recordDate), 'PPP')} color={recordColor} />
           </SectionCard>
 
           <SectionCard icon={<MedicalServices sx={{ color: '#ffffff', fontSize: '20px' }} />} title="Clinical Information" color={recordColor}>
-            <DetailField icon={<Healing sx={{ color: recordColor, fontSize: '18px' }} />} label="Diagnosis" value={formatField(medicalRecord.diagnosis)} color={recordColor} fullWidth />
-            <DetailField icon={<MedicalServices sx={{ color: recordColor, fontSize: '18px' }} />} label="Treatment" value={formatField(medicalRecord.treatment)} color={recordColor} fullWidth />
-            <DetailField icon={<LocalPharmacy sx={{ color: recordColor, fontSize: '18px' }} />} label="Medications" value={formatField(medicalRecord.medications)} color={recordColor} fullWidth />
+            <DetailField icon={<Healing sx={{ color: recordColor, fontSize: '18px' }} />} label="Diagnosis" value={formatField(currentRecord.diagnosis)} color={recordColor} fullWidth />
+            <DetailField icon={<MedicalServices sx={{ color: recordColor, fontSize: '18px' }} />} label="Treatment" value={formatField(currentRecord.treatment)} color={recordColor} fullWidth />
+            <DetailField icon={<LocalPharmacy sx={{ color: recordColor, fontSize: '18px' }} />} label="Medications" value={formatField(currentRecord.medications)} color={recordColor} fullWidth />
           </SectionCard>
 
           <SectionCard icon={<Science sx={{ color: '#ffffff', fontSize: '20px' }} />} title="Test Results & Attachments" color={recordColor}>
-            <DetailField icon={<Science sx={{ color: recordColor, fontSize: '18px' }} />} label="Test Results" value={formatField(medicalRecord.testResults)} color={recordColor} fullWidth />
-            <DetailField icon={<AttachFile sx={{ color: recordColor, fontSize: '18px' }} />} label="Attachments" value={formatField(medicalRecord.attachments)} color={recordColor} fullWidth />
+            <DetailField icon={<Science sx={{ color: recordColor, fontSize: '18px' }} />} label="Test Results" value={formatField(currentRecord.testResults)} color={recordColor} fullWidth />
+            <Box sx={{ width: '100%', mt: 1 }}>
+              <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AttachFile sx={{ fontSize: '18px', color: recordColor }} /> Attachments
+              </Typography>
+              {isLoading ? (
+                <Typography variant="body2" sx={{ color: 'text.secondary', pl: 3.5 }}>Loading attachments...</Typography>
+              ) : currentRecord.attachments && currentRecord.attachments.length > 0 ? (
+                <MedicalRecordAttachmentViewer
+                  attachments={currentRecord.attachments}
+                  showDelete={true}
+                  onDelete={handleDeleteAttachmentCallback}
+                />
+              ) : (
+                <Typography variant="body2" sx={{ color: 'text.disabled', fontStyle: 'italic', pl: 3.5 }}>No attachments</Typography>
+              )}
+            </Box>
           </SectionCard>
 
           <SectionCard icon={<History sx={{ color: '#ffffff', fontSize: '20px' }} />} title="System Information" color={recordColor}>
-            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Created At" value={format(new Date(medicalRecord.createdAt), 'PPpp')} color={recordColor} />
-            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Last Updated" value={format(new Date(medicalRecord.updatedAt), 'PPpp')} color={recordColor} />
+            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Created At" value={format(new Date(currentRecord.createdAt), 'PPpp')} color={recordColor} />
+            <DetailField icon={<CalendarToday sx={{ color: recordColor, fontSize: '18px' }} />} label="Last Updated" value={format(new Date(currentRecord.updatedAt), 'PPpp')} color={recordColor} />
           </SectionCard>
         </Box>
       ),
@@ -137,18 +182,18 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
     },
     ...(isAdmin
       ? [
-          {
-            label: 'Access Logs',
-            content: (
-              <MedicalRecordAccessLogsTab
-                entityId={medicalRecord.id}
-                fetchLogs={medicalRecordService.getAccessLogs.bind(medicalRecordService)}
-                entityLabel={`Medical Record "${medicalRecord.title}" Access Logs`}
-              />
-            ),
-            icon: <Security />,
-          },
-        ]
+        {
+          label: 'Access Logs',
+          content: (
+            <MedicalRecordAccessLogsTab
+              entityId={currentRecord.id}
+              fetchLogs={medicalRecordService.getAccessLogs.bind(medicalRecordService)}
+              entityLabel={`Medical Record "${currentRecord.title}" Access Logs`}
+            />
+          ),
+          icon: <Security />,
+        },
+      ]
       : []),
   ];
 
@@ -197,7 +242,7 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
           <Button
             variant="contained"
             startIcon={<Edit />}
-            onClick={() => onEdit(medicalRecord)}
+            onClick={() => onEdit(currentRecord)}
             sx={{
               background: `linear-gradient(135deg, ${recordColor} 0%, ${alpha(recordColor, 0.8)} 100%)`,
               boxShadow: `0 2px 8px ${alpha(recordColor, 0.3)}`,
@@ -215,7 +260,7 @@ const MedicalRecordDetailsDialog: React.FC<MedicalRecordDetailsDialogProps> = ({
             variant="outlined"
             color="error"
             startIcon={<Delete />}
-            onClick={() => onDelete(medicalRecord)}
+            onClick={() => onDelete(currentRecord)}
           >
             Delete Record
           </Button>

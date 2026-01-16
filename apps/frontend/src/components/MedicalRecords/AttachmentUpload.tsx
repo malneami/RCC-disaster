@@ -227,17 +227,9 @@ const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
                 onDrop={handleDrop}
                 sx={{
                     p: 3,
-                    borderColor: isDragOver ? 'primary.main' : 'divider',
-                    bgcolor: isDragOver ? 'rgba(25, 118, 210, 0.08)' : 'background.paper',
                     textAlign: 'center',
                     cursor: 'pointer',
-                    borderRadius: 3,
-                    border: '2px dashed',
                     transition: 'all 0.3s ease-in-out',
-                    '&:hover': {
-                        borderColor: 'primary.main',
-                        bgcolor: 'rgba(25, 118, 210, 0.04)',
-                    },
                 }}
                 elevation={0}
             >

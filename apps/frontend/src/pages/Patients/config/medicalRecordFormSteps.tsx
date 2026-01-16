@@ -15,7 +15,6 @@ import {
   Info,
   MedicalServices,
   Science,
-  AttachFile,
   Title,
   Category,
   CalendarToday,
@@ -25,6 +24,8 @@ import {
   Assessment,
 } from '@mui/icons-material';
 import { CreateMedicalRecordData, MedicalRecordType } from '../../../services/medicalRecordService';
+import AttachmentUpload from '../../../components/MedicalRecords/AttachmentUpload';
+import MedicalRecordAttachmentViewer from '../../../components/MedicalRecords/MedicalRecordAttachmentViewer';
 
 export const MEDICAL_RECORD_TYPES: { value: MedicalRecordType; label: string }[] = [
   { value: 'CONSULTATION', label: 'Consultation' },
@@ -79,11 +80,18 @@ const StepHeader: React.FC<{ icon: React.ReactNode; title: string; color: string
 export const createMedicalRecordStepsConfig = (
   formData: CreateMedicalRecordData,
   handleDataChange: (data: Partial<CreateMedicalRecordData>) => void,
-  isEditing: boolean = false
+  isEditing: boolean = false,
+  medicalRecordId?: string,
+  existingAttachments: any[] = [],
+  uploadedAttachments: any[] = [],
+  onAttachmentUploaded?: (attachment: any) => void,
+  onAttachmentDeleted?: (id: string) => void
 ) => {
   const step1Color = '#42a5f5';
   const step2Color = '#9c27b0';
   const step3Color = '#26a69a';
+
+  const allExistingAttachments = [...existingAttachments, ...uploadedAttachments];
 
   return [
     {
@@ -131,7 +139,7 @@ export const createMedicalRecordStepsConfig = (
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
                 <InputLabel>Record Type</InputLabel>
@@ -169,7 +177,7 @@ export const createMedicalRecordStepsConfig = (
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -206,7 +214,7 @@ export const createMedicalRecordStepsConfig = (
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -293,7 +301,7 @@ export const createMedicalRecordStepsConfig = (
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -330,7 +338,7 @@ export const createMedicalRecordStepsConfig = (
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -417,43 +425,39 @@ export const createMedicalRecordStepsConfig = (
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Attachments"
-                value={formData.attachments || ''}
-                onChange={(e) => handleDataChange({ attachments: e.target.value })}
-                multiline
-                rows={2}
-                placeholder="List file attachments or references..."
-                helperText="Enter file names or references to attached documents"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start" sx={{ alignSelf: 'flex-start', pt: 1.5 }}>
-                      <Box
-                        sx={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          background: alpha(step3Color, 0.1),
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mr: 1,
-                        }}
-                      >
-                        <AttachFile sx={{ color: step3Color, fontSize: '18px' }} />
-                      </Box>
-                    </InputAdornment>
-                  ),
+              <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 3, fontWeight: 600 }}>
+                Upload Attachments
+              </Typography>
+              <AttachmentUpload
+                medicalRecordId={isEditing ? medicalRecordId : undefined}
+                onFileSelect={(file) => {
+                  const currentAttachments = formData.attachments || [];
+                  handleDataChange({ attachments: [...currentAttachments, file] });
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  },
+                onFileRemove={(index) => {
+                  const currentAttachments = formData.attachments || [];
+                  const newAttachments = currentAttachments.filter((_, i) => i !== index);
+                  handleDataChange({ attachments: newAttachments });
                 }}
+                onUploadSuccess={onAttachmentUploaded}
+                selectedFiles={formData.attachments || []}
               />
+
+              {/* Show existing attachments when editing */}
+              {allExistingAttachments.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 1.5, fontWeight: 600 }}>
+                    Saved Attachments ({allExistingAttachments.length})
+                  </Typography>
+                  <MedicalRecordAttachmentViewer
+                    attachments={allExistingAttachments}
+                    showDelete={true}
+                    onDelete={onAttachmentDeleted}
+                  />
+                </Box>
+              )}
             </Grid>
           </Grid>
         </Box>

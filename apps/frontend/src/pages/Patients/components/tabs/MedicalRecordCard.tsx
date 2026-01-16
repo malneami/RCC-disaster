@@ -11,6 +11,7 @@ import {
   Visibility,
   Edit,
   Delete,
+  AttachFile,
 } from '@mui/icons-material';
 import { format, formatDistanceToNow } from 'date-fns';
 import { MedicalRecord } from '../../../../services/medicalRecordService';
@@ -127,6 +128,20 @@ const MedicalRecordCard: React.FC<MedicalRecordCardProps> = ({
                 >
                   ({relativeDate})
                 </Typography>
+                {record.attachments && record.attachments.length > 0 && (
+                  <Chip
+                    icon={<AttachFile sx={{ fontSize: '12px !important' }} />}
+                    label={record.attachments.length}
+                    size="small"
+                    sx={{
+                      height: '20px',
+                      fontSize: '10px',
+                      backgroundColor: 'grey.100',
+                      color: 'text.secondary',
+                      '& .MuiChip-icon': { ml: '4px', mr: '-4px' }
+                    }}
+                  />
+                )}
               </Box>
             </Box>
           </Box>

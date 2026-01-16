@@ -30,7 +30,7 @@ import { UserRole } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('medical-records')
 export class MedicalRecordsController {
-  constructor(private readonly medicalRecordsService: MedicalRecordsService) {}
+  constructor(private readonly medicalRecordsService: MedicalRecordsService) { }
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR, UserRole.CATH_LAB_USER)
@@ -87,7 +87,7 @@ export class MedicalRecordsController {
     @Body() updateMedicalRecordDto: UpdateMedicalRecordDto,
     @Request() req: any,
   ) {
-    return this.medicalRecordsService.update(id, updateMedicalRecordDto, req.user.id);
+    return this.medicalRecordsService.update(id, updateMedicalRecordDto, req.user.id, req.user.role);
   }
 
   @Delete(':id')
@@ -98,7 +98,7 @@ export class MedicalRecordsController {
   @ApiResponse({ status: 403, description: 'Forbidden - can only delete own records' })
   @ApiResponse({ status: 404, description: 'Medical record not found' })
   remove(@Param('id') id: string, @Request() req: any) {
-    return this.medicalRecordsService.remove(id, req.user.id);
+    return this.medicalRecordsService.remove(id, req.user.id, req.user.role);
   }
 
   @Get('access-logs')

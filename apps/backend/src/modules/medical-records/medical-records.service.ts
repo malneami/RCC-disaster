@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../../database/prisma.service';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
-import { MedicalRecord, MedicalRecordType } from '@prisma/client';
+import { MedicalRecord, MedicalRecordType, UserRole } from '@prisma/client';
 import { AccessLogService, EntityType } from '../../common/services/access-log.service';
 
 @Injectable()
@@ -217,11 +217,11 @@ export class MedicalRecordsService {
     });
   }
 
-  async update(id: string, updateMedicalRecordDto: UpdateMedicalRecordDto, userId: string): Promise<MedicalRecord> {
+  async update(id: string, updateMedicalRecordDto: UpdateMedicalRecordDto, userId: string, userRole?: UserRole): Promise<MedicalRecord> {
     const medicalRecord = await this.findOne(id);
 
-    // Check if user has permission to update (created by or admin)
-    if (medicalRecord.createdById !== userId) {
+    // Check if user has permission to update (created by or admin/rcc)
+    if (medicalRecord.createdById !== userId && userRole !== UserRole.ADMIN && userRole !== UserRole.RCC) {
       throw new ForbiddenException('You can only update medical records you created');
     }
 
@@ -273,11 +273,11 @@ export class MedicalRecordsService {
     return updatedRecord;
   }
 
-  async remove(id: string, userId: string): Promise<void> {
+  async remove(id: string, userId: string, userRole?: UserRole): Promise<void> {
     const medicalRecord = await this.findOne(id);
 
-    // Check if user has permission to delete (created by or admin)
-    if (medicalRecord.createdById !== userId) {
+    // Check if user has permission to delete (created by or admin/rcc)
+    if (medicalRecord.createdById !== userId && userRole !== UserRole.ADMIN && userRole !== UserRole.RCC) {
       throw new ForbiddenException('You can only delete medical records you created');
     }
 

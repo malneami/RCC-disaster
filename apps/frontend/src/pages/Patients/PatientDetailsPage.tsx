@@ -42,9 +42,9 @@ const PatientDetailsPage: React.FC = () => {
     }
   }, [id]);
 
-  const loadPatientDetails = async (patientId: string) => {
+  const loadPatientDetails = async (patientId: string, silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await patientService.getPatientById(patientId);
       console.log('Patient data loaded:', data);
       console.log('Medical records:', data.medicalRecords);
@@ -109,21 +109,21 @@ const PatientDetailsPage: React.FC = () => {
   const handleMedicalRecordCreated = (_medicalRecord: any) => {
     // Refresh the patient data to include the new medical record
     if (patient) {
-      loadPatientDetails(patient.id);
+      loadPatientDetails(patient.id, true);
     }
   };
 
   const handleMedicalRecordUpdated = (_medicalRecord: any) => {
     // Refresh the patient data to include the updated medical record
     if (patient) {
-      loadPatientDetails(patient.id);
+      loadPatientDetails(patient.id, true);
     }
   };
 
   const handleMedicalRecordDeleted = (_medicalRecordId: string) => {
     // Refresh the patient data to remove the deleted medical record
     if (patient) {
-      loadPatientDetails(patient.id);
+      loadPatientDetails(patient.id, true);
     }
   };
 
@@ -157,8 +157,8 @@ const PatientDetailsPage: React.FC = () => {
     },
     {
       label: 'Medical Records',
-      content: <PatientMedicalRecordsTab 
-        medicalRecords={patient.medicalRecords || []} 
+      content: <PatientMedicalRecordsTab
+        medicalRecords={patient.medicalRecords || []}
         patientId={patient.id}
         onMedicalRecordCreated={handleMedicalRecordCreated}
         onMedicalRecordUpdated={handleMedicalRecordUpdated}
@@ -202,7 +202,7 @@ const PatientDetailsPage: React.FC = () => {
         open={showPatientForm}
         patient={patient}
         onClose={handlePatientFormClose}
-        onPatientCreated={() => {}} // Not used when editing
+        onPatientCreated={() => { }} // Not used when editing
         onPatientUpdated={handlePatientUpdated}
         onViewDuplicate={handleViewDuplicate}
       />

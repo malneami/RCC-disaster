@@ -15,6 +15,7 @@ import {
   MedicalServices,
   Inbox,
 } from '@mui/icons-material';
+import { useMutation } from 'react-query';
 import { MedicalRecord, medicalRecordService } from '../../../../services/medicalRecordService';
 import {
   MedicalRecordFormDialog,
@@ -41,7 +42,19 @@ const PatientMedicalRecordsTab: React.FC<PatientMedicalRecordsTabProps> = ({
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { mutateAsync: deleteRecord, isLoading: isDeleting } = useMutation(
+    (id: string) => medicalRecordService.deleteMedicalRecord(id),
+    {
+      onSuccess: (_, id) => {
+        onMedicalRecordDeleted?.(id);
+        handleDeleteDialogClose();
+      },
+      onError: (error) => {
+        console.error('Error deleting medical record:', error);
+      }
+    }
+  );
 
   const handleAddRecord = () => {
     setShowAddDialog(true);
@@ -79,18 +92,7 @@ const PatientMedicalRecordsTab: React.FC<PatientMedicalRecordsTabProps> = ({
 
   const handleConfirmDelete = async () => {
     if (!selectedRecord) return;
-
-    try {
-      setIsDeleting(true);
-      await medicalRecordService.deleteMedicalRecord(selectedRecord.id);
-      onMedicalRecordDeleted?.(selectedRecord.id);
-      handleDeleteDialogClose();
-    } catch (error) {
-      console.error('Error deleting medical record:', error);
-      // You might want to show an error message to the user here
-    } finally {
-      setIsDeleting(false);
-    }
+    await deleteRecord(selectedRecord.id);
   };
 
   const handleMedicalRecordCreated = (medicalRecord: MedicalRecord) => {
@@ -231,7 +233,7 @@ const PatientMedicalRecordsTab: React.FC<PatientMedicalRecordsTabProps> = ({
         <DialogTitle>Delete Medical Record</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the medical record "{selectedRecord?.title}"? 
+            Are you sure you want to delete the medical record "{selectedRecord?.title}"?
             This action cannot be undone.
           </DialogContentText>
         </DialogContent>
@@ -239,9 +241,9 @@ const PatientMedicalRecordsTab: React.FC<PatientMedicalRecordsTabProps> = ({
           <Button onClick={handleDeleteDialogClose} disabled={isDeleting}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleConfirmDelete} 
-            color="error" 
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
             variant="contained"
             disabled={isDeleting}
           >

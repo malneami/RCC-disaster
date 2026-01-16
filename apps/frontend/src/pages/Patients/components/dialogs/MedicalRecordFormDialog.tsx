@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import MultiStepDialog from '../../../../components/Common/MultiStepDialog';
 import { useMedicalRecordForm } from '../../hooks/useMedicalRecordForm';
 import { createMedicalRecordStepsConfig } from '../../config/medicalRecordFormSteps';
@@ -34,10 +34,27 @@ const MedicalRecordFormDialog: React.FC<MedicalRecordFormDialogProps> = ({
     onMedicalRecordUpdated,
   });
 
+  const [uploadedAttachments, setUploadedAttachments] = useState<any[]>([]);
+  const [localExistingAttachments, setLocalExistingAttachments] = useState<any[]>(medicalRecord?.attachments || []);
+
+  useEffect(() => {
+    setLocalExistingAttachments(medicalRecord?.attachments || []);
+  }, [medicalRecord]);
+
+  const handleAttachmentDeleted = (id: string) => {
+    setLocalExistingAttachments((prev) => prev.filter((a) => a.id !== id));
+    setUploadedAttachments((prev:any[]) => prev.filter((a) => a.id !== id));
+  };
+
   const steps = createMedicalRecordStepsConfig(
     formData,
     handleDataChange,
-    !!medicalRecord
+    !!medicalRecord,
+    medicalRecord?.id,
+    localExistingAttachments,
+    uploadedAttachments,
+    (newAtt) => setUploadedAttachments(prev => [...prev, newAtt]),
+    handleAttachmentDeleted
   );
 
   const handleClose = () => {
