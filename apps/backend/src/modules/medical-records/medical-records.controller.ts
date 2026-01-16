@@ -9,8 +9,14 @@ import {
   Query,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { MedicalRecordsService } from './medical-records.service';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
@@ -141,5 +147,61 @@ export class MedicalRecordsController {
       limit: limit ? parseInt(limit) : 50,
       medicalRecordId,
     });
+  }
+
+  @Post(':id/attachments')
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR, UserRole.CATH_LAB_USER)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload attachment to medical record' })
+  @ApiParam({ name: 'id', description: 'Medical record ID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Attachment uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file' })
+  @ApiResponse({ status: 404, description: 'Medical record not found' })
+  async uploadAttachment(
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }), // 50MB
+          new FileTypeValidator({ fileType: /(image|video|application\/pdf)/ }),
+        ],
+      })
+    ) file: { originalname: string; mimetype: string; size: number; buffer: Buffer },
+    @Request() req: any,
+  ) {
+    return this.medicalRecordsService.uploadAttachment(id, file, req.user.id);
+  }
+
+  @Get('attachments/:attachmentId')
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR, UserRole.CATH_LAB_USER)
+  @ApiOperation({ summary: 'Get attachment content' })
+  @ApiParam({ name: 'attachmentId', description: 'Attachment ID' })
+  @ApiResponse({ status: 200, description: 'Attachment retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Attachment not found' })
+  getAttachment(@Param('attachmentId') attachmentId: string) {
+    return this.medicalRecordsService.getAttachment(attachmentId);
+  }
+
+  @Delete('attachments/:attachmentId')
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.DATA_COLLECTOR, UserRole.CATH_LAB_USER)
+  @ApiOperation({ summary: 'Delete an attachment' })
+  @ApiParam({ name: 'attachmentId', description: 'Attachment ID' })
+  @ApiResponse({ status: 200, description: 'Attachment deleted successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - can only delete own attachments' })
+  @ApiResponse({ status: 404, description: 'Attachment not found' })
+  deleteAttachment(@Param('attachmentId') attachmentId: string, @Request() req: any) {
+    return this.medicalRecordsService.deleteAttachment(attachmentId, req.user.id);
   }
 }

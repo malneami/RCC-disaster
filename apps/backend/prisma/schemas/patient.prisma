@@ -106,6 +106,30 @@ model Patient {
   @@index([lastAccessedAt])
 }
 
+// Medical Record Attachment model
+model MedicalRecordAttachment {
+  id              String        @id @default(uuid())
+  medicalRecordId String        @map("medical_record_id")
+  
+  // File Details
+  fileName        String        @map("file_name")
+  mimeType        String        @map("mime_type")
+  fileSize        Int           @map("file_size") 
+  fileData        String        @map("file_data") // Base64 string
+  
+  // Audit Fields
+  uploadedAt      DateTime      @default(now()) @map("uploaded_at")
+  uploadedBy      User          @relation("MedicalRecordAttachmentUploader", fields: [uploadedById], references: [id])
+  uploadedById    String        @map("uploaded_by_id")
+  
+  // Relations
+  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  
+  @@map("medical_record_attachments")
+  @@index([medicalRecordId])
+  @@index([uploadedById])
+}
+
 // Medical Record model for detailed medical history
 model MedicalRecord {
   id              String            @id @default(uuid())
@@ -117,7 +141,6 @@ model MedicalRecord {
   treatment       String?
   medications     String?           // JSON string
   testResults     String?           // JSON string
-  attachments     String?           // JSON string of file paths
   
   // Dates
   recordDate      DateTime          @map("record_date")
@@ -135,6 +158,7 @@ model MedicalRecord {
   createdBy       User              @relation("MedicalRecordCreator", fields: [createdById], references: [id])
   lastAccessedByUser User?          @relation("MedicalRecordAccessor", fields: [lastAccessedBy], references: [id])
   accessLogs      MedicalRecordAccessLog[]
+  attachments     MedicalRecordAttachment[]
   
   @@map("medical_records")
   @@index([patientId])

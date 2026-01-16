@@ -99,6 +99,7 @@ model User {
   resolvedSupportTickets SupportTicket[] @relation("SupportTicketResolver")
   supportMessages SupportMessage[] @relation("SupportMessageSender")
   uploadedSupportAttachments SupportAttachment[] @relation("SupportAttachmentUploader")
+  uploadedMedicalRecordAttachments MedicalRecordAttachment[] @relation("MedicalRecordAttachmentUploader")
   
   @@map("users")
   @@index([email])

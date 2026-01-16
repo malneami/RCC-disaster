@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
@@ -10,10 +10,10 @@ export class MedicalRecordsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly accessLogService: AccessLogService,
-  ) {}
+  ) { }
 
   async create(createMedicalRecordDto: CreateMedicalRecordDto, userId: string): Promise<MedicalRecord> {
-    const { patientId, recordDate, ...data } = createMedicalRecordDto;
+    const { patientId, recordDate, attachments, ...data } = createMedicalRecordDto;
 
     // Verify patient exists
     const patient = await this.prisma.patient.findUnique({
@@ -51,6 +51,24 @@ export class MedicalRecordsService {
       },
     });
 
+    // Handle nested attachments if provided
+    if (attachments && attachments.length > 0) {
+      await Promise.all(
+        attachments.map((att) =>
+          this.prisma.medicalRecordAttachment.create({
+            data: {
+              medicalRecordId: medicalRecord.id,
+              fileName: att.fileName,
+              mimeType: att.mimeType,
+              fileSize: att.fileSize,
+              fileData: att.fileData,
+              uploadedById: userId,
+            },
+          })
+        )
+      );
+    }
+
     // Explicitly log the access for medical record creation
     try {
       await this.accessLogService.logAccess({
@@ -59,14 +77,14 @@ export class MedicalRecordsService {
         userId,
         accessType: 'CREATE',
         accessMethod: 'API',
-        reason: `Medical record "${medicalRecord.title}" created via create endpoint`,
+        reason: `Medical record "${medicalRecord.title}" created via create endpoint${attachments && attachments.length > 0 ? ` with ${attachments.length} attachments` : ''}`,
       });
     } catch (error) {
       // Don't fail the creation if logging fails
       console.error('Failed to log medical record creation access:', error);
     }
 
-    return medicalRecord;
+    return this.findOne(medicalRecord.id);
   }
 
   async findAll(patientId?: string, recordType?: MedicalRecordType): Promise<MedicalRecord[]> {
@@ -101,6 +119,15 @@ export class MedicalRecordsService {
             email: true,
           },
         },
+        attachments: {
+          select: {
+            id: true,
+            fileName: true,
+            mimeType: true,
+            fileSize: true,
+            uploadedAt: true,
+          },
+        },
       },
       orderBy: {
         recordDate: 'desc',
@@ -110,7 +137,7 @@ export class MedicalRecordsService {
 
   async findOne(id: string): Promise<MedicalRecord> {
     const medicalRecord = await this.prisma.medicalRecord.findUnique({
-      where: { 
+      where: {
         id,
         deletedAt: null, // Only show non-deleted records
       },
@@ -129,6 +156,15 @@ export class MedicalRecordsService {
             firstName: true,
             lastName: true,
             email: true,
+          },
+        },
+        attachments: {
+          select: {
+            id: true,
+            fileName: true,
+            mimeType: true,
+            fileSize: true,
+            uploadedAt: true,
           },
         },
       },
@@ -152,7 +188,7 @@ export class MedicalRecordsService {
     }
 
     return this.prisma.medicalRecord.findMany({
-      where: { 
+      where: {
         patientId,
         deletedAt: null, // Only show non-deleted records
       },
@@ -163,6 +199,15 @@ export class MedicalRecordsService {
             firstName: true,
             lastName: true,
             email: true,
+          },
+        },
+        attachments: {
+          select: {
+            id: true,
+            fileName: true,
+            mimeType: true,
+            fileSize: true,
+            uploadedAt: true,
           },
         },
       },
@@ -315,5 +360,100 @@ export class MedicalRecordsService {
       limit,
       pages: Math.ceil(total / limit),
     };
+  }
+  async uploadAttachment(
+    medicalRecordId: string,
+    file: { originalname: string; mimetype: string; size: number; buffer: Buffer },
+    userId: string,
+  ) {
+    const medicalRecord = await this.findOne(medicalRecordId);
+
+    const fileData = file.buffer.toString('base64');
+
+    const attachment = await this.prisma.medicalRecordAttachment.create({
+      data: {
+        medicalRecordId,
+        fileName: file.originalname,
+        mimeType: file.mimetype,
+        fileSize: file.size,
+        fileData,
+        uploadedById: userId,
+      },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    // Log access
+    try {
+      await this.accessLogService.logAccess({
+        entityType: EntityType.MEDICAL_RECORD,
+        entityId: medicalRecordId,
+        userId,
+        accessType: 'UPDATE',
+        accessMethod: 'API',
+        reason: `Attachment "${file.originalname}" uploaded`,
+      });
+    } catch (error) {
+      console.error('Failed to log access:', error);
+    }
+
+    // Return attachment without fileData to keep response light
+    const { fileData: _, ...result } = attachment;
+    return result;
+  }
+
+  async getAttachment(attachmentId: string) {
+    const attachment = await this.prisma.medicalRecordAttachment.findUnique({
+      where: { id: attachmentId },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException(`Attachment with ID ${attachmentId} not found`);
+    }
+
+    return attachment;
+  }
+
+  async deleteAttachment(attachmentId: string, userId: string) {
+    const attachment = await this.prisma.medicalRecordAttachment.findUnique({
+      where: { id: attachmentId },
+      include: {
+        medicalRecord: true,
+      },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException(`Attachment with ID ${attachmentId} not found`);
+    }
+
+    if (attachment.medicalRecord.createdById !== userId) {
+      throw new ForbiddenException('You can only delete attachments from records you created');
+    }
+
+    await this.prisma.medicalRecordAttachment.delete({
+      where: { id: attachmentId },
+    });
+
+    try {
+      await this.accessLogService.logAccess({
+        entityType: EntityType.MEDICAL_RECORD,
+        entityId: attachment.medicalRecordId,
+        userId,
+        accessType: 'UPDATE',
+        accessMethod: 'API',
+        reason: `Attachment "${attachment.fileName}" deleted`,
+      });
+    } catch (error) {
+      console.error('Failed to log access:', error);
+    }
+
+    return { success: true };
   }
 }

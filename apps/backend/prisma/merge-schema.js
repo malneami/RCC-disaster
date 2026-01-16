@@ -13,6 +13,7 @@ const SCHEMA_ORDER = [
   'user.prisma',
   'hospital.prisma',
   'patient.prisma',
+  'medical-record-attachment.prisma',
   'ticket.prisma',
   'critical-case.prisma',
   'hospital-ticket.prisma',
@@ -60,13 +61,13 @@ datasource db {
 
 function mergeSchemaFiles() {
   console.log('🔧 Merging Prisma schema files...');
-  
+
   let mergedContent = PRISMA_HEADER;
-  
+
   // Process files in order
   for (const fileName of SCHEMA_ORDER) {
     const filePath = path.join(SCHEMA_DIR, fileName);
-    
+
     if (fs.existsSync(filePath)) {
       console.log(`📄 Processing ${fileName}...`);
       const content = fs.readFileSync(filePath, 'utf8');
@@ -75,14 +76,14 @@ function mergeSchemaFiles() {
       console.warn(`⚠️  Warning: ${fileName} not found`);
     }
   }
-  
+
   // Process relations directory if it exists
   if (fs.existsSync(RELATIONS_DIR)) {
     console.log('🔗 Processing relations...');
     const relationFiles = fs.readdirSync(RELATIONS_DIR)
       .filter(file => file.endsWith('.prisma'))
       .sort();
-    
+
     for (const fileName of relationFiles) {
       const filePath = path.join(RELATIONS_DIR, fileName);
       console.log(`📄 Processing relation ${fileName}...`);
@@ -90,18 +91,18 @@ function mergeSchemaFiles() {
       mergedContent += `\n// Relations: ${fileName}\n${content}\n`;
     }
   }
-  
+
   // Write merged schema
   fs.writeFileSync(OUTPUT_FILE, mergedContent);
   console.log(`✅ Schema merged successfully to ${OUTPUT_FILE}`);
-  
+
   // Validate the merged schema
   validateMergedSchema(mergedContent);
 }
 
 function validateMergedSchema(content) {
   console.log('🔍 Validating merged schema...');
-  
+
   // Basic validation checks
   const checks = [
     { name: 'Generator block', pattern: /generator client/, required: true },
@@ -135,9 +136,9 @@ function validateMergedSchema(content) {
     { name: 'Reply model', pattern: /model Reply/, required: true },
     { name: 'Enums', pattern: /enum/, required: true },
   ];
-  
+
   let hasErrors = false;
-  
+
   for (const check of checks) {
     if (check.required && !check.pattern.test(content)) {
       console.error(`❌ Missing required: ${check.name}`);
@@ -146,7 +147,7 @@ function validateMergedSchema(content) {
       console.log(`✅ Found: ${check.name}`);
     }
   }
-  
+
   if (!hasErrors) {
     console.log('✅ Schema validation passed');
   } else {

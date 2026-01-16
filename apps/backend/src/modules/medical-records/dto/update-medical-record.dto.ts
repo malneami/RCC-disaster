@@ -8,7 +8,7 @@ export class UpdateMedicalRecordDto {
   @IsUUID()
   patientId?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Type of medical record',
     enum: MedicalRecordType
   })
@@ -45,11 +45,6 @@ export class UpdateMedicalRecordDto {
   @IsOptional()
   @IsString()
   testResults?: string;
-
-  @ApiPropertyOptional({ description: 'File attachments' })
-  @IsOptional()
-  @IsString()
-  attachments?: string;
 
   @ApiPropertyOptional({ description: 'Date of the medical record' })
   @IsOptional()
