@@ -50,9 +50,19 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
     onFilterChange(clearedFilters);
   };
 
-  const hasActiveFilters = Object.values(localFilters).some(value => 
-    value !== undefined && value !== null && value !== ''
-  );
+  const ignoredFilterKeys = ['sortBy', 'sortOrder'];
+
+  const getActiveFilterCount = () => {
+    return Object.keys(localFilters).filter(key =>
+      !ignoredFilterKeys.includes(key) &&
+      localFilters[key as keyof TicketFilter] !== undefined &&
+      localFilters[key as keyof TicketFilter] !== null &&
+      localFilters[key as keyof TicketFilter] !== ''
+    ).length;
+  };
+
+  const activeFilterCount = getActiveFilterCount();
+  const hasActiveFilters = activeFilterCount > 0;
 
   const statusOptions = [
     { value: 'PENDING', label: 'Pending' },
@@ -85,7 +95,7 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
         <Box sx={{ display: 'flex', gap: 1 }}>
           {hasActiveFilters && (
             <Chip
-              label={`${Object.keys(localFilters).filter(key => localFilters[key as keyof TicketFilter]).length} active filters`}
+              label={`${activeFilterCount} active filters`}
               color="primary"
               size="small"
             />
