@@ -29,7 +29,7 @@ export const SupportTicketChatPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const isSupportPanel = location.pathname.startsWith('/support-panel');
-  const isSupportRole = user?.role === 'SUPPORT';
+  const isSupportRole = user?.role === 'SUPPORT' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'RCC';
   const [ticket, setTicket] = useState<SupportTicketWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,22 +56,22 @@ export const SupportTicketChatPage: React.FC = () => {
   const loadTicket = async () => {
     if (!ticketId) return;
     try {
-      const data = isSupportRole 
+      const data = isSupportRole
         ? await supportService.getTicketAdmin(ticketId)
         : await supportService.getTicket(ticketId);
-      
+
       // Check if there are new messages
       const currentMessageCount = data.messages.length;
       const hasNewMessages = currentMessageCount > lastMessageCountRef.current;
-      
+
       setTicket(data);
       setError(null);
-      
+
       // Only scroll if there are new messages and user is near bottom
       if (hasNewMessages && isNearBottom()) {
         setTimeout(() => scrollToBottom(), 100);
       }
-      
+
       lastMessageCountRef.current = currentMessageCount;
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load ticket');
@@ -177,10 +177,10 @@ export const SupportTicketChatPage: React.FC = () => {
   }
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
         height: 'calc(100vh - 70px)',
         position: 'fixed',
         top: 70,
@@ -196,10 +196,10 @@ export const SupportTicketChatPage: React.FC = () => {
       }}
     >
       {/* Header */}
-      <Paper 
-        sx={{ 
-          p: 2, 
-          borderRadius: 0, 
+      <Paper
+        sx={{
+          p: 2,
+          borderRadius: 0,
           boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
           borderBottom: '1px solid',
           borderColor: 'divider',
@@ -207,93 +207,93 @@ export const SupportTicketChatPage: React.FC = () => {
           flexShrink: 0,
         }}
       >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBack />}
-              onClick={() => navigate(isSupportPanel ? '/support-panel' : '/support')}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                borderColor: 'divider',
-                color: 'text.primary',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                  borderColor: 'primary.main',
-                  color: 'primary.main',
-                },
-              }}
-            >
-              Back
-            </Button>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" fontWeight="700" sx={{ color: 'text.primary', mb: 0.5 }}>
-                {ticket.ticketNumber}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Created by {ticket.createdBy.firstName} {ticket.createdBy.lastName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">•</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {new Date(ticket.createdAt).toLocaleString()}
-                </Typography>
-              </Box>
-            </Box>
-            {isSupportRole ? (
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={ticket.status}
-                  label="Status"
-                  onChange={(e) => handleStatusUpdate(e.target.value as SupportTicketStatus)}
-                  sx={{
-                    borderRadius: 2,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'divider',
-                    },
-                  }}
-                >
-                  <MenuItem value="OPEN">Open</MenuItem>
-                  <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
-                  <MenuItem value="RESOLVED">Resolved</MenuItem>
-                  <MenuItem value="CLOSED">Closed</MenuItem>
-                </Select>
-              </FormControl>
-            ) : (
-              <TicketStatusBadge status={ticket.status} />
-            )}
-          </Box>
-          <Box 
-            sx={{ 
-              mt: 2, 
-              p: 2, 
-              bgcolor: 'rgba(25, 118, 210, 0.04)',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'rgba(25, 118, 210, 0.1)',
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBack />}
+            onClick={() => navigate(isSupportPanel ? '/support-panel' : '/support')}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderColor: 'divider',
+              color: 'text.primary',
+              '&:hover': {
+                bgcolor: 'action.hover',
+                borderColor: 'primary.main',
+                color: 'primary.main',
+              },
             }}
           >
-            <Typography variant="body1" sx={{ mb: 1, lineHeight: 1.6 }}>
-              {ticket.description}
+            Back
+          </Button>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" fontWeight="700" sx={{ color: 'text.primary', mb: 0.5 }}>
+              {ticket.ticketNumber}
             </Typography>
-            <Chip 
-              label={ticket.category} 
-              size="small" 
-              sx={{ 
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-              }} 
-            />
-          </Box>
-          {ticket.attachments.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <AttachmentViewer attachments={ticket.attachments} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography variant="body2" color="text.secondary">
+                Created by {ticket.createdBy.firstName} {ticket.createdBy.lastName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">•</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {new Date(ticket.createdAt).toLocaleString()}
+              </Typography>
             </Box>
+          </Box>
+          {isSupportRole ? (
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={ticket.status}
+                label="Status"
+                onChange={(e) => handleStatusUpdate(e.target.value as SupportTicketStatus)}
+                sx={{
+                  borderRadius: 2,
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'divider',
+                  },
+                }}
+              >
+                <MenuItem value="OPEN">Open</MenuItem>
+                <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+                <MenuItem value="RESOLVED">Resolved</MenuItem>
+                <MenuItem value="CLOSED">Closed</MenuItem>
+              </Select>
+            </FormControl>
+          ) : (
+            <TicketStatusBadge status={ticket.status} />
           )}
-        </Paper>
+        </Box>
+        <Box
+          sx={{
+            mt: 2,
+            p: 2,
+            bgcolor: 'rgba(25, 118, 210, 0.04)',
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'rgba(25, 118, 210, 0.1)',
+          }}
+        >
+          <Typography variant="body1" sx={{ mb: 1, lineHeight: 1.6 }}>
+            {ticket.description}
+          </Typography>
+          <Chip
+            label={ticket.category}
+            size="small"
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+            }}
+          />
+        </Box>
+        {ticket.attachments.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <AttachmentViewer attachments={ticket.attachments} />
+          </Box>
+        )}
+      </Paper>
 
       {/* Messages */}
       <Box
@@ -305,9 +305,9 @@ export const SupportTicketChatPage: React.FC = () => {
         }}
       >
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ mb: 2, borderRadius: 2 }} 
+          <Alert
+            severity="error"
+            sx={{ mb: 2, borderRadius: 2 }}
             onClose={() => setError(null)}
           >
             {error}
@@ -315,12 +315,12 @@ export const SupportTicketChatPage: React.FC = () => {
         )}
 
         {ticket.messages.length === 0 ? (
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
               py: 8,
               minHeight: '400px',
             }}
@@ -364,10 +364,10 @@ export const SupportTicketChatPage: React.FC = () => {
       </Box>
 
       {/* Input Area */}
-      <Paper 
-        sx={{ 
-          p: 2.5, 
-          borderRadius: 0, 
+      <Paper
+        sx={{
+          p: 2.5,
+          borderRadius: 0,
           flexShrink: 0,
           borderTop: '1px solid',
           borderColor: 'divider',
@@ -379,10 +379,10 @@ export const SupportTicketChatPage: React.FC = () => {
         }}
       >
         {files.length > 0 && (
-          <Box 
-            sx={{ 
-              mb: 2, 
-              p: 2, 
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
               bgcolor: 'rgba(25, 118, 210, 0.06)',
               borderRadius: 2,
               border: '1px solid',
@@ -393,13 +393,13 @@ export const SupportTicketChatPage: React.FC = () => {
               <Typography variant="caption" fontWeight="700" color="primary.main" sx={{ fontSize: '0.8rem' }}>
                 {files.length} file{files.length > 1 ? 's' : ''} selected
               </Typography>
-              <IconButton 
-                size="small" 
+              <IconButton
+                size="small"
                 onClick={() => {
                   setFiles([]);
                   setShowFileUploader(false);
                 }}
-                sx={{ 
+                sx={{
                   p: 0.5,
                   color: 'primary.main',
                   '&:hover': {
@@ -433,12 +433,12 @@ export const SupportTicketChatPage: React.FC = () => {
                   }}
                 >
                   <AttachFile sx={{ fontSize: 16, color: 'primary.main' }} />
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      maxWidth: 150, 
-                      overflow: 'hidden', 
-                      textOverflow: 'ellipsis', 
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      maxWidth: 150,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       fontWeight: 600,
                       fontSize: '0.8rem',
@@ -452,8 +452,8 @@ export const SupportTicketChatPage: React.FC = () => {
                       const newFiles = files.filter((_, i) => i !== index);
                       setFiles(newFiles);
                     }}
-                    sx={{ 
-                      p: 0.25, 
+                    sx={{
+                      p: 0.25,
                       ml: 0.5,
                       color: 'error.main',
                       '&:hover': {
@@ -484,8 +484,8 @@ export const SupportTicketChatPage: React.FC = () => {
         )}
 
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-end' }}>
-          <IconButton 
-            onClick={() => setShowFileUploader(!showFileUploader)} 
+          <IconButton
+            onClick={() => setShowFileUploader(!showFileUploader)}
             disabled={sending}
             sx={{
               bgcolor: files.length > 0 || showFileUploader ? 'primary.main' : 'rgba(0,0,0,0.04)',
@@ -559,7 +559,7 @@ export const SupportTicketChatPage: React.FC = () => {
             startIcon={sending ? null : <Send />}
             onClick={handleSendMessage}
             disabled={sending || (!message.trim() && files.length === 0)}
-            sx={{ 
+            sx={{
               minWidth: 110,
               height: 48,
               px: 3,

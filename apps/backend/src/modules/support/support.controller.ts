@@ -31,7 +31,7 @@ import { UserRole } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class SupportController {
-  constructor(private readonly supportService: SupportService) {}
+  constructor(private readonly supportService: SupportService) { }
 
   /**
    * Create a new support ticket
@@ -170,7 +170,7 @@ export class SupportController {
    * Support Team: Get all tickets
    */
   @Get('admin/tickets')
-  @Roles(UserRole.SUPPORT)
+  @Roles(UserRole.SUPPORT, UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Get all tickets (Support Team)' })
   @ApiResponse({ status: 200, description: 'Tickets retrieved successfully' })
   @ApiResponse({ status: 403, description: 'Access denied' })
@@ -182,7 +182,7 @@ export class SupportController {
    * Support Team: Get ticket by ID
    */
   @Get('admin/tickets/:id')
-  @Roles(UserRole.SUPPORT)
+  @Roles(UserRole.SUPPORT, UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Get ticket by ID (Support Team)' })
   @ApiResponse({ status: 200, description: 'Ticket retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Ticket not found' })
@@ -194,7 +194,7 @@ export class SupportController {
    * Support Team: Reply to ticket
    */
   @Post('admin/tickets/:id/messages')
-  @Roles(UserRole.SUPPORT)
+  @Roles(UserRole.SUPPORT, UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Reply to ticket (Support Team)' })
   @ApiResponse({ status: 201, description: 'Message sent successfully' })
   @ApiResponse({ status: 404, description: 'Ticket not found' })
@@ -210,7 +210,7 @@ export class SupportController {
    * Support Team: Update ticket status
    */
   @Patch('admin/tickets/:id/status')
-  @Roles(UserRole.SUPPORT)
+  @Roles(UserRole.SUPPORT, UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Update ticket status (Support Team)' })
   @ApiResponse({ status: 200, description: 'Status updated successfully' })
   @ApiResponse({ status: 404, description: 'Ticket not found' })
@@ -226,7 +226,7 @@ export class SupportController {
    * Support Team: Get statistics
    */
   @Get('admin/stats')
-  @Roles(UserRole.SUPPORT)
+  @Roles(UserRole.SUPPORT, UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Get support ticket statistics (Support Team)' })
   @ApiResponse({ status: 200, description: 'Statistics retrieved successfully' })
   async getStatistics() {
