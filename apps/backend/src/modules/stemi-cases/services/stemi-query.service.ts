@@ -23,7 +23,13 @@ export class StemiQueryService {
       patientId,
       originHospitalId,
       destinationHospitalId,
+      modeOfArrival,
       currentStatus,
+      selectedTreatment,
+      ecgResult,
+      eligibleForPrimaryPci,
+      thrombolyticGiven,
+      isTroponinPositive,
       startDate,
       endDate,
       limit = 20,
@@ -37,7 +43,13 @@ export class StemiQueryService {
     if (patientId) where.patientId = patientId;
     if (originHospitalId) where.originHospitalId = originHospitalId;
     if (destinationHospitalId) where.destinationHospitalId = destinationHospitalId;
+    if (modeOfArrival) where.modeOfArrival = modeOfArrival;
     if (currentStatus) where.currentStatus = currentStatus;
+    if (selectedTreatment) where.selectedTreatment = selectedTreatment;
+    if (ecgResult) where.ecgResult = ecgResult;
+    if (eligibleForPrimaryPci !== undefined) where.eligibleForPrimaryPci = eligibleForPrimaryPci;
+    if (thrombolyticGiven !== undefined) where.thrombolyticGiven = thrombolyticGiven;
+    if (isTroponinPositive !== undefined) where.isTroponinPositive = isTroponinPositive;
 
     // Date range filter
     if (startDate || endDate) {

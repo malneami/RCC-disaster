@@ -68,8 +68,8 @@ const StemiPortalPage: React.FC = () => {
   const requestRef = useRef(0);
   const kpiRequestRef = useRef(0);
 
-  // Unified filters state for both views
-  const [unifiedFilters, setUnifiedFilters] = useState<StemiFilterParams>({
+  // Applied filters - these trigger API requests
+  const [appliedFilters, setAppliedFilters] = useState<StemiFilterParams>({
     search: '',
     modeOfArrival: '',
     currentStatus: '',
@@ -81,9 +81,9 @@ const StemiPortalPage: React.FC = () => {
     startDate: '',
     endDate: '',
   });
-  const [searchInput, setSearchInput] = useState(unifiedFilters.search ?? '');
 
-  // const isAdmin = user?.role === 'ADMIN';
+  const [pendingFilters, setPendingFilters] = useState<StemiFilterParams>(appliedFilters);
+  const [searchInput, setSearchInput] = useState(appliedFilters.search ?? '');
 
   // Define portal steps
   const portalSteps: PortalStep[] = [
@@ -93,25 +93,20 @@ const StemiPortalPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [page, rowsPerPage, unifiedFilters]);
+  }, [page, rowsPerPage, appliedFilters]);
 
+  // Debounce search input to trigger immediate filtering as user types
   useEffect(() => {
     const handler = setTimeout(() => {
-      setUnifiedFilters(prev => {
-        const currentSearch = prev.search ?? '';
-        if (currentSearch === searchInput) {
-          return prev;
-        }
-
-        return {
-          ...prev,
-          search: searchInput,
-        };
+      setAppliedFilters(prev => {
+        if (prev.search === searchInput) return prev;
+        return { ...prev, search: searchInput };
       });
-    }, 300);
+    }, 500);
 
     return () => clearTimeout(handler);
   }, [searchInput]);
+
 
   // Load hospitals on component mount
   useEffect(() => {
@@ -245,7 +240,7 @@ const StemiPortalPage: React.FC = () => {
     setError(null);
 
     // Prepare pagination params, excluding rccActivated for client-side filtering
-    const { rccActivated, ...backendFilters } = unifiedFilters;
+    const { rccActivated, ...backendFilters } = appliedFilters;
 
     // Convert rccActivated to string for comparison (filter dialog sends strings)
     const rccActivatedStr = (rccActivated === true || rccActivated === 'true') ? 'true' :
@@ -410,7 +405,7 @@ const StemiPortalPage: React.FC = () => {
   const handleExportToExcel = async () => {
     try {
       setExportLoading(true);
-      const { rccActivated, limit, offset, ...backendFilters } = unifiedFilters;
+      const { rccActivated, limit, offset, ...backendFilters } = appliedFilters;
 
       const exportFilters: StemiFilterParams = {};
 
@@ -483,9 +478,9 @@ const StemiPortalPage: React.FC = () => {
     setPage(0); // Reset to first page when searching
   };
 
-  const handleFilterChange = (newFilters: StemiFilterParams) => {
-    setUnifiedFilters(newFilters);
-    setSearchInput(newFilters.search ?? '');
+  const handleApplyFilters = () => {
+    // Apply the pending filters - this triggers the API request
+    setAppliedFilters({ ...pendingFilters, search: searchInput });
     setPage(0); // Reset to first page when filtering
   };
 
@@ -502,7 +497,8 @@ const StemiPortalPage: React.FC = () => {
       startDate: '',
       endDate: '',
     };
-    setUnifiedFilters(clearedFilters);
+    setPendingFilters(clearedFilters);
+    setAppliedFilters(clearedFilters);
     setSearchInput('');
     setPage(0);
   };
@@ -687,20 +683,19 @@ const StemiPortalPage: React.FC = () => {
             open={filterDialogOpen}
             onClose={() => setFilterDialogOpen(false)}
             fields={filterFields}
-            values={{ ...unifiedFilters, search: searchInput }}
+            values={{ ...pendingFilters, search: searchInput }}
             onFiltersChange={(newValues) => {
               const { search, ...filters } = newValues;
-              setUnifiedFilters(filters as StemiFilterParams);
+              setPendingFilters(filters as StemiFilterParams);
               if (search !== undefined) {
                 setSearchInput(search);
               }
             }}
             onApplyFilters={() => {
-              handleFilterChange({ ...unifiedFilters, search: searchInput } as StemiFilterParams);
+              handleApplyFilters();
             }}
             onClearFilters={() => {
               handleClearFilters();
-              setSearchInput('');
             }}
           />
 
