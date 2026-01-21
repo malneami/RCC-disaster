@@ -1502,10 +1502,14 @@ export class NotificationsService {
         return null;
       }
 
-      const rccUserIds = await this.getUsersByRole(UserRole.RCC);
+      const [rccUserIds, dataCollectorIds] = await Promise.all([
+        this.getUsersByRole(UserRole.RCC),
+        this.getUsersByRole(UserRole.DATA_COLLECTOR),
+      ]);
+      const recipientUserIds = [...new Set([...rccUserIds, ...dataCollectorIds])];
 
-      if (rccUserIds.length === 0) {
-        this.logger.warn(`No RCC users found for incomplete patient data notification (patient: ${patientId})`);
+      if (recipientUserIds.length === 0) {
+        this.logger.warn(`No RCC or Data Collector users found for incomplete patient data notification (patient: ${patientId})`);
         return null;
       }
 
@@ -1523,7 +1527,7 @@ export class NotificationsService {
           patientId,
           patientName,
           category: NotificationCategory.PATIENTS,
-          recipientUserIds: rccUserIds,
+          recipientUserIds,
           metadata: JSON.stringify({
             missingFields,
             source: 'patient_data_validation',
@@ -1538,7 +1542,10 @@ export class NotificationsService {
           notification,
           NotificationCategory.PATIENTS,
         );
-        this.notificationsGateway.emitNotificationByRole(notification, [UserRole.RCC]);
+        this.notificationsGateway.emitNotificationByRole(notification, [
+          UserRole.RCC,
+          UserRole.DATA_COLLECTOR,
+        ]);
       }
 
       this.logger.log(`Successfully created incomplete patient data notification ${notification?.id} for patient ${patientId}`);
@@ -1548,8 +1555,7 @@ export class NotificationsService {
       this.logger.error(`Patient ID: ${patientId}, Patient Name: ${patientName}`);
       this.logger.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
       this.logger.error(`Stack: ${error instanceof Error ? error.stack : 'No stack trace'}`);
-      
-      // Don't throw error - patient creation/update should still succeed even if notification fails
+
       return null;
     }
   }

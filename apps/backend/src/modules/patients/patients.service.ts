@@ -383,16 +383,19 @@ export class PatientsService {
       if (incompleteDataCheck.incomplete) {
         const patientName = `${result.firstName} ${result.lastName}`.trim();
         // Call notification asynchronously to not block patient creation
-        this.notificationsService
-          .createIncompletePatientDataNotification(
-            result.id,
-            patientName,
-            incompleteDataCheck.missingFields,
-            userId,
-          )
-          .catch((error) => {
+        (async () => {
+          try {
+            const notificationUserId = userId || await this.notificationsService.getSystemUserId();
+            await this.notificationsService.createIncompletePatientDataNotification(
+              result.id,
+              patientName,
+              ['National ID'],
+              notificationUserId,
+            );
+          } catch (error) {
             console.error('Failed to create incomplete patient data notification:', error);
-          });
+          }
+        })();
       }
       
       return result;
@@ -465,6 +468,13 @@ export class PatientsService {
       // If nationalIdNotAvailable is true, set nationalId to null
       if (updatePatientDto.nationalIdNotAvailable) {
         updateData.nationalId = null;
+        const notificationUserId = userId || await this.notificationsService.getSystemUserId();
+            await this.notificationsService.createIncompletePatientDataNotification(
+              updateData.id,
+              `${updatePatientDto.firstName} ${updatePatientDto.lastName}`,
+              ['National ID'],
+              notificationUserId,
+            );
       }
 
       this.cleanupPatientData(updateData);
@@ -503,16 +513,19 @@ export class PatientsService {
       if (incompleteDataCheck.incomplete) {
         const patientName = `${updatedPatient.firstName} ${updatedPatient.lastName}`.trim();
         // Call notification asynchronously to not block patient update
-        this.notificationsService
-          .createIncompletePatientDataNotification(
-            updatedPatient.id,
-            patientName,
-            incompleteDataCheck.missingFields,
-            userId,
-          )
-          .catch((error) => {
+        (async () => {
+          try {
+            const notificationUserId = userId || await this.notificationsService.getSystemUserId();
+            await this.notificationsService.createIncompletePatientDataNotification(
+              updatedPatient.id,
+              patientName,
+              ['National ID'],
+              notificationUserId,
+            );
+          } catch (error) {
             console.error('Failed to create incomplete patient data notification:', error);
-          });
+          }
+        })();
       }
 
       return updatedPatient;
@@ -877,21 +890,33 @@ export class PatientsService {
    * Check if patient has incomplete data fields
    * Returns an object indicating if data is incomplete and which fields are missing
    */
-  private hasIncompleteData(patient: any): { incomplete: boolean; missingFields: string[] } {
+  private hasIncompleteData(patient: any): { incomplete: boolean; missingFields: string[]; nationalId?: string | null } {
     const missingFields: string[] = [];
+    let incompleteNationalId: string | null | undefined = undefined;
 
+    // National ID validation - handle null, undefined, empty string, or all zeros
     const nationalId = patient.nationalId;
-    if (nationalId && (nationalId.trim() === '00000000000000' || nationalId.startsWith('00000000000000-'))) {
+    if (nationalId === null || nationalId === undefined) {
+      // Explicitly null or undefined - missing National ID
       missingFields.push('National ID');
+      incompleteNationalId = nationalId;
+    } else if (typeof nationalId === 'string') {
+      // Check for empty string or all zeros
+      const trimmedId = nationalId.trim();
+      if (trimmedId === '' || /^0+$/.test(trimmedId)) {
+        missingFields.push('National ID');
+        incompleteNationalId = nationalId;
+      }
     }
 
-    if (!patient.dateOfBirth) {
-      missingFields.push('Date of Birth');
+    if (!patient.dateOfBirth && !patient.age && !patient.ageMonths) {
+      missingFields.push('Date of Birth or Age');
     }
 
     return {
       incomplete: missingFields.length > 0,
       missingFields,
+      nationalId: incompleteNationalId,
     };
   }
 
