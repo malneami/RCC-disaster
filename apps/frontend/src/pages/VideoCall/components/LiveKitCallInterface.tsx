@@ -26,24 +26,44 @@ export const LiveKitCallInterface: React.FC<LiveKitCallInterfaceProps> = ({
 }) => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [videoEnabled, setVideoEnabled] = useState(false);
 
   const handleError = useCallback((error: Error) => {
+    console.error('[LiveKitCallInterface] Error:', error);
 
     // Check if it's a media device error - don't disconnect, just show warning
-    if (error.name === 'NotReadableError' ||
+    const isMediaError =
+      error.name === 'NotReadableError' ||
+      error.name === 'NotAllowedError' ||
+      error.name === 'NotFoundError' ||
+      error.name === 'DevicesNotFoundError' ||
+      error.name === 'OverconstrainedError' ||
       error.message.includes('Device in use') ||
-      error.message.includes('Could not start video source')) {
-      setMediaError('Camera/microphone is in use by another application. You can still view and hear other participants.');
-      return;
-    }
+      error.message.includes('Could not start video source') ||
+      error.message.includes('Permission denied') ||
+      error.message.includes('requested device not found');
 
-    if (error.name === 'NotAllowedError') {
-      setMediaError('Camera/microphone permission denied. Please allow access in your browser settings.');
+    if (isMediaError) {
+      let message = 'Camera/microphone access issue. You can still join the call without media.';
+
+      if (error.name === 'NotAllowedError' || error.message.includes('Permission denied')) {
+        message = 'Camera/microphone permission denied. Please allow access in browser settings.';
+        // If permission denied, ensure videoEnabled stays false
+        setVideoEnabled(false);
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError' || error.message.includes('not found')) {
+        message = 'Camera/microphone not found. Please check your hardware connection.';
+        setVideoEnabled(false);
+      } else if (error.name === 'NotReadableError' || error.message.includes('Device in use')) {
+        message = 'Camera/microphone is in use by another application. Please close other apps using the camera.';
+        setVideoEnabled(false);
+      }
+
+      setMediaError(message);
       return;
     }
 
     // Only set connection error for actual connection failures
-    if (error.message.includes('connect') || error.message.includes('timeout')) {
+    if (error.message.includes('connect') || error.message.includes('timeout') || error.message.includes('token') || error.message.includes('JWT')) {
       setConnectionError(error.message || 'Failed to connect to video server');
     }
   }, []);
@@ -85,7 +105,7 @@ export const LiveKitCallInterface: React.FC<LiveKitCallInterfaceProps> = ({
       },
     }}>
       <LiveKitRoom
-        video={true}
+        video={videoEnabled}
         audio={true}
         token={token}
         serverUrl={serverUrl}
