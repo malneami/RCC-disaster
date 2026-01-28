@@ -44,7 +44,7 @@ import { BedsModule } from './modules/beds/beds.module';
 import { SupportModule } from './modules/support/support.module';
 import { DataQualityModule } from './modules/data-quality/data-quality.module';
 import { RecordingsModule } from './modules/recordings/recordings.module';
-
+import { TranscriptionModule } from './modules/transcription/transcription.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -107,6 +107,7 @@ import { RecordingsModule } from './modules/recordings/recordings.module';
     SupportModule,
     DataQualityModule,
     RecordingsModule,
+    TranscriptionModule,
   ],
   providers: [
     {
