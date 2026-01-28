@@ -44,14 +44,48 @@ services:
     image: livekit/livekit-server:latest
     container_name: rcc-livekit
     command: >
-      --dev --bind 0.0.0.0 --port 7880
+      --config /etc/livekit.yaml
     environment:
       LIVEKIT_API_KEY: devkey
       LIVEKIT_API_SECRET: secret
+      WEBHOOK_URL: "http://host.docker.internal:3001/api/v1/recordings/webhook"
+    volumes:
+      - ./docker/livekit/config.yaml:/etc/livekit.yaml:ro
     ports:
       - "7880:7880"
+      - "7881:7881" # RTC TCP
+      - "7882:7882/udp" # RTC UDP
+    depends_on:
+      - redis
     networks:
       - rcc_network
+
+  livekit-egress:
+    image: livekit/egress:latest
+    container_name: rcc-livekit-egress
+    restart: unless-stopped
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+      LIVEKIT_URL: ws://livekit:7880
+    volumes:
+      - ./apps/backend/uploads/recordings:/out
+      - ./docker/egress/config.yaml:/etc/egress.yaml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - livekit
+      - redis
+    networks:
+      - rcc_network
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
