@@ -6,12 +6,14 @@ import { VideoCallsService } from './video-calls.service';
 import { VideoCallsController } from './video-calls.controller';
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../../auth/auth.module';
+import { RecordingsModule } from '../recordings/recordings.module';
 
 @Module({
   imports: [
     ConfigModule,
     DatabaseModule,
     AuthModule,
+    RecordingsModule,
   ],
   controllers: [VideoCallsController],
   providers: [VideoCallsGateway, VideoCallsService],

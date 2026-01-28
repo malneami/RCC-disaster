@@ -43,6 +43,7 @@ import { VideoCallsModule } from './modules/video-calls/video-calls.module';
 import { BedsModule } from './modules/beds/beds.module';
 import { SupportModule } from './modules/support/support.module';
 import { DataQualityModule } from './modules/data-quality/data-quality.module';
+import { RecordingsModule } from './modules/recordings/recordings.module';
 
 @Module({
   imports: [
@@ -70,7 +71,7 @@ import { DataQualityModule } from './modules/data-quality/data-quality.module';
     ]),
     DatabaseModule,
     CommonModule,
-    
+
     // EMS Modules
     AmbulancesModule,
     EmsAssignmentsModule,
@@ -84,7 +85,7 @@ import { DataQualityModule } from './modules/data-quality/data-quality.module';
     NotificationsModule,
     RepliesModule,
     VideoCallsModule,
-    
+
     AuthModule,
     UsersModule,
     HospitalsModule,
@@ -105,6 +106,7 @@ import { DataQualityModule } from './modules/data-quality/data-quality.module';
     BedsModule,
     SupportModule,
     DataQualityModule,
+    RecordingsModule,
   ],
   providers: [
     {
@@ -125,4 +127,4 @@ import { DataQualityModule } from './modules/data-quality/data-quality.module';
     // },
   ],
 })
-export class AppModule {}
+export class AppModule { }

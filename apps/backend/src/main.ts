@@ -4,8 +4,10 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import * as compression from 'compression';
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, ServerOptions } from 'socket.io';
 import { AppModule } from './app.module';
+import { EgressClient, RoomServiceClient } from 'livekit-server-sdk';
+import { RecordingsService } from './modules/recordings/recordings.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -77,18 +79,108 @@ async function bootstrap() {
 
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
-    
+
     logger.log('📚 API Documentation available at http://localhost:3001/api/docs');
   }
 
   const port = configService.get('PORT') || 3001;
   const host = configService.get('HOST') || '0.0.0.0';
-  
+
   await app.listen(port, host);
 
-  // Get the underlying HTTP server and attach Socket.IO directly
+  const recordingsService = app.get(RecordingsService);
+  const livekitUrl = configService.get('LIVEKIT_URL') || 'http://localhost:7880';
+  const livekitApiKey = configService.get('LIVEKIT_API_KEY') || 'devkey';
+  const livekitApiSecret = configService.get('LIVEKIT_API_SECRET') || 'secret';
+
+  const roomService = new RoomServiceClient(livekitUrl, livekitApiKey, livekitApiSecret);
+
+  async function checkRoomReady(roomId: string, minParticipants: number = 2): Promise<boolean> {
+    try {
+      const rooms = await roomService.listRooms();
+      const room = rooms.find((r) => r.name === roomId || r.sid === roomId);
+
+      if (!room) {
+        return false;
+      }
+
+      let participantCount = 0;
+      if (room.numParticipants !== undefined) {
+        participantCount = room.numParticipants;
+      } else {
+        const participants = await roomService.listParticipants(roomId);
+        participantCount = participants.length;
+      }
+
+      return participantCount >= minParticipants;
+    } catch (error) {
+      logger.warn(` Error checking room ${roomId}: ${error instanceof Error ? error.message : String(error)}`);
+      return false;
+    }
+  }
+
+  async function getAllRoomParticipants(roomId: string): Promise<string[]> {
+    try {
+      const participants = await roomService.listParticipants(roomId);
+      return participants.map(p => p.identity || p.sid).filter(Boolean) as string[];
+    } catch (error) {
+      logger.warn(`Error getting participants for room ${roomId}: ${error instanceof Error ? error.message : String(error)}`);
+      return [];
+    }
+  }
+
+  async function startRecordingWithRetry(
+    roomId: string,
+    callerId: string,
+    calleeIds: string | string[],
+    maxRetries: number = 5,
+    retryDelay: number = 2000
+  ): Promise<string | null> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const isReady = await checkRoomReady(roomId, 2);
+        if (!isReady) {
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            continue;
+          } else {
+            logger.error(` Room ${roomId} never became ready after ${maxRetries} attempts`);
+            return null;
+          }
+        }
+
+        let finalCalleeIds: string[] = Array.isArray(calleeIds) ? calleeIds : [calleeIds];
+
+        if (finalCalleeIds.length === 1) {
+          try {
+            const roomParticipants = await getAllRoomParticipants(roomId);
+            finalCalleeIds = roomParticipants.filter(id => id !== callerId);
+            if (finalCalleeIds.length > 0) {
+              logger.log(`📋 Found ${finalCalleeIds.length} participant(s) in room ${roomId}: ${finalCalleeIds.join(', ')}`);
+            }
+          } catch (error) {
+            logger.warn(`Could not fetch room participants, using provided calleeIds`);
+          }
+        }
+
+        const egressId = await recordingsService.startRecording(roomId, callerId, finalCalleeIds, false);
+        if (egressId) {
+          return egressId;
+        }
+      } catch (error) {
+        logger.warn(` Recording attempt ${attempt} failed: ${error instanceof Error ? error.message : String(error)}`);
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+
+    logger.error(` All ${maxRetries} recording attempts failed for ${roomId}`);
+    return null;
+  }
+
   const httpServer = app.getHttpServer();
-  
+
   const io = new SocketIOServer(httpServer, {
     cors: {
       origin: (origin, callback) => {
@@ -124,62 +216,110 @@ async function bootstrap() {
   const videoCallsNsp = io.of('/video-calls');
   const connectedUsers = new Map<string, { socketId: string; userInfo: any }>();
   const userIdToSocketId = new Map<string, string>();
-  
+
   videoCallsNsp.on('connection', (socket) => {
     logger.log(`🔌 [/video-calls] Client connected: ${socket.id}`);
-    
+
     // Store user info from handshake
     const userId = socket.handshake.auth?.userId || socket.handshake.query?.userId;
     const userInfo = socket.handshake.auth?.userInfo || {};
-    
+
     if (userId) {
       userIdToSocketId.set(userId, socket.id);
       connectedUsers.set(socket.id, { socketId: socket.id, userInfo: { ...userInfo, id: userId } });
       logger.log(`👤 User ${userId} connected with socket ${socket.id}`);
     }
-    
+
     // Emit connection success
     socket.emit('connected', { socketId: socket.id, userId });
-    
-    // Handle call user event
-    socket.on('callUser', (data) => {
-      logger.log(`📞 callUser event from ${socket.id}:`, JSON.stringify(data));
+
+    // Handle callUser - Forward signaling (recording starts when call is answered)
+    socket.on('callUser', async (data) => {
+      logger.log(` callUser event from ${socket.id}:`, JSON.stringify(data));
+
       const { userToCall, userIdToCall, emailToCall, signalData, from, name } = data;
-      
-      // Find target socket
+      const roomId = signalData?.roomId;
+
+      if (!roomId) {
+        logger.error(' No roomId in callUser data');
+        socket.emit('callError', { message: 'Missing roomId' });
+        return;
+      }
+
+      // Forward signaling to target user
       let targetSocketId: string | undefined;
       if (userIdToCall && userIdToSocketId.has(userIdToCall)) {
         targetSocketId = userIdToSocketId.get(userIdToCall);
       }
-      
+
       if (targetSocketId) {
-        socket.to(targetSocketId).emit('callUser', { signal: signalData, from: socket.id, name });
+        socket.to(targetSocketId).emit('callUser', {
+          signal: signalData,
+          from: socket.id,
+          name
+        });
         logger.log(`📞 Forwarded call to ${targetSocketId}`);
       } else {
-        // Target user not found or offline
-        socket.emit('callError', { message: 'User is not online or not found', targetUserId: userIdToCall, targetEmail: emailToCall });
+        socket.emit('callError', {
+          message: 'User is not online or not found',
+          targetUserId: userIdToCall,
+          targetEmail: emailToCall
+        });
         logger.log(`⚠️ Call failed: Target user ${userIdToCall || userToCall} not found`);
       }
     });
-    
-    // Handle answer call event
-    socket.on('answerCall', (data) => {
+    socket.on('answerCall', async (data) => {
       logger.log(`📞 answerCall event from ${socket.id}:`, JSON.stringify(data));
-      const { signal, to, name } = data;
-      socket.to(to).emit('callAccepted', { signal, from: socket.id, name });
+      const { signal, to, roomId } = data;
+
+      // Get caller and callee info
+      const callerSocketId = to;
+      const callerData = connectedUsers.get(callerSocketId);
+      const answererData = connectedUsers.get(socket.id);
+
+      const callerId = callerData?.userInfo?.id || callerSocketId;
+      const calleeId = answererData?.userInfo?.id || socket.id;
+
+      // Forward call acceptance
+      socket.to(to).emit('callAccepted', { signal, from: socket.id });
+
+
+      if (roomId) {
+        setTimeout(async () => {
+          await startRecordingWithRetry(roomId, callerId, calleeId, 5, 2000).catch((error) => {
+            logger.error(` Failed to start recording for ${roomId}: ${error}`);
+          });
+        }, 2500); // Give time for LiveKit room connection to establish
+      } else {
+        logger.warn(`⚠️ No roomId in answerCall, cannot start recording`);
+      }
     });
-    
-    // Handle end call event
-    socket.on('endCall', (data) => {
+
+
+    socket.on('endCall', async (data) => {
       logger.log(`📞 endCall event from ${socket.id}:`, JSON.stringify(data));
+
+      const { roomId } = data;
+
+      if (roomId) {
+        try {
+          const roomParticipants = await getAllRoomParticipants(roomId);
+          const callerId = recordingsService.getCallerIdForRoom(roomId);
+
+          await recordingsService.stopRecording(roomId, roomParticipants, callerId || undefined);
+        } catch (error) {
+          logger.error(`❌ Stop recording failed: ${error}`);
+        }
+      }
+
       socket.broadcast.emit('callEnded', { from: socket.id });
     });
-    
+
     // Handle media state change
     socket.on('mediaStateChange', (data) => {
       socket.broadcast.emit('mediaStateChange', { ...data, from: socket.id });
     });
-    
+
     // Handle get online users
     socket.on('getOnlineUsers', () => {
       const onlineUsers = Array.from(connectedUsers.entries()).map(([socketId, data]) => ({
@@ -188,15 +328,30 @@ async function bootstrap() {
       }));
       socket.emit('onlineUsers', onlineUsers);
     });
-    
+
     // Handle join room  
-    socket.on('joinRoom', (data) => {
+    socket.on('joinRoom', async (data) => {
       const { roomId } = data;
       socket.join(roomId);
       socket.to(roomId).emit('userJoined', { socketId: socket.id, roomId });
       logger.log(`🚪 Socket ${socket.id} joined room ${roomId}`);
+
+      try {
+        const roomParticipants = await getAllRoomParticipants(roomId);
+        if (roomParticipants.length > 0) {
+          const callerId = recordingsService.getCallerIdForRoom(roomId);
+
+          if (callerId) {
+            await recordingsService.updateRecordingCallees(roomId, roomParticipants, callerId);
+          } else {
+            logger.debug(`No active recording found for room ${roomId}, skipping callee update`);
+          }
+        }
+      } catch (error) {
+        logger.warn(`Error updating recording for joined room ${roomId}: ${error instanceof Error ? error.message : String(error)}`);
+      }
     });
-    
+
     // Handle leave room
     socket.on('leaveRoom', (data) => {
       const { roomId } = data;
@@ -204,17 +359,17 @@ async function bootstrap() {
       socket.to(roomId).emit('userLeft', { socketId: socket.id, roomId });
       logger.log(`🚪 Socket ${socket.id} left room ${roomId}`);
     });
-    
+
     socket.on('disconnect', (reason) => {
       logger.log(`🔌 [/video-calls] Client disconnected: ${socket.id}, reason: ${reason}`);
-      
+
       // Clean up user mappings
       const userData = connectedUsers.get(socket.id);
       if (userData?.userInfo?.id) {
         userIdToSocketId.delete(userData.userInfo.id);
       }
       connectedUsers.delete(socket.id);
-      
+
       // Notify others
       socket.broadcast.emit('userDisconnected', { socketId: socket.id });
     });
@@ -225,7 +380,7 @@ async function bootstrap() {
   notificationsNsp.on('connection', (socket) => {
     logger.log(`🔌 [/notifications] Client connected: ${socket.id}`);
     socket.emit('connected', { namespace: '/notifications', clientId: socket.id });
-    
+
     socket.on('disconnect', (reason) => {
       logger.log(`🔌 [/notifications] Client disconnected: ${socket.id}, reason: ${reason}`);
     });
@@ -236,7 +391,7 @@ async function bootstrap() {
   emsNsp.on('connection', (socket) => {
     logger.log(`🔌 [/ems] Client connected: ${socket.id}`);
     socket.emit('connected', { namespace: '/ems', clientId: socket.id });
-    
+
     socket.on('disconnect', (reason) => {
       logger.log(`🔌 [/ems] Client disconnected: ${socket.id}, reason: ${reason}`);
     });
@@ -247,7 +402,7 @@ async function bootstrap() {
   hospitalsNsp.on('connection', (socket) => {
     logger.log(`🔌 [/hospitals] Client connected: ${socket.id}`);
     socket.emit('connected', { namespace: '/hospitals', clientId: socket.id });
-    
+
     socket.on('disconnect', (reason) => {
       logger.log(`🔌 [/hospitals] Client disconnected: ${socket.id}, reason: ${reason}`);
     });
@@ -256,7 +411,7 @@ async function bootstrap() {
   // Log default namespace connections
   io.on('connection', (socket) => {
     logger.log(`🔌 [default] Socket.IO client connected: ${socket.id}`);
-    
+
     socket.on('disconnect', (reason) => {
       logger.log(`🔌 [default] Socket.IO client disconnected: ${socket.id}, reason: ${reason}`);
     });

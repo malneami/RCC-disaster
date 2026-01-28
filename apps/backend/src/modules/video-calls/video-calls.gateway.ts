@@ -12,6 +12,15 @@ import { Logger, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsJwtAuthGuard } from '../../auth/guards/ws-jwt-auth.guard';
 import { VideoCallsService } from './video-calls.service';
+import { RecordingsService } from '../recordings/recordings.service';
+
+interface CallInfo {
+  callerId: string;
+  calleeId: string;
+  roomId: string;
+  hasVideo: boolean;
+  egressId?: string;
+}
 
 @WebSocketGateway({
   cors: {
@@ -32,11 +41,14 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
   // Room management
   private rooms = new Map<string, Set<string>>(); // roomId -> Set of socketIds
   private socketToRoom = new Map<string, string>(); // socketId -> roomId
+  // Call tracking for recording
+  private activeCalls = new Map<string, CallInfo>(); // roomId -> CallInfo
 
   constructor(
     private videoCallsService: VideoCallsService,
     private jwtService: JwtService,
-  ) {}
+    private recordingsService: RecordingsService,
+  ) { }
 
   async handleConnection(client: Socket) {
     try {
@@ -53,7 +65,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
 
       // Manually verify JWT token since guards don't run for handleConnection
       const token = client.handshake.auth?.token || client.handshake.headers.authorization?.replace('Bearer ', '');
-      
+
       if (!token) {
         this.logger.warn(`Connection attempt without authentication token: ${client.id}`);
         client.disconnect();
@@ -99,7 +111,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
         userId: userId,
         userInfo: { ...userInfo, displayName },
       });
-      
+
       // Map userId and email to socketId for easy lookup
       this.userIdToSocketId.set(userId, client.id);
       if (user.email) {
@@ -153,12 +165,12 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
 
   @SubscribeMessage('callUser')
   async handleCallUser(
-    @MessageBody() data: { 
-      userToCall?: string; 
-      userIdToCall?: string; 
-      emailToCall?: string; 
-      signalData: any; 
-      from: string; 
+    @MessageBody() data: {
+      userToCall?: string;
+      userIdToCall?: string;
+      emailToCall?: string;
+      signalData: any;
+      from: string;
       name: string;
       callId?: string;
     },
@@ -173,7 +185,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
       }
 
       let targetSocketId = data.userToCall || '';
-      
+
       if (data.emailToCall) {
         targetSocketId = this.emailToSocketId.get(data.emailToCall.toLowerCase()) || '';
         if (!targetSocketId) {
@@ -228,7 +240,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
 
       this.logger.log(`User ${clientData.userId} answering call from ${data.to}`);
       this.logger.log(`Caller socket ID: ${data.to}, Answerer socket ID: ${client.id}`);
-      
+
       // Verify caller socket exists
       const callerSocket = this.connectedClients.get(data.to);
       if (!callerSocket) {
@@ -241,17 +253,42 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
 
       // Create a room for this call
       const roomId = `room-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
+
       // Add both caller and answerer to the room
       this.logger.log(`Adding answerer ${client.id} to room ${roomId}`);
       await this.joinRoom(client.id, roomId); // Answerer
-      
+
       this.logger.log(`Adding caller ${data.to} to room ${roomId}`);
       await this.joinRoom(data.to, roomId); // Caller
 
       // Get all participants in the room
       const participants = this.getRoomParticipants(roomId);
       this.logger.log(`Room ${roomId} created with ${participants.length} participants:`, participants.map(p => ({ socketId: p.socketId, userId: p.userId })));
+
+      // Start recording automatically (camera off by default, so audio-only)
+      const callerId = callerSocket.userId;
+      const calleeIds = participants
+        .filter(p => p.userId !== callerId)
+        .map(p => p.userId);
+
+      // Ensure we have at least one callee
+      if (calleeIds.length === 0) {
+        this.logger.warn(`No callees found for call in room ${roomId}, using answerer as callee`);
+        calleeIds.push(clientData.userId);
+      }
+
+      const hasVideo = false; // Camera is off by default
+
+      const egressId = await this.recordingsService.startRecording(roomId, callerId, calleeIds, hasVideo);
+
+      // Track the call (use first callee for backward compatibility in CallInfo)
+      this.activeCalls.set(roomId, {
+        callerId,
+        calleeId: calleeIds[0] || '', // Keep for backward compatibility
+        roomId,
+        hasVideo,
+        egressId: egressId || undefined,
+      });
 
       // Notify caller that call was accepted and they're in a room
       this.logger.log(`Sending callAccepted to caller socket: ${data.to}`);
@@ -262,6 +299,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
         answererSocketId: client.id, // Include answerer's socketId
         roomId: roomId,
         callId: data.callId,
+        recording: !!egressId, // Indicate if recording started
       });
 
       // Notify answerer that they're in a room
@@ -270,6 +308,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
         roomId: roomId,
         participants: participants,
         callId: data.callId,
+        recording: !!egressId,
       });
 
       // Notify caller that they're in a room
@@ -278,6 +317,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
         roomId: roomId,
         participants: participants,
         callId: data.callId,
+        recording: !!egressId,
       });
 
       return { success: true, roomId };
@@ -301,8 +341,22 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
 
       this.logger.log(`User ${clientData.userId} ending call`);
 
-      // Leave room if in one
+      // Get room ID before leaving
       const roomId = this.socketToRoom.get(client.id);
+
+      // Stop recording if this call was being recorded
+      if (roomId && this.activeCalls.has(roomId)) {
+        // Get all current participants before stopping to ensure we capture everyone
+        const participants = this.getRoomParticipants(roomId);
+        const activeCall = this.activeCalls.get(roomId);
+        const allParticipantIds = participants.map(p => p.userId);
+        const callerId = activeCall?.callerId;
+
+        await this.recordingsService.stopRecording(roomId, allParticipantIds, callerId);
+        this.activeCalls.delete(roomId);
+      }
+
+      // Leave room if in one
       if (roomId) {
         this.leaveRoom(client.id, roomId);
       }
@@ -335,6 +389,13 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
       this.logger.debug(
         `User ${clientData.userId} changed media state - Video: ${data.video}, Audio: ${data.audio}`,
       );
+
+      // Update camera state in active call if exists
+      const roomId = this.socketToRoom.get(client.id);
+      if (roomId && this.activeCalls.has(roomId)) {
+        const callInfo = this.activeCalls.get(roomId)!;
+        callInfo.hasVideo = data.video;
+      }
 
       client.broadcast.emit('mediaStateChanged', {
         from: data.from,
@@ -402,6 +463,15 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
           callId: data.callId,
         });
       });
+
+      // Update recording callees if there's an active recording for this room
+      const activeCall = this.activeCalls.get(data.roomId);
+      if (activeCall && activeCall.egressId) {
+        const allParticipantIds = participants.map(p => p.userId);
+        const callerId = activeCall.callerId;
+
+        await this.recordingsService.updateRecordingCallees(data.roomId, allParticipantIds, callerId);
+      }
 
       return { success: true, roomId: data.roomId, participants };
     } catch (error) {
