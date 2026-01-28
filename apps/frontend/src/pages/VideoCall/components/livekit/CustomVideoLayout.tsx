@@ -1,26 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTracks, useRoomContext } from '@livekit/components-react';
 import { Track, RoomEvent } from 'livekit-client';
-import { Box } from '@mui/material';
+import { Box, IconButton, Tooltip, Badge } from '@mui/material';
+import ClosedCaptionIcon from '@mui/icons-material/ClosedCaption';
 
 import { TopActionBar } from './TopActionBar';
 import { VideoGrid } from './VideoGrid';
 import { ChatPanel } from './ChatPanel';
+import { TranscriptionPanel } from './TranscriptionPanel';
 import { ControlBarWrapper } from './ControlBarWrapper';
+import { useAudioCapture } from '../../hooks/useAudioCapture';
+import { useTranscription } from '@/contexts/TranscriptionContext';
 
 interface CustomVideoLayoutProps {
     onInviteUser: () => void;
+    roomId: string;
 }
 
 /**
- * Custom video room layout component
- * Composes all sub-components for the video call UI
+ * Custom video room layout component with transcription support
  */
-export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({ onInviteUser }) => {
+export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({
+    onInviteUser,
+    roomId,
+}) => {
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isTranscriptionOpen, setIsTranscriptionOpen] = useState(false);
+    const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const room = useRoomContext();
     const videoGridRef = useRef<HTMLDivElement>(null);
+
+    const {
+        socket: transcriptionSocket,
+        isConnected: transcriptionConnected,
+        joinRoom,
+        leaveRoom,
+    } = useTranscription();
 
     // Get all camera and screen share tracks
     const tracks = useTracks(
@@ -41,6 +57,24 @@ export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({ onInviteUs
     const cameraTracks = tracks.filter(
         (track) => track.source === Track.Source.Camera
     );
+
+    // Join transcription room when component mounts
+    useEffect(() => {
+        if (transcriptionConnected && roomId) {
+            joinRoom(roomId);
+            return () => {
+                leaveRoom(roomId);
+            };
+        }
+    }, [transcriptionConnected, roomId, joinRoom, leaveRoom]);
+
+    // Setup audio capture for transcription
+    useAudioCapture({
+        room,
+        transcriptionSocket,
+        roomId,
+        enabled: isTranscriptionEnabled,
+    });
 
     // Listen for chat messages to update unread count
     useEffect(() => {
@@ -68,6 +102,14 @@ export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({ onInviteUs
         });
     };
 
+    const handleToggleTranscription = () => {
+        setIsTranscriptionOpen(prev => !prev);
+    };
+
+    const handleToggleTranscriptionEnabled = (enabled: boolean) => {
+        setIsTranscriptionEnabled(enabled);
+    };
+
     return (
         <Box
             sx={{
@@ -80,12 +122,55 @@ export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({ onInviteUs
                 bgcolor: '#202124',
             }}
         >
-            <TopActionBar
-                onInviteUser={onInviteUser}
-                onToggleChat={handleToggleChat}
-                isChatOpen={isChatOpen}
-                unreadMessages={unreadMessages}
-            />
+            {/* Top Action Bar with Transcription Button */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    px: 3,
+                    py: 2,
+                    position: 'absolute',
+                    borderRadius: '8px',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 50,
+                    background: 'linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)',
+                }}
+            >
+                <TopActionBar
+                    onInviteUser={onInviteUser}
+                    onToggleChat={handleToggleChat}
+                    isChatOpen={isChatOpen}
+                    unreadMessages={unreadMessages}
+                />
+
+                {/* Transcription/Recording Toggle Button */}
+                <Tooltip title={isTranscriptionOpen ? 'Close recording & transcription' : 'Open recording & transcription'}>
+                    <IconButton
+                        onClick={handleToggleTranscription}
+                        sx={{
+                            bgcolor: isTranscriptionOpen ? '#1967d2' : '#3c4043',
+                            color: '#e8eaed',
+                            width: 40,
+                            height: 40,
+                            '&:hover': {
+                                bgcolor: isTranscriptionOpen ? '#1557b0' : '#5f6368',
+                            },
+                            transition: 'all 0.2s',
+                        }}
+                    >
+                        <Badge
+                            variant="dot"
+                            color="success"
+                            invisible={!isTranscriptionEnabled}
+                        >
+                            <ClosedCaptionIcon fontSize="small" />
+                        </Badge>
+                    </IconButton>
+                </Tooltip>
+            </Box>
 
             {/* Main Content Area */}
             <Box
@@ -106,6 +191,7 @@ export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({ onInviteUs
                         flexDirection: 'column',
                         overflow: 'hidden',
                         px: 2,
+                        position: 'relative',
                     }}
                 >
                     <VideoGrid
@@ -116,9 +202,18 @@ export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({ onInviteUs
                     />
                 </Box>
 
+                {/* Chat Panel */}
                 <ChatPanel
                     isOpen={isChatOpen}
                     onClose={() => setIsChatOpen(false)}
+                />
+
+                {/* Transcription Panel */}
+                <TranscriptionPanel
+                    isOpen={isTranscriptionOpen}
+                    onClose={() => setIsTranscriptionOpen(false)}
+                    isEnabled={isTranscriptionEnabled}
+                    onToggleTranscription={handleToggleTranscriptionEnabled}
                 />
             </Box>
 

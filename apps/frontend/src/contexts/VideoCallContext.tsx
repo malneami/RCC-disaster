@@ -21,14 +21,15 @@ interface VideoCallContextType {
   callerSignal: any | null;
   inviteMode: boolean;
   isLoadingToken: boolean;
-  
+  currentRoomId: string | null;
+
   // Actions
   startCall: (targetUser: User) => Promise<void>;
   answerCall: () => Promise<void>;
   endCall: () => void;
   declineCall: () => void;
   setInviteMode: (mode: boolean) => void;
-  
+
   // UI state for floating panel
   isCallMinimized: boolean;
   toggleCallMinimized: () => void;
@@ -46,10 +47,10 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
   const { user: currentUser } = useAuth();
   const { socket } = useVideoCallSocket();
   const { enqueueSnackbar } = useSnackbar();
-  
+
   // React Query mutation for token fetching
   const tokenMutation = useVideoCallToken();
-  
+
   // Call state
   const [liveKitToken, setLiveKitToken] = useState<string | null>(null);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
   const [callerSignal, setCallerSignal] = useState<any | null>(null);
   const [inviteMode, setInviteMode] = useState(false);
   const [isCallMinimized, setIsCallMinimized] = useState(false);
-  
+
   const isLoadingToken = tokenMutation.isLoading;
 
   // Hook for socket events
@@ -113,15 +114,15 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
       // If we're already in a call, use the existing room ID for the invitation
       // Otherwise, create a new room
       let targetRoomId: string;
-      
+
       if (currentRoomId && liveKitToken) {
         // Already in a call - invite to existing room
         targetRoomId = currentRoomId;
       } else {
         targetRoomId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+
         const token = await tokenMutation.mutateAsync(targetRoomId);
-        
+
         setLiveKitToken(token);
         setCurrentRoomId(targetRoomId);
       }
@@ -157,9 +158,9 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
 
     try {
       const roomId = callerSignal.roomId;
-      
+
       const token = await tokenMutation.mutateAsync(roomId);
-      
+
       setLiveKitToken(token);
       setCurrentRoomId(roomId);
       setReceivingCall(false);
@@ -167,7 +168,8 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
 
       socket?.emit('answerCall', {
         signal: { type: 'accept' },
-        to: callerInfo.socketId
+        to: callerInfo.socketId,
+        roomId: roomId // Include roomId for recording
       });
     } catch (err) {
       enqueueSnackbar('Failed to join call. Please try again.', { variant: 'error' });
@@ -178,12 +180,12 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
   const endCall = useCallback(() => {
     // Emit endCall to notify all participants (broadcast)
     if (socket) {
-      socket.emit('endCall', { 
+      socket.emit('endCall', {
         roomId: currentRoomId,
-        from: socket.id 
+        from: socket.id
       });
     }
-    
+
     // Clear local state
     setLiveKitToken(null);
     setCurrentRoomId(null);
@@ -214,6 +216,7 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
     callerSignal,
     inviteMode,
     isLoadingToken,
+    currentRoomId,
     startCall,
     answerCall,
     endCall,

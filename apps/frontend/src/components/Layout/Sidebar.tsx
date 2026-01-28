@@ -76,6 +76,12 @@ const Sidebar: React.FC = () => {
       path: '/video-call',
       roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER', 'HOSPITAL_USER'],
     },
+    {
+      text: 'Recordings',
+      icon: <FontAwesomeIcon icon={faVideo} />,
+      path: '/recordings',
+      roles: ['ADMIN', 'RCC', 'EMS', 'DATA_COLLECTOR', 'CATH_LAB_USER', 'HOSPITAL_USER'],
+    },
   ];
 
   const dashboardItems = [
@@ -191,11 +197,11 @@ const Sidebar: React.FC = () => {
   return (
     <Box sx={{ height: '100%', bgcolor: 'background.paper' }}>
       <Toolbar>
-        <Typography 
-          variant="h6" 
-          component="div" 
-          sx={{ 
-            color: 'primary.main', 
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{
+            color: 'primary.main',
             fontWeight: 600,
             fontSize: { xs: '1rem', md: '1.25rem' },
           }}
@@ -254,7 +260,7 @@ const Sidebar: React.FC = () => {
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary={item.text}
                   primaryTypographyProps={{
                     sx: {
@@ -271,10 +277,10 @@ const Sidebar: React.FC = () => {
       {dashboardItems.filter(item => hasRole(item.roles)).length > 0 && (
         <>
           <Divider sx={{ my: 1 }} />
-          <Typography 
-            variant="overline" 
-            sx={{ 
-              px: { xs: 2, md: 3 }, 
+          <Typography
+            variant="overline"
+            sx={{
+              px: { xs: 2, md: 3 },
               color: 'text.secondary',
               fontSize: { xs: '0.7rem', md: '0.75rem' },
             }}
@@ -320,7 +326,7 @@ const Sidebar: React.FC = () => {
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary={item.text}
                   primaryTypographyProps={{
                     sx: {
@@ -337,10 +343,10 @@ const Sidebar: React.FC = () => {
       {portalItems.filter(item => hasRole(item.roles)).length > 0 && (
         <>
           <Divider sx={{ my: 1 }} />
-          <Typography 
-            variant="overline" 
-            sx={{ 
-              px: { xs: 2, md: 3 }, 
+          <Typography
+            variant="overline"
+            sx={{
+              px: { xs: 2, md: 3 },
               color: 'text.secondary',
               fontSize: { xs: '0.7rem', md: '0.75rem' },
             }}
@@ -386,7 +392,7 @@ const Sidebar: React.FC = () => {
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary={item.text}
                   primaryTypographyProps={{
                     sx: {
@@ -403,10 +409,10 @@ const Sidebar: React.FC = () => {
       {supportItems.filter(item => hasRole(item.roles)).length > 0 && (
         <>
           <Divider sx={{ my: 1 }} />
-          <Typography 
-            variant="overline" 
-            sx={{ 
-              px: { xs: 2, md: 3 }, 
+          <Typography
+            variant="overline"
+            sx={{
+              px: { xs: 2, md: 3 },
               color: 'text.secondary',
               fontSize: { xs: '0.7rem', md: '0.75rem' },
             }}
@@ -449,7 +455,7 @@ const Sidebar: React.FC = () => {
                     >
                       {item.icon}
                     </ListItemIcon>
-                    <ListItemText 
+                    <ListItemText
                       primary={item.text}
                       primaryTypographyProps={{
                         sx: {
@@ -470,10 +476,10 @@ const Sidebar: React.FC = () => {
         return visibleAdminItems.length > 0 ? (
           <>
             <Divider sx={{ my: 1 }} />
-            <Typography 
-              variant="overline" 
-              sx={{ 
-                px: { xs: 2, md: 3 }, 
+            <Typography
+              variant="overline"
+              sx={{
+                px: { xs: 2, md: 3 },
                 color: 'text.secondary',
                 fontSize: { xs: '0.7rem', md: '0.75rem' },
               }}
@@ -514,7 +520,7 @@ const Sidebar: React.FC = () => {
                     >
                       {item.icon}
                     </ListItemIcon>
-                    <ListItemText 
+                    <ListItemText
                       primary={item.text}
                       primaryTypographyProps={{
                         sx: {

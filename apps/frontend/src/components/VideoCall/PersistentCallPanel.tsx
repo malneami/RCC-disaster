@@ -41,6 +41,7 @@ export const PersistentCallPanel: React.FC = () => {
     inviteMode,
     isCallMinimized,
     isLoadingToken,
+    currentRoomId,
     answerCall,
     endCall,
     declineCall,
@@ -53,13 +54,13 @@ export const PersistentCallPanel: React.FC = () => {
   const { user: currentUser } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
   const [users, setUsers] = useState<User[]>([]);
-  
+
   // Drag state for minimized panel
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null); // null = use default bottom-right
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hasDragged, setHasDragged] = useState(false);
-  
+
   // Check if we're on the video-call page
   const isOnVideoCallPage = location.pathname === '/video-call';
 
@@ -69,14 +70,14 @@ export const PersistentCallPanel: React.FC = () => {
     if (target.tagName === 'BUTTON' || target.closest('button')) {
       return;
     }
-    
+
     setIsDragging(true);
     setHasDragged(false);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    
+
     const currentX = rect.left;
     const currentY = rect.top;
-    
+
     setDragOffset({
       x: e.clientX - currentX,
       y: e.clientY - currentY,
@@ -97,17 +98,17 @@ export const PersistentCallPanel: React.FC = () => {
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      
+
       setHasDragged(true);
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
-      
+
       // Constrain to viewport bounds
       const panelWidth = VIDEO_CALL_CONSTANTS.MINIMIZED_PANEL_WIDTH;
       const panelHeight = VIDEO_CALL_CONSTANTS.MINIMIZED_PANEL_HEIGHT;
       const maxX = window.innerWidth - panelWidth;
       const maxY = window.innerHeight - panelHeight;
-      
+
       setDragPosition({
         x: Math.max(0, Math.min(newX, maxX)),
         y: Math.max(0, Math.min(newY, maxY)),
@@ -179,16 +180,16 @@ export const PersistentCallPanel: React.FC = () => {
             position: 'fixed',
             ...(isOnVideoCallPage
               ? {
-                  // Full page on video-call page
-                  top: `${VIDEO_CALL_CONSTANTS.APP_BAR_HEIGHT}px`,
-                  left: { xs: 0, sm: `${VIDEO_CALL_CONSTANTS.SIDEBAR_WIDTH}px` },
-                  right: 0,
-                  bottom: 0,
-                  borderRadius: { xs: 0, sm: '12px 0 0 0' },
-                  zIndex: VIDEO_CALL_CONSTANTS.Z_INDEX_FULL_PAGE,
-                }
+                // Full page on video-call page
+                top: `${VIDEO_CALL_CONSTANTS.APP_BAR_HEIGHT}px`,
+                left: { xs: 0, sm: `${VIDEO_CALL_CONSTANTS.SIDEBAR_WIDTH}px` },
+                right: 0,
+                bottom: 0,
+                borderRadius: { xs: 0, sm: '12px 0 0 0' },
+                zIndex: VIDEO_CALL_CONSTANTS.Z_INDEX_FULL_PAGE,
+              }
               : isCallMinimized
-              ? {
+                ? {
                   // Hidden when minimized - keep connection alive
                   top: VIDEO_CALL_CONSTANTS.HIDDEN_PANEL_TOP,
                   left: VIDEO_CALL_CONSTANTS.HIDDEN_PANEL_LEFT,
@@ -198,7 +199,7 @@ export const PersistentCallPanel: React.FC = () => {
                   pointerEvents: 'none',
                   zIndex: VIDEO_CALL_CONSTANTS.Z_INDEX_HIDDEN,
                 }
-              : {
+                : {
                   // Floating panel when expanded
                   bottom: VIDEO_CALL_CONSTANTS.PANEL_MARGIN,
                   right: VIDEO_CALL_CONSTANTS.PANEL_MARGIN,
@@ -257,7 +258,7 @@ export const PersistentCallPanel: React.FC = () => {
               </Box>
             </Box>
           )}
-          
+
           {/* Loading indicator for token fetch */}
           {isLoadingToken && (
             <Box
@@ -286,6 +287,7 @@ export const PersistentCallPanel: React.FC = () => {
               token={liveKitToken}
               serverUrl={serverUrl}
               onDisconnected={endCall}
+              roomId={currentRoomId || ''} // Pass roomId
               onInviteUser={() => setInviteMode(true)}
               height={isCallMinimized ? '240px' : '100%'}
             />
@@ -401,8 +403,8 @@ export const PersistentCallPanel: React.FC = () => {
         <DialogTitle id="invite-dialog-title">
           <Box display="flex" justifyContent="space-between" alignItems="center">
             Invite Participant
-            <IconButton 
-              onClick={() => setInviteMode(false)} 
+            <IconButton
+              onClick={() => setInviteMode(false)}
               size="small"
               aria-label="Close invite dialog"
             >

@@ -8,18 +8,19 @@ import { roomOptions, CustomVideoLayout } from './livekit';
 interface LiveKitCallInterfaceProps {
   token: string;
   serverUrl: string;
+  roomId: string; // Add roomId prop
   onDisconnected: () => void;
   onInviteUser: () => void;
-  height?: string; // Optional height override for panel mode
+  height?: string;
 }
 
 /**
- * Main LiveKit video call interface component
- * Handles connection state, errors, and renders the video room
+ * Main LiveKit video call interface component with transcription support
  */
 export const LiveKitCallInterface: React.FC<LiveKitCallInterfaceProps> = ({
   token,
   serverUrl,
+  roomId,
   onDisconnected,
   onInviteUser,
   height = 'calc(100vh - 100px)',
@@ -126,8 +127,8 @@ export const LiveKitCallInterface: React.FC<LiveKitCallInterfaceProps> = ({
           </Alert>
         )}
 
-        {/* Custom Layout with Chat Toggle and Grid for Screen Sharing */}
-        <CustomVideoLayout onInviteUser={onInviteUser} />
+        {/* Custom Layout with Transcription Support */}
+        <CustomVideoLayout onInviteUser={onInviteUser} roomId={roomId} />
 
         <RoomAudioRenderer />
       </LiveKitRoom>
