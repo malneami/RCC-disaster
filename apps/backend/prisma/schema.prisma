@@ -400,6 +400,23 @@ enum MessageSenderType {
   SUPPORT
 }
 
+enum RecordingType {
+  AUDIO
+  VIDEO
+}
+
+enum TranscriptProvider {
+  GCP
+  ARAZN
+}
+
+enum TranscriptStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
 // ems-enums.prisma
 // EMS-specific enums for Emergency Medical Services
 
@@ -620,6 +637,12 @@ model User {
   uploadedSupportAttachments SupportAttachment[] @relation("SupportAttachmentUploader")
   uploadedMedicalRecordAttachments MedicalRecordAttachment[] @relation("MedicalRecordAttachmentUploader")
   
+  // Recording Relations
+  recordingsAsCaller     Recording[]                  @relation("RecordingCaller")
+  recordingsAsCallee     Recording[]                  @relation("RecordingCallee")
+  recordingParticipants  RecordingParticipant[]       @relation("RecordingParticipants")
+  transcriptSegments     RecordingTranscriptSegment[] @relation("SegmentSpeaker")
+
   @@map("users")
   @@index([email])
   @@index([role])
@@ -2924,4 +2947,105 @@ model BedStatusHistory {
   @@index([patientId])
   @@index([caseId])
   @@index([caseType])
+}
+
+// recordings.prisma
+model Recording {
+  id              String        @id @default(uuid())
+  filename        String        @unique
+  path            String
+  size            Int
+  duration        Int?          @default(0)
+  roomId          String        @map("room_id")
+  egressId        String?       @map("egress_id")
+  callerId        String        @map("caller_id")
+  calleeId        String        @map("callee_id")
+  recordingType   RecordingType @default(AUDIO) @map("recording_type")
+  fileFormat      String        @default("mp4") @map("file_format")
+  deletedAt       DateTime?     @map("deleted_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  caller          User                    @relation("RecordingCaller", fields: [callerId], references: [id], onDelete: Cascade)
+  callee          User                    @relation("RecordingCallee", fields: [calleeId], references: [id], onDelete: Cascade)
+  participants    RecordingParticipant[]
+  transcripts     RecordingTranscript[]
+
+  @@map("recordings")
+  @@index([roomId])
+  @@index([callerId])
+  @@index([calleeId])
+  @@index([egressId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+// Many-to-many relation for recording participants
+model RecordingParticipant {
+  id          String    @id @default(uuid())
+  recordingId String    @map("recording_id")
+  userId      String    @map("user_id")
+  role        String    // "caller" | "callee" | "participant"
+  
+  // Relations
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  user        User      @relation("RecordingParticipants", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("recording_participants")
+  @@unique([recordingId, userId])
+  @@index([recordingId])
+  @@index([userId])
+}
+
+
+// transcripts.prisma
+model RecordingTranscript {
+  id            String             @id @default(uuid())
+  recordingId   String?            @map("recording_id")
+  roomId        String             @map("room_id")
+  provider      TranscriptProvider @map("provider")
+  status        TranscriptStatus   @map("status")
+  languageCode  String             @map("language_code")
+  fullText      String?            @db.Text @map("full_text")
+  errorMessage  String?            @db.Text @map("error_message")
+  startedAt     DateTime?          @map("started_at")
+  completedAt   DateTime?          @map("completed_at")
+  deletedAt     DateTime?          @map("deleted_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  recording     Recording?                  @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  segments      RecordingTranscriptSegment[]
+
+  @@map("recording_transcripts")
+  @@index([roomId])
+  @@index([recordingId])
+  @@index([provider])
+  @@index([status])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model RecordingTranscriptSegment {
+  id            String              @id @default(uuid())
+  transcriptId  String              @map("transcript_id")
+  speakerUserId String?             @map("speaker_user_id")
+  speakerLabel  String?             @map("speaker_label")
+  startMs       Int                 @map("start_ms")
+  endMs         Int                 @map("end_ms")
+  text          String              @db.Text @map("text")
+  confidence    Float?              @map("confidence")
+  isFinal       Boolean             @map("is_final")
+  createdAt     DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  transcript    RecordingTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  speaker       User?               @relation("SegmentSpeaker", fields: [speakerUserId], references: [id], onDelete: SetNull)
+
+  @@map("recording_transcript_segments")
+  @@index([transcriptId])
+  @@index([speakerUserId])
+  @@index([startMs])
 }

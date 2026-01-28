@@ -388,3 +388,20 @@ enum MessageSenderType {
   USER
   SUPPORT
 }
+
+enum RecordingType {
+  AUDIO
+  VIDEO
+}
+
+enum TranscriptProvider {
+  GCP
+  ARAZN
+}
+
+enum TranscriptStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}

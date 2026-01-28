@@ -1,0 +1,47 @@
+model Recording {
+  id              String        @id @default(uuid())
+  filename        String        @unique
+  path            String
+  size            Int
+  duration        Int?          @default(0)
+  roomId          String        @map("room_id")
+  egressId        String?       @map("egress_id")
+  callerId        String        @map("caller_id")
+  calleeId        String        @map("callee_id")
+  recordingType   RecordingType @default(AUDIO) @map("recording_type")
+  fileFormat      String        @default("mp4") @map("file_format")
+  deletedAt       DateTime?     @map("deleted_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  caller          User                    @relation("RecordingCaller", fields: [callerId], references: [id], onDelete: Cascade)
+  callee          User                    @relation("RecordingCallee", fields: [calleeId], references: [id], onDelete: Cascade)
+  participants    RecordingParticipant[]
+  transcripts     RecordingTranscript[]
+
+  @@map("recordings")
+  @@index([roomId])
+  @@index([callerId])
+  @@index([calleeId])
+  @@index([egressId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+// Many-to-many relation for recording participants
+model RecordingParticipant {
+  id          String    @id @default(uuid())
+  recordingId String    @map("recording_id")
+  userId      String    @map("user_id")
+  role        String    // "caller" | "callee" | "participant"
+  
+  // Relations
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  user        User      @relation("RecordingParticipants", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("recording_participants")
+  @@unique([recordingId, userId])
+  @@index([recordingId])
+  @@index([userId])
+}

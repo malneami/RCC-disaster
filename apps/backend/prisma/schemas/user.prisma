@@ -101,6 +101,12 @@ model User {
   uploadedSupportAttachments SupportAttachment[] @relation("SupportAttachmentUploader")
   uploadedMedicalRecordAttachments MedicalRecordAttachment[] @relation("MedicalRecordAttachmentUploader")
   
+  // Recording Relations
+  recordingsAsCaller     Recording[]                  @relation("RecordingCaller")
+  recordingsAsCallee     Recording[]                  @relation("RecordingCallee")
+  recordingParticipants  RecordingParticipant[]       @relation("RecordingParticipants")
+  transcriptSegments     RecordingTranscriptSegment[] @relation("SegmentSpeaker")
+
   @@map("users")
   @@index([email])
   @@index([role])

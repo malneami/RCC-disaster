@@ -44,7 +44,9 @@ const SCHEMA_ORDER = [
   'unit.prisma',
   'bed.prisma',
   'bed-request.prisma',
-  'bed-status-history.prisma'
+  'bed-status-history.prisma',
+  'recordings.prisma',
+  'transcripts.prisma',
 ];
 
 // Prisma header
@@ -135,6 +137,8 @@ function validateMergedSchema(content) {
     { name: 'CaseNoteRecipient model', pattern: /model CaseNoteRecipient/, required: true },
     { name: 'Reply model', pattern: /model Reply/, required: true },
     { name: 'Enums', pattern: /enum/, required: true },
+    { name: 'Recording model', pattern: /model Recording/, required: true },
+    { name: 'RecordingTranscript model', pattern: /model RecordingTranscript/, required: true },
   ];
 
   let hasErrors = false;
