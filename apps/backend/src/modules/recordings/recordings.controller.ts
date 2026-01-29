@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Res, Body, NotFoundException, Logger, Req, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Res, Body, NotFoundException, Logger, Req, UseGuards, ForbiddenException, Query } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { RecordingsService } from './recordings.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TranscriptionService } from '../transcription/transcription.service';
 import { Public } from '../../auth/decorators/public.decorator';
+import { RecordingQueryDto } from './dto/recording-query.dto';
 
 @Controller('recordings')
 @UseGuards(JwtAuthGuard)
@@ -18,9 +19,9 @@ export class RecordingsController {
     ) { }
 
     @Get()
-    async findAll(@Req() req: Request) {
+    async findAll(@Req() req: Request, @Query() query: RecordingQueryDto) {
         const user = (req as any).user;
-        return this.recordingsService.getRecordings(user?.id, user?.role);
+        return this.recordingsService.getRecordings(user?.id, user?.role, query);
     }
 
     /**
@@ -33,7 +34,7 @@ export class RecordingsController {
         const userRole = user?.role;
 
         // Load recording first to enforce same access rules as list
-        const allRecordings = await this.recordingsService.getRecordings(userId, userRole);
+        const { recordings: allRecordings } = await this.recordingsService.getRecordings(userId, userRole, { limit: 10000 });
         const recording = allRecordings.find((r) => r.id === id);
 
         if (!recording) {
@@ -57,7 +58,7 @@ export class RecordingsController {
         const isAdminOrRcc = userRole === 'ADMIN' || userRole === 'RCC';
 
         // Reuse recordingsService access rules
-        const accessible = await this.recordingsService.getRecordings(userId, userRole);
+        const { recordings: accessible } = await this.recordingsService.getRecordings(userId, userRole, { limit: 10000 });
         const recording = accessible.find((r) => r.id === id);
 
         if (!recording) {
@@ -176,6 +177,23 @@ export class RecordingsController {
             const readStream = fs.createReadStream(filePath);
             readStream.pipe(res);
         }
+    }
+
+    /**
+     * Delete recording (soft delete) - Admin/RCC only
+     */
+    @Delete(':id')
+    async deleteRecording(@Param('id') id: string, @Req() req: Request) {
+        const user = (req as any).user;
+        const userRole = user?.role;
+
+        // Only ADMIN or RCC can delete recordings
+        if (userRole !== 'ADMIN' && userRole !== 'RCC') {
+            throw new ForbiddenException('Only administrators and RCC users can delete recordings');
+        }
+
+        await this.recordingsService.deleteRecording(id);
+        return { success: true, message: 'Recording deleted successfully' };
     }
 
     /**

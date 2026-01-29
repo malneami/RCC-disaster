@@ -7,6 +7,7 @@ import { EgressClient, RoomCompositeEgressRequest, EncodedFileOutput, EgressInfo
 import * as ffmpeg from 'fluent-ffmpeg';
 import { Prisma, RecordingType } from '@prisma/client';
 import { TranscriptionService } from '../transcription/transcription.service';
+import { RecordingQueryDto } from './dto/recording-query.dto';
 
 export interface RecordingFile {
     id: string;
@@ -562,59 +563,98 @@ export class RecordingsService implements OnModuleInit {
      * @param userId - Current user ID for filtering
      * @param userRole - Current user role for access control
      */
-    async getRecordings(userId?: string, userRole?: string): Promise<RecordingFile[]> {
+    async getRecordings(userId?: string, userRole?: string, query: RecordingQueryDto = {}): Promise<{ recordings: RecordingFile[], total: number }> {
         try {
-            // Admin and RCC can see all recordings
-            // Others can only see recordings where they are caller or callee
+            const { limit = 20, offset = 0, status, callerId, calleeId, search } = query;
             const isAdminOrRCC = userRole === 'ADMIN' || userRole === 'RCC';
 
-            const allRecordings = await this.prisma.recording.findMany({
-                where: {
-                    deletedAt: null
-                } as any,
-                orderBy: {
-                    createdAt: 'desc',
-                },
-                include: {
-                    caller: {
-                        select: {
-                            firstName: true,
-                            lastName: true,
-                            email: true,
-                        },
-                    },
-                    participants: {
-                        include: {
-                            user: {
-                                select: {
-                                    id: true,
-                                    firstName: true,
-                                    lastName: true,
-                                    email: true,
-                                }
-                            }
-                        }
-                    },
-                    transcripts: {
-                        orderBy: {
-                            createdAt: 'desc'
-                        },
-                        take: 1,
-                        select: {
-                            status: true
-                        }
-                    }
-                } as any,
-            });
+            const where: Prisma.RecordingWhereInput = {
+                deletedAt: null,
+            };
 
-            let recordings = allRecordings as any[];
+            // Access control: Non-admins only see recordings they are part of
             if (!isAdminOrRCC && userId) {
-                recordings = allRecordings.filter(rec => {
-                    return (rec as any).participants.some((p: any) => p.userId === userId);
-                });
+                where.participants = {
+                    some: { userId: userId }
+                };
             }
 
-            return recordings.map((rec: any) => {
+            // Filters
+            if (callerId) {
+                where.callerId = callerId;
+            }
+
+            if (calleeId) {
+                // If calleeId is provided, ensure they are a participant with 'callee' role
+                where.participants = {
+                    some: {
+                        userId: calleeId,
+                        role: 'callee'
+                    }
+                };
+            }
+
+            if (status) {
+                where.transcripts = {
+                    some: {
+                        status: status as any
+                    }
+                };
+            }
+
+            if (search) {
+                where.OR = [
+                    { filename: { contains: search, mode: 'insensitive' } },
+                    { caller: { firstName: { contains: search, mode: 'insensitive' } } },
+                    { caller: { lastName: { contains: search, mode: 'insensitive' } } },
+                    { participants: { some: { user: { firstName: { contains: search, mode: 'insensitive' } } } } },
+                    { participants: { some: { user: { lastName: { contains: search, mode: 'insensitive' } } } } },
+                ];
+            }
+
+            const [total, allRecordings] = await Promise.all([
+                this.prisma.recording.count({ where }),
+                this.prisma.recording.findMany({
+                    where,
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                    take: limit,
+                    skip: offset,
+                    include: {
+                        caller: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                                email: true,
+                            },
+                        },
+                        participants: {
+                            include: {
+                                user: {
+                                    select: {
+                                        id: true,
+                                        firstName: true,
+                                        lastName: true,
+                                        email: true,
+                                    }
+                                }
+                            }
+                        },
+                        transcripts: {
+                            orderBy: {
+                                createdAt: 'desc'
+                            },
+                            take: 1,
+                            select: {
+                                status: true
+                            }
+                        }
+                    } as any,
+                })
+            ]);
+
+            const mappedRecordings = (allRecordings as any[]).map((rec: any) => {
                 const callerName = rec.caller
                     ? (`${rec.caller.firstName ?? ''} ${rec.caller.lastName ?? ''}`.trim() || rec.caller.email || undefined)
                     : undefined;
@@ -651,9 +691,17 @@ export class RecordingsService implements OnModuleInit {
                     transcriptionStatus: transcriptionStatus || null,
                 };
             });
+
+            return {
+                recordings: mappedRecordings,
+                total
+            };
         } catch (error) {
             this.logger.error('Error listing recordings from DB', error);
-            return [];
+            return {
+                recordings: [],
+                total: 0
+            };
         }
     }
 
@@ -671,5 +719,31 @@ export class RecordingsService implements OnModuleInit {
     getCallerIdForRoom(roomId: string): string | null {
         const activeRecording = this.activeRecordings.get(roomId);
         return activeRecording?.callerId || null;
+    }
+
+    /**
+     * Soft delete a recording
+     */
+    async deleteRecording(id: string): Promise<void> {
+        const recording = await this.prisma.recording.findUnique({
+            where: { id },
+        });
+
+        if (!recording) {
+            throw new Error('Recording not found');
+        }
+
+        if (recording.deletedAt) {
+            throw new Error('Recording already deleted');
+        }
+
+        await this.prisma.recording.update({
+            where: { id },
+            data: {
+                deletedAt: new Date(),
+            },
+        });
+
+        this.logger.log(`Recording ${id} soft deleted`);
     }
 }

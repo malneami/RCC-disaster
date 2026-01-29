@@ -7,6 +7,8 @@ lerna-debug.log*
 venv
 .venv
 
+/apps/backend/uploads/recordings
+
 # Runtime data
 pids
 *.pid

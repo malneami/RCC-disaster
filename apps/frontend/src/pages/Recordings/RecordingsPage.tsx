@@ -2,46 +2,81 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import {
     Box,
-    Typography,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    IconButton,
-    CircularProgress,
     Alert,
-    Chip,
-    Tooltip,
-    Drawer,
+    TablePagination,
+    TextField,
+    InputAdornment,
+    IconButton,
+    LinearProgress,
+    Typography,
 } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import DownloadIcon from '@mui/icons-material/Download';
-import VideocamIcon from '@mui/icons-material/Videocam';
-import MicIcon from '@mui/icons-material/Mic';
-import ClosedCaptionIcon from '@mui/icons-material/ClosedCaption';
+import { Helmet } from 'react-helmet-async';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import { Headphones, Assessment, Timeline } from '@mui/icons-material';
 import { Recording, recordingsService } from '../../services/recordingsService';
+import { userManagementService } from '../../services/userManagementService';
 import apiClient from '@/services/apiClient';
+import { RecordingsFilters } from './components/RecordingsFilters';
+import { RecordingsTable } from './components/RecordingsTable';
+import { TranscriptDrawer } from './components/TranscriptDrawer';
+import PortalSkeleton, { PortalStep, KPICard } from '../../components/Common/PortalSkeleton';
+import { useAuth } from '../../contexts/AuthContext';
 
 const RecordingsPage: React.FC = () => {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
+
+    // Check if user is admin or RCC
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'RCC';
+
+    // Media playback state
     const [playingFile, setPlayingFile] = useState<string | null>(null);
     const [mediaElement, setMediaElement] = useState<HTMLVideoElement | HTMLAudioElement | null>(null);
+
+    // Transcript drawer state
     const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
 
-    const { data: recordings = [], isLoading: loading, error: queryError } = useQuery(
-        'recordings',
-        recordingsService.getAll,
+    // Pagination state
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(20);
+
+    // Filter state
+    const [statusFilter, setStatusFilter] = useState('');
+    const [callerFilter, setCallerFilter] = useState('');
+    const [calleeFilter, setCalleeFilter] = useState('');
+    const [searchFilter, setSearchFilter] = useState('');
+
+    // Fetch recordings with pagination and filters
+    const { data, isLoading: loading, error: queryError } = useQuery(
+        ['recordings', page, rowsPerPage, statusFilter, callerFilter, calleeFilter, searchFilter],
+        () => recordingsService.getAll({
+            limit: rowsPerPage,
+            offset: page * rowsPerPage,
+            status: statusFilter || undefined,
+            callerId: callerFilter || undefined,
+            calleeId: calleeFilter || undefined,
+            search: searchFilter || undefined,
+        }),
         {
-            refetchInterval: 10000, 
+            refetchInterval: 10000,
+            keepPreviousData: true,
             onError: (err) => console.error('Failed to fetch recordings:', err)
         }
     );
 
+    const recordings = data?.recordings || [];
+    const totalCount = data?.total || 0;
+
+    // Fetch users for filter dropdowns
+    const { data: usersData } = useQuery(
+        'users-list',
+        () => userManagementService.getAllUsers(1, 1000),
+        { staleTime: 600000 }
+    );
+    const users = usersData?.data || [];
+
+    // Fetch transcript for selected recording
     const { data: transcript, isLoading: transcriptLoading, error: transcriptQueryError } = useQuery(
         ['transcript', selectedRecording?.id],
         () => recordingsService.getTranscript(selectedRecording!.id),
@@ -62,7 +97,7 @@ const RecordingsPage: React.FC = () => {
         {
             onSuccess: () => {
                 queryClient.invalidateQueries(['transcript', selectedRecording?.id]);
-                queryClient.invalidateQueries('recordings');
+                queryClient.invalidateQueries(['recordings']);
             },
             onError: (err: any) => {
                 console.error('Failed to run transcript:', err);
@@ -71,9 +106,24 @@ const RecordingsPage: React.FC = () => {
         }
     );
 
+    // Delete Recording Mutation
+    const deleteMutation = useMutation(
+        (id: string) => recordingsService.delete(id),
+        {
+            onSuccess: () => {
+                queryClient.invalidateQueries(['recordings']);
+            },
+            onError: (err: any) => {
+                console.error('Failed to delete recording:', err);
+                alert('Failed to delete recording. Please try again or contact support.');
+            }
+        }
+    );
+
     const error = queryError ? 'Failed to load recordings. Please try again.' : null;
     const transcriptError = transcriptQueryError ? 'Failed to load transcript. You may need to run it again.' : null;
 
+    // Cleanup media element on unmount
     useEffect(() => {
         return () => {
             if (mediaElement) {
@@ -86,10 +136,12 @@ const RecordingsPage: React.FC = () => {
         };
     }, [mediaElement]);
 
-    const fetchRecordings = () => queryClient.invalidateQueries('recordings');
+    const fetchRecordings = () => queryClient.invalidateQueries(['recordings']);
 
     const handlePlay = async (rec: Recording) => {
         const { filename } = rec;
+
+        // Stop if already playing
         if (playingFile === filename && mediaElement) {
             mediaElement.pause();
             mediaElement.src = '';
@@ -99,7 +151,7 @@ const RecordingsPage: React.FC = () => {
             return;
         }
 
-        // Clean up previous
+        // Clean up previous media element
         if (mediaElement) {
             mediaElement.pause();
             mediaElement.src = '';
@@ -126,7 +178,6 @@ const RecordingsPage: React.FC = () => {
             element.preload = 'metadata';
             element.controls = true;
 
-
             element.onended = () => {
                 setPlayingFile(null);
                 setMediaElement(null);
@@ -148,6 +199,7 @@ const RecordingsPage: React.FC = () => {
             }
         }
     };
+
     const handleDownload = (filename: string) => {
         const url = recordingsService.getDownloadUrl(filename);
         window.open(url, '_blank');
@@ -162,308 +214,181 @@ const RecordingsPage: React.FC = () => {
         runMutation.mutate(selectedRecording.id);
     };
 
+    const handleDelete = (rec: Recording) => {
+        deleteMutation.mutate(rec.id);
+    };
+
     const closeTranscriptDrawer = () => {
         setSelectedRecording(null);
     };
 
-    const formatSize = (bytes: number) => {
-        if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const handlePageChange = (_: unknown, newPage: number) => {
+        setPage(newPage);
     };
 
+    const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    // Calculate KPI stats
+    const completedTranscripts = recordings.filter(r => r.transcriptionStatus === 'COMPLETED').length;
+    const pendingTranscripts = recordings.filter(r => r.transcriptionStatus === 'PENDING' || r.transcriptionStatus === 'RUNNING').length;
+
+    // Portal steps
+    const portalSteps: PortalStep[] = [
+        { label: 'Recordings', description: 'View and manage call recordings', icon: <Headphones /> },
+    ];
+
+    // KPI Cards
+    const kpiCards: KPICard[] = [
+        {
+            title: 'Total Recordings',
+            value: totalCount,
+            icon: <Assessment />,
+            color: '#1976d2',
+        },
+        {
+            title: 'Completed Transcripts',
+            value: completedTranscripts,
+            icon: <Timeline />,
+            color: '#2e7d32',
+        },
+        {
+            title: 'Pending Transcripts',
+            value: pendingTranscripts,
+            icon: <Timeline />,
+            color: '#ed6c02',
+        },
+
+    ];
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" component="h1">
-                    Call Recordings
-                </Typography>
-                <IconButton onClick={fetchRecordings} disabled={loading}>
-                    <RefreshIcon />
-                </IconButton>
-            </Box>
+        <>
+            <Helmet>
+                <title>Call Recordings - RCC Healthcare Platform</title>
+            </Helmet>
 
-            {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-
-            {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
-                    <CircularProgress />
-                </Box>
-            ) : recordings.length === 0 ? (
-                <Paper sx={{ p: 4, textAlign: 'center' }}>
-                    <Typography color="textSecondary">No recordings found.</Typography>
-                </Paper>
-            ) : (
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Actions</TableCell>
-                                <TableCell>Type</TableCell>
-                                <TableCell>Date</TableCell>
-                                <TableCell>Caller</TableCell>
-                                <TableCell>Callee(s)</TableCell>
-                                <TableCell>Status</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {recordings.map((rec) => (
-                                <TableRow key={rec.id}>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                            <Tooltip title={playingFile === rec.filename ? "Pause" : "Play"}>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handlePlay(rec)}
-                                                    color={playingFile === rec.filename ? "primary" : "default"}
-                                                >
-                                                    {playingFile === rec.filename ? <PauseIcon /> : <PlayArrowIcon />}
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Download">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleDownload(rec.filename)}
-                                                >
-                                                    <DownloadIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="View transcript">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleOpenTranscript(rec)}
-                                                >
-                                                    <ClosedCaptionIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            icon={rec.recordingType === 'VIDEO' ? <VideocamIcon /> : <MicIcon />}
-                                            label={rec.recordingType === 'VIDEO' ? 'Video' : 'Audio'}
-                                            size="small"
-                                            color={rec.recordingType === 'VIDEO' ? 'primary' : 'default'}
-                                            variant="outlined"
-                                        />
-                                    </TableCell>
-                                    <TableCell>{new Date(rec.createdAt).toLocaleString()}</TableCell>
-                                    <TableCell>{rec.callerName || 'Unknown'}</TableCell>
-                                    <TableCell>
-                                        {(() => {
-                                            if (Array.isArray(rec.calleeNames) && rec.calleeNames.length > 0) {
-                                                return rec.calleeNames.join(', ');
-                                            }
-                                            return 'Unknown';
-                                        })()}
-                                    </TableCell>
-                                    <TableCell>
-                                        {rec.transcriptionStatus && (
-                                            <Chip
-                                                label={rec.transcriptionStatus}
-                                                size="small"
-                                                color={
-                                                    rec.transcriptionStatus === 'COMPLETED' ? 'success' :
-                                                        rec.transcriptionStatus === 'RUNNING' || rec.transcriptionStatus === 'PENDING' ? 'warning' :
-                                                            rec.transcriptionStatus === 'FAILED' ? 'error' : 'default'
-                                                }
-                                                variant="outlined"
-                                            />
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            )}
-            <Drawer
-                anchor="right"
-                open={!!selectedRecording}
-                onClose={closeTranscriptDrawer}
+            <PortalSkeleton
+                title="Call Recordings"
+                subtitle="Manage and transcribe call recordings"
+                portalType="patients"
+                steps={portalSteps}
+                activeStep={0}
+                onRefresh={fetchRecordings}
+                kpiCards={kpiCards}
             >
-                <Box sx={{ width: 520, display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#fafafa' }}>
-                    {/* Header */}
-                    <Box sx={{
-                        p: 3,
-                        borderBottom: '1px solid #e0e0e0',
-                        bgcolor: 'white',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                    }}>
-                        <Typography variant="h5" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                            Transcription
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <Tooltip title="Refresh transcript">
-                                <IconButton
-                                    size="small"
-                                    onClick={() => queryClient.invalidateQueries(['transcript', selectedRecording?.id])}
-                                    disabled={transcriptLoading || runMutation.isLoading}
-                                    sx={{
-                                        bgcolor: '#f5f5f5',
-                                        '&:hover': { bgcolor: '#e0e0e0' }
-                                    }}
-                                >
-                                    <RefreshIcon fontSize="small" />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Run transcription">
-                                <IconButton
-                                    size="small"
-                                    onClick={handleRunTranscript}
-                                    disabled={transcriptLoading || runMutation.isLoading}
-                                    sx={{
-                                        bgcolor: '#f5f5f5',
-                                        '&:hover': { bgcolor: '#e0e0e0' }
-                                    }}
-                                >
-                                    {runMutation.isLoading ? <CircularProgress size={16} /> : <PlayArrowIcon fontSize="small" />}
-                                </IconButton>
-                            </Tooltip>
-                        </Box>
+                {/* Error Alert */}
+                {error && (
+                    <Box sx={{ p: 1.5, pb: 0 }}>
+                        <Alert severity="error" onClose={() => queryClient.invalidateQueries(['recordings'])} sx={{ mb: 1.5 }}>
+                            {error}
+                        </Alert>
                     </Box>
+                )}
 
-                    {/* Recording Info */}
-                    <Box sx={{ p: 3, bgcolor: 'white', borderBottom: '1px solid #e0e0e0' }}>
-                        {selectedRecording && (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="caption" sx={{ color: '#666', minWidth: 60 }}>
-                                        Date:
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                        {new Date(selectedRecording.createdAt).toLocaleString()}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="caption" sx={{ color: '#666', minWidth: 60 }}>
-                                        Caller:
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                        {selectedRecording.callerName || 'Unknown'}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="caption" sx={{ color: '#666', minWidth: 60 }}>
-                                        Type:
-                                    </Typography>
-                                    <Chip
-                                        icon={selectedRecording.recordingType === 'VIDEO' ? <VideocamIcon /> : <MicIcon />}
-                                        label={selectedRecording.recordingType === 'VIDEO' ? 'Video' : 'Audio'}
-                                        size="small"
-                                        sx={{ height: 24 }}
-                                    />
-                                </Box>
-                            </Box>
-                        )}
-                    </Box>
-
-                    {/* Transcript Content */}
-                    <Box sx={{ flex: 1, overflowY: 'auto', p: 3 }}>
-                        {transcriptLoading && (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4 }}>
-                                <CircularProgress size={32} sx={{ mb: 2 }} />
-                                <Typography variant="body2" color="textSecondary">
-                                    Loading transcript...
-                                </Typography>
-                            </Box>
-                        )}
-
-                        {transcriptError && (
-                            <Alert severity="error" sx={{ mb: 2 }}>
-                                {transcriptError}
-                            </Alert>
-                        )}
-
-                        {!transcriptLoading && !transcriptError && !transcript && (
-                            <Box sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                p: 4,
-                                textAlign: 'center'
-                            }}>
-                                <ClosedCaptionIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
-                                <Typography variant="body1" color="textSecondary" gutterBottom>
-                                    No transcript available
-                                </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                    Click the play button above to start transcription
-                                </Typography>
-                            </Box>
-                        )}
-
-                        {transcript && (
-                            <Box>
-                                {/* Status Badge */}
-                                <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="caption" sx={{ color: '#666' }}>
-                                        Status:
-                                    </Typography>
-                                    <Chip
-                                        label={transcript.status}
-                                        size="small"
-                                        color={
-                                            transcript.status === 'COMPLETED' ? 'success' :
-                                                transcript.status === 'RUNNING' ? 'warning' :
-                                                    transcript.status === 'FAILED' ? 'error' : 'default'
-                                        }
-                                        icon={(transcript.status === 'RUNNING' || transcript.status === 'PENDING') ?
-                                            <CircularProgress size={12} color="inherit" /> : undefined
-                                        }
-                                    />
-                                </Box>
-
-                                {/* Full Text Display */}
-                                {transcript.fullText ? (
-                                    <Paper
-                                        elevation={0}
-                                        sx={{
-                                            p: 3,
-                                            bgcolor: 'white',
-                                            borderRadius: 2,
-                                            border: '1px solid #e0e0e0'
-                                        }}
-                                    >
-                                        <Typography
-                                            variant="body1"
-                                            sx={{
-                                                lineHeight: 1.8,
-                                                color: '#2c2c2c',
-                                                fontSize: '15px',
-                                                fontWeight: 400,
-                                                whiteSpace: 'pre-wrap',
-                                                wordBreak: 'break-word'
-                                            }}
-                                        >
-                                            {transcript.fullText}
-                                        </Typography>
-                                    </Paper>
-                                ) : (
-                                    <Box sx={{
-                                        p: 3,
-                                        bgcolor: 'white',
-                                        borderRadius: 2,
-                                        border: '1px dashed #ccc',
-                                        textAlign: 'center'
-                                    }}>
-                                        <Typography variant="body2" color="textSecondary">
-                                            Transcription in progress...
-                                        </Typography>
-                                    </Box>
-                                )}
-                            </Box>
-                        )}
-                    </Box>
+                {/* Search Bar */}
+                <Box sx={{ mb: 1.5 }}>
+                    <TextField
+                        fullWidth
+                        placeholder="Search recordings..."
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon />
+                                </InputAdornment>
+                            ),
+                            endAdornment: searchFilter && (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={() => setSearchFilter('')}>
+                                        <ClearIcon />
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
                 </Box>
-            </Drawer>
-        </Box>
+
+                {/* Filters */}
+                <Box sx={{ mb: 2 }}>
+                    <RecordingsFilters
+                        searchFilter={searchFilter}
+                        setSearchFilter={setSearchFilter}
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                        callerFilter={callerFilter}
+                        setCallerFilter={setCallerFilter}
+                        calleeFilter={calleeFilter}
+                        setCalleeFilter={setCalleeFilter}
+                        users={users || []}
+                    />
+                </Box>
+
+                {/* Loading State */}
+                {loading && recordings.length === 0 ? (
+                    <Box sx={{ width: '100%', mt: 4 }}>
+                        <LinearProgress />
+                        <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
+                            Loading recordings...
+                        </Typography>
+                    </Box>
+                ) : recordings.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 8 }}>
+                        <Typography variant="h6" color="text.secondary" gutterBottom>
+                            No recordings found matching your criteria.
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Try adjusting your filters or search terms
+                        </Typography>
+                    </Box>
+                ) : (
+                    <>
+                        {loading && <LinearProgress sx={{ mb: 1 }} />}
+
+                        {/* Recordings Table */}
+                        <RecordingsTable
+                            recordings={recordings}
+                            playingFile={playingFile}
+                            onPlay={handlePlay}
+                            onDownload={handleDownload}
+                            onOpenTranscript={handleOpenTranscript}
+                            onDelete={handleDelete}
+                            isAdmin={isAdmin}
+                        />
+
+                        {/* Pagination */}
+                        <TablePagination
+                            component="div"
+                            count={totalCount}
+                            page={page}
+                            onPageChange={handlePageChange}
+                            rowsPerPage={rowsPerPage}
+                            onRowsPerPageChange={handleRowsPerPageChange}
+                            rowsPerPageOptions={[10, 20, 50, 100]}
+                            labelRowsPerPage="Rows per page:"
+                            labelDisplayedRows={({ from, to, count }) =>
+                                `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
+                            }
+                        />
+                    </>
+                )}
+
+                {/* Transcript Drawer */}
+                <TranscriptDrawer
+                    open={!!selectedRecording}
+                    onClose={closeTranscriptDrawer}
+                    selectedRecording={selectedRecording}
+                    transcript={transcript}
+                    transcriptLoading={transcriptLoading}
+                    transcriptError={transcriptError}
+                    onRefresh={() => queryClient.invalidateQueries(['transcript', selectedRecording?.id])}
+                    onRunTranscript={handleRunTranscript}
+                    isRunning={runMutation.isLoading}
+                />
+            </PortalSkeleton>
+        </>
     );
 };
 

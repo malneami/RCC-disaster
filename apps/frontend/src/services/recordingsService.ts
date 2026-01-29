@@ -45,9 +45,21 @@ export interface RecordingTranscript {
     segments: RecordingTranscriptSegment[];
 }
 
+export interface PaginatedRecordings {
+    recordings: Recording[];
+    total: number;
+}
+
 export const recordingsService = {
-    getAll: async () => {
-        const response = await apiClient.get<Recording[]>('/recordings');
+    getAll: async (params?: {
+        limit?: number;
+        offset?: number;
+        status?: string;
+        callerId?: string;
+        calleeId?: string;
+        search?: string;
+    }) => {
+        const response = await apiClient.get<PaginatedRecordings>('/recordings', { params });
         return response.data;
     },
 
@@ -70,5 +82,11 @@ export const recordingsService = {
     getDownloadUrl: (filename: string) => {
         const baseURL = apiClient.defaults.baseURL;
         return `${baseURL}/recordings/${filename}/download`;
-    }
+    },
+
+    delete: async (id: string) => {
+        const response = await apiClient.delete(`/recordings/${id}`);
+        return response.data;
+    },
 };
+
