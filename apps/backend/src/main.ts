@@ -122,7 +122,9 @@ async function bootstrap() {
   async function getAllRoomParticipants(roomId: string): Promise<string[]> {
     try {
       const participants = await roomService.listParticipants(roomId);
-      return participants.map(p => p.identity || p.sid).filter(Boolean) as string[];
+      return participants
+        .map(p => p.identity || p.sid)
+        .filter(id => id && !id.startsWith('EG_')) as string[];
     } catch (error) {
       logger.warn(`Error getting participants for room ${roomId}: ${error instanceof Error ? error.message : String(error)}`);
       return [];
@@ -133,6 +135,7 @@ async function bootstrap() {
     roomId: string,
     callerId: string,
     calleeIds: string | string[],
+    hasVideo: boolean = false,
     maxRetries: number = 5,
     retryDelay: number = 2000
   ): Promise<string | null> {
@@ -163,7 +166,7 @@ async function bootstrap() {
           }
         }
 
-        const egressId = await recordingsService.startRecording(roomId, callerId, finalCalleeIds, false);
+        const egressId = await recordingsService.startRecording(roomId, callerId, finalCalleeIds, hasVideo);
         if (egressId) {
           return egressId;
         }
@@ -177,6 +180,26 @@ async function bootstrap() {
 
     logger.error(` All ${maxRetries} recording attempts failed for ${roomId}`);
     return null;
+  }
+
+  async function checkAndStopRecording(roomId: string) {
+    try {
+      const roomParticipants = await getAllRoomParticipants(roomId);
+      if (roomParticipants.length < 2) {
+        logger.log(`⏹️ Room ${roomId} has ${roomParticipants.length} participants left. Stopping recording.`);
+        const callerId = recordingsService.getCallerIdForRoom(roomId);
+        await recordingsService.stopRecording(roomId, roomParticipants, callerId || undefined);
+      } else {
+        logger.log(`⏺️ Room ${roomId} still has ${roomParticipants.length} participants. Recording continues.`);
+        // Update callees if needed
+        const callerId = recordingsService.getCallerIdForRoom(roomId);
+        if (callerId) {
+          await recordingsService.updateRecordingCallees(roomId, roomParticipants, callerId);
+        }
+      }
+    } catch (error) {
+      logger.error(`❌ Error in checkAndStopRecording for room ${roomId}: ${error}`);
+    }
   }
 
   const httpServer = app.getHttpServer();
@@ -285,8 +308,12 @@ async function bootstrap() {
 
 
       if (roomId) {
+        const hasCamera = data.signal?.hasCamera || false;
+        const hasScreenShare = data.signal?.hasScreenShare || false;
+        const hasVideo = hasCamera || hasScreenShare;
+
         setTimeout(async () => {
-          await startRecordingWithRetry(roomId, callerId, calleeId, 5, 2000).catch((error) => {
+          await startRecordingWithRetry(roomId, callerId, calleeId, hasVideo, 5, 2000).catch((error) => {
             logger.error(` Failed to start recording for ${roomId}: ${error}`);
           });
         }, 2500); // Give time for LiveKit room connection to establish
@@ -302,21 +329,27 @@ async function bootstrap() {
       const { roomId } = data;
 
       if (roomId) {
-        try {
-          const roomParticipants = await getAllRoomParticipants(roomId);
-          const callerId = recordingsService.getCallerIdForRoom(roomId);
-
-          await recordingsService.stopRecording(roomId, roomParticipants, callerId || undefined);
-        } catch (error) {
-          logger.error(`❌ Stop recording failed: ${error}`);
-        }
+        await checkAndStopRecording(roomId);
       }
 
       socket.broadcast.emit('callEnded', { from: socket.id });
     });
 
     // Handle media state change
-    socket.on('mediaStateChange', (data) => {
+    socket.on('mediaStateChange', async (data) => {
+      const { video, screenShare } = data;
+      const roomId = data.roomId || Array.from(socket.rooms).find(r => r !== socket.id);
+
+      if (roomId) {
+        if (video || screenShare) {
+          await recordingsService.startVideoRecording(roomId);
+        } else {
+          // Note: We don't automatically stop video here because other participants might still be on video
+          // and startRoomCompositeEgress records the whole room. 
+          // stopVideoRecording is usually called when the specific video use stops or the call ends.
+        }
+      }
+
       socket.broadcast.emit('mediaStateChange', { ...data, from: socket.id });
     });
 
@@ -353,11 +386,22 @@ async function bootstrap() {
     });
 
     // Handle leave room
-    socket.on('leaveRoom', (data) => {
+    socket.on('leaveRoom', async (data) => {
       const { roomId } = data;
       socket.leave(roomId);
       socket.to(roomId).emit('userLeft', { socketId: socket.id, roomId });
       logger.log(`🚪 Socket ${socket.id} left room ${roomId}`);
+
+      if (roomId) {
+        await checkAndStopRecording(roomId);
+      }
+    });
+
+    socket.on('disconnecting', async () => {
+      const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+      for (const roomId of rooms) {
+        await checkAndStopRecording(roomId);
+      }
     });
 
     socket.on('disconnect', (reason) => {

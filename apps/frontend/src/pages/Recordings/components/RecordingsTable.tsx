@@ -173,7 +173,7 @@ export const RecordingsTable: React.FC<RecordingsTableProps> = ({
                                 >
                                     <TableCell sx={{ py: 2 }} onClick={(e) => e.stopPropagation()}>
                                         <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                            <Tooltip title={playingFile === rec.filename ? "Pause" : "Play"} arrow>
+                                            <Tooltip title={playingFile === rec.filename ? "Pause Audio" : "Play Audio"} arrow>
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => onPlay(rec)}
@@ -192,7 +192,30 @@ export const RecordingsTable: React.FC<RecordingsTableProps> = ({
                                                     {playingFile === rec.filename ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
                                                 </IconButton>
                                             </Tooltip>
-                                            <Tooltip title="Download" arrow>
+
+                                            {(rec.videoFilename && (rec.recordingType === 'VIDEO' || rec.upgradedToVideo)) && (
+                                                <Tooltip title="Play Video" arrow>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => onPlay({ ...rec, filename: rec.videoFilename! })}
+                                                        sx={{
+                                                            color: playingFile === rec.videoFilename ? '#1976D2' : '#666666',
+                                                            backgroundColor: playingFile === rec.videoFilename ? alpha('#1976D2', 0.1) : 'transparent',
+                                                            border: `1px solid ${playingFile === rec.videoFilename ? alpha('#1976D2', 0.3) : '#E0E0E0'}`,
+                                                            '&:hover': {
+                                                                backgroundColor: alpha('#1976D2', 0.15),
+                                                                borderColor: '#1976D2',
+                                                                color: '#1976D2',
+                                                            },
+                                                            transition: 'all 0.2s ease',
+                                                        }}
+                                                    >
+                                                        <VideocamIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+
+                                            <Tooltip title="Download Audio" arrow>
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => onDownload(rec.filename)}
@@ -252,13 +275,13 @@ export const RecordingsTable: React.FC<RecordingsTableProps> = ({
                                     </TableCell>
                                     <TableCell sx={{ py: 2 }}>
                                         <Chip
-                                            icon={rec.recordingType === 'VIDEO' ? <VideocamIcon /> : <MicIcon />}
-                                            label={rec.recordingType === 'VIDEO' ? 'Video' : 'Audio'}
+                                            icon={rec.recordingType === 'VIDEO' || rec.upgradedToVideo ? <VideocamIcon /> : <MicIcon />}
+                                            label={rec.recordingType === 'VIDEO' || rec.upgradedToVideo ? 'Video' : 'Audio'}
                                             size="small"
                                             sx={{
-                                                backgroundColor: rec.recordingType === 'VIDEO' ? alpha('#1976D2', 0.1) : alpha('#666666', 0.08),
-                                                color: rec.recordingType === 'VIDEO' ? '#1976D2' : '#666666',
-                                                border: `1px solid ${rec.recordingType === 'VIDEO' ? alpha('#1976D2', 0.3) : alpha('#666666', 0.2)}`,
+                                                backgroundColor: rec.recordingType === 'VIDEO' || rec.upgradedToVideo ? alpha('#1976D2', 0.1) : alpha('#666666', 0.08),
+                                                color: rec.recordingType === 'VIDEO' || rec.upgradedToVideo ? '#1976D2' : '#666666',
+                                                border: `1px solid ${rec.recordingType === 'VIDEO' || rec.upgradedToVideo ? alpha('#1976D2', 0.3) : alpha('#666666', 0.2)}`,
                                                 fontWeight: 500,
                                                 '& .MuiChip-icon': {
                                                     color: 'inherit',

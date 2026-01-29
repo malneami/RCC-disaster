@@ -11,6 +11,7 @@ import { TranscriptionPanel } from './TranscriptionPanel';
 import { ControlBarWrapper } from './ControlBarWrapper';
 import { useAudioCapture } from '../../hooks/useAudioCapture';
 import { useTranscription } from '@/contexts/TranscriptionContext';
+import { useVideoCallSocket } from '@/contexts/VideoCallSocketContext';
 
 interface CustomVideoLayoutProps {
     onInviteUser: () => void;
@@ -30,6 +31,7 @@ export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({
     const [unreadMessages, setUnreadMessages] = useState(0);
     const room = useRoomContext();
     const videoGridRef = useRef<HTMLDivElement>(null);
+    const lastMediaStateRef = useRef({ video: false, screenShare: false });
 
     const {
         socket: transcriptionSocket,
@@ -37,6 +39,8 @@ export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({
         joinRoom,
         leaveRoom,
     } = useTranscription();
+
+    const { socket: videoCallSocket } = useVideoCallSocket();
 
     // Get all camera and screen share tracks
     const tracks = useTracks(
@@ -75,6 +79,40 @@ export const CustomVideoLayout: React.FC<CustomVideoLayoutProps> = ({
         roomId,
         enabled: isTranscriptionEnabled,
     });
+
+    // Track and report media state changes to backend for video recording
+    useEffect(() => {
+        if (!room) return;
+
+        const localParticipant = room.localParticipant;
+
+        const cameraPublication = Array.from(localParticipant.trackPublications.values()).find(
+            pub => pub.source === Track.Source.Camera
+        );
+        const hasCamera = cameraPublication !== undefined && !cameraPublication.isMuted;
+
+        const screenSharePublication = Array.from(localParticipant.trackPublications.values()).find(
+            pub => pub.source === Track.Source.ScreenShare
+        );
+        const hasScreenShare = screenSharePublication !== undefined && !screenSharePublication.isMuted;
+
+        if (lastMediaStateRef.current.video === hasCamera &&
+            lastMediaStateRef.current.screenShare === hasScreenShare) {
+            return;
+        }
+
+        lastMediaStateRef.current = { video: hasCamera, screenShare: hasScreenShare };
+
+        if (videoCallSocket) {
+            videoCallSocket.emit('mediaStateChange', {
+                from: room.localParticipant.identity,
+                video: hasCamera,
+                audio: true,
+                screenShare: hasScreenShare,
+                roomId: roomId
+            });
+        }
+    }, [room, tracks, videoCallSocket, roomId]);
 
     // Listen for chat messages to update unread count
     useEffect(() => {

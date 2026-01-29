@@ -9,6 +9,8 @@ import {
     IconButton,
     LinearProgress,
     Typography,
+    Dialog,
+    DialogContent,
 } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
 import SearchIcon from '@mui/icons-material/Search';
@@ -33,6 +35,7 @@ const RecordingsPage: React.FC = () => {
     // Media playback state
     const [playingFile, setPlayingFile] = useState<string | null>(null);
     const [mediaElement, setMediaElement] = useState<HTMLVideoElement | HTMLAudioElement | null>(null);
+    const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
     // Transcript drawer state
     const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
@@ -140,6 +143,7 @@ const RecordingsPage: React.FC = () => {
 
     const handlePlay = async (rec: Recording) => {
         const { filename } = rec;
+        const isVideo = filename.endsWith('.mp4');
 
         // Stop if already playing
         if (playingFile === filename && mediaElement) {
@@ -148,6 +152,7 @@ const RecordingsPage: React.FC = () => {
             if (mediaElement.parentNode) mediaElement.parentNode.removeChild(mediaElement);
             setMediaElement(null);
             setPlayingFile(null);
+            setIsVideoPlaying(false);
             return;
         }
 
@@ -157,6 +162,7 @@ const RecordingsPage: React.FC = () => {
             mediaElement.src = '';
             if (mediaElement.parentNode) mediaElement.parentNode.removeChild(mediaElement);
             setMediaElement(null);
+            setIsVideoPlaying(false);
         }
 
         const url = recordingsService.getStreamUrl(filename);
@@ -169,9 +175,18 @@ const RecordingsPage: React.FC = () => {
             const blob = response.data as Blob;
             const blobUrl = URL.createObjectURL(blob);
 
-            // Create audio element
-            const element = document.createElement('audio');
-            element.style.display = 'none';
+            // Create element based on type
+            const element = document.createElement(isVideo ? 'video' : 'audio');
+
+            if (!isVideo) {
+                element.style.display = 'none';
+            } else {
+                element.style.width = '100%';
+                element.style.maxHeight = '70vh';
+                element.style.borderRadius = '8px';
+                element.style.backgroundColor = '#000';
+            }
+
             document.body.appendChild(element);
 
             element.src = blobUrl;
@@ -181,9 +196,14 @@ const RecordingsPage: React.FC = () => {
             element.onended = () => {
                 setPlayingFile(null);
                 setMediaElement(null);
+                setIsVideoPlaying(false);
                 URL.revokeObjectURL(blobUrl);
                 if (element.parentNode) element.parentNode.removeChild(element);
             };
+
+            if (isVideo) {
+                setIsVideoPlaying(true);
+            }
 
             await element.play();
             setMediaElement(element);
@@ -192,6 +212,7 @@ const RecordingsPage: React.FC = () => {
         } catch (err: any) {
             console.error('Playback failed:', err);
             alert('Could not play recording: ' + (err.message || 'Check console for details'));
+            setIsVideoPlaying(false);
             if (mediaElement) {
                 mediaElement.pause();
                 if (mediaElement.parentNode) mediaElement.parentNode.removeChild(mediaElement);
@@ -387,6 +408,62 @@ const RecordingsPage: React.FC = () => {
                     onRunTranscript={handleRunTranscript}
                     isRunning={runMutation.isLoading}
                 />
+
+                {/* Video Player Dialog */}
+                <Dialog
+                    open={isVideoPlaying}
+                    onClose={() => {
+                        if (mediaElement) {
+                            mediaElement.pause();
+                            mediaElement.src = '';
+                            if (mediaElement.parentNode) mediaElement.parentNode.removeChild(mediaElement);
+                        }
+                        setIsVideoPlaying(false);
+                        setMediaElement(null);
+                        setPlayingFile(null);
+                    }}
+                    maxWidth="md"
+                    fullWidth
+                    PaperProps={{
+                        sx: {
+                            borderRadius: '12px',
+                            backgroundColor: '#000',
+                            overflow: 'hidden',
+                        }
+                    }}
+                >
+                    <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#1A1A1A' }}>
+                        <IconButton
+                            onClick={() => {
+                                if (mediaElement) {
+                                    mediaElement.pause();
+                                    mediaElement.src = '';
+                                    if (mediaElement.parentNode) mediaElement.parentNode.removeChild(mediaElement);
+                                }
+                                setIsVideoPlaying(false);
+                                setMediaElement(null);
+                                setPlayingFile(null);
+                            }}
+                            sx={{ color: '#FFF' }}
+                        >
+                            <ClearIcon />
+                        </IconButton>
+                    </Box>
+                    <DialogContent sx={{ p: 0, backgroundColor: '#000', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Box
+                            id="video-container"
+                            ref={(node: any) => {
+                                if (node && isVideoPlaying && mediaElement && mediaElement.tagName === 'VIDEO') {
+                                    node.innerHTML = '';
+                                    node.appendChild(mediaElement);
+                                    (mediaElement as HTMLVideoElement).style.display = 'block';
+                                    (mediaElement as HTMLVideoElement).style.maxWidth = '100%';
+                                }
+                            }}
+                            sx={{ width: '100%', height: '100%' }}
+                        />
+                    </DialogContent>
+                </Dialog>
             </PortalSkeleton>
         </>
     );

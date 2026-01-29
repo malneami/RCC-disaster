@@ -19,6 +19,7 @@ interface CallInfo {
   calleeId: string;
   roomId: string;
   hasVideo: boolean;
+  hasScreenShare: boolean;
   egressId?: string;
 }
 
@@ -149,6 +150,11 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
         userId: clientData.userId,
       });
 
+      // Check if recording should stop for the room this client was in
+      if (roomId) {
+        this.checkAndStopRecording(roomId);
+      }
+
       // Clean up mappings
       this.connectedClients.delete(client.id);
       if (clientData.userId && clientData.userId !== 'anonymous') {
@@ -228,7 +234,14 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
 
   @SubscribeMessage('answerCall')
   async handleAnswerCall(
-    @MessageBody() data: { signal: any; to: string; name: string; callId?: string },
+    @MessageBody() data: {
+      signal: any;
+      to: string;
+      name: string;
+      callId?: string;
+      hasCamera?: boolean;
+      hasScreenShare?: boolean;
+    },
     @ConnectedSocket() client: Socket,
   ) {
     try {
@@ -265,10 +278,10 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
       const participants = this.getRoomParticipants(roomId);
       this.logger.log(`Room ${roomId} created with ${participants.length} participants:`, participants.map(p => ({ socketId: p.socketId, userId: p.userId })));
 
-      // Start recording automatically (camera off by default, so audio-only)
+      // Start recording automatically
       const callerId = callerSocket.userId;
       const calleeIds = participants
-        .filter(p => p.userId !== callerId)
+        .filter(p => p.userId !== callerId && !p.userId.startsWith('EG_'))
         .map(p => p.userId);
 
       // Ensure we have at least one callee
@@ -277,7 +290,10 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
         calleeIds.push(clientData.userId);
       }
 
-      const hasVideo = false; // Camera is off by default
+      // Get media state from frontend (camera/screen share)
+      const hasCamera = data.hasCamera || false;
+      const hasScreenShare = data.hasScreenShare || false;
+      const hasVideo = hasCamera || hasScreenShare;
 
       const egressId = await this.recordingsService.startRecording(roomId, callerId, calleeIds, hasVideo);
 
@@ -286,7 +302,8 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
         callerId,
         calleeId: calleeIds[0] || '', // Keep for backward compatibility
         roomId,
-        hasVideo,
+        hasVideo: hasCamera,
+        hasScreenShare,
         egressId: egressId || undefined,
       });
 
@@ -344,21 +361,11 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
       // Get room ID before leaving
       const roomId = this.socketToRoom.get(client.id);
 
-      // Stop recording if this call was being recorded
-      if (roomId && this.activeCalls.has(roomId)) {
-        // Get all current participants before stopping to ensure we capture everyone
-        const participants = this.getRoomParticipants(roomId);
-        const activeCall = this.activeCalls.get(roomId);
-        const allParticipantIds = participants.map(p => p.userId);
-        const callerId = activeCall?.callerId;
-
-        await this.recordingsService.stopRecording(roomId, allParticipantIds, callerId);
-        this.activeCalls.delete(roomId);
-      }
-
-      // Leave room if in one
+      // Leave room first
       if (roomId) {
         this.leaveRoom(client.id, roomId);
+        // Then check if recording should stop
+        await this.checkAndStopRecording(roomId);
       }
 
       client.broadcast.emit('callEnded', {
@@ -376,7 +383,7 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
 
   @SubscribeMessage('mediaStateChange')
   async handleMediaStateChange(
-    @MessageBody() data: { from: string; video: boolean; audio: boolean },
+    @MessageBody() data: { from: string; video: boolean; audio: boolean; screenShare?: boolean },
     @ConnectedSocket() client: Socket,
   ) {
     try {
@@ -387,20 +394,35 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
       }
 
       this.logger.debug(
-        `User ${clientData.userId} changed media state - Video: ${data.video}, Audio: ${data.audio}`,
+        `User ${clientData.userId} changed media state - Video: ${data.video}, Audio: ${data.audio}, ScreenShare: ${data.screenShare}`,
       );
 
-      // Update camera state in active call if exists
+      // Update media state in active call and handle dynamic video recording
       const roomId = this.socketToRoom.get(client.id);
       if (roomId && this.activeCalls.has(roomId)) {
         const callInfo = this.activeCalls.get(roomId)!;
+        const previousHasVideo = callInfo.hasVideo || callInfo.hasScreenShare;
+
+        // Update states
         callInfo.hasVideo = data.video;
+        if (data.screenShare !== undefined) {
+          callInfo.hasScreenShare = data.screenShare;
+        }
+
+        const currentHasVideo = callInfo.hasVideo || callInfo.hasScreenShare;
+
+        if (!previousHasVideo && currentHasVideo) {
+          await this.recordingsService.startVideoRecording(roomId);
+        } else if (previousHasVideo && !currentHasVideo) {
+          await this.recordingsService.stopVideoRecording(roomId);
+        }
       }
 
       client.broadcast.emit('mediaStateChanged', {
         from: data.from,
         video: data.video,
         audio: data.audio,
+        screenShare: data.screenShare,
         userId: clientData.userId,
       });
 
@@ -467,7 +489,9 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
       // Update recording callees if there's an active recording for this room
       const activeCall = this.activeCalls.get(data.roomId);
       if (activeCall && activeCall.egressId) {
-        const allParticipantIds = participants.map(p => p.userId);
+        const allParticipantIds = participants
+          .map(p => p.userId)
+          .filter(id => id && !id.startsWith('EG_'));
         const callerId = activeCall.callerId;
 
         await this.recordingsService.updateRecordingCallees(data.roomId, allParticipantIds, callerId);
@@ -493,6 +517,8 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
       }
 
       this.leaveRoom(client.id, data.roomId);
+      // Check if recording should stop after someone leaves
+      await this.checkAndStopRecording(data.roomId);
       return { success: true };
     } catch (error) {
       this.logger.error(`Error leaving room: ${error instanceof Error ? error.message : String(error)}`);
@@ -557,6 +583,32 @@ export class VideoCallsGateway implements OnGatewayConnection, OnGatewayDisconne
 
     this.socketToRoom.delete(socketId);
     this.logger.log(`Socket ${socketId} left room ${roomId}`);
+  }
+
+  /**
+   * Check if a recording is active for a room and stop it if fewer than 2 participants remain.
+   */
+  private async checkAndStopRecording(roomId: string) {
+    try {
+      if (this.activeCalls.has(roomId)) {
+        const participants = this.getRoomParticipants(roomId);
+
+        // If fewer than 2 participants, stop the recording
+        if (participants.length < 2) {
+          this.logger.log(`Room ${roomId} has ${participants.length} participants left. Stopping recording.`);
+          const activeCall = this.activeCalls.get(roomId);
+          const allParticipantIds = participants.map(p => p.userId);
+          const callerId = activeCall?.callerId;
+
+          await this.recordingsService.stopRecording(roomId, allParticipantIds, callerId);
+          this.activeCalls.delete(roomId);
+        } else {
+          this.logger.log(`Room ${roomId} still has ${participants.length} participants. Recording continues.`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error in checkAndStopRecording for room ${roomId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   private getRoomParticipants(roomId: string): Array<{ socketId: string; userId: string; userInfo: any }> {

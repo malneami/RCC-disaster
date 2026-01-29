@@ -14,6 +14,13 @@ export interface Recording {
     callerName?: string;
     calleeNames?: string[]; // Array of callee names
     transcriptionStatus?: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | null;
+
+    // Video recording fields (for dual recording)
+    videoFilename?: string;
+    videoPath?: string;
+    videoSize?: number;
+    videoDuration?: number;
+    upgradedToVideo?: boolean;
 }
 
 export interface RecordingTranscriptSegment {

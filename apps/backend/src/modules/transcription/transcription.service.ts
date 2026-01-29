@@ -8,6 +8,9 @@ import * as speech from '@google-cloud/speech';
 import axios from 'axios';
 import { Prisma, TranscriptProvider, TranscriptStatus } from '@prisma/client';
 import { RecordingsService } from '../recordings/recordings.service';
+import * as ffmpeg from 'fluent-ffmpeg';
+import * as ffmpegStatic from 'ffmpeg-static';
+import * as ffprobeStatic from 'ffprobe-static';
 
 /**
  * Interface for transcription provider results
@@ -524,12 +527,15 @@ class AraznHttpTranscriber implements TranscriptionProvider {
     }
 
     private async getAudioDuration(filePath: string): Promise<number> {
-        const ffmpeg = require('fluent-ffmpeg');
         try {
-            const ffmpegPath = require('ffmpeg-static');
-            const ffprobePath = require('ffprobe-static').path;
-            ffmpeg.setFfmpegPath(ffmpegPath);
-            ffmpeg.setFfprobePath(ffprobePath);
+            const ffmpegPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : (ffmpegStatic as any)?.default || (ffmpegStatic as any)?.path;
+            if (ffmpegPath) (ffmpeg as any).setFfmpegPath(ffmpegPath);
+
+            const fp = typeof ffprobeStatic === 'string' ? ffprobeStatic : (ffprobeStatic as any)?.default || (ffprobeStatic as any)?.path;
+            if (fp) {
+                (ffmpeg as any).setFfprobePath(fp);
+                process.env.FFPROBE_PATH = fp;
+            }
         } catch (e) {
             this.logger.warn(`Failed to set static ffmpeg/ffprobe paths: ${e}`);
         }
@@ -547,10 +553,9 @@ class AraznHttpTranscriber implements TranscriptionProvider {
     }
 
     private async splitAudioIntoChunks(filePath: string, chunkDurationSeconds: number): Promise<string[]> {
-        const ffmpeg = require('fluent-ffmpeg');
         try {
-            const ffmpegPath = require('ffmpeg-static');
-            ffmpeg.setFfmpegPath(ffmpegPath);
+            const ffmpegPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : (ffmpegStatic as any)?.default || (ffmpegStatic as any)?.path;
+            if (ffmpegPath) (ffmpeg as any).setFfmpegPath(ffmpegPath);
         } catch (e) {
             this.logger.warn(`Failed to set static ffmpeg path: ${e}`);
         }
@@ -703,6 +708,12 @@ export class TranscriptionService implements OnModuleInit {
      * This runs in-process and updates RecordingTranscript/segments.
      */
     async runPostCallTranscription(recordingId: string, filePath: string, language: string = 'en-US') {
+        // Wait for file to be ready and stable
+        const isStable = await this.waitForFileStability(filePath);
+        if (!isStable) {
+            this.logger.warn(`File not stable/found for transcription: ${filePath}. Proceeding anyway but extraction might fail.`);
+        }
+
         const provider = this.getProviderType();
 
         const whereInput: Prisma.RecordingTranscriptWhereInput = {
@@ -844,5 +855,34 @@ export class TranscriptionService implements OnModuleInit {
         });
 
         return transcript;
+    }
+
+    private async waitForFileStability(filePath: string, maxWaitMs: number = 30000): Promise<boolean> {
+        if (!fs.existsSync(filePath)) {
+            const pollMs = 1000;
+            const deadline = Date.now() + maxWaitMs;
+            while (Date.now() < deadline && !fs.existsSync(filePath)) {
+                await new Promise(r => setTimeout(r, pollMs));
+            }
+        }
+        if (!fs.existsSync(filePath)) return false;
+        const pollMs = 1000;
+        const deadline = Date.now() + 30000;
+        let lastSize = -1;
+        let stableCount = 0;
+        while (Date.now() < deadline) {
+            try {
+                const stats = fs.statSync(filePath);
+                if (stats.size > 0 && stats.size === lastSize) {
+                    stableCount++;
+                    if (stableCount >= 2) return true;
+                } else {
+                    stableCount = 0;
+                    lastSize = stats.size;
+                }
+            } catch (e) { }
+            await new Promise(r => setTimeout(r, pollMs));
+        }
+        return lastSize > 0;
     }
 }
