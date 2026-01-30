@@ -2558,7 +2558,136 @@ export class TicketsService {
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
   }
-  // End of recommendation methods
+
+  // Delete ticket and associated EMS assignments
+  async deleteTicket(id: string, userId: string, userRole: UserRole) {
+    // Validate user permissions
+    if (![UserRole.ADMIN, UserRole.RCC].includes(userRole as any)) {
+      throw new ForbiddenException('Only ADMIN and RCC can delete tickets');
+    }
+
+    let ticket: any;
+    let success = false;
+    let error = '';
+
+    try {
+      // Get ticket info before deletion for logging
+      ticket = await this.findById(id);
+
+      // Use a transaction with increased timeout to ensure data consistency
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // First, get count of EMS assignments to be deleted for logging
+        const assignmentCount = await prisma.eMSAssignment.count({
+          where: { ticketId: id },
+        });
+
+        // Delete all related EMS assignments (hard delete)
+        const deletedAssignments = await prisma.eMSAssignment.deleteMany({
+          where: { ticketId: id },
+        });
+
+        this.logger.log(`Deleted ${deletedAssignments.count} EMS assignments for ticket ${ticket.ticketNumber}`);
+
+        // Delete the ticket (soft delete)
+        const deletedTicket = await prisma.ticket.update({
+          where: { id },
+          data: {
+            deletedAt: new Date(),
+          },
+          include: {
+            patient: true,
+            originHospital: true,
+            destinationHospital: true,
+            createdBy: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        });
+
+        // Create activity log for ticket deletion
+        await prisma.activity.create({
+          data: {
+            type: ActivityType.TICKET_UPDATED,
+            description: `Ticket ${ticket.ticketNumber} deleted along with ${deletedAssignments.count} EMS assignments`,
+            userId,
+            ticketId: ticket.id,
+            metadata: JSON.stringify({
+              deletedEMSAssignments: deletedAssignments.count,
+              deletedBy: userId,
+              deletedAt: new Date().toISOString(),
+            }),
+          },
+        });
+
+        this.logger.log(`Successfully deleted ticket ${ticket.ticketNumber} and ${deletedAssignments.count} associated EMS assignments`);
+
+        return {
+          success: true,
+          message: `Ticket ${ticket.ticketNumber} and ${deletedAssignments.count} associated EMS assignments deleted successfully`,
+          deletedTicket: deletedTicket,
+          deletedEMSAssignments: deletedAssignments.count,
+        };
+      }, {
+        timeout: 15000, // Increase timeout to 15 seconds
+      });
+
+      success = true;
+
+      // Log successful access after transaction completes
+      await this.logTicketDeletionAccess(id, ticket.ticketNumber, userId, true);
+
+      // Emit WebSocket notification after successful transaction
+      try {
+        this.ticketsGateway.emitTicketDeleted({
+          ticketId: id,
+          ticketNumber: ticket.ticketNumber,
+          deletedBy: userId,
+          deletedEMSAssignments: result.deletedEMSAssignments,
+          originHospitalId: ticket.originHospitalId,
+          destinationHospitalId: ticket.destinationHospitalId,
+          assignedToId: ticket.assignedToId,
+        });
+      } catch (notificationError) {
+        // Don't fail the deletion if notification fails
+        this.logger.error('Failed to emit ticket deletion notification:', notificationError);
+      }
+
+      return result;
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err);
+
+      // Log failed access attempt
+      if (ticket && ticket.ticketNumber) {
+        await this.logTicketDeletionAccess(id, ticket.ticketNumber, userId, false, error);
+      }
+
+      throw err;
+    }
+  }
+
+  // Helper method to log access after transaction completes
+  async logTicketDeletionAccess(ticketId: string, ticketNumber: string, userId: string, success: boolean, error?: string) {
+    try {
+      await this.accessLogService.logAccess({
+        entityType: EntityType.TICKET,
+        entityId: ticketId,
+        userId,
+        accessType: 'DELETE',
+        accessMethod: 'API',
+        reason: success
+          ? `Ticket ${ticketNumber} deleted via delete endpoint`
+          : `Failed to delete ticket ${ticketNumber}: ${error}`,
+      });
+    } catch (logError) {
+      // Don't fail the operation if logging fails
+      this.logger.error('Failed to log ticket deletion access:', logError);
+    }
+  }
 
   async getAccessLogs(filters: {
     page?: number;

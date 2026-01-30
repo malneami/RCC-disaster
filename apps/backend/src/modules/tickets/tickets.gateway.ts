@@ -237,4 +237,54 @@ export class TicketsGateway implements OnGatewayInit, OnGatewayConnection, OnGat
       timestamp: new Date(),
     });
   }
+
+  // Emit ticket deletion
+  emitTicketDeleted(deletionInfo: {
+    ticketId: string;
+    ticketNumber: string;
+    deletedBy: string;
+    deletedEMSAssignments: number;
+    originHospitalId?: string;
+    destinationHospitalId?: string;
+    assignedToId?: string;
+  }) {
+    // Check if server is initialized
+    if (!this.server) {
+      console.warn('WebSocket server not initialized, skipping ticket deletion emission');
+      return;
+    }
+
+    const deletionEvent = {
+      ...deletionInfo,
+      action: 'deleted',
+      timestamp: new Date(),
+    };
+
+    // Emit to ticket-specific room
+    this.server.to(`ticket-${deletionInfo.ticketId}`).emit('ticketDeleted', deletionEvent);
+
+    // Emit to origin hospital room
+    if (deletionInfo.originHospitalId) {
+      this.server.to(`hospital-${deletionInfo.originHospitalId}`).emit('ticketDeleted', deletionEvent);
+    }
+
+    // Emit to destination hospital room (if exists)
+    if (deletionInfo.destinationHospitalId) {
+      this.server.to(`hospital-${deletionInfo.destinationHospitalId}`).emit('ticketDeleted', deletionEvent);
+    }
+
+    // Emit to assigned user room (if exists)
+    if (deletionInfo.assignedToId) {
+      this.server.to(`assigned-${deletionInfo.assignedToId}`).emit('ticketDeleted', deletionEvent);
+    }
+
+    // Emit to all RCC and ADMIN users
+    this.connectedClients.forEach(({ socket, user }) => {
+      if ([UserRole.RCC, UserRole.ADMIN].includes(user.role)) {
+        socket.emit('ticketDeleted', deletionEvent);
+      }
+    });
+
+    this.logger.log(`🗑️ [TicketsGateway] Ticket deletion notification sent: ${deletionInfo.ticketNumber}`);
+  }
 }

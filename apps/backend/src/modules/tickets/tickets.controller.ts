@@ -282,4 +282,15 @@ export class TicketsController {
       ticketId,
     });
   }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN, UserRole.RCC)
+  @ApiOperation({ summary: 'Delete a ticket and its associated EMS assignments' })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  async deleteTicket(
+    @Param('id') id: string,
+    @Request() req: any
+  ) {
+    return this.ticketsService.deleteTicket(id, req.user.id, req.user.role);
+  }
 }
