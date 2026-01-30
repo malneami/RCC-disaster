@@ -11,6 +11,7 @@ import {
   Edit as EditIcon,
   Visibility as ViewIcon,
   Security as SecurityIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -25,6 +26,7 @@ import TicketDetailsTab from './components/TicketDetailsTab';
 import GenericPageHeader from '../../components/Common/GenericPageHeader';
 import GenericTabs from '../../components/Common/GenericTabs';
 import AccessLogsTab from '../../components/Common/AccessLogsTab';
+import DeleteConfirmationDialog from '../../components/Common/DeleteConfirmationDialog';
 import { CaseType } from '@prisma/client';
 
 const TicketViewPage: React.FC = () => {
@@ -38,6 +40,8 @@ const TicketViewPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [updateStatusModalOpen, setUpdateStatusModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const isAdmin = user?.role === 'ADMIN';
 
@@ -136,6 +140,35 @@ const TicketViewPage: React.FC = () => {
     }
   };
 
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!ticket) return;
+
+    try {
+      setDeleting(true);
+      const result = await ticketService.deleteTicket(ticket.id);
+
+      enqueueSnackbar(result.message, { variant: 'success' });
+      navigate('/tickets'); // Navigate back to tickets list
+    } catch (error: any) {
+      console.error('Error deleting ticket:', error);
+      enqueueSnackbar(
+        error?.response?.data?.message || 'Failed to delete ticket',
+        { variant: 'error' }
+      );
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+  };
+
 
   const canUpdateStatus = () => {
     if (!ticket || !user) return false;
@@ -150,6 +183,11 @@ const TicketViewPage: React.FC = () => {
     if (user.role === 'ADMIN' || user.role === 'RCC') return true;
     if (user.role === 'DATA_COLLECTOR') return true;
     return false;
+  };
+
+  const canDeleteTicket = () => {
+    if (!ticket || !user) return false;
+    return user.role === 'ADMIN' || user.role === 'RCC';
   };
 
   if (loading) {
@@ -244,6 +282,17 @@ const TicketViewPage: React.FC = () => {
                   },
                 ]
               : []),
+            ...(canDeleteTicket()
+              ? [
+                {
+                  icon: <DeleteIcon />,
+                  tooltip: 'Delete Ticket',
+                  onClick: handleDeleteClick,
+                  color: 'error' as const,
+                  isFab: false,
+                },
+              ]
+              : []),
           ]}
         />
 
@@ -268,6 +317,22 @@ const TicketViewPage: React.FC = () => {
           onClose={() => setEditModalOpen(false)}
           onSubmit={handleTicketEdit}
           ticket={ticket}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Ticket"
+          itemName={ticket?.ticketNumber || ''}
+          itemType="ticket"
+          loading={deleting}
+          consequences={[
+            'Delete the ticket permanently',
+            'Delete all associated EMS assignments',
+            'This action cannot be undone',
+          ]}
         />
       </Container>
     </>

@@ -20,17 +20,21 @@ import {
   CheckCircle as CompletedIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { Ticket } from '../../../services/ticketService';
+import { Ticket, ticketService } from '../../../services/ticketService';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import UpdateStatusModal from './UpdateStatusModal';
 import { getEMSStatusInfo, getEMSStatusColor } from '../../../utils/emsStatusUtils';
+import { useSnackbar } from 'notistack';
+import DeleteConfirmationDialog from '../../../components/Common/DeleteConfirmationDialog';
 
 interface TicketListProps {
   tickets: Ticket[];
   loading: boolean;
   onStatusUpdate: (ticketId: string, status: string, notes?: string) => void;
+  onTicketDeleted?: () => void;
   userRole?: string;
 }
 
@@ -38,11 +42,16 @@ const TicketList: React.FC<TicketListProps> = ({
   tickets,
   loading,
   onStatusUpdate,
+  onTicketDeleted,
   userRole,
 }) => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>('');
 
   const handleStatusUpdate = (status: string, notes?: string) => {
@@ -60,6 +69,42 @@ const TicketList: React.FC<TicketListProps> = ({
     setSelectedTicket(ticket);
     setStatusDialogOpen(true);
     setCurrentStatus(ticket?.emsAssignments?.[0]?.status || 'EMS_CONTACT');
+  };
+
+  const handleDeleteClick = (ticket: Ticket) => {
+    setTicketToDelete(ticket);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!ticketToDelete) return;
+
+    try {
+      setDeleting(true);
+      const result = await ticketService.deleteTicket(ticketToDelete.id);
+
+      enqueueSnackbar(result.message, { variant: 'success' });
+      setDeleteDialogOpen(false);
+      setTicketToDelete(null);
+
+      // Notify parent component to refresh the list
+      if (onTicketDeleted) {
+        onTicketDeleted();
+      }
+    } catch (error: any) {
+      console.error('Error deleting ticket:', error);
+      enqueueSnackbar(
+        error?.response?.data?.message || 'Failed to delete ticket',
+        { variant: 'error' }
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setTicketToDelete(null);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -118,6 +163,10 @@ const TicketList: React.FC<TicketListProps> = ({
     if (userRole === 'EMS' && ticket.assignedToId) return true;
     if (userRole === 'CATH_LAB_USER' && ticket.pathway === 'STEMI') return true;
     return false;
+  };
+
+  const canDeleteTicket = () => {
+    return userRole === 'ADMIN' || userRole === 'RCC';
   };
 
   if (loading) {
@@ -270,12 +319,40 @@ const TicketList: React.FC<TicketListProps> = ({
                     </IconButton>
                   </Tooltip>
                 )}
+
+                {canDeleteTicket() && (
+                  <Tooltip title="Delete Ticket">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteClick(ticket)}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </Box>
             </Box>
           </CardContent>
         </Card>
       ))}
     <UpdateStatusModal currentStatus={currentStatus} open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)} onSubmit={handleStatusUpdate} />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Ticket"
+        itemName={ticketToDelete?.ticketNumber || ''}
+        itemType="ticket"
+        loading={deleting}
+        consequences={[
+          'Delete the ticket permanently',
+          'Delete all associated EMS assignments',
+          'This action cannot be undone',
+        ]}
+      />
     </Box>
   );
 };
