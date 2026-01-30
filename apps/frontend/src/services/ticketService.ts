@@ -585,6 +585,16 @@ class TicketService {
     const response = await apiClient.get(`/tickets/access-logs?${params}`);
     return response.data;
   }
+
+  async deleteTicket(id: string): Promise<{
+    success: boolean;
+    message: string;
+    deletedTicket: Ticket;
+    deletedEMSAssignments: number;
+  }> {
+    const response = await apiClient.delete(`/tickets/${id}`);
+    return response.data;
+  }
 }
 
 export const ticketService = new TicketService();
