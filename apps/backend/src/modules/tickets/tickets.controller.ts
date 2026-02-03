@@ -163,7 +163,7 @@ export class TicketsController {
   }
 
   @Get(':id/recommended-ambulances')
-  @Roles(UserRole.ADMIN, UserRole.RCC)
+  @Roles(UserRole.ADMIN, UserRole.RCC, UserRole.EMS)
   @ApiOperation({ summary: 'Get recommended ambulances for a ticket with scoring' })
   async getRecommendedAmbulances(@Param('id') id: string) {
     return this.ticketsService.getRecommendedAmbulances(id);

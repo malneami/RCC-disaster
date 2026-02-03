@@ -45,7 +45,7 @@ export class EmsDashboardController {
   }
 
   @Get('performance-report')
-  @Roles(UserRole.ADMIN, UserRole.EMS)
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
   @ApiOperation({ summary: 'Get performance report for a date range' })
   @ApiResponse({ status: 200, description: 'Performance report retrieved successfully' })
   async getPerformanceReport(
@@ -87,7 +87,7 @@ export class EmsDashboardController {
   }
 
   @Get('driver/:driverId/performance')
-  @Roles(UserRole.ADMIN, UserRole.EMS)
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
   @ApiOperation({ summary: 'Get driver performance report' })
   @ApiResponse({ status: 200, description: 'Driver performance retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Driver not found' })
@@ -98,7 +98,7 @@ export class EmsDashboardController {
   }
 
   @Get('trigger-daily-metrics')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.RCC)
   @ApiOperation({ summary: 'Trigger generation of daily performance metrics (Admin only)' })
   @ApiResponse({ status: 200, description: 'Metrics generation triggered successfully' })
   async triggerDailyMetrics(@Query('date') date?: string) {
@@ -108,7 +108,7 @@ export class EmsDashboardController {
   }
 
   @Get('assignment-status-distribution')
-  @Roles(UserRole.ADMIN, UserRole.EMS)
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
   @ApiOperation({ summary: 'Get assignment status distribution for a date range' })
   @ApiResponse({ status: 200, description: 'Status distribution retrieved successfully' })
   async getAssignmentStatusDistribution(
@@ -136,7 +136,7 @@ export class EmsDashboardController {
   }
 
   @Get('response-time-trends')
-  @Roles(UserRole.ADMIN, UserRole.EMS)
+  @Roles(UserRole.ADMIN, UserRole.EMS, UserRole.RCC)
   @ApiOperation({ summary: 'Get response time trends for a date range' })
   @ApiResponse({ status: 200, description: 'Response time trends retrieved successfully' })
   async getResponseTimeTrends(
