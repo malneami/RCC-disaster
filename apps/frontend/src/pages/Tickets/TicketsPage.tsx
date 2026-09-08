@@ -199,9 +199,16 @@ const TicketsPage: React.FC = () => {
       setCreateDialogOpen(false);
       setNotification({ message: 'Ticket created successfully', type: 'success' });
       loadData(); // Refresh the list
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating ticket:', error);
-      setNotification({ message: 'Failed to create ticket', type: 'error' });
+      const msg = error?.response?.data?.message;
+      const detail = Array.isArray(msg) ? msg.join(', ') : msg;
+      setNotification({
+        message: detail || 'Failed to create ticket',
+        type: 'error',
+      });
+      // Re-throw so the form can show the error inside the dialog
+      throw error;
     }
   };
 
@@ -260,7 +267,7 @@ const TicketsPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Transfer Tickets - RCC Healthcare Platform</title>
+        <title>Transfer Tickets | MASAR</title>
       </Helmet>
 
       <Box sx={{ p: 3 }}>

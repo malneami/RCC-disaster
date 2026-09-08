@@ -366,7 +366,7 @@ const ProfilePage: React.FC = () => {
     return (
       <>
         <Helmet>
-          <title>User Profile - RCC Healthcare Platform</title>
+          <title>User Profile | MASAR</title>
         </Helmet>
         <Box sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -390,7 +390,7 @@ const ProfilePage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>User Profile - RCC Healthcare Platform</title>
+        <title>User Profile | MASAR</title>
       </Helmet>
 
       <Box>

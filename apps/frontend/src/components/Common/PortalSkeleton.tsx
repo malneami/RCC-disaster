@@ -19,6 +19,7 @@ import {
   Psychology,
   Warning,
   Hotel,
+  PregnantWoman,
 } from '@mui/icons-material';
 
 export interface PortalStep {
@@ -37,7 +38,7 @@ export interface KPICard {
 export interface PortalSkeletonProps {
   title: string;
   subtitle?: string;
-  portalType: 'stroke' | 'trauma' | 'stemi' | 'patients' | 'beds';
+  portalType: 'stroke' | 'trauma' | 'stemi' | 'ob' | 'disaster' | 'patients' | 'beds';
   steps: PortalStep[];
   activeStep: number;
   children: ReactNode;
@@ -70,6 +71,10 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
         return 'Create Stroke Case';
       case 'trauma':
         return 'Create Trauma Case';
+      case 'ob':
+        return 'Create Transfer';
+      case 'disaster':
+        return 'Create Incident';
       case 'beds':
         return 'Add Bed';
       default:
@@ -85,6 +90,10 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
       case 'stroke':
         return '#FFFFFF'; // Clean white
       case 'trauma':
+        return '#FFFFFF'; // Clean white
+      case 'ob':
+        return '#FFFFFF'; // Clean white
+      case 'disaster':
         return '#FFFFFF'; // Clean white
       case 'beds':
         return '#FFFFFF'; // Clean white
@@ -102,6 +111,10 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
         return '#1976D2'; // Medical blue
       case 'trauma':
         return '#D32F2F'; // Medical red
+      case 'ob':
+        return '#9C27B0'; // OB purple
+      case 'disaster':
+        return '#D97706'; // Disaster amber
       case 'beds':
         return '#2E7D32'; // Medical green
       default:
@@ -127,6 +140,10 @@ export const PortalSkeleton: React.FC<PortalSkeletonProps> = ({
       case 'stroke':
         return Psychology;
       case 'trauma':
+        return Warning;
+      case 'ob':
+        return PregnantWoman;
+      case 'disaster':
         return Warning;
       case 'patients':
         return People;

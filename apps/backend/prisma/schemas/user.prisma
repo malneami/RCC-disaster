@@ -64,6 +64,13 @@ model User {
   
   // Trauma Relations
   createdTraumaCases TraumaCase[] @relation("TraumaCaseCreator")
+
+  // OB Maternal Relations
+  createdObMaternalTransfers ObMaternalTransfer[] @relation("ObMaternalTransferCreator")
+
+  // Neurosurgical Relations
+  createdNeurosurgicalCases NeurosurgicalCase[] @relation("NeurosurgicalCaseCreator")
+  closedNeurosurgicalCases NeurosurgicalCase[] @relation("NeurosurgicalCaseCloser")
   
   // EMS Relations
   ambulanceDriver     Ambulance?         @relation("AmbulanceDriver")
@@ -106,6 +113,28 @@ model User {
   recordingsAsCallee     Recording[]                  @relation("RecordingCallee")
   recordingParticipants  RecordingParticipant[]       @relation("RecordingParticipants")
   transcriptSegments     RecordingTranscriptSegment[] @relation("SegmentSpeaker")
+
+  // Disaster Relations
+  createdDisasterIncidents     DisasterIncident[]         @relation("DisasterIncidentCreator")
+  resolvedDisasterIncidents    DisasterIncident[]         @relation("DisasterIncidentResolver")
+  disasterAmbulanceAssignments DisasterAmbulanceAssignment[] @relation("DisasterAmbulanceAssignor")
+  createdDisasterAnnouncements DisasterAnnouncement[]     @relation("DisasterAnnouncementCreator")
+  approvedDisasterAnnouncements DisasterAnnouncement[]    @relation("DisasterAnnouncementApprover")
+  disasterAuditLogs            DisasterAuditLog[]
+  createdDisasterNotifications DisasterNotification[]     @relation("DisasterNotificationCreator")
+  disasterNotificationRecipients DisasterNotificationRecipient[] @relation("DisasterNotificationRecipientUser")
+  createdDisasterMessages      DisasterMessage[]          @relation("DisasterMessageCreator")
+
+  // Command Room Relations
+  activatedCommandRooms        DisasterCommandRoom[]      @relation("DisasterCommandRoomActivator")
+  closedCommandRooms           DisasterCommandRoom[]      @relation("DisasterCommandRoomCloser")
+  disasterCommandRoleAssignments DisasterCommandRoleAssignment[] @relation("DisasterCommandRoleUser")
+  disasterCommandRoleAssignor  DisasterCommandRoleAssignment[] @relation("DisasterCommandRoleAssignor")
+  disasterCommandDecisionLogs  DisasterCommandDecisionLog[] @relation("DisasterCommandDecisionUser")
+
+  // MCP Audit Relations
+  createdAuditEvents           AuditEvent[]                 @relation("AuditEventCreator")
+  generatedAuditReports        AuditReport[]                @relation("AuditReportGenerator")
 
   @@map("users")
   @@index([email])

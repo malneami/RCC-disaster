@@ -616,6 +616,81 @@ export class NotificationsService {
   }
 
   /**
+   * Get unified notifications (case notifications + disaster notifications) for the user.
+   */
+  async getUnifiedNotifications(userId: string, limit = 50) {
+    const [regularResult, disasterList] = await Promise.all([
+      this.getNotifications({ limit: String(limit), page: '1' }, userId),
+      this.prisma.disasterNotification.findMany({
+        where: {
+          recipients: { some: { userId } },
+        },
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          createdBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+          disasterIncident: { select: { id: true, incidentType: true, locationAddress: true, status: true } },
+          recipients: {
+            where: { userId },
+            select: { isRead: true, readAt: true },
+          },
+        },
+      }),
+    ]);
+
+    const disasterNotifications = disasterList.map(({ recipients, ...n }) => ({
+      ...n,
+      _recipientMeta: recipients[0] ? { isRead: recipients[0].isRead, readAt: recipients[0].readAt } : { isRead: false, readAt: null },
+    }));
+
+    return {
+      notifications: regularResult.notifications,
+      disasterNotifications,
+    };
+  }
+
+  /**
+   * Get unified summary including disaster notification counts.
+   */
+  async getUnifiedSummary(userId: string) {
+    const [regularSummary, disasterUnreadCount] = await Promise.all([
+      this.getNotificationSummary(userId),
+      this.prisma.disasterNotificationRecipient.count({
+        where: {
+          userId,
+          isRead: false,
+        },
+      }),
+    ]);
+
+    return {
+      ...regularSummary,
+      disasterUnreadNotifications: disasterUnreadCount,
+      unreadNotifications: regularSummary.unreadNotifications + disasterUnreadCount,
+    };
+  }
+
+  /**
+   * Mark a disaster notification as read for the current user.
+   */
+  async markDisasterNotificationRead(notificationId: string, userId: string) {
+    const recipient = await this.prisma.disasterNotificationRecipient.findFirst({
+      where: {
+        notificationId,
+        userId,
+      },
+    });
+    if (!recipient) {
+      throw new NotFoundException('Disaster notification not found or not accessible');
+    }
+    await this.prisma.disasterNotificationRecipient.update({
+      where: { id: recipient.id },
+      data: { isRead: true, readAt: new Date() },
+    });
+    return { success: true };
+  }
+
+  /**
    * Get case type counts for notification tabs
    * Returns counts efficiently using database COUNT queries instead of loading all notifications
    */

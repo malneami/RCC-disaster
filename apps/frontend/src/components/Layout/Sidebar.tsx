@@ -30,6 +30,8 @@ import {
   faHeadset,
   faTools,
   faClipboardCheck,
+  faExclamationTriangle,
+  faBaby,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -98,6 +100,13 @@ const Sidebar: React.FC = () => {
       roles: ['ADMIN', 'RCC', 'EMS'],
     },
     {
+      text: 'Disaster Management',
+      icon: <FontAwesomeIcon icon={faExclamationTriangle} />,
+      path: '/disaster-management',
+      roles: ['ADMIN', 'RCC', 'EMS'],
+      color: 'warning',
+    },
+    {
       text: 'STEMI Command Center',
       icon: <FontAwesomeIcon icon={faChartLine} />,
       path: '/portals/stemi/command-center',
@@ -142,6 +151,20 @@ const Sidebar: React.FC = () => {
       roles: ['ADMIN', 'RCC', 'EMS'],
       color: 'success',
     },
+    {
+      text: 'OB Maternal Transfer Portal',
+      icon: <FontAwesomeIcon icon={faBaby} />,
+      path: '/portals/ob-maternal',
+      roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
+      color: 'secondary',
+    },
+    {
+      text: 'Neurosurgical Pathway Portal',
+      icon: <FontAwesomeIcon icon={faBrain} />,
+      path: '/portals/neurosurgical',
+      roles: ['ADMIN', 'RCC', 'HOSPITAL_USER', 'ED_NURSE', 'DATA_COLLECTOR'],
+      color: 'warning',
+    },
   ];
 
   const adminItems = [
@@ -149,6 +172,24 @@ const Sidebar: React.FC = () => {
       text: 'Data Quality Audit',
       icon: <FontAwesomeIcon icon={faClipboardCheck} />,
       path: '/data-quality/audit',
+      roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
+    },
+    {
+      text: 'MCP Audit Dashboard',
+      icon: <FontAwesomeIcon icon={faChartLine} />,
+      path: '/audit/dashboard',
+      roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
+    },
+    {
+      text: 'Audit Reports',
+      icon: <FontAwesomeIcon icon={faClipboardCheck} />,
+      path: '/audit/reports',
+      roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
+    },
+    {
+      text: 'Audit Events',
+      icon: <FontAwesomeIcon icon={faBell} />,
+      path: '/audit/events',
       roles: ['ADMIN', 'RCC', 'DATA_COLLECTOR'],
     },
     {
@@ -175,13 +216,15 @@ const Sidebar: React.FC = () => {
   ];
 
   const hasRole = (allowedRoles: string[]) => {
-    return user?.role && allowedRoles.includes(user.role);
+    const userRoleUpper = (user?.role || '').toUpperCase();
+    return userRoleUpper && allowedRoles.some((r) => r.toUpperCase() === userRoleUpper);
   };
 
   const handleNavigation = (path: string) => {
     // Special handling for hospital-specific roles - redirect to their assigned hospital
     const hospitalSpecificRoles = ['HOSPITAL_USER', 'ED_NURSE', 'UNIT_NURSE', 'BED_COORDINATOR'];
-    if (user?.role && hospitalSpecificRoles.includes(user.role) && path === '/hospitals') {
+    const userRoleUpper = (user?.role || '').toUpperCase();
+    if (user?.role && hospitalSpecificRoles.some((r) => r.toUpperCase() === userRoleUpper) && path === '/hospitals') {
       // If user has a hospitalId, redirect directly to their hospital dashboard
       if (user.hospitalId) {
         navigate(`/hospitals/${user.hospitalId}`);
@@ -196,18 +239,17 @@ const Sidebar: React.FC = () => {
 
   return (
     <Box sx={{ height: '100%', bgcolor: 'background.paper' }}>
-      <Toolbar>
-        <Typography
-          variant="h6"
-          component="div"
+      <Toolbar sx={{ justifyContent: 'center', px: 1 }}>
+        <Box
+          component="img"
+          src="/masar-wordmark.png"
+          alt="MASAR - Critical Pathway Resource Control"
           sx={{
-            color: 'primary.main',
-            fontWeight: 600,
-            fontSize: { xs: '1rem', md: '1.25rem' },
+            width: '100%',
+            maxWidth: 200,
+            objectFit: 'contain',
           }}
-        >
-          RCC Healthcare
-        </Typography>
+        />
       </Toolbar>
 
       <Box sx={{ px: { xs: 1, md: 2 }, py: 1 }}>

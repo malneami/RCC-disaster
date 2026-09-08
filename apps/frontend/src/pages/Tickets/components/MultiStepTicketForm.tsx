@@ -1,5 +1,4 @@
 import React from 'react';
-import { Alert } from '@mui/material';
 import { CreateTicketData } from '../../../services/ticketService';
 import MultiStepDialog from '../../../components/Common/MultiStepDialog';
 import {
@@ -159,24 +158,18 @@ const MultiStepTicketForm: React.FC<MultiStepTicketFormProps> = ({
   const steps = createStepsConfig(formData, handleDataChange);
 
   return (
-    <>
-      <MultiStepDialog
-        open={open}
-        title="Create Transfer Ticket"
-        steps={steps}
-        onClose={onClose}
-        onComplete={handleComplete}
-        loading={loading}
-        maxWidth="lg"
-        fullWidth
-      />
-      
-      {error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
-        </Alert>
-      )}
-    </>
+    <MultiStepDialog
+      open={open}
+      title="Create Transfer Ticket"
+      steps={steps}
+      onClose={onClose}
+      onComplete={handleComplete}
+      loading={loading}
+      maxWidth="lg"
+      fullWidth
+      error={error}
+      completeLabel="Create Ticket"
+    />
   );
 };
 

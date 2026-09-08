@@ -18,7 +18,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     );
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  const userRoleUpper = (user.role || '').toUpperCase();
+  if (!allowedRoles.some((r) => r.toUpperCase() === userRoleUpper)) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="warning">

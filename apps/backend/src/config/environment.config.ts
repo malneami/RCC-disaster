@@ -34,7 +34,9 @@ export default registerAs('environment', (): EnvironmentConfig => {
     enableCors: process.env.ENABLE_CORS !== 'false',
     corsOrigins: process.env.CORS_ORIGINS?.split(',') || [
       'http://localhost:3000',
-      'http://localhost:3001',
+      'http://localhost:3002',
+      'https://localhost:5174',
+      'http://localhost:5174',
     ],
     logLevel: process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info'),
     enableSecurityHeaders: process.env.ENABLE_SECURITY_HEADERS !== 'false',

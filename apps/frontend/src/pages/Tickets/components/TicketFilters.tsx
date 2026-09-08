@@ -83,6 +83,8 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({
     { value: 'STEMI', label: 'STEMI' },
     { value: 'STROKE', label: 'Stroke' },
     { value: 'TRAUMA', label: 'Trauma' },
+    { value: 'MATERNAL', label: 'OB / Maternal' },
+    { value: 'NEUROSURGICAL', label: 'Neurosurgical' },
   ];
 
   return (

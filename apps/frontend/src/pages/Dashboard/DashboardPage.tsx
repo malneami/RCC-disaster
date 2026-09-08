@@ -263,7 +263,7 @@ const DashboardPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Dashboard - RCC Healthcare Platform</title>
+        <title>Dashboard | MASAR</title>
       </Helmet>
 
       <Box sx={{ 
@@ -284,17 +284,7 @@ const DashboardPage: React.FC = () => {
           }}
         >
           <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-            {/* Logo and Title */}
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <img 
-                src="/jazan-health-cluster-logo.png" 
-                alt="Jazan Health Cluster Logo" 
-                style={{ 
-                  height: '40px', 
-                  marginRight: '16px',
-                  objectFit: 'contain'
-                }} 
-              />
               <Typography
                 variant="h4"
                 component="h1"

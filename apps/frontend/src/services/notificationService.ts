@@ -105,6 +105,22 @@ export interface NotificationSummary {
   mediumPriorityUnreadNotifications: number;
   emailNotifications: number;
   smsNotifications: number;
+  disasterUnreadNotifications?: number;
+}
+
+export interface DisasterNotification {
+  id: string;
+  disasterIncidentId: string;
+  type: 'INCIDENT_CREATED' | 'ANNOUNCEMENT_SENT' | 'AMBULANCE_ASSIGNED' | 'INCIDENT_RESOLVED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  title: string;
+  message: string;
+  status: 'UNREAD' | 'READ';
+  createdById: string;
+  createdAt: string;
+  createdBy: { id: string; firstName: string; lastName: string; email: string };
+  disasterIncident: { id: string; incidentType: string; locationAddress: string | null; status: string };
+  _recipientMeta?: { isRead: boolean; readAt: string | null };
 }
 
 export interface NotificationCategory {
@@ -261,6 +277,27 @@ export const notificationService = {
       retryDelay: 1000,
       retryCondition: (error) => error.status === 408 || error.status === 429 || error.code === 'NETWORK_ERROR'
     });
+  },
+
+  // Get unified notifications (case + disaster)
+  async getUnifiedNotifications(limit = 50): Promise<{
+    notifications: Notification[];
+    disasterNotifications: DisasterNotification[];
+  }> {
+    const response = await apiClient.get(`/notifications/unified?limit=${limit}`);
+    return response.data;
+  },
+
+  // Get unified summary including disaster counts
+  async getUnifiedSummary(): Promise<NotificationSummary> {
+    const response = await apiClient.get('/notifications/unified-summary');
+    return response.data;
+  },
+
+  // Mark disaster notification as read
+  async markDisasterNotificationRead(notificationId: string): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`/notifications/disaster/${notificationId}/read`);
+    return response.data;
   },
 
   // Get notification summary with optional filters

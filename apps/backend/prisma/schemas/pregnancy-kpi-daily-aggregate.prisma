@@ -1,0 +1,34 @@
+// Pregnancy KPI daily aggregates for OB Maternal Transfer Portal
+model PregnancyKpiDailyAggregate {
+  id                            String   @id @default(uuid())
+  date                          DateTime @db.Date @map("date")
+  region                        String   @map("region")
+
+  totalCases                    Int      @default(0) @map("total_cases")
+  maternalRedCount              Int      @default(0) @map("maternal_red_count")
+  maternalOrangeCount           Int      @default(0) @map("maternal_orange_count")
+
+  avgActivationToOb             Float?   @map("avg_activation_to_ob")
+  avgActivationToDispatch       Float?   @map("avg_activation_to_dispatch")
+  avgDispatchToArrival          Float?   @map("avg_dispatch_to_arrival")
+
+  maternalMortalityRate         Float?   @map("maternal_mortality_rate")
+  severeMorbidityRate           Float?   @map("severe_morbidity_rate")
+  perinatalMortalityRate        Float?   @map("perinatal_mortality_rate")
+  nicuRate                      Float?   @map("nicu_rate")
+
+  vaginalPercentage             Float?   @map("vaginal_percentage")
+  cesareanPercentage            Float?   @map("cesarean_percentage")
+  emergencyCsPercentage         Float?   @map("emergency_cs_percentage")
+  planChangePercentage          Float?   @map("plan_change_percentage")
+  documentationCompletenessAvg  Float?   @map("documentation_completeness_avg")
+
+  createdAt                     DateTime @default(now()) @map("created_at")
+  updatedAt                     DateTime @updatedAt @map("updated_at")
+
+  @@unique([date, region])
+  @@map("pregnancy_kpi_daily_aggregates")
+  @@index([date])
+  @@index([region])
+  @@index([date, region])
+}

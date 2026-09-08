@@ -30,12 +30,29 @@ export interface RequiredResources {
   picu?: boolean;
 }
 
+export interface ObMaternalData {
+  gestationalAgeWeeks: number;
+  gravida?: number;
+  para?: number;
+  abortions?: number;
+  activationLevel: 'MATERNAL_RED' | 'MATERNAL_ORANGE';
+  expectedDeliveryMode?: 'VAGINAL' | 'CESAREAN' | 'PENDING';
+  ambulanceType?: 'BLS' | 'ALS' | 'AIR';
+}
+
+export interface NeurosurgicalData {
+  /** Clinical neuro color — independent of ticket Priority */
+  severity: 'RED' | 'ORANGE';
+}
+
 export interface CreateTicketData {
   patientId: string;
   originHospitalId: string;
   destinationHospitalId?: string;
   priority: 'MEDIUM' | 'CRITICAL' | 'EMERGENCY';
   pathway: string;
+  obMaternalData?: ObMaternalData;
+  neurosurgicalData?: NeurosurgicalData;
   triageTime?: string;
   symptomOnsetTime?: string;
   vitals?: Vitals;
@@ -74,6 +91,7 @@ export interface UpdateTicketData {
   requiredResources?: RequiredResources;
   assignedToId?: string;
   bedAssignment?: BedAssignmentFormData;
+  neurosurgicalData?: NeurosurgicalData;
 }
 
 export interface TicketFilter {
@@ -310,6 +328,14 @@ export interface Ticket {
       };
     } | null;
   }>;
+  neurosurgicalCases?: Array<{
+    id: string;
+    status: string;
+    severity: string;
+    activatedAt: string;
+    createdAt: string;
+    ticketId: string;
+  }>;
   patientBeds?: Array<{
     id: string;
     bedNumber: string;
@@ -396,13 +422,25 @@ export interface TicketAccessLog {
 
 class TicketService {
   async createTicket(data: CreateTicketData): Promise<Ticket> {
-    const response = await apiClient.post('/tickets', data);
+    const { obMaternalData, bedAssignment, neurosurgicalData, ...rest } = data;
+
+    // Never send empty strings for date fields — Nest IsDateString rejects ""
+    const ticketPayload: Record<string, unknown> = { ...rest };
+    for (const key of ['emsContactTime', 'triageTime', 'symptomOnsetTime']) {
+      const v = ticketPayload[key];
+      if (v === '' || v === null || v === undefined) {
+        delete ticketPayload[key];
+      }
+    }
+    // bedAssignment / neurosurgicalData applied client-side after create
+
+    const response = await apiClient.post('/tickets', ticketPayload);
     const ticket = response.data;
     
     let caseId: string | undefined;
     let caseType: 'TRAUMA' | 'STROKE' | 'STEMI' | undefined;
     
-    // Automatically create trauma, stroke, or STEMI case if pathway supports it
+    // Automatically create trauma, stroke, STEMI, or neurosurgical case if pathway supports it
     try {
       if (autoCaseCreationService.supportsAutoCaseCreation(ticket.pathway)) {
         // Get patient data for case creation
@@ -416,7 +454,10 @@ class TicketService {
             triageTime: data.triageTime,
             symptomOnsetTime: data.symptomOnsetTime
           },
-          undefined 
+          undefined,
+          neurosurgicalData
+            ? { severity: neurosurgicalData.severity }
+            : undefined,
         );
         
         if (caseResult.success) {
@@ -436,14 +477,36 @@ class TicketService {
       // Don't fail ticket creation if case creation fails
       console.error('Error in automatic case creation:', error);
     }
-    
-    if (data.bedAssignment && data.bedAssignment.bedId && ticket.patientId) {
+
+    // Create OB Maternal Transfer when pathway is MATERNAL
+    if (ticket.pathway === 'MATERNAL' && obMaternalData) {
       try {
-        await bedService.assignBed(data.bedAssignment.bedId, {
+        const { obMaternalTransferService } = await import('./obMaternalTransferService');
+        await obMaternalTransferService.create({
+          ticketId: ticket.id,
+          patientId: ticket.patientId,
+          referringFacilityId: ticket.originHospitalId,
+          gestationalAgeWeeks: obMaternalData.gestationalAgeWeeks,
+          gravida: obMaternalData.gravida,
+          para: obMaternalData.para,
+          activationLevel: obMaternalData.activationLevel,
+          expectedDeliveryMode: obMaternalData.expectedDeliveryMode || 'PENDING',
+          ambulanceType: obMaternalData.ambulanceType || 'ALS',
+          destinationHospitalId: ticket.destinationHospitalId,
+        });
+        console.log('✅ Auto-created OB Maternal Transfer for ticket:', ticket.id);
+      } catch (obError) {
+        console.error('Error creating OB Maternal Transfer:', obError);
+      }
+    }
+    
+    if (bedAssignment && bedAssignment.bedId && ticket.patientId) {
+      try {
+        await bedService.assignBed(bedAssignment.bedId, {
           patientId: ticket.patientId,
           caseId: caseId,
           caseType: caseType,
-          arrivalDate: data.bedAssignment.arrivalDate,
+          arrivalDate: bedAssignment.arrivalDate,
         });
         window.dispatchEvent(new CustomEvent('hospital-capacity-changed'));
       } catch (bedError: any) {
@@ -481,8 +544,49 @@ class TicketService {
   }
 
   async updateTicket(id: string, data: UpdateTicketData): Promise<Ticket> {
-    const response = await apiClient.put(`/tickets/${id}`, data);
-    return response.data;
+    const { neurosurgicalData, bedAssignment, ...rest } = data;
+
+    const ticketPayload: Record<string, unknown> = { ...rest };
+    for (const key of ['emsContactTime', 'triageTime', 'symptomOnsetTime', 'actualArrival']) {
+      const v = ticketPayload[key];
+      if (v === '' || v === null || v === undefined) {
+        delete ticketPayload[key];
+      }
+    }
+
+    const response = await apiClient.put(`/tickets/${id}`, ticketPayload);
+    const ticket = response.data as Ticket;
+
+    // Sync clinical neuro severity onto NeurosurgicalCase (not ticket Priority)
+    if (ticket.pathway === 'NEUROSURGICAL' && neurosurgicalData?.severity) {
+      try {
+        const { neurosurgicalService } = await import('./neurosurgicalService');
+        const listed = await neurosurgicalService.list({ ticketId: id, limit: 1 });
+        const existing = listed.items[0];
+        if (existing) {
+          if (existing.severity !== neurosurgicalData.severity) {
+            await neurosurgicalService.update(existing.id, {
+              severity: neurosurgicalData.severity,
+              severityOverrideReason: 'Updated from ticket edit',
+            });
+          }
+        } else {
+          await neurosurgicalService.activateFromTicket(id, {
+            triggerReason: 'OTHER',
+            triggerReasonOther: 'Activated from ticket pathway',
+            severity: neurosurgicalData.severity,
+            severityOverrideReason: 'Selected at ticket edit',
+          });
+        }
+      } catch (neuroError) {
+        console.error('Error syncing neurosurgical severity on ticket update:', neuroError);
+      }
+    }
+
+    // bedAssignment handled by caller (TicketViewPage) after update
+    void bedAssignment;
+
+    return ticket;
   }
 
   async updateTicketStatus(

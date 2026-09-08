@@ -223,6 +223,23 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                   </Typography>
                 </Grid>
 
+                {formData.pathway === 'NEUROSURGICAL' && formData.neurosurgicalData?.severity && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Neurosurgical Severity
+                    </Typography>
+                    <Chip
+                      label={
+                        formData.neurosurgicalData.severity === 'RED'
+                          ? 'Neurosurgical Red'
+                          : 'Neurosurgical Orange'
+                      }
+                      color={formData.neurosurgicalData.severity === 'RED' ? 'error' : 'warning'}
+                      size="small"
+                    />
+                  </Grid>
+                )}
+
                 {/* Triage & Symptom Onset */}
                 {formData.triageTime && (
                   <Grid item xs={12} md={6}>
@@ -243,6 +260,53 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                       {new Date(formData.symptomOnsetTime).toLocaleString()}
                     </Typography>
                   </Grid>
+                )}
+
+                {/* OB Maternal Details */}
+                {formData.pathway === 'MATERNAL' && formData.obMaternalData && (
+                  <>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        OB Maternal Details
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        Gestational Age
+                      </Typography>
+                      <Typography variant="body1">
+                        {formData.obMaternalData.gestationalAgeWeeks} weeks
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        G & P & A
+                      </Typography>
+                      <Typography variant="body1">
+                        {[formData.obMaternalData.gravida ?? '-', formData.obMaternalData.para ?? '-', formData.obMaternalData.abortions ?? '-'].join(' / ')}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        Activation Level
+                      </Typography>
+                      <Chip
+                        label={formData.obMaternalData.activationLevel?.replace('MATERNAL_', '')}
+                        color={formData.obMaternalData.activationLevel === 'MATERNAL_RED' ? 'error' : 'warning'}
+                        size="small"
+                      />
+                    </Grid>
+                    {(formData.obMaternalData.expectedDeliveryMode || formData.obMaternalData.ambulanceType) && (
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Delivery / Ambulance
+                        </Typography>
+                        <Typography variant="body1">
+                          {[formData.obMaternalData.expectedDeliveryMode, formData.obMaternalData.ambulanceType].filter(Boolean).join(' • ')}
+                        </Typography>
+                      </Grid>
+                    )}
+                  </>
                 )}
 
                 {/* Vitals */}
@@ -427,7 +491,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
         <Typography variant="body2">
           <strong>Ready to create transfer ticket</strong>
           <br />
-          All required information has been provided. Click "Create Ticket" to submit the transfer request.
+          All required information has been provided. Click <strong>Create Ticket</strong> to submit the transfer request.
         </Typography>
       </Alert>
     </Box>

@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hospital, HospitalFilters } from '../../services/hospitalService';
 import { hospitalService } from '../../services/hospitalService';
+import { disasterService } from '../../services/disasterService';
+import type { DisasterIncident } from '../../services/disasterService';
 import { useHospitals } from './hooks/useHospitals';
 import HospitalsPageView from './HospitalsPageView';
 
@@ -18,6 +20,8 @@ const HospitalsPage: React.FC = () => {
   } = useHospitals();
 
   const [tabValue, setTabValue] = useState(0);
+  const [incidents, setIncidents] = useState<DisasterIncident[]>([]);
+  const [loadingIncidents, setLoadingIncidents] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
 
   // Dialog states
@@ -124,6 +128,29 @@ const HospitalsPage: React.FC = () => {
     };
   }, [loadHospitals]);
 
+  const loadIncidents = useCallback(async () => {
+    setLoadingIncidents(true);
+    try {
+      const data = await disasterService.getActiveIncidents();
+      setIncidents(data);
+    } catch (err) {
+      console.error('Failed to fetch disaster incidents:', err);
+      setIncidents([]);
+    } finally {
+      setLoadingIncidents(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tabValue === 1) {
+      loadIncidents();
+    }
+  }, [tabValue, loadIncidents]);
+
+  const handleViewDisasterManagement = () => {
+    navigate('/disaster-management');
+  };
+
   return (
     <HospitalsPageView
       hospitals={filteredHospitals}
@@ -133,6 +160,8 @@ const HospitalsPage: React.FC = () => {
       selectedHospital={selectedHospital}
       filters={filters}
       dialogStates={dialogStates}
+      incidents={incidents}
+      loadingIncidents={loadingIncidents}
       onTabChange={handleTabChange}
       onUpdateCapacity={handleUpdateCapacityClick}
       onViewDashboard={handleViewDashboard}
@@ -142,8 +171,10 @@ const HospitalsPage: React.FC = () => {
       onApplyFilters={handleApplyFilters}
       onResetFilters={handleResetFilters}
       onRefresh={loadHospitals}
+      onRefreshIncidents={loadIncidents}
       onDialogClose={handleDialogClose}
       onDialogOpen={handleDialogOpen}
+      onViewDisasterManagement={handleViewDisasterManagement}
     />
   );
 };

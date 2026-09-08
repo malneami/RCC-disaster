@@ -325,7 +325,7 @@ const StrokePortalPage: React.FC = () => {
     <>
       {/* ... existing Helmet and PortalSkeleton ... */}
       <Helmet>
-        <title>Stroke Portal - RCC Healthcare Platform</title>
+        <title>Stroke Portal | MASAR</title>
       </Helmet>
 
       <PortalSkeleton

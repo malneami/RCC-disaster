@@ -23,7 +23,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from 'react-query';
 import { useNotificationSocket } from '../../contexts/NotificationSocketContext';
-import { notificationService, Notification } from '../../services/notificationService';
+import { notificationService, Notification, DisasterNotification } from '../../services/notificationService';
 import { useSnackbar } from 'notistack';
 
 interface NotificationBellProps { }
@@ -35,21 +35,22 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
   const { socket, isConnected } = useNotificationSocket();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [disasterNotifications, setDisasterNotifications] = useState<DisasterNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasNewNotification, setHasNewNotification] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { enqueueSnackbar } = useSnackbar();
 
-  // Use React Query for automatic revalidation of unread count
+  // Use React Query for unified summary (includes disaster notifications)
   const { data: notificationSummary, refetch: refetchUnreadCount } = useQuery(
-    'notificationSummary',
-    () => notificationService.getNotificationSummary(),
+    'notificationUnifiedSummary',
+    () => notificationService.getUnifiedSummary(),
     {
-      refetchInterval: 30000, // Refetch every 30 seconds
-      refetchOnWindowFocus: true, // Refetch when window gains focus
-      staleTime: 10000, // Consider data stale after 10 seconds
-      select: (data) => data.unreadNotifications || 0, // Extract unread count
+      refetchInterval: 30000,
+      refetchOnWindowFocus: true,
+      staleTime: 10000,
+      select: (data) => data.unreadNotifications || 0,
     }
   );
 
@@ -98,8 +99,6 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
 
   const handleNotificationClick = async (notification: Notification) => {
     handleClose();
-
-    // Navigate based on notification type
     if (notification.ticketId) {
       navigate(`/tickets/${notification.ticketId}`);
     } else if (notification.caseId) {
@@ -109,14 +108,19 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
     }
   };
 
-  // Helper to show the latest notification from existing data
-  const showLatestNotification = useCallback((notification?: Notification) => {
+  const handleDisasterNotificationClick = (_dn: DisasterNotification) => {
+    handleClose();
+    navigate('/disaster-management');
+  };
+
+  const showLatestNotification = useCallback((notification?: Notification | DisasterNotification) => {
     try {
       // If notificationis provided (from WebSocket), use it directly
       if (notification) {
+        const isDisaster = 'disasterIncidentId' in notification;
         enqueueSnackbar(
           <Box
-            onClick={() => handleNotificationClick(notification)}
+            onClick={() => (isDisaster ? handleDisasterNotificationClick(notification as DisasterNotification) : handleNotificationClick(notification as Notification))}
             sx={{ cursor: 'pointer' }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
@@ -135,20 +139,22 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
         return;
       }
 
-      // Otherwise, use the notifications state (from loadNotifications fetch)
-      if (notifications.length === 0) return;
+      const allItems = [
+        ...notifications.map((n) => ({ ...n, createdAt: n.createdAt, title: n.title, _type: 'regular' as const })),
+        ...disasterNotifications.map((n) => ({ ...n, title: n.title, _type: 'disaster' as const })),
+      ];
+      if (allItems.length === 0) return;
 
-      // Sort by createdAt descending to ensure we get the absolute latest
-      const sorted = [...notifications].sort((a, b) =>
+      const sorted = [...allItems].sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-
       const latest = sorted[0];
 
       if (latest) {
+        const isDisaster = latest._type === 'disaster';
         enqueueSnackbar(
           <Box
-            onClick={() => handleNotificationClick(latest)}
+            onClick={() => (isDisaster ? handleDisasterNotificationClick(latest as DisasterNotification) : handleNotificationClick(latest as Notification))}
             sx={{ cursor: 'pointer' }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
@@ -168,7 +174,7 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
     } catch (error) {
       console.error('Failed to show latest notification:', error);
     }
-  }, [enqueueSnackbar, handleNotificationClick, notifications]);
+  }, [enqueueSnackbar, notifications, disasterNotifications, handleNotificationClick, handleDisasterNotificationClick]);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -197,18 +203,12 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
     }
   }, []);
 
-  // Load recent notifications
   const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      // Load only unread notifications - backend handles the filtering
-      const data = await notificationService.getNotifications({
-        isRead: 'false',
-        limit: '100',
-        page: '1',
-      });
-
+      const data = await notificationService.getUnifiedNotifications(50);
       setNotifications(data.notifications || []);
+      setDisasterNotifications(data.disasterNotifications || []);
     } catch (error) {
       console.error('Error loading notifications:', error);
     } finally {
@@ -226,7 +226,7 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
       const notification = 'notification' in eventData ? eventData.notification : eventData;
 
       setHasNewNotification(true);
-      queryClient.invalidateQueries('notificationSummary');
+      queryClient.invalidateQueries('notificationUnifiedSummary');
 
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500); // Animation duration
@@ -273,15 +273,32 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
 
     const handleNotificationRead = (notificationIds: string[]) => {
       setNotifications(prev => prev.filter(n => !notificationIds.includes(n.id)));
-      queryClient.invalidateQueries('notificationSummary');
+      queryClient.invalidateQueries('notificationUnifiedSummary');
+    };
+
+    const handleDisasterNotificationCreated = (eventData: { notification: DisasterNotification }) => {
+      const notification = eventData.notification;
+      setHasNewNotification(true);
+      queryClient.invalidateQueries('notificationUnifiedSummary');
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
+      playAudioAlert('GENERAL');
+      showLatestNotification(notification);
+      setDisasterNotifications(prev => {
+        const exists = prev.some((n) => n.id === notification.id);
+        if (exists) return prev;
+        return [notification, ...prev];
+      });
     };
 
     socket.on('notification-created', handleNotificationCreated);
     socket.on('notification-read', handleNotificationRead);
+    socket.on('disaster-notification-created', handleDisasterNotificationCreated);
 
     return () => {
       socket.off('notification-created', handleNotificationCreated);
       socket.off('notification-read', handleNotificationRead);
+      socket.off('disaster-notification-created', handleDisasterNotificationCreated);
       if (vibrationIntervalRef.current) {
         clearInterval(vibrationIntervalRef.current);
       }
@@ -301,14 +318,24 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
 
 
   const handleMarkAsRead = async (e: React.MouseEvent, notification: Notification) => {
-    e.stopPropagation(); // Prevent triggering the notification click
-
+    e.stopPropagation();
     try {
       await notificationService.markNotificationsAsRead([notification.id]);
-      queryClient.invalidateQueries('notificationSummary');
+      queryClient.invalidateQueries('notificationUnifiedSummary');
       setNotifications(prev => prev.filter(n => n.id !== notification.id));
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleMarkDisasterAsRead = async (e: React.MouseEvent, dn: DisasterNotification) => {
+    e.stopPropagation();
+    try {
+      await notificationService.markDisasterNotificationRead(dn.id);
+      queryClient.invalidateQueries('notificationUnifiedSummary');
+      setDisasterNotifications(prev => prev.filter(n => n.id !== dn.id));
+    } catch (error) {
+      console.error('Error marking disaster notification as read:', error);
     }
   };
 
@@ -484,7 +511,7 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress size={24} />
           </Box>
-        ) : notifications.length === 0 ? (
+        ) : notifications.length === 0 && disasterNotifications.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
             <FontAwesomeIcon
               icon={faBell}
@@ -496,6 +523,42 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
           </Box>
         ) : (
           <List sx={{ p: 0, maxHeight: '60vh', overflow: 'auto' }}>
+            {disasterNotifications.map((dn) => {
+              const isRead = dn._recipientMeta?.isRead ?? false;
+              return (
+                <React.Fragment key={`disaster-${dn.id}`}>
+                  <ListItem disablePadding sx={{ '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.08) } }}>
+                    <ListItemButton onClick={() => handleDisasterNotificationClick(dn)} sx={{ py: 1.5, px: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, width: '100%' }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: theme.palette.error.main, flexShrink: 0, mt: 0.5 }} />
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, opacity: isRead ? 0.6 : 1 }}>
+                            {dn.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                            {dn.message}
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(dn.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </Typography>
+                            <Typography variant="caption" color="primary" sx={{ ml: 'auto' }}>
+                              Disaster
+                            </Typography>
+                            {!isRead && (
+                              <IconButton size="small" onClick={(e) => handleMarkDisasterAsRead(e, dn)} sx={{ p: 0.5 }} title="Mark as read">
+                                <FontAwesomeIcon icon={faCheck} style={{ fontSize: '0.875rem' }} />
+                              </IconButton>
+                            )}
+                          </Box>
+                        </Box>
+                      </Box>
+                    </ListItemButton>
+                  </ListItem>
+                  <Divider />
+                </React.Fragment>
+              );
+            })}
             {notifications.map((notification, index) => (
               <React.Fragment key={notification.id}>
                 <ListItem
@@ -606,7 +669,7 @@ const NotificationBell: React.FC<NotificationBellProps> = () => {
           </List>
         )}
 
-        {notifications.length > 0 && (
+        {(notifications.length > 0 || disasterNotifications.length > 0) && (
           <Box
             sx={{
               p: 2,

@@ -3,7 +3,7 @@
  * Shared design tokens and MUI sx styles for the premium KPI dashboard
  */
 
-export type PortalType = 'stemi' | 'stroke' | 'trauma' | 'default';
+export type PortalType = 'stemi' | 'stroke' | 'trauma' | 'ob' | 'disaster' | 'default';
 
 interface ThemeColors {
     primary: string;
@@ -60,6 +60,22 @@ export const kpiThemes: Record<PortalType, ThemeColors> = {
         gradientEnd: '#ff9800',   // Lighter Orange
         accent: '#bf360c',
         accentLight: '#ffe0b2',
+    },
+    ob: {
+        ...baseColors,
+        primary: '#9C27B0',
+        gradientStart: '#7B1FA2', // Darker Purple
+        gradientEnd: '#AB47BC',   // Lighter Purple
+        accent: '#6A1B9A',
+        accentLight: '#E1BEE7',
+    },
+    disaster: {
+        ...baseColors,
+        primary: '#D97706',
+        gradientStart: '#B45309', // Darker Amber
+        gradientEnd: '#F59E0B',   // Lighter Amber
+        accent: '#92400E',
+        accentLight: '#FEF3C7',
     },
     default: {
         ...baseColors,

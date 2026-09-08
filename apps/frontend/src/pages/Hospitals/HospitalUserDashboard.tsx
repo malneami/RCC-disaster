@@ -54,7 +54,7 @@ const HospitalUserDashboard: React.FC = () => {
       <Container maxWidth="md">
         <Box sx={{ p: 3 }}>
           <Helmet>
-            <title>Loading Hospital Dashboard - RCC Healthcare</title>
+            <title>Loading Hospital Dashboard | MASAR</title>
           </Helmet>
           
           <Box display="flex" flexDirection="column" alignItems="center" gap={3} sx={{ py: 8 }}>
@@ -76,7 +76,7 @@ const HospitalUserDashboard: React.FC = () => {
       <Container maxWidth="md">
         <Box sx={{ p: 3 }}>
           <Helmet>
-            <title>Hospital Access Error - RCC Healthcare</title>
+            <title>Hospital Access Error | MASAR</title>
           </Helmet>
           
           <Box display="flex" flexDirection="column" alignItems="center" gap={3} sx={{ py: 8 }}>
@@ -113,7 +113,7 @@ const HospitalUserDashboard: React.FC = () => {
       <Container maxWidth="md">
         <Box sx={{ p: 3 }}>
           <Helmet>
-            <title>{hospital.name} - Hospital Dashboard - RCC Healthcare</title>
+            <title>{hospital.name} - Hospital Dashboard | MASAR</title>
           </Helmet>
           
           <Box display="flex" flexDirection="column" alignItems="center" gap={3} sx={{ py: 8 }}>

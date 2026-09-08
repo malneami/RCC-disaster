@@ -1,0 +1,162 @@
+// Neurosurgical Mini Pathway case — thin MVP
+// Endpoint is Definitive Neurosurgical Care (OR | ICU | Observation | Conservative | None), not OR-only.
+
+enum NeurosurgicalTriggerReason {
+  TRAUMATIC_BRAIN_INJURY
+  INTRACRANIAL_HEMORRHAGE
+  SUBDURAL_HEMATOMA
+  EPIDURAL_HEMATOMA
+  SUBARACHNOID_HEMORRHAGE
+  DEPRESSED_SKULL_FRACTURE
+  HYDROCEPHALUS
+  SPINAL_CORD_INJURY
+  SPINAL_COMPRESSION
+  INTRACRANIAL_MASS_RAISED_ICP
+  POSTOPERATIVE_COMPLICATION
+  OTHER
+}
+
+enum NeurosurgicalSeverity {
+  RED
+  ORANGE
+}
+
+enum NeurosurgicalPupils {
+  EQUAL
+  UNEQUAL
+  FIXED
+}
+
+enum NeurosurgicalGcsTrend {
+  IMPROVING
+  STABLE
+  DETERIORATING
+}
+
+enum NeurosurgicalDisposition {
+  OPERATING_ROOM
+  ICU
+  OBSERVATION
+  CONSERVATIVE
+  NO_INTERVENTION
+}
+
+enum NeurosurgicalOutcome {
+  IMPROVED
+  STABLE
+  DETERIORATED
+  SEVERE_DISABILITY
+  DEATH
+}
+
+enum NeurosurgicalDefinitiveTreatment {
+  SURGERY
+  ICU_MANAGEMENT
+  CONSERVATIVE_TREATMENT
+  NO_NEUROSURGICAL_INTERVENTION
+}
+
+enum NeurosurgicalCaseStatus {
+  ACTIVE
+  DEFINITIVE_CARE_REACHED
+  CLOSED
+}
+
+/// Where CT was performed — drives Door→CT KPI targets
+enum NeurosurgicalCtLocation {
+  ORIGIN       // Hospital with CT machine: Door→CT ≤15, report ≤30
+  DESTINATION  // CT at receiving hospital: Door(origin)→CT ≤30, report ≤35
+}
+
+model NeurosurgicalCase {
+  id                      String                           @id @default(uuid())
+  ticketId                String                           @map("ticket_id")
+  patientId               String                           @map("patient_id")
+  createdById             String                           @map("created_by_id")
+  originHospitalId        String                           @map("origin_hospital_id")
+  destinationHospitalId   String?                          @map("destination_hospital_id")
+  status                  NeurosurgicalCaseStatus          @default(ACTIVE)
+
+  activatedAt             DateTime                         @default(now()) @map("activated_at")
+  triggerReason           NeurosurgicalTriggerReason       @map("trigger_reason")
+  triggerReasonOther      String?                          @map("trigger_reason_other")
+
+  gcs                     Int?
+  gcsTrend                NeurosurgicalGcsTrend?           @map("gcs_trend")
+  pupils                  NeurosurgicalPupils?
+  newFocalDeficit         Boolean                          @default(false) @map("new_focal_deficit")
+  seizure                 Boolean                          @default(false)
+  intubated               Boolean                          @default(false)
+  hemodynamicInstability  Boolean                          @default(false) @map("hemodynamic_instability")
+  anticoagulantUse        Boolean                          @default(false) @map("anticoagulant_use")
+  mechanismOfInjury       String?                          @map("mechanism_of_injury")
+
+  severity                NeurosurgicalSeverity
+  severityOverrideReason  String?                          @map("severity_override_reason")
+
+  // Critical timestamps for KPI calculation
+  doorTime                DateTime?                        @map("door_time")
+  /// Origin hospital door-out (transfer start)
+  doorOutTime             DateTime?                        @map("door_out_time")
+  /// RCC activation / call time
+  rccActivationTime       DateTime?                        @map("rcc_activation_time")
+  ctLocation              NeurosurgicalCtLocation?         @map("ct_location")
+  ctScanStartTime         DateTime?                        @map("ct_scan_start_time")
+  ctReportFinalTime       DateTime?                        @map("ct_report_final_time")
+  neurosurgeonNotifiedAt  DateTime?                        @map("neurosurgeon_notified_at")
+  /// Neurosurgeon decision time (KPI: RCC call → decision)
+  neurosurgeonConnectedAt DateTime?                        @map("neurosurgeon_connected_at")
+
+  definitiveDisposition   NeurosurgicalDisposition?        @map("definitive_disposition")
+  dispositionDetail       Json?                            @map("disposition_detail")
+  definitiveCareReachedAt DateTime?                        @map("definitive_care_reached_at")
+
+  // Stored KPI minutes (persisted on write)
+  doorToCtMinutes                    Int?     @map("door_to_ct_minutes")
+  doorToCtReportMinutes              Int?     @map("door_to_ct_report_minutes")
+  activationToNeurosurgeonMinutes    Int?     @map("activation_to_neurosurgeon_minutes")
+  doorOutToDefinitiveCareMinutes     Int?     @map("door_out_to_definitive_care_minutes")
+  /// Legacy alias column — kept for older rows; calculator writes doorOutToDefinitiveCareMinutes
+  activationToDefinitiveCareMinutes  Int?     @map("activation_to_definitive_care_minutes")
+  metKpi1                 Boolean?                         @map("met_kpi1")
+  metKpi2                 Boolean?                         @map("met_kpi2")
+  metKpi3                 Boolean?                         @map("met_kpi3")
+  metKpi4                 Boolean?                         @map("met_kpi4")
+  metKpi5                 Boolean?                         @map("met_kpi5")
+  metKpi6                 Boolean?                         @map("met_kpi6")
+  brainPreserved          Boolean?                         @map("brain_preserved")
+
+  neurologicalOutcome     NeurosurgicalOutcome?            @map("neurological_outcome")
+  definitiveTreatment     NeurosurgicalDefinitiveTreatment? @map("definitive_treatment")
+  deteriorationDuringTransfer Boolean                      @default(false) @map("deterioration_during_transfer")
+  cardiacArrestDuringTransfer Boolean                      @default(false) @map("cardiac_arrest_during_transfer")
+  unplannedIntubation     Boolean                          @default(false) @map("unplanned_intubation")
+  delayedIntervention     Boolean                          @default(false) @map("delayed_intervention")
+  wrongDestination        Boolean                          @default(false) @map("wrong_destination")
+  repeatTransferRequired  Boolean                          @default(false) @map("repeat_transfer_required")
+  reviewFlag              Boolean                          @default(false) @map("review_flag")
+
+  closedAt                DateTime?                        @map("closed_at")
+  closedById              String?                          @map("closed_by_id")
+  notes                   String?
+
+  createdAt               DateTime                         @default(now()) @map("created_at")
+  updatedAt               DateTime                         @updatedAt @map("updated_at")
+
+  ticket                  Ticket                           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  patient                 Patient                          @relation(fields: [patientId], references: [id])
+  createdBy               User                             @relation("NeurosurgicalCaseCreator", fields: [createdById], references: [id])
+  closedBy                User?                            @relation("NeurosurgicalCaseCloser", fields: [closedById], references: [id])
+  originHospital          Hospital                         @relation("NeurosurgicalOriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital     Hospital?                        @relation("NeurosurgicalDestinationHospital", fields: [destinationHospitalId], references: [id])
+
+  @@unique([ticketId])
+  @@map("neurosurgical_cases")
+  @@index([patientId])
+  @@index([status])
+  @@index([severity])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([activatedAt])
+  @@index([createdAt])
+}

@@ -22,11 +22,12 @@ import '../styles/ambulance-markers.css';
 interface AmbulanceMarkerProps {
   ambulance: AmbulanceGPSData;
   isSelected?: boolean;
+  isAssigning?: boolean;
   onClick?: (ambulance: AmbulanceGPSData) => void;
   onShowLocationHistory?: (ambulance: AmbulanceGPSData) => void;
 }
 
-const AmbulanceMarker: React.FC<AmbulanceMarkerProps> = ({ ambulance, isSelected = false, onClick, onShowLocationHistory }) => {
+const AmbulanceMarker: React.FC<AmbulanceMarkerProps> = ({ ambulance, isSelected = false, isAssigning = false, onClick, onShowLocationHistory }) => {
   const markerRef = useRef<any>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'zones'>('details');
   const [zoneVisits, setZoneVisits] = useState<any[]>([]);
@@ -96,6 +97,7 @@ const AmbulanceMarker: React.FC<AmbulanceMarkerProps> = ({ ambulance, isSelected
         display: flex;
         align-items: center;
         justify-content: center;
+        opacity: ${isAssigning ? 0.6 : 1};
       ">
         <div class="${isMoving ? 'moving-pulse' : ''}" style="
           position: relative;

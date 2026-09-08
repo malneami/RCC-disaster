@@ -674,6 +674,16 @@ export class TicketsService {
             updatedAt: true,
           },
         },
+        neurosurgicalCases: {
+          select: {
+            id: true,
+            status: true,
+            severity: true,
+            activatedAt: true,
+            createdAt: true,
+            ticketId: true,
+          },
+        },
       },
     }) as any;
 

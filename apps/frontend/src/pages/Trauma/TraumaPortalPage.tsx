@@ -439,7 +439,7 @@ const TraumaPortalPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Trauma Portal - RCC Healthcare Platform</title>
+        <title>Trauma Portal | MASAR</title>
       </Helmet>
 
       <PortalSkeleton

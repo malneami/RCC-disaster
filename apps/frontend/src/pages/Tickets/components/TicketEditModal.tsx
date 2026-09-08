@@ -218,19 +218,53 @@ const BasicInfoStep: React.FC<{
             <Select
               value={formData.pathway || 'GENERAL'}
               label="Pathway"
-              onChange={(e) => handleInputChange('pathway', e.target.value)}
+              onChange={(e) => {
+                const pathway = e.target.value;
+                const updates: Partial<UpdateTicketData> = { pathway };
+                if (pathway === 'NEUROSURGICAL') {
+                  updates.neurosurgicalData = {
+                    severity: formData.neurosurgicalData?.severity || 'ORANGE',
+                  };
+                } else {
+                  updates.neurosurgicalData = undefined;
+                }
+                onDataChange(updates);
+              }}
             >
               <MenuItem value="STEMI">STEMI</MenuItem>
               <MenuItem value="STROKE">Stroke</MenuItem>
               <MenuItem value="TRAUMA">Trauma</MenuItem>
+              <MenuItem value="MATERNAL">OB / Maternal</MenuItem>
+              <MenuItem value="NEUROSURGICAL">Neurosurgical</MenuItem>
               <MenuItem value="GENERAL">General</MenuItem>
-              <MenuItem value="CARDIAC">Cardiac</MenuItem>
-              <MenuItem value="NEUROLOGY">Neurology</MenuItem>
-              <MenuItem value="PEDIATRIC">Pediatric</MenuItem>
-              <MenuItem value="OBSTETRICS">Obstetrics</MenuItem>
             </Select>
           </FormControl>
         </Grid>
+
+        {formData.pathway === 'NEUROSURGICAL' && (
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth required>
+              <InputLabel>Neurosurgical Severity *</InputLabel>
+              <Select
+                value={formData.neurosurgicalData?.severity || 'ORANGE'}
+                label="Neurosurgical Severity *"
+                onChange={(e) =>
+                  onDataChange({
+                    neurosurgicalData: {
+                      severity: e.target.value as 'RED' | 'ORANGE',
+                    },
+                  })
+                }
+              >
+                <MenuItem value="RED">Neurosurgical Red</MenuItem>
+                <MenuItem value="ORANGE">Neurosurgical Orange</MenuItem>
+              </Select>
+            </FormControl>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              Clinical neuro color. Priority remains operational urgency.
+            </Typography>
+          </Grid>
+        )}
 
         {/* Note */}
         <Grid item xs={12}>

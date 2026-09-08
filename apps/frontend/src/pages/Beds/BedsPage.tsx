@@ -244,7 +244,7 @@ const BedsPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Bed Management - RCC Healthcare Platform</title>
+        <title>Bed Management | MASAR</title>
       </Helmet>
       
       <PortalSkeleton

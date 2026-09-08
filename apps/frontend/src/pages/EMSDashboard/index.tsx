@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Box, Tabs, Tab, Typography, IconButton, Tooltip, Chip, useMediaQuery } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAmbulance, faSyncAlt, faChartLine, faMapMarkedAlt, faClock } from '@fortawesome/free-solid-svg-icons';
+import { faAmbulance, faSyncAlt, faChartLine, faMapMarkedAlt, faClock, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
 import { EMSLiveStatus, PerformanceAnalytics } from './components';
 import EMSOverviewSection from './components/EMSOverviewSection';
 import { LiveAmbulanceMap } from '../../components/LiveTracking';
 import { useEMSDashboard } from '../EMS/hooks/useEMSDashboard';
+import DisasterIncidentForm from '../EMS/components/DisasterIncidentForm';
 
 // Professional color palette - less saturated, more subtle
 const COLORS = {
@@ -130,6 +131,7 @@ const ActivityItem: React.FC<{
 const EMSDashboardPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [disasterFormOpen, setDisasterFormOpen] = useState(false);
   const { data: dashboardData, isLoading, refetch } = useEMSDashboard();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -146,7 +148,7 @@ const EMSDashboardPage: React.FC = () => {
 
   return (
     <>
-      <Helmet><title>EMS Dashboard - RCC Healthcare Platform</title></Helmet>
+      <Helmet><title>EMS Dashboard | MASAR</title></Helmet>
       <Box sx={{ minHeight: '100vh', bgcolor: COLORS.slate[100], p: { xs: 1, sm: 2, md: 3 } }}>
         {/* Header */}
         <Box sx={{ 
@@ -214,6 +216,23 @@ const EMSDashboardPage: React.FC = () => {
                 {lastUpdated.toLocaleTimeString()}
               </Typography>
             </Box>
+            <Tooltip title="Disaster Incident">
+              <IconButton
+                onClick={() => setDisasterFormOpen(true)}
+                aria-label="Create disaster incident"
+                sx={{
+                  width: { xs: 36, md: 40 },
+                  height: { xs: 36, md: 40 },
+                  bgcolor: '#fff',
+                  border: '1px solid #fbbf24',
+                  borderRadius: 2,
+                  color: COLORS.warning,
+                  '&:hover': { bgcolor: '#fff7ed' },
+                }}
+              >
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Refresh">
               <IconButton
                 onClick={handleRefresh}
@@ -373,6 +392,12 @@ const EMSDashboardPage: React.FC = () => {
           </TabPanel>
         </Box>
       </Box>
+
+      <DisasterIncidentForm
+        open={disasterFormOpen}
+        onClose={() => setDisasterFormOpen(false)}
+        onSuccess={() => refetch()}
+      />
     </>
   );
 };

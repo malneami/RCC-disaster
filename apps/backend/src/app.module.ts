@@ -45,6 +45,14 @@ import { SupportModule } from './modules/support/support.module';
 import { DataQualityModule } from './modules/data-quality/data-quality.module';
 import { RecordingsModule } from './modules/recordings/recordings.module';
 import { TranscriptionModule } from './modules/transcription/transcription.module';
+import { DisasterModule } from './modules/disaster/disaster.module';
+import { ObMaternalTransfersModule } from './modules/ob-maternal-transfers/ob-maternal-transfers.module';
+import { PregnancyOutcomesModule } from './modules/pregnancy-outcomes/pregnancy-outcomes.module';
+import { PregnancyKpiDailyAggregatesModule } from './modules/pregnancy-kpi-daily-aggregates/pregnancy-kpi-daily-aggregates.module';
+import { NeurosurgicalCasesModule } from './modules/neurosurgical-cases/neurosurgical-cases.module';
+import { McpAuditModule } from './modules/mcp-audit/mcp-audit.module';
+import { AuditEventInterceptor } from './common/interceptors/audit-event.interceptor';
+// import { CaseFeedbackModule } from './modules/case-feedback/case-feedback.module'; // Temporarily disabled - schema mismatch
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -108,6 +116,13 @@ import { TranscriptionModule } from './modules/transcription/transcription.modul
     DataQualityModule,
     RecordingsModule,
     TranscriptionModule,
+    DisasterModule,
+    ObMaternalTransfersModule,
+    PregnancyOutcomesModule,
+    PregnancyKpiDailyAggregatesModule,
+    NeurosurgicalCasesModule,
+    McpAuditModule,
+    // CaseFeedbackModule, // Temporarily disabled
   ],
   providers: [
     {
@@ -117,6 +132,10 @@ import { TranscriptionModule } from './modules/transcription/transcription.modul
     {
       provide: APP_INTERCEPTOR,
       useClass: AccessLogInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditEventInterceptor,
     },
     // {
     //   provide: APP_GUARD,

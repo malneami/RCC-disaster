@@ -22,8 +22,11 @@ import CommandCenterPage from './pages/Stemi/CommandCenterPage';
 import StrokePortal from './pages/Portals/StrokePortal';
 import StrokeCommandCenterPage from './pages/Stroke/CommandCenterPage';
 import TraumaPortalPage from './pages/Trauma/TraumaPortalPage';
+import ObMaternalPortalPage from './pages/ObMaternal/ObMaternalPortalPage';
+import NeurosurgicalPortalPage from './pages/Neurosurgical/NeurosurgicalPortalPage';
 import EMSPortal from './pages/EMS/EMSPortal';
 import EMSDashboardPage from './pages/EMSDashboard';
+import DisasterManagementPage from './pages/DisasterManagement/DisasterManagementPage';
 import AdminPage from './pages/Admin/AdminPage';
 import ProfilePage from './pages/Profile/ProfilePage';
 import NotificationCenterPage from './pages/NotificationCenter/NotificationCenterPage';
@@ -37,6 +40,9 @@ import { SupportTicketsPage } from './pages/Support/SupportTicketsPage';
 import { SupportTicketChatPage } from './pages/Support/SupportTicketChatPage';
 import { SupportPanelPage } from './pages/Support/SupportPanelPage';
 import DataQualityAuditDashboard from './pages/DataQuality/DataQualityAuditDashboard';
+import AuditDashboardPage from './pages/AuditDashboard/AuditDashboardPage';
+import AuditReportsPage from './pages/AuditReports/AuditReportsPage';
+import AuditEventsPage from './pages/AuditEvents/AuditEventsPage';
 import { TranscriptionProvider } from './contexts/TranscriptionContext';
 import RecordingsPage from './pages/Recordings/RecordingsPage';
 
@@ -91,6 +97,14 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/ems-dashboard" element={<EMSDashboardPage />} />
+                    <Route
+                      path="/disaster-management"
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'EMS']}>
+                          <DisasterManagementPage />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/notifications" element={<NotificationCenterPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route
@@ -171,6 +185,22 @@ function App() {
                         </ProtectedRoute>
                       }
                     />
+                    <Route
+                      path="/portals/ob-maternal"
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                          <ObMaternalPortalPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/portals/neurosurgical"
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'HOSPITAL_USER', 'ED_NURSE', 'DATA_COLLECTOR']}>
+                          <NeurosurgicalPortalPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
                     {/* Admin Routes */}
                     <Route
@@ -178,6 +208,30 @@ function App() {
                       element={
                         <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
                           <DataQualityAuditDashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/audit/dashboard"
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                          <AuditDashboardPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/audit/reports"
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                          <AuditReportsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/audit/events"
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
+                          <AuditEventsPage />
                         </ProtectedRoute>
                       }
                     />

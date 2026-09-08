@@ -142,7 +142,7 @@ const PatientsPortalPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Patients Portal - RCC Healthcare Platform</title>
+        <title>Patients Portal | MASAR</title>
       </Helmet>
 
       <PortalSkeleton
