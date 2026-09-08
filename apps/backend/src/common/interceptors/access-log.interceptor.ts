@@ -150,38 +150,39 @@ export class AccessLogInterceptor implements NestInterceptor {
       urlParts.includes('medical-records') &&
       urlParts[urlParts.indexOf('medical-records') + 1]
     ) {
-      const recordIndex = urlParts.indexOf('medical-records');
-      const recordId = urlParts[recordIndex + 1];
-      if (recordId && recordId !== 'search' && recordId !== 'statistics') {
+      const recordId = urlParts[urlParts.indexOf('medical-records') + 1];
+      if (this.isEntityId(recordId)) {
         return { type: EntityType.MEDICAL_RECORD, id: recordId };
       }
     }
 
     // Check for tickets
-    if (urlParts[0] === 'tickets' && urlParts[1]) {
-      const ticketId = urlParts[1];
-      if (ticketId && ticketId !== 'search' && ticketId !== 'statistics') {
-        return { type: EntityType.TICKET, id: ticketId };
-      }
+    if (urlParts[0] === 'tickets' && this.isEntityId(urlParts[1])) {
+      return { type: EntityType.TICKET, id: urlParts[1] };
     }
 
     // Check for patients
-    if (urlParts[0] === 'patients' && urlParts[1]) {
-      const patientId = urlParts[1];
-      // Skip if it's a sub-resource that's not medical-records
-      if (
-        patientId &&
-        patientId !== 'search' &&
-        patientId !== 'statistics' &&
-        patientId !== 'duplicates' &&
-        patientId !== 'access-logs' &&
-        !urlParts.includes('medical-records')
-      ) {
-        return { type: EntityType.PATIENT, id: patientId };
-      }
+    if (
+      urlParts[0] === 'patients' &&
+      this.isEntityId(urlParts[1]) &&
+      !urlParts.includes('medical-records')
+    ) {
+      return { type: EntityType.PATIENT, id: urlParts[1] };
     }
 
     return null;
+  }
+
+  /**
+   * Named sub-routes such as /tickets/performance would otherwise be treated as
+   * entity IDs and fail the access-log insert on a foreign key violation.
+   * Entity IDs are UUIDs, so anything else is a route segment.
+   */
+  private isEntityId(segment: string | undefined): segment is string {
+    return (
+      !!segment &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)
+    );
   }
 
   private mapHttpMethodToAccessType(method: string): string {

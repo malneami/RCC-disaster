@@ -25,17 +25,19 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: parseInt(env.VITE_PORT || '5173', 10),
+      // Default 5174 so RCC does not collide with TriagePulse on 5173
+      port: parseInt(env.VITE_PORT || '5174', 10),
+      strictPort: true,
       https: env.VITE_HTTPS !== 'false',
       host: env.VITE_HOST !== 'false',
       proxy: {
         '/api': {
-          target: 'http://127.0.0.1:3001',
+          target: env.VITE_PROXY_TARGET || 'http://127.0.0.1:3002',
           changeOrigin: true,
           secure: false, // Allow self-signed certs if backend used them (it doesn't, but safe to add)
         },
         '/socket.io': {
-          target: 'http://127.0.0.1:3001',
+          target: env.VITE_PROXY_TARGET || 'http://127.0.0.1:3002',
           changeOrigin: true,
           ws: true,
           secure: false,

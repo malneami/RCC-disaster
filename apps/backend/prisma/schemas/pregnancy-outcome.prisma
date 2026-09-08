@@ -1,0 +1,25 @@
+// Pregnancy outcome - maternal and perinatal outcomes for a pregnancy case
+model PregnancyOutcome {
+  id                   String          @id @default(uuid())
+  caseId               String          @unique @map("case_id")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  maternalStatus       MaternalStatus  @map("maternal_status")
+  maternalIcuAdmission Boolean         @default(false) @map("maternal_icu_admission")
+  massiveTransfusion   Boolean         @default(false) @map("massive_transfusion")
+  eclampsiaEvent       Boolean         @default(false) @map("eclampsia_event")
+  majorPph             Boolean         @default(false) @map("major_pph")
+
+  perinatalStatus      PerinatalStatus @map("perinatal_status")
+  nicuAdmission        Boolean         @default(false) @map("nicu_admission")
+  apgar5               Int?            @map("apgar_5")
+
+  reviewFlag           Boolean         @default(false) @map("review_flag")
+
+  pregnancyCase        PregnancyCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@map("pregnancy_outcomes")
+  @@index([caseId])
+  @@index([reviewFlag])
+}

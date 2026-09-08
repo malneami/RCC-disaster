@@ -82,6 +82,8 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
         };
       }
 
+      const neuroCase = ticket.neurosurgicalCases?.[0];
+
       setFormData({
         originHospitalId: ticket.originHospitalId || '',
         destinationHospitalId: ticket.destinationHospitalId || '',
@@ -100,6 +102,13 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
         requiresSpecialist: ticket.requiresSpecialist,
         requiredResources: parseJsonField(ticket.requiredResources) || {},
         bedAssignment,
+        neurosurgicalData:
+          ticket.pathway === 'NEUROSURGICAL' || neuroCase
+            ? {
+                severity:
+                  (neuroCase?.severity as 'RED' | 'ORANGE') || 'ORANGE',
+              }
+            : undefined,
       });
       setError(null);
     }
@@ -118,6 +127,10 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
   };
 
   const validateForm = (): boolean => {
+    if (formData.pathway === 'NEUROSURGICAL' && !formData.neurosurgicalData?.severity) {
+      setError('Neurosurgical severity (Red / Orange) is required');
+      return false;
+    }
     return true;
   };
 
@@ -136,6 +149,12 @@ export const useTicketEditForm = ({ ticket, open, onSubmit }: UseTicketEditFormP
         emsContactTime: formData.emsContactTime ? new Date(formData.emsContactTime).toISOString() : undefined,
         actualArrival: formData.actualArrival ? new Date(formData.actualArrival).toISOString() : undefined,
         bedAssignment: formData.bedAssignment,
+        neurosurgicalData:
+          formData.pathway === 'NEUROSURGICAL'
+            ? {
+                severity: formData.neurosurgicalData?.severity || 'ORANGE',
+              }
+            : undefined,
       };
 
       await onSubmit(finalData);

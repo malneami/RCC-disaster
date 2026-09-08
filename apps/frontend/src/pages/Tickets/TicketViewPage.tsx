@@ -27,6 +27,7 @@ import GenericPageHeader from '../../components/Common/GenericPageHeader';
 import GenericTabs from '../../components/Common/GenericTabs';
 import AccessLogsTab from '../../components/Common/AccessLogsTab';
 import DeleteConfirmationDialog from '../../components/Common/DeleteConfirmationDialog';
+import ActivateNeurosurgicalDialog from './components/ActivateNeurosurgicalDialog';
 import { CaseType } from '@prisma/client';
 
 const TicketViewPage: React.FC = () => {
@@ -244,7 +245,7 @@ const TicketViewPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>{ticket.ticketNumber} - Transfer Ticket - RCC Healthcare Platform</title>
+        <title>{ticket.ticketNumber} - Transfer Ticket | MASAR</title>
       </Helmet>
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -295,6 +296,38 @@ const TicketViewPage: React.FC = () => {
               : []),
           ]}
         />
+
+        {!(ticket.neurosurgicalCases && ticket.neurosurgicalCases.length > 0) &&
+          ['ADMIN', 'RCC', 'HOSPITAL_USER', 'ED_NURSE', 'DATA_COLLECTOR'].includes(
+            (user?.role || '').toUpperCase(),
+          ) && (
+            <Box sx={{ mb: 2 }}>
+              <ActivateNeurosurgicalDialog
+                ticketId={ticket.id}
+                onActivated={loadTicket}
+              />
+              <Button
+                size="small"
+                sx={{ ml: 1 }}
+                onClick={() => navigate('/portals/neurosurgical')}
+              >
+                Open Neuro Portal
+              </Button>
+            </Box>
+          )}
+
+        {ticket.neurosurgicalCases && ticket.neurosurgicalCases.length > 0 && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Neurosurgical pathway active
+            {ticket.neurosurgicalCases[0].severity
+              ? ` — Severity: ${ticket.neurosurgicalCases[0].severity === 'RED' ? 'Red' : 'Orange'}`
+              : ''}
+            .{' '}
+            <Button size="small" onClick={() => navigate('/portals/neurosurgical')}>
+              Open portal
+            </Button>
+          </Alert>
+        )}
 
         {/* Tabs */}
         <GenericTabs

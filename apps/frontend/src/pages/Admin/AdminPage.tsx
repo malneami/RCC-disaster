@@ -41,7 +41,7 @@ const AdminPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>System Administration - RCC Healthcare Platform</title>
+        <title>System Administration | MASAR</title>
       </Helmet>
 
       <Box sx={{

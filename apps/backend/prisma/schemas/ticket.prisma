@@ -90,6 +90,12 @@ model Ticket {
   
   // Trauma Relations
   traumaCases         TraumaCase[]
+
+  // OB Maternal Relations
+  obMaternalTransfers ObMaternalTransfer[]
+
+  // Neurosurgical Relations
+  neurosurgicalCases  NeurosurgicalCase[]
   
   // EMS Relations
   emsAssignments      EMSAssignment[]    @relation("EMSAssignmentTicket")

@@ -1,0 +1,80 @@
+// OB Maternal Transfer model for obstetric maternal transfer management
+model ObMaternalTransfer {
+  id                    String                         @id @default(uuid())
+  ticketId              String                         @map("ticket_id")
+  patientId             String                         @map("patient_id")
+  pregnancyCaseId       String?                        @map("pregnancy_case_id")
+  createdById           String                         @map("created_by_id")
+  createdAt             DateTime                       @default(now()) @map("created_at")
+  updatedAt             DateTime                       @updatedAt @map("updated_at")
+  status                ObMaternalTransferStatus       @default(CREATED)
+
+  // OB-specific patient fields (supplement Patient)
+  gestationalAgeWeeks   Int                            @map("gestational_age_weeks")
+  gravida               Int?                           @map("gravida")
+  para                  Int?                           @map("para")
+
+  // Vitals
+  sbp                   Int?                           @map("sbp")
+  dbp                   Int?                           @map("dbp")
+  hr                    Int?                           @map("hr")
+  rr                    Int?                           @map("rr")
+  temp                  Float?                         @map("temp")
+  spo2                  Int?                           @map("spo2")
+
+  // Clinical assessment
+  consciousness         ObConsciousness?               @map("consciousness")
+  bleeding              ObBleeding?                    @map("bleeding")
+  seizure               Boolean?                       @map("seizure")
+
+  // Suspected conditions (JSON array of strings)
+  suspectedConditions   Json?                          @map("suspected_conditions")
+
+  // Fetal status
+  fetalStatus           ObFetalStatus?                 @map("fetal_status")
+  fetalHeartRate        Int?                           @map("fetal_heart_rate")
+
+  // Labs
+  hb                    Float?                         @map("hb")
+  platelets             Int?                           @map("platelets")
+  glucose               Float?                         @map("glucose")
+  urineProtein          String?                        @map("urine_protein")
+  labsOther             Json?                          @map("labs_other")
+
+  // Stabilization (JSON array of strings)
+  stabilizationDone     Json?                          @map("stabilization_done")
+
+  // Referring facility
+  referringFacilityId   String                         @map("referring_facility_id")
+  referringContactName  String?                        @map("referring_contact_name")
+  referringContactPhone String?                        @map("referring_contact_phone")
+
+  // Activation and delivery mode
+  activationLevel       ObActivationLevel              @map("activation_level")
+  expectedDeliveryMode  ObExpectedDeliveryMode         @map("expected_delivery_mode")
+  systemSuggestedDeliveryMode ObSystemSuggestedDeliveryMode? @map("system_suggested_delivery_mode")
+  physicianConfirmedDeliveryMode ObPhysicianConfirmedDeliveryMode? @map("physician_confirmed_delivery_mode")
+
+  // Destination
+  destinationHospitalId String?                        @map("destination_hospital_id")
+  acceptanceStatus      ObAcceptanceStatus             @default(PENDING) @map("acceptance_status")
+
+  ambulanceType         ObAmbulanceType                @map("ambulance_type")
+
+  // Relations
+  ticket                Ticket                         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  patient               Patient                        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  pregnancyCase         PregnancyCase?                 @relation(fields: [pregnancyCaseId], references: [id], onDelete: SetNull)
+  createdBy             User                           @relation("ObMaternalTransferCreator", fields: [createdById], references: [id])
+  referringFacility     Hospital                       @relation("ObReferringHospital", fields: [referringFacilityId], references: [id])
+  destinationHospital   Hospital?                      @relation("ObDestinationHospital", fields: [destinationHospitalId], references: [id])
+
+  @@map("ob_maternal_transfers")
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([referringFacilityId])
+  @@index([destinationHospitalId])
+  @@index([pregnancyCaseId])
+}

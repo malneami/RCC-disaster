@@ -90,6 +90,13 @@ model Patient {
   
   // Trauma Relations
   traumaCases     TraumaCase[]
+
+  // OB Maternal Relations
+  obMaternalTransfers ObMaternalTransfer[]
+
+  // Neurosurgical Relations
+  neurosurgicalCases NeurosurgicalCase[]
+  pregnancyCases     PregnancyCase[]
   
   // Notification Relations
   notifications   Notification[]

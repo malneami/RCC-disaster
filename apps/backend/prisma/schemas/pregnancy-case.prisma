@@ -1,0 +1,14 @@
+// Pregnancy case - links OB maternal transfers to a pregnancy episode
+model PregnancyCase {
+  id               String             @id @default(uuid())
+  patientId        String             @map("patient_id")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  patient          Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  obMaternalTransfers ObMaternalTransfer[]
+  pregnancyOutcomes   PregnancyOutcome[]
+
+  @@map("pregnancy_cases")
+  @@index([patientId])
+}

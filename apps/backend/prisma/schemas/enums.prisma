@@ -68,6 +68,86 @@ enum TicketPathway {
   STEMI
   STROKE
   TRAUMA
+  MATERNAL
+  NEUROSURGICAL
+}
+
+// OB Maternal Transfer enums
+enum ObMaternalTransferStatus {
+  CREATED
+  ACTIVATED
+  OB_CONNECTED
+  DECISION_MADE
+  DISPATCHED
+  DEPARTED
+  ARRIVED
+  CLOSED
+}
+
+enum ObActivationLevel {
+  MATERNAL_RED
+  MATERNAL_ORANGE
+}
+
+enum ObExpectedDeliveryMode {
+  VAGINAL
+  CESAREAN
+  PENDING
+}
+
+enum ObSystemSuggestedDeliveryMode {
+  LIKELY_CS
+  LIKELY_VAGINAL
+  PENDING
+}
+
+enum ObPhysicianConfirmedDeliveryMode {
+  VAGINAL
+  CESAREAN
+}
+
+enum ObAcceptanceStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum ObAmbulanceType {
+  BLS
+  ALS
+  AIR
+}
+
+enum ObConsciousness {
+  ALERT
+  VERBAL
+  PAIN
+  UNRESPONSIVE
+}
+
+enum ObBleeding {
+  NONE
+  MILD
+  MODERATE
+  SEVERE
+}
+
+enum ObFetalStatus {
+  REASSURING
+  NONREASSURING
+  UNKNOWN
+}
+
+enum MaternalStatus {
+  ALIVE
+  DECEASED
+}
+
+enum PerinatalStatus {
+  ALIVE
+  STILLBIRTH
+  NEONATAL_DEATH
+  UNKNOWN
 }
 
 enum HospitalStatus {

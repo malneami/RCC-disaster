@@ -1,7 +1,9 @@
 import { PrismaClient, HospitalStatus, TraumaLevel } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { v5 as uuidv5 } from 'uuid';
 
 const prisma = new PrismaClient();
+// Deterministic namespace so re-running seed upserts same hospitals instead of creating duplicates
+const HOSPITAL_SEED_NAMESPACE = 'a1b2c3d4-e5f6-5789-0abc-def012345678';
 
 export async function seedHospitals() {
   console.log('🏥 Seeding hospitals...');
@@ -9,7 +11,7 @@ export async function seedHospitals() {
   const hospitals = [
     // Major Hospitals with full services
     {
-      id: uuidv4(),
+      id: uuidv5('Jazan General Hospital (JGH)', HOSPITAL_SEED_NAMESPACE),
       name: 'Jazan General Hospital (JGH)',
       address: 'Jazan, Saudi Arabia',
       latitude: 16.8957234,
@@ -41,7 +43,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('King Fahad Central Hospital (KFCH)', HOSPITAL_SEED_NAMESPACE),
       name: 'King Fahad Central Hospital (KFCH)',
       address: 'Jazan, Saudi Arabia',
       latitude: 16.9220163,
@@ -73,7 +75,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Prince Mohammed Bin Nasser Hospital (PMNH)', HOSPITAL_SEED_NAMESPACE),
       name: 'Prince Mohammed Bin Nasser Hospital (PMNH)',
       address: 'Jazan, Saudi Arabia',
       latitude: 16.9951348,
@@ -106,7 +108,7 @@ export async function seedHospitals() {
     },
     // Regional Hospitals with varied services
     {
-      id: uuidv4(),
+      id: uuidv5('Samtah General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Samtah General Hospital',
       address: 'Samtah, Jazan, Saudi Arabia',
       latitude: 16.606612,
@@ -138,7 +140,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Abu Arish General Hospital (AAGH)', HOSPITAL_SEED_NAMESPACE),
       name: 'Abu Arish General Hospital (AAGH)',
       address: 'Abu Arish, Jazan, Saudi Arabia',
       latitude: 16.9770664,
@@ -171,7 +173,7 @@ export async function seedHospitals() {
     },
     // Smaller hospitals with limited services
     {
-      id: uuidv4(),
+      id: uuidv5('Sabya General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Sabya General Hospital',
       latitude: 17.1525193,
       longitude: 42.6473855,
@@ -202,7 +204,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Baysh General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Baysh General Hospital',
       latitude: 17.4397852,
       longitude: 42.5274381,
@@ -233,7 +235,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Al-Hurrath General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Al-Hurrath General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -264,7 +266,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Al-Darb General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Al-Darb General Hospital',
       latitude: 17.7077154,
       longitude: 42.2166516,
@@ -295,7 +297,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Al-Rayth General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Al-Rayth General Hospital',
       latitude: 17.6167942,
       longitude: 42.8273415,
@@ -326,7 +328,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Al-Tuwal General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Al-Tuwal General Hospital',
       latitude: 16.5345717,
       longitude: 42.9476277,
@@ -357,7 +359,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Al-Aridha General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Al-Aridha General Hospital',
       latitude: 17.0446963,
       longitude: 43.0445554,
@@ -388,7 +390,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Al-Muwassam General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Al-Muwassam General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -417,7 +419,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Ahad Al-Masarhah General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Ahad Al-Masarhah General Hospital',
       latitude: 16.733231,
       longitude: 42.937143,
@@ -448,7 +450,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Bani Malik General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Bani Malik General Hospital',
       latitude: 17.3306284,
       longitude: 43.1159548,
@@ -479,7 +481,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Eradah Mental Health Complex', HOSPITAL_SEED_NAMESPACE),
       name: 'Eradah Mental Health Complex',
       icuBeds: 10,
       icuBedsAvailable: 5,
@@ -508,7 +510,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Chest Diseases Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Chest Diseases Hospital',
       icuBeds: 8,
       icuBedsAvailable: 4,
@@ -537,7 +539,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Al-Aidabi General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Al-Aidabi General Hospital',
       latitude: 17.2388064,
       longitude: 42.9098925,
@@ -568,7 +570,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Dhamad General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Dhamad General Hospital',
       icuBeds: 6,
       icuBedsAvailable: 3,
@@ -597,7 +599,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Farasan General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Farasan General Hospital',
       latitude: 16.6954553,
       longitude: 42.1188235,
@@ -628,7 +630,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Fayfa General Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Fayfa General Hospital',
       latitude: 17.2682963,
       longitude: 43.1134234,
@@ -659,7 +661,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Jazan Specialized Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Jazan Specialized Hospital',
       latitude: 16.806384,
       longitude: 42.6555153,
@@ -690,7 +692,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('PHC Centers', HOSPITAL_SEED_NAMESPACE),
       name: 'PHC Centers',
       icuBeds: 0,
       icuBedsAvailable: 0,
@@ -719,7 +721,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Private Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Private Hospital',
       address: 'Various Private Locations',
       icuBeds: 0,
@@ -749,7 +751,7 @@ export async function seedHospitals() {
       hasCardiologyCenter: false,
     },
     {
-      id: uuidv4(),
+      id: uuidv5('Other Hospital', HOSPITAL_SEED_NAMESPACE),
       name: 'Other Hospital',
       address: 'External Healthcare Facility',
       icuBeds: 0,

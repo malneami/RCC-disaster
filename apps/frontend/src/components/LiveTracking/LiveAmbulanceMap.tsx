@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Alert, CircularProgress, Typography, IconButton } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRoute, faChevronUp, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faRoute, faChevronUp, faChevronDown, faTimes, faHandPointer } from '@fortawesome/free-solid-svg-icons';
 import { MapContainer, TileLayer, useMap, Circle, Marker, Tooltip } from 'react-leaflet';
 import L, { LatLngBounds, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -28,6 +28,19 @@ import MapFiltersComponent from './components/MapFilters';
 import LocationHistoryModal, { RoutePoint } from './components/LocationHistoryModal';
 import { getDefaultViewport } from './utils/mapHelpers';
 import { hospitalService, Hospital } from '../../services/hospitalService';
+import type { DisasterIncident } from '../../services/disasterService';
+import { getIncidentTypeLabel } from '../../services/disasterService';
+
+// Disaster marker icon (red) - same as DisasterMapPicker
+const disasterIcon = L.divIcon({
+  html: `<div style="
+    width: 28px; height: 28px;
+    background: #DC2626; border: 2px solid white; border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  "></div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
 
 interface LiveAmbulanceMapProps {
   height?: number | string;
@@ -39,6 +52,13 @@ interface LiveAmbulanceMapProps {
   refreshInterval?: number;
   useGPSAPI?: boolean;
   onAmbulanceClick?: (ambulance: AmbulanceGPSData) => void;
+  /** Disaster mode: show incidents and allow assigning ambulances */
+  disasterIncidents?: DisasterIncident[];
+  selectedIncidentId?: string | null;
+  onIncidentSelect?: (incidentId: string | null) => void;
+  onAssignAmbulanceToDisaster?: (incidentId: string, ambulanceId: string, ambulance?: AmbulanceGPSData, triageCategory?: string) => void;
+  assigningAmbulanceId?: string | null;
+  selectedTriageCategory?: string | null;
 }
 
 // Route History Legend - Google Maps style
@@ -190,7 +210,15 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
   refreshInterval,
   useGPSAPI = false, // Use database data instead of external GPS API (GPS polling service handles updates)
   onAmbulanceClick,
+  disasterIncidents: disasterIncidentsProp,
+  selectedIncidentId,
+  onIncidentSelect,
+  onAssignAmbulanceToDisaster,
+  assigningAmbulanceId,
+  selectedTriageCategory,
 }) => {
+  // Exclude resolved incidents so red labels are removed from map after resolve
+  const disasterIncidents = disasterIncidentsProp?.filter(inc => inc.status !== 'RESOLVED');
   const [filters, setFilters] = useState<MapFiltersType>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAmbulance, setSelectedAmbulance] = useState<AmbulanceGPSData | null>(null);
@@ -261,6 +289,15 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
       });
     }
 
+    // Add disaster incident locations
+    if (disasterIncidents?.length) {
+      disasterIncidents.forEach(inc => {
+        if (inc.locationLat && inc.locationLng) {
+          points.push([inc.locationLat, inc.locationLng]);
+        }
+      });
+    }
+
     if (points.length === 0) return null;
 
     // Calculate bounds manually if needed, or use helper if it supports points
@@ -276,7 +313,7 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
     });
 
     return [[minLat, minLng], [maxLat, maxLng]] as [[number, number], [number, number]];
-  }, [shouldFitBounds, ambulances, hospitals]);
+  }, [shouldFitBounds, ambulances, hospitals, disasterIncidents]);
 
   useEffect(() => {
     if (shouldFitBounds && mapBounds) {
@@ -286,7 +323,17 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
     }
   }, [shouldFitBounds, mapBounds]);
 
+  const isDisasterAssignmentMode = !!(
+    selectedIncidentId &&
+    onAssignAmbulanceToDisaster &&
+    disasterIncidents?.length
+  );
+
   const handleAmbulanceClick = (ambulance: AmbulanceGPSData) => {
+    if (isDisasterAssignmentMode) {
+      onAssignAmbulanceToDisaster!(selectedIncidentId!, ambulance.id, ambulance, selectedTriageCategory ?? undefined);
+      return;
+    }
     setSelectedAmbulance(ambulance.id === selectedAmbulance?.id ? null : ambulance);
     if (onAmbulanceClick) {
       onAmbulanceClick(ambulance);
@@ -529,10 +576,40 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
   }
 
   // Show alert for no data but keep map visible
-  const showNoDataAlert = (!ambulances || ambulances.length === 0) && (!hospitals || hospitals.length === 0);
+  const showNoDataAlert =
+    (!ambulances || ambulances.length === 0) &&
+    (!hospitals || hospitals.length === 0) &&
+    (!disasterIncidents || disasterIncidents.length === 0);
 
   return (
     <Box sx={{ position: 'relative', height }}>
+      {/* Disaster assignment mode indicator */}
+      {isDisasterAssignmentMode && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1001,
+            px: 2,
+            py: 1,
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffc107',
+            borderRadius: 2,
+            boxShadow: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <FontAwesomeIcon icon={faHandPointer} color="#856404" />
+          <Typography variant="body2" fontWeight={600} color="#856404">
+            Click an ambulance to assign to this incident
+          </Typography>
+        </Box>
+      )}
+
       {/* No Data Alert - Show as overlay */}
       {showNoDataAlert ? (
         <Box
@@ -606,6 +683,39 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
           </React.Fragment>
         ))}
 
+        {/* Render disaster incident markers */}
+        {disasterIncidents?.map((incident) => (
+          <Marker
+            key={incident.id}
+            position={[incident.locationLat, incident.locationLng]}
+            icon={disasterIcon}
+            eventHandlers={{
+              click: () => onIncidentSelect?.(incident.id === selectedIncidentId ? null : incident.id),
+            }}
+          >
+            <Tooltip direction="top" offset={[0, -5]} opacity={0.95}>
+              <Box sx={{ minWidth: 160 }}>
+                <Typography variant="caption" fontWeight="bold" display="block">
+                  {incident.disasterScope && `[${incident.disasterScope}] `}
+                  {getIncidentTypeLabel(incident.incidentType)}
+                  {incident.colorCode && ` · ${incident.colorCode}`}
+                </Typography>
+                <Typography variant="caption" display="block">
+                  {incident.locationAddress || `${incident.locationLat.toFixed(4)}, ${incident.locationLng.toFixed(4)}`}
+                </Typography>
+                {incident.ambulanceAssignments && incident.ambulanceAssignments.length > 0 && (
+                  <Typography variant="caption" display="block">
+                    {incident.ambulanceAssignments.length} ambulance(s) assigned
+                  </Typography>
+                )}
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {selectedIncidentId === incident.id ? 'Selected · Click ambulance to assign' : 'Click to select'}
+                </Typography>
+              </Box>
+            </Tooltip>
+          </Marker>
+        ))}
+
         {/* Render ambulance markers - hide others when showing route history */}
         {ambulances ? ambulances
           .filter(ambulance =>
@@ -617,8 +727,9 @@ const LiveAmbulanceMap: React.FC<LiveAmbulanceMapProps> = ({
               key={ambulance.id}
               ambulance={ambulance}
               isSelected={selectedAmbulance?.id === ambulance.id}
+              isAssigning={ambulance.id === assigningAmbulanceId}
               onClick={handleAmbulanceClick}
-              onShowLocationHistory={handleShowLocationHistory}
+              onShowLocationHistory={isDisasterAssignmentMode ? undefined : handleShowLocationHistory}
             />
           )) : null}
 

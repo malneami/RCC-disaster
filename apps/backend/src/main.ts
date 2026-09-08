@@ -80,10 +80,10 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
 
-    logger.log('📚 API Documentation available at http://localhost:3001/api/docs');
+    logger.log('📚 API Documentation available at http://localhost:3002/api/docs');
   }
 
-  const port = configService.get('PORT') || 3001;
+  const port = configService.get('PORT') || 3002;
   const host = configService.get('HOST') || '0.0.0.0';
 
   await app.listen(port, host);

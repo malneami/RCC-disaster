@@ -214,6 +214,34 @@ export class TelegramService {
   }
 
 
+  /**
+   * Send disaster alert to configured chat.
+   */
+  async sendDisasterAlert(announcement: { announcementText: string }, incident: { incidentType: string; locationAddress: string | null }): Promise<void> {
+    const enabled = this.configService.get<string>('DISASTER_TELEGRAM_ENABLED') === 'true';
+    if (!enabled) {
+      this.logger.debug('Disaster Telegram notifications disabled (DISASTER_TELEGRAM_ENABLED=false)');
+      return;
+    }
+    try {
+      const chatId = this.configService.get<string>('DISASTER_TELEGRAM_CHAT_ID') || this.supportChatId;
+      if (!chatId || !this.telegramBotToken) {
+        this.logger.warn('Disaster Telegram: DISASTER_TELEGRAM_CHAT_ID or TELEGRAM_BOT_TOKEN not set');
+        return;
+      }
+      const message =
+        `🚨 *DISASTER ALERT*\n\n` +
+        `Type: ${incident.incidentType.replace(/_/g, ' ')}\n` +
+        `Location: ${incident.locationAddress || 'Unknown'}\n\n` +
+        `${announcement.announcementText}\n\n` +
+        `View: ${this.frontendUrl}/disaster-management`;
+      await this.sendViaTelegramAPI(chatId, message);
+      this.logger.log('Disaster Telegram alert sent');
+    } catch (error: any) {
+      this.logger.error(`Failed to send disaster Telegram alert: ${error.message}`);
+    }
+  }
+
   private getCategoryName(category: SupportTicketCategory): string {
     const categoryMap: Record<SupportTicketCategory, string> = {
       BUG: 'Bug',

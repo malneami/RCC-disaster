@@ -100,7 +100,7 @@ export class HospitalsService {
 
     const hospitals = await this.prisma.hospital.findMany({
       where,
-      orderBy: { name: 'asc' },
+      orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
     });
 
     if (hospitals.length === 0) {
@@ -177,7 +177,15 @@ export class HospitalsService {
       }
     }
 
-    return hospitals;
+    // Deduplicate by hospital name (keep first by createdAt, then by id)
+    const seenNames = new Set<string>();
+    const deduped = hospitals.filter((h) => {
+      const key = h.name.trim().toLowerCase();
+      if (seenNames.has(key)) return false;
+      seenNames.add(key);
+      return true;
+    });
+    return deduped;
   }
 
   /**
@@ -231,16 +239,18 @@ export class HospitalsService {
   }
 
   async getForRegistration() {
-    return this.prisma.hospital.findMany({
-      where: { 
-        deletedAt: null,
-        // status: 'ACTIVE' // Only return active hospitals
-      },
-      select: {
-        id: true,
-        name: true,
-      },
-      orderBy: { name: 'asc' },
+    const hospitals = await this.prisma.hospital.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true },
+      orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+    });
+    // Deduplicate by hospital name (keep first occurrence)
+    const seenNames = new Set<string>();
+    return hospitals.filter((h) => {
+      const key = h.name.trim().toLowerCase();
+      if (seenNames.has(key)) return false;
+      seenNames.add(key);
+      return true;
     });
   }
 

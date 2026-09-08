@@ -52,7 +52,8 @@ model Ambulance {
   timelineEvents          TimelineEvent[]
   maintenanceRecords      MaintenanceRecord[]
   zoneLogs                AmbulanceZoneLog[]
-  
+  disasterAssignments     DisasterAmbulanceAssignment[]
+
   @@map("ambulances")
   @@index([status])
   @@index([baseStation])

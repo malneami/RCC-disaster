@@ -156,7 +156,7 @@ const UserRegistrationPage: React.FC = () => {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
         <Helmet>
-          <title>Registration Submitted - RCC Healthcare Platform</title>
+          <title>Registration Submitted | MASAR</title>
         </Helmet>
         
         <Card sx={{ maxWidth: 500, width: '100%', mx: 2 }}>
@@ -197,7 +197,7 @@ const UserRegistrationPage: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
       <Helmet>
-        <title>User Registration - RCC Healthcare Platform</title>
+        <title>User Registration | MASAR</title>
       </Helmet>
       
       <Card sx={{ maxWidth: 800, width: '100%', mx: 2 }}>
@@ -207,7 +207,7 @@ const UserRegistrationPage: React.FC = () => {
               Request Access
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Submit a registration request to gain access to the RCC Healthcare Platform
+              Submit a registration request to gain access to the MASAR platform
             </Typography>
           </Box>
 
@@ -364,7 +364,7 @@ const UserRegistrationPage: React.FC = () => {
                   value={formData.justification}
                   onChange={handleInputChange('justification')}
                   disabled={loading}
-                  placeholder="Please explain why you need access to the RCC Healthcare Platform..."
+                  placeholder="Please explain why you need access to the MASAR platform..."
                   helperText="Help administrators understand your need for access"
                 />
               </Grid>

@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export interface AuthUser {
   id: string;
@@ -43,7 +43,7 @@ class AuthService {
   async login(email: string, password: string): Promise<LoginResponse> {
     const response: AxiosResponse<LoginResponse> = await axios.post(
       `${API_BASE_URL}/auth/login`,
-      { email, password }
+      { email: email.trim(), password }
     );
     return response.data;
   }

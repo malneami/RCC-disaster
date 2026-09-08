@@ -3,12 +3,14 @@ import { Card, CardContent } from '@mui/material';
 import { UnifiedTicket } from '../types/tickets';
 import { TicketCardHeader } from './ticket-card/TicketCardHeader';
 import { TicketCardContent } from './ticket-card/TicketCardContent';
+import { TicketFeedbackSection } from './ticket-card/TicketFeedbackSection';
 
 interface TicketCardProps {
   ticket: UnifiedTicket;
   onView?: (ticket: UnifiedTicket) => void;
   onEdit?: (ticket: UnifiedTicket) => void;
   showActions?: boolean;
+  onFeedbackSubmitted?: () => void;
 }
 
 const TicketCard: React.FC<TicketCardProps> = ({
@@ -16,6 +18,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
   onView,
   onEdit,
   showActions = true,
+  onFeedbackSubmitted,
 }) => {
   return (
     <Card
@@ -39,6 +42,10 @@ const TicketCard: React.FC<TicketCardProps> = ({
           showActions={showActions}
         />
         <TicketCardContent ticket={ticket} />
+        <TicketFeedbackSection
+          ticket={ticket}
+          onFeedbackSubmitted={onFeedbackSubmitted}
+        />
       </CardContent>
     </Card>
   );

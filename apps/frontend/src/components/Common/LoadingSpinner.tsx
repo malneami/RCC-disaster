@@ -25,7 +25,7 @@ const LoadingSpinner: React.FC = () => {
       />
       <CircularProgress size={40} sx={{ mb: 2 }} />
       <Typography variant="body2" color="text.secondary">
-        Loading RCC Healthcare Platform...
+        Loading MASAR...
       </Typography>
     </Box>
   );

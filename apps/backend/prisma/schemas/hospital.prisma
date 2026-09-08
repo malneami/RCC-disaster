@@ -39,6 +39,7 @@ model Hospital {
   hasStemiService   Boolean       @default(false) @map("has_stemi_service")
   hasStrokeService  Boolean       @default(false) @map("has_stroke_service")
   hasTraumaService  Boolean       @default(false) @map("has_trauma_service")
+  hasNeurosurgeryService Boolean  @default(false) @map("has_neurosurgery_service")
   
   // Hospital Info
   cluster           String        @default("Jazan")
@@ -115,11 +116,24 @@ model Hospital {
   units                    Unit[]
   beds                     Bed[]
   bedRequests              BedRequest[]
-  
+
+  // Disaster Relations
+  disasterAnnouncementLogs DisasterAnnouncementHospitalLog[]
+  disasterDestinationAssignments DisasterAmbulanceAssignment[] @relation("DisasterDestinationHospital")
+
+  // OB Maternal Relations
+  obMaternalReferring   ObMaternalTransfer[] @relation("ObReferringHospital")
+  obMaternalDestination ObMaternalTransfer[] @relation("ObDestinationHospital")
+
+  // Neurosurgical Relations
+  neurosurgicalOriginCases NeurosurgicalCase[] @relation("NeurosurgicalOriginHospital")
+  neurosurgicalDestinationCases NeurosurgicalCase[] @relation("NeurosurgicalDestinationHospital")
+
   @@map("hospitals")
   @@index([status])
   @@index([cluster])
   @@index([hasStemiService])
   @@index([hasStrokeService])
   @@index([hasTraumaService])
+  @@index([hasNeurosurgeryService])
 }

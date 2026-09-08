@@ -1,6 +1,7 @@
 import { TraumaService, CreateTraumaCaseData } from './traumaService';
 import { StrokeService, CreateStrokeCaseData } from './strokeService';
 import { StemiService, CreateStemiCaseData } from '../pages/Stemi/services/stemiService';
+import { neurosurgicalService } from './neurosurgicalService';
 import { Ticket } from './ticketService';
 import { Patient } from './patientService';
 import { BedAssignmentFormData } from '../pages/Trauma/types/traumaTypes';
@@ -9,7 +10,7 @@ import { bedService } from '../pages/Beds/services/bedService';
 export interface AutoCaseCreationResult {
   success: boolean;
   caseId?: string;
-  caseType?: 'trauma' | 'stroke' | 'stemi';
+  caseType?: 'trauma' | 'stroke' | 'stemi' | 'neurosurgical';
   error?: string;
 }
 
@@ -21,7 +22,8 @@ class AutoCaseCreationService {
     ticket: Ticket,
     patient: Patient,
     timeFields?: { triageTime?: string; symptomOnsetTime?: string },
-    bedAssignment?: BedAssignmentFormData
+    bedAssignment?: BedAssignmentFormData,
+    neurosurgicalOptions?: { severity?: 'RED' | 'ORANGE' },
   ): Promise<AutoCaseCreationResult> {
     try {
       const pathway = ticket.pathway?.toUpperCase();
@@ -37,6 +39,9 @@ class AutoCaseCreationService {
           break;
         case 'STEMI':
           result = await this.createStemiCase(ticket, patient, timeFields);
+          break;
+        case 'NEUROSURGICAL':
+          result = await this.createNeurosurgicalCase(ticket, patient, neurosurgicalOptions);
           break;
         default:
           return {
@@ -262,6 +267,41 @@ class AutoCaseCreationService {
     }
   }
 
+  private async createNeurosurgicalCase(
+    ticket: Ticket,
+    patient: Patient,
+    options?: { severity?: 'RED' | 'ORANGE' },
+  ): Promise<AutoCaseCreationResult> {
+    try {
+      const neuroCase = await neurosurgicalService.create({
+        ticketId: ticket.id,
+        patientId: patient.id,
+        originHospitalId: ticket.originHospitalId,
+        destinationHospitalId: ticket.destinationHospitalId,
+        triggerReason: 'OTHER',
+        triggerReasonOther: 'Auto-created from ticket pathway',
+        severity: options?.severity || 'ORANGE',
+        // User-selected severity at ticket create is intentional (no GCS yet)
+        severityOverrideReason: options?.severity
+          ? 'Selected at ticket creation'
+          : undefined,
+        notes: ticket.chiefComplaint || undefined,
+      });
+
+      return {
+        success: true,
+        caseId: neuroCase.id,
+        caseType: 'neurosurgical',
+      };
+    } catch (error) {
+      console.error('Error creating neurosurgical case:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create neurosurgical case',
+      };
+    }
+  }
+
   /**
    * Maps ticket priority to stroke severity
    */
@@ -285,7 +325,7 @@ class AutoCaseCreationService {
    * Checks if a pathway supports automatic case creation
    */
   supportsAutoCaseCreation(pathway: string): boolean {
-    const supportedPathways = ['TRAUMA', 'STROKE', 'STEMI'];
+    const supportedPathways = ['TRAUMA', 'STROKE', 'STEMI', 'NEUROSURGICAL'];
     return supportedPathways.includes(pathway.toUpperCase());
   }
 
@@ -304,6 +344,9 @@ class AutoCaseCreationService {
           break;
         case 'stemi':
           caseType = 'STEMI';
+          break;
+        case 'neurosurgical':
+          caseType = 'Neurosurgical';
           break;
       }
       return `${caseType} case created successfully`;

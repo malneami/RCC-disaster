@@ -126,6 +126,50 @@ export class NotificationsController {
   }
 
   /**
+   * Get unified notifications (case + disaster) for the current user
+   */
+  @Get('unified')
+  async getUnifiedNotifications(
+    @Query('limit') limitStr: string | undefined,
+    @Request() req: any,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new HttpException('User not authenticated', HttpStatus.UNAUTHORIZED);
+    }
+    const limit = limitStr ? parseInt(limitStr, 10) : 50;
+    return this.notificationsService.getUnifiedNotifications(userId, limit);
+  }
+
+  /**
+   * Get unified notification summary including disaster counts
+   */
+  @Get('unified-summary')
+  async getUnifiedSummary(@Request() req: any) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new HttpException('User not authenticated', HttpStatus.UNAUTHORIZED);
+    }
+    return this.notificationsService.getUnifiedSummary(userId);
+  }
+
+  /**
+   * Mark a disaster notification as read
+   */
+  @Put('disaster/:id/read')
+  @HttpCode(HttpStatus.OK)
+  async markDisasterNotificationRead(
+    @Param('id') notificationId: string,
+    @Request() req: any,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new HttpException('User not authenticated', HttpStatus.UNAUTHORIZED);
+    }
+    return this.notificationsService.markDisasterNotificationRead(notificationId, userId);
+  }
+
+  /**
    * Get notification summary statistics with optional filters
    */
   @Get('summary')

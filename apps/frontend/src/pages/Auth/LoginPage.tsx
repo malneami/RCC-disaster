@@ -49,7 +49,7 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      await login(data.email, data.password);
+      await login(data.email.trim(), data.password);
       enqueueSnackbar('Login successful', { variant: 'success' });
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
@@ -63,7 +63,7 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Login - RCC Healthcare Platform</title>
+        <title>Login | MASAR</title>
       </Helmet>
       
       <Container maxWidth="md">
@@ -105,18 +105,17 @@ const LoginPage: React.FC = () => {
             <Card sx={{ maxWidth: 480, width: '100%', flex: { xs: '1', md: '0 0 480px' } }}>
               <CardContent sx={{ p: 4 }}>
                 <Box sx={{ textAlign: 'center', mb: 4 }}>
-                  <img 
-                    src="/jazan-health-cluster-logo.png" 
-                    alt="Jazan Health Cluster Logo" 
-                    style={{ 
-                      height: '40px', 
-                      marginBottom: '16px',
-                      objectFit: 'contain'
-                    }} 
+                  <Box
+                    component="img"
+                    src="/masar-logo.png"
+                    alt="MASAR - Critical Pathway Resource Control"
+                    sx={{
+                      width: '100%',
+                      maxWidth: 300,
+                      mb: 1,
+                      objectFit: 'contain',
+                    }}
                   />
-                  <Typography variant="h4" component="h1" gutterBottom>
-                    RCC Healthcare
-                  </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Regional Coordination Center Platform
                   </Typography>
@@ -150,6 +149,12 @@ const LoginPage: React.FC = () => {
                   {error && (
                     <Alert severity="error" sx={{ mt: 2 }}>
                       {error}
+                    </Alert>
+                  )}
+
+                  {import.meta.env.DEV && (
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                      <strong>Dev login:</strong> admin@rcc-healthcare.com / Healthcare@2024
                     </Alert>
                   )}
 

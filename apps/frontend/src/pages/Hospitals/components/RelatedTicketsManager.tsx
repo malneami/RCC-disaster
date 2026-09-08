@@ -94,6 +94,7 @@ const RelatedTicketsManager: React.FC<RelatedTicketsManagerProps> = ({
                 onView={onViewTicket}
                 onEdit={onEditTicket}
                 showActions={true}
+                onFeedbackSubmitted={onRefresh}
               />
             </Grid>
           ))}

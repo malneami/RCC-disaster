@@ -12,6 +12,7 @@ import {
   Typography,
   IconButton,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -24,7 +25,7 @@ export interface StepConfig {
   content: React.ReactNode;
   optional?: boolean;
   completed?: boolean;
-  validate?: () => boolean | string | null; // Returns true if valid, error message string if invalid, or null for no validation
+  validate?: () => boolean | string | null;
 }
 
 export interface MultiStepDialogProps {
@@ -37,6 +38,8 @@ export interface MultiStepDialogProps {
   fullWidth?: boolean;
   sx?: any;
   loading?: boolean;
+  error?: string | null;
+  completeLabel?: string;
 }
 
 const MultiStepDialog: React.FC<MultiStepDialogProps> = ({
@@ -49,6 +52,8 @@ const MultiStepDialog: React.FC<MultiStepDialogProps> = ({
   fullWidth = true,
   sx = {},
   loading = false,
+  error = null,
+  completeLabel = 'Complete',
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<any>({});
@@ -68,15 +73,15 @@ const MultiStepDialog: React.FC<MultiStepDialogProps> = ({
         return;
       }
     }
-    
+
     if (activeStep < steps.length - 1) {
-      setActiveStep(prev => prev + 1);
+      setActiveStep((prev) => prev + 1);
     }
   };
 
   const handleBack = () => {
     if (activeStep > 0) {
-      setActiveStep(prev => prev - 1);
+      setActiveStep((prev) => prev - 1);
     }
   };
 
@@ -118,20 +123,16 @@ const MultiStepDialog: React.FC<MultiStepDialogProps> = ({
       </DialogTitle>
 
       <DialogContent sx={{ pt: 2 }}>
-        {/* Stepper */}
         <Box sx={{ mb: 3 }}>
           <Stepper activeStep={activeStep} alternativeLabel>
             {steps.map((step, index) => (
               <Step key={index} completed={step.completed}>
-                <StepLabel optional={step.optional}>
-                  {step.label}
-                </StepLabel>
+                <StepLabel optional={step.optional}>{step.label}</StepLabel>
               </Step>
             ))}
           </Stepper>
         </Box>
 
-        {/* Step Content */}
         <Box sx={{ minHeight: '300px', position: 'relative' }}>
           {loading && (
             <Box
@@ -152,6 +153,11 @@ const MultiStepDialog: React.FC<MultiStepDialogProps> = ({
             </Box>
           )}
           {steps[activeStep]?.content}
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
         </Box>
       </DialogContent>
 
@@ -164,7 +170,7 @@ const MultiStepDialog: React.FC<MultiStepDialogProps> = ({
           >
             Back
           </Button>
-          
+
           <Box>
             <Button onClick={handleClose} sx={{ mr: 1 }} disabled={loading}>
               Cancel
@@ -175,7 +181,7 @@ const MultiStepDialog: React.FC<MultiStepDialogProps> = ({
               endIcon={!isLastStep ? <NextIcon /> : undefined}
               disabled={loading}
             >
-              {isLastStep ? (loading ? 'Saving...' : 'Complete') : 'Next'}
+              {isLastStep ? (loading ? 'Creating...' : completeLabel) : 'Next'}
             </Button>
           </Box>
         </Box>

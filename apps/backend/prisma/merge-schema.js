@@ -23,6 +23,11 @@ const SCHEMA_ORDER = [
   'stroke-timeline.prisma',
   'stemi-case.prisma',
   'trauma-case.prisma',
+  'neurosurgical-case.prisma',
+  'pregnancy-case.prisma',
+  'pregnancy-outcome.prisma',
+  'ob-maternal-transfer.prisma',
+  'pregnancy-kpi-daily-aggregate.prisma',
   // EMS related schemas
   'ambulance.prisma',
   'driver-schedule.prisma',
@@ -39,6 +44,10 @@ const SCHEMA_ORDER = [
   'stroke-rehabilitation.prisma',
   // Notification system
   'notifications.prisma',
+  // Disaster Management
+  'disaster.prisma',
+  // MCP Data Quality Audit
+  'mcp-audit.prisma',
   // Support ticket system
   'support-ticket.prisma',
   'unit.prisma',

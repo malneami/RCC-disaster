@@ -26,6 +26,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useFullscreen } from '../../contexts/FullscreenContext';
 import Sidebar from './Sidebar';
 import NotificationBell from './NotificationBell';
+import { DisasterSidebar } from '../DisasterSidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -96,19 +97,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <FontAwesomeIcon icon={faBars} />
           </IconButton>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <img 
-              src="/jazan-health-cluster-logo.png" 
-              alt="Jazan Health Cluster Logo" 
-              style={{ 
-                height: '40px', 
-                marginRight: '16px',
-                objectFit: 'contain'
-              }} 
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexGrow: 1 }}>
+            <Box
+              component="img"
+              src="/masar-wordmark.png"
+              alt="MASAR - Critical Pathway Resource Control"
+              sx={{
+                height: { xs: 28, md: 36 },
+                objectFit: 'contain',
+              }}
             />
-            <Typography variant="h6" noWrap component="div">
-              RCC Healthcare Platform
-            </Typography>
+            <Box
+              component="img"
+              src="/jazan-health-cluster-logo.png"
+              alt="Jazan Health Cluster"
+              sx={{
+                height: 32,
+                objectFit: 'contain',
+                opacity: 0.7,
+                display: { xs: 'none', md: 'block' },
+              }}
+            />
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -229,6 +238,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {children}
       </Box>
+
+      {!isFullscreen && <DisasterSidebar />}
     </Box>
   );
 };

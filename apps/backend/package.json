@@ -31,6 +31,7 @@
     "db:clean:critical": "ts-node prisma/clean-critical-cases.ts",
     "analyze:zones": "python3 scripts/analyze_zone_entries.py",
     "db:seed:kpi-test": "ts-node prisma/seed-kpi-test-data.ts",
+    "db:seed:ob-kpi": "node create-ob-maternal-kpi-test-data.js",
     "db:reset:kpi-test": "npm run db:clean:critical && npm run db:seed:kpi-test",
     "db:restore-users": "ts-node prisma/restore-users.ts",
     "db:add-hospitals": "ts-node prisma/add-missing-hospitals.ts",

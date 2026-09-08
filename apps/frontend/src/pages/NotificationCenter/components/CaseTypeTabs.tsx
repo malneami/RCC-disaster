@@ -15,10 +15,11 @@ import {
   faExclamationTriangle,
   faList,
   faArrowDown,
+  faTruck,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../../contexts/AuthContext';
 
-export type CaseTypeFilter = 'ALL' | 'STEMI' | 'STROKE' | 'TRAUMA' | 'INCOMING_CRITICAL';
+export type CaseTypeFilter = 'ALL' | 'STEMI' | 'STROKE' | 'TRAUMA' | 'INCOMING_CRITICAL' | 'DISASTER';
 
 interface CaseTypeTabsProps {
   activeCaseType: CaseTypeFilter;
@@ -34,6 +35,7 @@ const CaseTypeTabs: React.FC<CaseTypeTabsProps> = ({
   const theme = useTheme();
   const { user } = useAuth();
   const isRCC = user?.role === 'RCC' || user?.role === 'ADMIN';
+  const canViewDisasters = ['ADMIN', 'RCC', 'EMS'].includes(user?.role || '');
 
   const caseTypes: Array<{
     value: CaseTypeFilter;
@@ -75,7 +77,14 @@ const CaseTypeTabs: React.FC<CaseTypeTabsProps> = ({
       label: 'Incoming Critical (24h)',
       icon: faArrowDown,
       color: '#dc2626',
-      visible: isRCC, 
+      visible: isRCC,
+    },
+    {
+      value: 'DISASTER',
+      label: 'Disaster',
+      icon: faTruck,
+      color: '#b91c1c',
+      visible: canViewDisasters,
     },
   ];
 

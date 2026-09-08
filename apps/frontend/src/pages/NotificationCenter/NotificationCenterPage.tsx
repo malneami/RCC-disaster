@@ -27,6 +27,7 @@ import { useQuery, useQueryClient } from 'react-query';
 
 import NotificationSummaryCards from './components/NotificationSummaryCards';
 import NotificationList from './components/NotificationList';
+import DisasterNotificationList from './components/DisasterNotificationList';
 import NotificationFilters from './components/NotificationFilters';
 import RCCIncomingCasesList from './components/RCCIncomingCasesList';
 
@@ -63,11 +64,13 @@ const NotificationCenterPage: React.FC = () => {
     }
   );
 
-  // Use React Query for case type counts
-  const { data: caseTypeCounts = { ALL: 0, STEMI: 0, STROKE: 0, TRAUMA: 0, INCOMING_CRITICAL: 0 } } = useQuery(
+  const { data: caseTypeCounts = { ALL: 0, STEMI: 0, STROKE: 0, TRAUMA: 0, INCOMING_CRITICAL: 0, DISASTER: 0 } } = useQuery(
     ['caseTypeCounts', user?.role],
     async () => {
-      const counts = await notificationService.getCaseTypeCounts();
+      const [counts, unifiedSummary] = await Promise.all([
+        notificationService.getCaseTypeCounts(),
+        notificationService.getUnifiedSummary(),
+      ]);
       let incomingCount = 0;
       if (user?.role === 'RCC' || user?.role === 'ADMIN' || user?.role === 'HOSPITAL_USER') {
         try {
@@ -83,6 +86,7 @@ const NotificationCenterPage: React.FC = () => {
         STROKE: counts.STROKE || 0,
         TRAUMA: counts.TRAUMA || 0,
         INCOMING_CRITICAL: incomingCount,
+        DISASTER: unifiedSummary.disasterUnreadNotifications || 0,
       };
     },
     {
@@ -113,6 +117,13 @@ const NotificationCenterPage: React.FC = () => {
     queryClient.invalidateQueries(['notifications']);
     queryClient.invalidateQueries('notificationCategories');
     queryClient.invalidateQueries(['caseTypeCounts']);
+    queryClient.invalidateQueries('notificationUnifiedSummary');
+  }, [queryClient]);
+
+  const handleDisasterNotificationCreated = useCallback(() => {
+    queryClient.invalidateQueries(['caseTypeCounts']);
+    queryClient.invalidateQueries('disasterNotifications');
+    queryClient.invalidateQueries('notificationUnifiedSummary');
   }, [queryClient]);
 
   const handleNotificationRead = useCallback(() => {
@@ -136,13 +147,15 @@ const NotificationCenterPage: React.FC = () => {
     socket.on('notification-created', handleNotificationCreated);
     socket.on('notification-read', handleNotificationRead);
     socket.on('notification-deleted', handleNotificationDeleted);
+    socket.on('disaster-notification-created', handleDisasterNotificationCreated);
 
     return () => {
       socket.off('notification-created', handleNotificationCreated);
       socket.off('notification-read', handleNotificationRead);
       socket.off('notification-deleted', handleNotificationDeleted);
+      socket.off('disaster-notification-created', handleDisasterNotificationCreated);
     };
-  }, [socket, isConnected, handleNotificationCreated, handleNotificationRead, handleNotificationDeleted]);
+  }, [socket, isConnected, handleNotificationCreated, handleNotificationRead, handleNotificationDeleted, handleDisasterNotificationCreated]);
 
 
   const removeFilter = (filterKey: keyof NotificationFilter) => {
@@ -156,8 +169,7 @@ const NotificationCenterPage: React.FC = () => {
 
   const handleCaseTypeChange = (caseType: CaseTypeFilter) => {
     setActiveCaseType(caseType);
-    // INCOMING_CRITICAL tab doesn't use filters - it shows all incoming cases
-    if (caseType === 'INCOMING_CRITICAL') {
+    if (caseType === 'INCOMING_CRITICAL' || caseType === 'DISASTER') {
       return;
     }
     if (caseType === 'ALL') {
@@ -190,6 +202,8 @@ const NotificationCenterPage: React.FC = () => {
     queryClient.invalidateQueries(['notifications']);
     queryClient.invalidateQueries('notificationCategories');
     queryClient.invalidateQueries(['caseTypeCounts']);
+    queryClient.invalidateQueries('disasterNotifications');
+    queryClient.invalidateQueries('notificationUnifiedSummary');
   };
 
   const handleNotificationChange = useCallback(() => {
@@ -259,7 +273,7 @@ const NotificationCenterPage: React.FC = () => {
                 <FontAwesomeIcon icon={faRefresh} />
               </IconButton>
             </Tooltip>
-            {activeCaseType !== 'INCOMING_CRITICAL' && (
+            {activeCaseType !== 'INCOMING_CRITICAL' && activeCaseType !== 'DISASTER' && (
               <Tooltip title={hasActiveFilters ? 'Filter Notifications (Active)' : 'Filter Notifications'}>
                 <IconButton
                   ref={filterButtonRef}
@@ -366,7 +380,7 @@ const NotificationCenterPage: React.FC = () => {
                 caseTypeCounts={caseTypeCounts}
               />
 
-              {hasActiveFilters && activeCaseType !== 'INCOMING_CRITICAL' && (
+              {hasActiveFilters && activeCaseType !== 'INCOMING_CRITICAL' && activeCaseType !== 'DISASTER' && (
                 <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                   {filters.priority && (
                     <Chip
@@ -431,7 +445,9 @@ const NotificationCenterPage: React.FC = () => {
                 </Box>
               )}
 
-              {activeCaseType === 'INCOMING_CRITICAL' && (user?.role === 'RCC' || user?.role === 'ADMIN') ? (
+              {activeCaseType === 'DISASTER' ? (
+                <DisasterNotificationList />
+              ) : activeCaseType === 'INCOMING_CRITICAL' && (user?.role === 'RCC' || user?.role === 'ADMIN') ? (
                 <RCCIncomingCasesList />
               ) : (
                 <NotificationList 

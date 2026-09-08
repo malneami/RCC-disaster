@@ -79,6 +79,86 @@ enum TicketPathway {
   STEMI
   STROKE
   TRAUMA
+  MATERNAL
+  NEUROSURGICAL
+}
+
+// OB Maternal Transfer enums
+enum ObMaternalTransferStatus {
+  CREATED
+  ACTIVATED
+  OB_CONNECTED
+  DECISION_MADE
+  DISPATCHED
+  DEPARTED
+  ARRIVED
+  CLOSED
+}
+
+enum ObActivationLevel {
+  MATERNAL_RED
+  MATERNAL_ORANGE
+}
+
+enum ObExpectedDeliveryMode {
+  VAGINAL
+  CESAREAN
+  PENDING
+}
+
+enum ObSystemSuggestedDeliveryMode {
+  LIKELY_CS
+  LIKELY_VAGINAL
+  PENDING
+}
+
+enum ObPhysicianConfirmedDeliveryMode {
+  VAGINAL
+  CESAREAN
+}
+
+enum ObAcceptanceStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum ObAmbulanceType {
+  BLS
+  ALS
+  AIR
+}
+
+enum ObConsciousness {
+  ALERT
+  VERBAL
+  PAIN
+  UNRESPONSIVE
+}
+
+enum ObBleeding {
+  NONE
+  MILD
+  MODERATE
+  SEVERE
+}
+
+enum ObFetalStatus {
+  REASSURING
+  NONREASSURING
+  UNKNOWN
+}
+
+enum MaternalStatus {
+  ALIVE
+  DECEASED
+}
+
+enum PerinatalStatus {
+  ALIVE
+  STILLBIRTH
+  NEONATAL_DEATH
+  UNKNOWN
 }
 
 enum HospitalStatus {
@@ -600,6 +680,13 @@ model User {
   
   // Trauma Relations
   createdTraumaCases TraumaCase[] @relation("TraumaCaseCreator")
+
+  // OB Maternal Relations
+  createdObMaternalTransfers ObMaternalTransfer[] @relation("ObMaternalTransferCreator")
+
+  // Neurosurgical Relations
+  createdNeurosurgicalCases NeurosurgicalCase[] @relation("NeurosurgicalCaseCreator")
+  closedNeurosurgicalCases NeurosurgicalCase[] @relation("NeurosurgicalCaseCloser")
   
   // EMS Relations
   ambulanceDriver     Ambulance?         @relation("AmbulanceDriver")
@@ -642,6 +729,28 @@ model User {
   recordingsAsCallee     Recording[]                  @relation("RecordingCallee")
   recordingParticipants  RecordingParticipant[]       @relation("RecordingParticipants")
   transcriptSegments     RecordingTranscriptSegment[] @relation("SegmentSpeaker")
+
+  // Disaster Relations
+  createdDisasterIncidents     DisasterIncident[]         @relation("DisasterIncidentCreator")
+  resolvedDisasterIncidents    DisasterIncident[]         @relation("DisasterIncidentResolver")
+  disasterAmbulanceAssignments DisasterAmbulanceAssignment[] @relation("DisasterAmbulanceAssignor")
+  createdDisasterAnnouncements DisasterAnnouncement[]     @relation("DisasterAnnouncementCreator")
+  approvedDisasterAnnouncements DisasterAnnouncement[]    @relation("DisasterAnnouncementApprover")
+  disasterAuditLogs            DisasterAuditLog[]
+  createdDisasterNotifications DisasterNotification[]     @relation("DisasterNotificationCreator")
+  disasterNotificationRecipients DisasterNotificationRecipient[] @relation("DisasterNotificationRecipientUser")
+  createdDisasterMessages      DisasterMessage[]          @relation("DisasterMessageCreator")
+
+  // Command Room Relations
+  activatedCommandRooms        DisasterCommandRoom[]      @relation("DisasterCommandRoomActivator")
+  closedCommandRooms           DisasterCommandRoom[]      @relation("DisasterCommandRoomCloser")
+  disasterCommandRoleAssignments DisasterCommandRoleAssignment[] @relation("DisasterCommandRoleUser")
+  disasterCommandRoleAssignor  DisasterCommandRoleAssignment[] @relation("DisasterCommandRoleAssignor")
+  disasterCommandDecisionLogs  DisasterCommandDecisionLog[] @relation("DisasterCommandDecisionUser")
+
+  // MCP Audit Relations
+  createdAuditEvents           AuditEvent[]                 @relation("AuditEventCreator")
+  generatedAuditReports        AuditReport[]                @relation("AuditReportGenerator")
 
   @@map("users")
   @@index([email])
@@ -727,6 +836,7 @@ model Hospital {
   hasStemiService   Boolean       @default(false) @map("has_stemi_service")
   hasStrokeService  Boolean       @default(false) @map("has_stroke_service")
   hasTraumaService  Boolean       @default(false) @map("has_trauma_service")
+  hasNeurosurgeryService Boolean  @default(false) @map("has_neurosurgery_service")
   
   // Hospital Info
   cluster           String        @default("Jazan")
@@ -803,13 +913,26 @@ model Hospital {
   units                    Unit[]
   beds                     Bed[]
   bedRequests              BedRequest[]
-  
+
+  // Disaster Relations
+  disasterAnnouncementLogs DisasterAnnouncementHospitalLog[]
+  disasterDestinationAssignments DisasterAmbulanceAssignment[] @relation("DisasterDestinationHospital")
+
+  // OB Maternal Relations
+  obMaternalReferring   ObMaternalTransfer[] @relation("ObReferringHospital")
+  obMaternalDestination ObMaternalTransfer[] @relation("ObDestinationHospital")
+
+  // Neurosurgical Relations
+  neurosurgicalOriginCases NeurosurgicalCase[] @relation("NeurosurgicalOriginHospital")
+  neurosurgicalDestinationCases NeurosurgicalCase[] @relation("NeurosurgicalDestinationHospital")
+
   @@map("hospitals")
   @@index([status])
   @@index([cluster])
   @@index([hasStemiService])
   @@index([hasStrokeService])
   @@index([hasTraumaService])
+  @@index([hasNeurosurgeryService])
 }
 
 
@@ -906,6 +1029,13 @@ model Patient {
   
   // Trauma Relations
   traumaCases     TraumaCase[]
+
+  // OB Maternal Relations
+  obMaternalTransfers ObMaternalTransfer[]
+
+  // Neurosurgical Relations
+  neurosurgicalCases NeurosurgicalCase[]
+  pregnancyCases     PregnancyCase[]
   
   // Notification Relations
   notifications   Notification[]
@@ -1124,6 +1254,12 @@ model Ticket {
   
   // Trauma Relations
   traumaCases         TraumaCase[]
+
+  // OB Maternal Relations
+  obMaternalTransfers ObMaternalTransfer[]
+
+  // Neurosurgical Relations
+  neurosurgicalCases  NeurosurgicalCase[]
   
   // EMS Relations
   emsAssignments      EMSAssignment[]    @relation("EMSAssignmentTicket")
@@ -1735,6 +1871,336 @@ enum TraumaDispositionType {
 }
 
 
+// neurosurgical-case.prisma
+// Neurosurgical Mini Pathway case — thin MVP
+// Endpoint is Definitive Neurosurgical Care (OR | ICU | Observation | Conservative | None), not OR-only.
+
+enum NeurosurgicalTriggerReason {
+  TRAUMATIC_BRAIN_INJURY
+  INTRACRANIAL_HEMORRHAGE
+  SUBDURAL_HEMATOMA
+  EPIDURAL_HEMATOMA
+  SUBARACHNOID_HEMORRHAGE
+  DEPRESSED_SKULL_FRACTURE
+  HYDROCEPHALUS
+  SPINAL_CORD_INJURY
+  SPINAL_COMPRESSION
+  INTRACRANIAL_MASS_RAISED_ICP
+  POSTOPERATIVE_COMPLICATION
+  OTHER
+}
+
+enum NeurosurgicalSeverity {
+  RED
+  ORANGE
+}
+
+enum NeurosurgicalPupils {
+  EQUAL
+  UNEQUAL
+  FIXED
+}
+
+enum NeurosurgicalGcsTrend {
+  IMPROVING
+  STABLE
+  DETERIORATING
+}
+
+enum NeurosurgicalDisposition {
+  OPERATING_ROOM
+  ICU
+  OBSERVATION
+  CONSERVATIVE
+  NO_INTERVENTION
+}
+
+enum NeurosurgicalOutcome {
+  IMPROVED
+  STABLE
+  DETERIORATED
+  SEVERE_DISABILITY
+  DEATH
+}
+
+enum NeurosurgicalDefinitiveTreatment {
+  SURGERY
+  ICU_MANAGEMENT
+  CONSERVATIVE_TREATMENT
+  NO_NEUROSURGICAL_INTERVENTION
+}
+
+enum NeurosurgicalCaseStatus {
+  ACTIVE
+  DEFINITIVE_CARE_REACHED
+  CLOSED
+}
+
+/// Where CT was performed — drives Door→CT KPI targets
+enum NeurosurgicalCtLocation {
+  ORIGIN       // Hospital with CT machine: Door→CT ≤15, report ≤30
+  DESTINATION  // CT at receiving hospital: Door(origin)→CT ≤30, report ≤35
+}
+
+model NeurosurgicalCase {
+  id                      String                           @id @default(uuid())
+  ticketId                String                           @map("ticket_id")
+  patientId               String                           @map("patient_id")
+  createdById             String                           @map("created_by_id")
+  originHospitalId        String                           @map("origin_hospital_id")
+  destinationHospitalId   String?                          @map("destination_hospital_id")
+  status                  NeurosurgicalCaseStatus          @default(ACTIVE)
+
+  activatedAt             DateTime                         @default(now()) @map("activated_at")
+  triggerReason           NeurosurgicalTriggerReason       @map("trigger_reason")
+  triggerReasonOther      String?                          @map("trigger_reason_other")
+
+  gcs                     Int?
+  gcsTrend                NeurosurgicalGcsTrend?           @map("gcs_trend")
+  pupils                  NeurosurgicalPupils?
+  newFocalDeficit         Boolean                          @default(false) @map("new_focal_deficit")
+  seizure                 Boolean                          @default(false)
+  intubated               Boolean                          @default(false)
+  hemodynamicInstability  Boolean                          @default(false) @map("hemodynamic_instability")
+  anticoagulantUse        Boolean                          @default(false) @map("anticoagulant_use")
+  mechanismOfInjury       String?                          @map("mechanism_of_injury")
+
+  severity                NeurosurgicalSeverity
+  severityOverrideReason  String?                          @map("severity_override_reason")
+
+  // Critical timestamps for KPI calculation
+  doorTime                DateTime?                        @map("door_time")
+  /// Origin hospital door-out (transfer start)
+  doorOutTime             DateTime?                        @map("door_out_time")
+  /// RCC activation / call time
+  rccActivationTime       DateTime?                        @map("rcc_activation_time")
+  ctLocation              NeurosurgicalCtLocation?         @map("ct_location")
+  ctScanStartTime         DateTime?                        @map("ct_scan_start_time")
+  ctReportFinalTime       DateTime?                        @map("ct_report_final_time")
+  neurosurgeonNotifiedAt  DateTime?                        @map("neurosurgeon_notified_at")
+  /// Neurosurgeon decision time (KPI: RCC call → decision)
+  neurosurgeonConnectedAt DateTime?                        @map("neurosurgeon_connected_at")
+
+  definitiveDisposition   NeurosurgicalDisposition?        @map("definitive_disposition")
+  dispositionDetail       Json?                            @map("disposition_detail")
+  definitiveCareReachedAt DateTime?                        @map("definitive_care_reached_at")
+
+  // Stored KPI minutes (persisted on write)
+  doorToCtMinutes                    Int?     @map("door_to_ct_minutes")
+  doorToCtReportMinutes              Int?     @map("door_to_ct_report_minutes")
+  activationToNeurosurgeonMinutes    Int?     @map("activation_to_neurosurgeon_minutes")
+  doorOutToDefinitiveCareMinutes     Int?     @map("door_out_to_definitive_care_minutes")
+  /// Legacy alias column — kept for older rows; calculator writes doorOutToDefinitiveCareMinutes
+  activationToDefinitiveCareMinutes  Int?     @map("activation_to_definitive_care_minutes")
+  metKpi1                 Boolean?                         @map("met_kpi1")
+  metKpi2                 Boolean?                         @map("met_kpi2")
+  metKpi3                 Boolean?                         @map("met_kpi3")
+  metKpi4                 Boolean?                         @map("met_kpi4")
+  metKpi5                 Boolean?                         @map("met_kpi5")
+  metKpi6                 Boolean?                         @map("met_kpi6")
+  brainPreserved          Boolean?                         @map("brain_preserved")
+
+  neurologicalOutcome     NeurosurgicalOutcome?            @map("neurological_outcome")
+  definitiveTreatment     NeurosurgicalDefinitiveTreatment? @map("definitive_treatment")
+  deteriorationDuringTransfer Boolean                      @default(false) @map("deterioration_during_transfer")
+  cardiacArrestDuringTransfer Boolean                      @default(false) @map("cardiac_arrest_during_transfer")
+  unplannedIntubation     Boolean                          @default(false) @map("unplanned_intubation")
+  delayedIntervention     Boolean                          @default(false) @map("delayed_intervention")
+  wrongDestination        Boolean                          @default(false) @map("wrong_destination")
+  repeatTransferRequired  Boolean                          @default(false) @map("repeat_transfer_required")
+  reviewFlag              Boolean                          @default(false) @map("review_flag")
+
+  closedAt                DateTime?                        @map("closed_at")
+  closedById              String?                          @map("closed_by_id")
+  notes                   String?
+
+  createdAt               DateTime                         @default(now()) @map("created_at")
+  updatedAt               DateTime                         @updatedAt @map("updated_at")
+
+  ticket                  Ticket                           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  patient                 Patient                          @relation(fields: [patientId], references: [id])
+  createdBy               User                             @relation("NeurosurgicalCaseCreator", fields: [createdById], references: [id])
+  closedBy                User?                            @relation("NeurosurgicalCaseCloser", fields: [closedById], references: [id])
+  originHospital          Hospital                         @relation("NeurosurgicalOriginHospital", fields: [originHospitalId], references: [id])
+  destinationHospital     Hospital?                        @relation("NeurosurgicalDestinationHospital", fields: [destinationHospitalId], references: [id])
+
+  @@unique([ticketId])
+  @@map("neurosurgical_cases")
+  @@index([patientId])
+  @@index([status])
+  @@index([severity])
+  @@index([originHospitalId])
+  @@index([destinationHospitalId])
+  @@index([activatedAt])
+  @@index([createdAt])
+}
+
+
+// pregnancy-case.prisma
+// Pregnancy case - links OB maternal transfers to a pregnancy episode
+model PregnancyCase {
+  id               String             @id @default(uuid())
+  patientId        String             @map("patient_id")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  patient          Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  obMaternalTransfers ObMaternalTransfer[]
+  pregnancyOutcomes   PregnancyOutcome[]
+
+  @@map("pregnancy_cases")
+  @@index([patientId])
+}
+
+
+// pregnancy-outcome.prisma
+// Pregnancy outcome - maternal and perinatal outcomes for a pregnancy case
+model PregnancyOutcome {
+  id                   String          @id @default(uuid())
+  caseId               String          @unique @map("case_id")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  maternalStatus       MaternalStatus  @map("maternal_status")
+  maternalIcuAdmission Boolean         @default(false) @map("maternal_icu_admission")
+  massiveTransfusion   Boolean         @default(false) @map("massive_transfusion")
+  eclampsiaEvent       Boolean         @default(false) @map("eclampsia_event")
+  majorPph             Boolean         @default(false) @map("major_pph")
+
+  perinatalStatus      PerinatalStatus @map("perinatal_status")
+  nicuAdmission        Boolean         @default(false) @map("nicu_admission")
+  apgar5               Int?            @map("apgar_5")
+
+  reviewFlag           Boolean         @default(false) @map("review_flag")
+
+  pregnancyCase        PregnancyCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@map("pregnancy_outcomes")
+  @@index([caseId])
+  @@index([reviewFlag])
+}
+
+
+// ob-maternal-transfer.prisma
+// OB Maternal Transfer model for obstetric maternal transfer management
+model ObMaternalTransfer {
+  id                    String                         @id @default(uuid())
+  ticketId              String                         @map("ticket_id")
+  patientId             String                         @map("patient_id")
+  pregnancyCaseId       String?                        @map("pregnancy_case_id")
+  createdById           String                         @map("created_by_id")
+  createdAt             DateTime                       @default(now()) @map("created_at")
+  updatedAt             DateTime                       @updatedAt @map("updated_at")
+  status                ObMaternalTransferStatus       @default(CREATED)
+
+  // OB-specific patient fields (supplement Patient)
+  gestationalAgeWeeks   Int                            @map("gestational_age_weeks")
+  gravida               Int?                           @map("gravida")
+  para                  Int?                           @map("para")
+
+  // Vitals
+  sbp                   Int?                           @map("sbp")
+  dbp                   Int?                           @map("dbp")
+  hr                    Int?                           @map("hr")
+  rr                    Int?                           @map("rr")
+  temp                  Float?                         @map("temp")
+  spo2                  Int?                           @map("spo2")
+
+  // Clinical assessment
+  consciousness         ObConsciousness?               @map("consciousness")
+  bleeding              ObBleeding?                    @map("bleeding")
+  seizure               Boolean?                       @map("seizure")
+
+  // Suspected conditions (JSON array of strings)
+  suspectedConditions   Json?                          @map("suspected_conditions")
+
+  // Fetal status
+  fetalStatus           ObFetalStatus?                 @map("fetal_status")
+  fetalHeartRate        Int?                           @map("fetal_heart_rate")
+
+  // Labs
+  hb                    Float?                         @map("hb")
+  platelets             Int?                           @map("platelets")
+  glucose               Float?                         @map("glucose")
+  urineProtein          String?                        @map("urine_protein")
+  labsOther             Json?                          @map("labs_other")
+
+  // Stabilization (JSON array of strings)
+  stabilizationDone     Json?                          @map("stabilization_done")
+
+  // Referring facility
+  referringFacilityId   String                         @map("referring_facility_id")
+  referringContactName  String?                        @map("referring_contact_name")
+  referringContactPhone String?                        @map("referring_contact_phone")
+
+  // Activation and delivery mode
+  activationLevel       ObActivationLevel              @map("activation_level")
+  expectedDeliveryMode  ObExpectedDeliveryMode         @map("expected_delivery_mode")
+  systemSuggestedDeliveryMode ObSystemSuggestedDeliveryMode? @map("system_suggested_delivery_mode")
+  physicianConfirmedDeliveryMode ObPhysicianConfirmedDeliveryMode? @map("physician_confirmed_delivery_mode")
+
+  // Destination
+  destinationHospitalId String?                        @map("destination_hospital_id")
+  acceptanceStatus      ObAcceptanceStatus             @default(PENDING) @map("acceptance_status")
+
+  ambulanceType         ObAmbulanceType                @map("ambulance_type")
+
+  // Relations
+  ticket                Ticket                         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  patient               Patient                        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  pregnancyCase         PregnancyCase?                 @relation(fields: [pregnancyCaseId], references: [id], onDelete: SetNull)
+  createdBy             User                           @relation("ObMaternalTransferCreator", fields: [createdById], references: [id])
+  referringFacility     Hospital                       @relation("ObReferringHospital", fields: [referringFacilityId], references: [id])
+  destinationHospital   Hospital?                      @relation("ObDestinationHospital", fields: [destinationHospitalId], references: [id])
+
+  @@map("ob_maternal_transfers")
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([referringFacilityId])
+  @@index([destinationHospitalId])
+  @@index([pregnancyCaseId])
+}
+
+
+// pregnancy-kpi-daily-aggregate.prisma
+// Pregnancy KPI daily aggregates for OB Maternal Transfer Portal
+model PregnancyKpiDailyAggregate {
+  id                            String   @id @default(uuid())
+  date                          DateTime @db.Date @map("date")
+  region                        String   @map("region")
+
+  totalCases                    Int      @default(0) @map("total_cases")
+  maternalRedCount              Int      @default(0) @map("maternal_red_count")
+  maternalOrangeCount           Int      @default(0) @map("maternal_orange_count")
+
+  avgActivationToOb             Float?   @map("avg_activation_to_ob")
+  avgActivationToDispatch       Float?   @map("avg_activation_to_dispatch")
+  avgDispatchToArrival          Float?   @map("avg_dispatch_to_arrival")
+
+  maternalMortalityRate         Float?   @map("maternal_mortality_rate")
+  severeMorbidityRate           Float?   @map("severe_morbidity_rate")
+  perinatalMortalityRate        Float?   @map("perinatal_mortality_rate")
+  nicuRate                      Float?   @map("nicu_rate")
+
+  vaginalPercentage             Float?   @map("vaginal_percentage")
+  cesareanPercentage            Float?   @map("cesarean_percentage")
+  emergencyCsPercentage         Float?   @map("emergency_cs_percentage")
+  planChangePercentage          Float?   @map("plan_change_percentage")
+  documentationCompletenessAvg  Float?   @map("documentation_completeness_avg")
+
+  createdAt                     DateTime @default(now()) @map("created_at")
+  updatedAt                     DateTime @updatedAt @map("updated_at")
+
+  @@unique([date, region])
+  @@map("pregnancy_kpi_daily_aggregates")
+  @@index([date])
+  @@index([region])
+  @@index([date, region])
+}
+
+
 // ambulance.prisma
 // Ambulance model for fleet management with GPS tracking
 model Ambulance {
@@ -1790,7 +2256,8 @@ model Ambulance {
   timelineEvents          TimelineEvent[]
   maintenanceRecords      MaintenanceRecord[]
   zoneLogs                AmbulanceZoneLog[]
-  
+  disasterAssignments     DisasterAmbulanceAssignment[]
+
   @@map("ambulances")
   @@index([status])
   @@index([baseStation])
@@ -2731,6 +3198,401 @@ model Reply {
   @@index([deletedAt])
 }
 
+// disaster.prisma
+// Disaster Management System - Enums and Models
+// RTA/MCI (Road Traffic Accident / Mass Casualty Incident) and Code Yellow incidents
+
+enum DisasterScope {
+  INTERNAL
+  EXTERNAL
+}
+
+enum DisasterIncidentType {
+  // External (community) disaster types
+  RTA_MCI
+  CODE_YELLOW
+  EARTHQUAKE
+  FLOOD
+  FIRE
+  CHEMICAL_SPILL
+  OUTBREAK
+  // Internal (hospital) disaster types
+  INTERNAL_FIRE
+  SMOKE_ELECTRICAL_FAILURE
+  POWER_FAILURE
+  WATER_LEAKAGE_FLOODING
+  IT_SYSTEM_FAILURE
+}
+
+enum TriageColorCode {
+  GREEN
+  YELLOW
+  RED
+  BLACK
+}
+
+enum DisasterStatus {
+  ACTIVE
+  RESOLVED
+  CANCELLED
+}
+
+enum DisasterAnnouncementStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+// Disaster ambulance assignment status - workflow progression
+enum DisasterAssignmentStatus {
+  EN_ROUTE             // Heading to MCI scene
+  AT_SCENE             // Arrived at MCI (arrivedAt set)
+  PATIENT_LOADED       // Patient(s) loaded, ready to depart
+  EN_ROUTE_TO_HOSPITAL // En route to destination hospital
+  ARRIVED              // Delivered to destination hospital
+}
+
+enum DisasterNotificationType {
+  INCIDENT_CREATED
+  ANNOUNCEMENT_SENT
+  AMBULANCE_ASSIGNED
+  INCIDENT_RESOLVED
+}
+
+enum DisasterNotificationStatus {
+  UNREAD
+  READ
+}
+
+// Command Room - Operational war-room during major incidents
+enum DisasterCommandRole {
+  COMMANDER
+  OPERATIONS_LEAD
+  EMS_COORDINATOR
+  HOSPITAL_COORDINATION_LEAD
+  SITUATION_ANALYST
+  RECORDER
+}
+
+enum DisasterEscalationLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+}
+
+enum DisasterCommandDecisionAction {
+  ACTIVATED
+  ESCALATED
+  TEAM_ASSIGNED
+  CLOSED
+  CUSTOM
+}
+
+model DisasterIncident {
+  id                    String               @id @default(uuid())
+  disasterScope         DisasterScope        @default(EXTERNAL) @map("disaster_scope")
+  incidentType          DisasterIncidentType  @map("incident_type")
+  colorCode             TriageColorCode?     @map("color_code") // For RTA_MCI
+  status                DisasterStatus       @default(ACTIVE)
+  locationLat           Float                @map("location_lat")
+  locationLng           Float                @map("location_lng")
+  locationAddress       String?              @map("location_address")
+  locationDescription   String?              @map("location_description")
+  estimatedGreen        Int                  @default(0) @map("estimated_green")
+  estimatedYellow       Int                  @default(0) @map("estimated_yellow")
+  estimatedRed          Int                  @default(0) @map("estimated_red")
+  estimatedBlack        Int                  @default(0) @map("estimated_black")
+  estimatedETA          DateTime?            @map("estimated_eta")
+  notes                 String?
+  createdById           String               @map("created_by_id")
+  resolvedById          String?              @map("resolved_by_id")
+  resolvedAt            DateTime?            @map("resolved_at")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
+
+  createdBy             User                 @relation("DisasterIncidentCreator", fields: [createdById], references: [id])
+  resolvedBy            User?                @relation("DisasterIncidentResolver", fields: [resolvedById], references: [id])
+  ambulanceAssignments  DisasterAmbulanceAssignment[]
+  announcements         DisasterAnnouncement[]
+  auditLogs             DisasterAuditLog[]
+  disasterNotifications DisasterNotification[]
+  disasterMessages      DisasterMessage[]
+  commandRoom           DisasterCommandRoom?
+
+  @@map("disaster_incidents")
+  @@index([status])
+  @@index([incidentType])
+  @@index([createdAt])
+  @@index([createdById])
+}
+
+model DisasterAmbulanceAssignment {
+  id                      String                   @id @default(uuid())
+  disasterIncidentId      String                   @map("disaster_incident_id")
+  ambulanceId             String                   @map("ambulance_id")
+  assignedById            String                   @map("assigned_by_id")
+  triageCategory          TriageColorCode?         @map("triage_category") // RED, YELLOW, GREEN, BLACK for MCI
+  destinationHospitalId   String?                  @map("destination_hospital_id")
+  distanceKm              Float?                   @map("distance_km")
+  status                  DisasterAssignmentStatus @default(EN_ROUTE)
+  assignedAt              DateTime                 @default(now()) @map("assigned_at")
+  arrivedAt               DateTime?                @map("arrived_at")
+
+  disasterIncident        DisasterIncident @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  ambulance               Ambulance        @relation(fields: [ambulanceId], references: [id])
+  assignedBy              User             @relation("DisasterAmbulanceAssignor", fields: [assignedById], references: [id])
+  destinationHospital     Hospital?        @relation("DisasterDestinationHospital", fields: [destinationHospitalId], references: [id])
+
+  @@map("disaster_ambulance_assignments")
+  @@index([disasterIncidentId])
+  @@index([ambulanceId])
+}
+
+model DisasterAnnouncement {
+  id                    String                   @id @default(uuid())
+  disasterIncidentId    String                   @map("disaster_incident_id")
+  templateType          DisasterIncidentType     @map("template_type")
+  announcementText      String                   @map("announcement_text")
+  status                DisasterAnnouncementStatus @default(QUEUED)
+  createdById           String                   @map("created_by_id")
+  approvedById          String?                  @map("approved_by_id")
+  approvedAt            DateTime?                @map("approved_at")
+  broadcastedAt         DateTime?                @map("broadcasted_at")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime                 @updatedAt @map("updated_at")
+
+  disasterIncident      DisasterIncident         @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  createdBy             User                     @relation("DisasterAnnouncementCreator", fields: [createdById], references: [id])
+  approvedBy            User?                    @relation("DisasterAnnouncementApprover", fields: [approvedById], references: [id])
+  hospitalLogs          DisasterAnnouncementHospitalLog[]
+
+  @@map("disaster_announcements")
+  @@index([disasterIncidentId])
+  @@index([status])
+}
+
+model DisasterAnnouncementHospitalLog {
+  id                    String                   @id @default(uuid())
+  announcementId        String                   @map("announcement_id")
+  hospitalId            String                   @map("hospital_id")
+  status                DisasterAnnouncementStatus @default(QUEUED)
+  sentAt                DateTime?                @map("sent_at")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+
+  announcement          DisasterAnnouncement     @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  hospital              Hospital                 @relation(fields: [hospitalId], references: [id])
+
+  @@map("disaster_announcement_hospital_logs")
+  @@index([announcementId])
+  @@index([hospitalId])
+}
+
+model DisasterAuditLog {
+  id                    String    @id @default(uuid())
+  disasterIncidentId    String?   @map("disaster_incident_id")
+  userId                String    @map("user_id")
+  action                String
+  details               String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  disasterIncident      DisasterIncident? @relation(fields: [disasterIncidentId], references: [id], onDelete: SetNull)
+  user                  User      @relation(fields: [userId], references: [id])
+
+  @@map("disaster_audit_logs")
+  @@index([disasterIncidentId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model DisasterNotification {
+  id                    String                      @id @default(uuid())
+  disasterIncidentId    String                      @map("disaster_incident_id")
+  type                  DisasterNotificationType
+  priority              NotificationPriority
+  title                 String
+  message               String
+  status                DisasterNotificationStatus  @default(UNREAD)
+  createdById           String                      @map("created_by_id")
+  createdAt             DateTime                    @default(now()) @map("created_at")
+
+  disasterIncident      DisasterIncident            @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  createdBy             User                        @relation("DisasterNotificationCreator", fields: [createdById], references: [id])
+  recipients            DisasterNotificationRecipient[]
+
+  @@map("disaster_notifications")
+  @@index([disasterIncidentId])
+  @@index([createdById])
+  @@index([createdAt])
+  @@index([type])
+  @@index([status])
+}
+
+model DisasterNotificationRecipient {
+  id              String         @id @default(uuid())
+  notificationId  String         @map("notification_id")
+  userId          String         @map("user_id")
+  isRead          Boolean        @default(false) @map("is_read")
+  readAt          DateTime?      @map("read_at")
+  deliveryMethod  DeliveryMethod @default(IN_APP) @map("delivery_method")
+
+  notification    DisasterNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user            User                 @relation("DisasterNotificationRecipientUser", fields: [userId], references: [id])
+
+  @@map("disaster_notification_recipients")
+  @@unique([notificationId, userId])
+  @@index([notificationId])
+  @@index([userId])
+  @@index([isRead])
+}
+
+model DisasterMessage {
+  id                    String           @id @default(uuid())
+  disasterIncidentId    String           @map("disaster_incident_id")
+  content               String
+  createdById           String           @map("created_by_id")
+  createdAt             DateTime         @default(now()) @map("created_at")
+
+  disasterIncident      DisasterIncident @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  createdBy             User             @relation("DisasterMessageCreator", fields: [createdById], references: [id])
+
+  @@map("disaster_messages")
+  @@index([disasterIncidentId])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model DisasterCommandRoom {
+  id                    String                     @id @default(uuid())
+  disasterIncidentId    String                     @unique @map("disaster_incident_id")
+  escalationLevel       DisasterEscalationLevel    @default(LEVEL_1) @map("escalation_level")
+  activatedById         String                     @map("activated_by_id")
+  activatedAt           DateTime                   @default(now()) @map("activated_at")
+  closedById            String?                    @map("closed_by_id")
+  closedAt              DateTime?                  @map("closed_at")
+  createdAt             DateTime                   @default(now()) @map("created_at")
+  updatedAt             DateTime                   @updatedAt @map("updated_at")
+
+  disasterIncident      DisasterIncident           @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  activatedBy           User                       @relation("DisasterCommandRoomActivator", fields: [activatedById], references: [id])
+  closedBy              User?                      @relation("DisasterCommandRoomCloser", fields: [closedById], references: [id])
+  roleAssignments       DisasterCommandRoleAssignment[]
+  decisionLogs          DisasterCommandDecisionLog[]
+
+  @@map("disaster_command_rooms")
+  @@index([disasterIncidentId])
+  @@index([activatedById])
+}
+
+model DisasterCommandRoleAssignment {
+  id                    String                 @id @default(uuid())
+  commandRoomId         String                 @map("command_room_id")
+  userId                String                 @map("user_id")
+  role                  DisasterCommandRole
+  assignedById          String                 @map("assigned_by_id")
+  assignedAt            DateTime               @default(now()) @map("assigned_at")
+
+  commandRoom           DisasterCommandRoom    @relation(fields: [commandRoomId], references: [id], onDelete: Cascade)
+  user                  User                   @relation("DisasterCommandRoleUser", fields: [userId], references: [id])
+  assignedBy            User                   @relation("DisasterCommandRoleAssignor", fields: [assignedById], references: [id])
+
+  @@map("disaster_command_role_assignments")
+  @@unique([commandRoomId, role])
+  @@index([commandRoomId])
+  @@index([userId])
+}
+
+model DisasterCommandDecisionLog {
+  id                    String                     @id @default(uuid())
+  commandRoomId         String                     @map("command_room_id")
+  userId                String                     @map("user_id")
+  action                DisasterCommandDecisionAction
+  details               Json?                      // Custom details for CUSTOM action
+  createdAt             DateTime                   @default(now()) @map("created_at")
+
+  commandRoom           DisasterCommandRoom        @relation(fields: [commandRoomId], references: [id], onDelete: Cascade)
+  user                  User                       @relation("DisasterCommandDecisionUser", fields: [userId], references: [id])
+
+  @@map("disaster_command_decision_logs")
+  @@index([commandRoomId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+
+// mcp-audit.prisma
+// MCP Data Quality Audit models
+
+enum AuditDimension {
+  COMPLETENESS
+  ACCURACY
+  CONSISTENCY
+  TIMELINESS
+  COMPLIANCE
+  INTEGRITY
+}
+
+enum AuditEventType {
+  SCHEDULED_AUDIT
+  REAL_TIME_EVENT
+  MANUAL_TRIGGER
+  SYSTEM_CHECK
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+model AuditEvent {
+  id             String           @id @default(uuid())
+  eventType      AuditEventType     @map("event_type")
+  dimension      AuditDimension
+  entityType     String           @map("entity_type")
+  entityId       String           @map("entity_id")
+  severity       AuditSeverity
+  description    String
+  details        Json?
+  mcpSubmitted   Boolean          @default(false) @map("mcp_submitted")
+  mcpResponse    Json?            @map("mcp_response")
+  mcpSubmittedAt DateTime?        @map("mcp_submitted_at")
+  createdById    String?          @map("created_by_id")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  createdBy      User?            @relation("AuditEventCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("audit_events")
+  @@index([eventType])
+  @@index([dimension])
+  @@index([severity])
+  @@index([entityType])
+  @@index([createdAt])
+  @@index([createdById])
+}
+
+model AuditReport {
+  id              String    @id @default(uuid())
+  reportNumber    String    @unique @map("report_number")
+  reportType      String    @map("report_type")
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime  @map("end_date")
+  overallScore    Float     @map("overall_score")
+  dimensionScores Json      @map("dimension_scores")
+  summary         Json
+  mcpReportUrl    String?   @map("mcp_report_url")
+  generatedById   String?   @map("generated_by_id")
+  generatedAt     DateTime  @default(now()) @map("generated_at")
+
+  generatedBy     User?     @relation("AuditReportGenerator", fields: [generatedById], references: [id], onDelete: SetNull)
+
+  @@map("audit_reports")
+  @@index([reportType])
+  @@index([generatedAt])
+  @@index([generatedById])
+}
+
+
 // support-ticket.prisma
 model SupportTicket {
   id              String                @id @default(uuid())
@@ -3008,7 +3870,6 @@ model RecordingParticipant {
   @@index([userId])
 }
 
-
 // transcripts.prisma
 model RecordingTranscript {
   id            String             @id @default(uuid())
@@ -3059,3 +3920,4 @@ model RecordingTranscriptSegment {
   @@index([speakerUserId])
   @@index([startMs])
 }
+

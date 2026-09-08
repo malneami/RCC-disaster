@@ -21,6 +21,7 @@ import RelatedTicketsManager from './components/RelatedTicketsManager';
 import HospitalCriticalCaseTracker from './components/HospitalCriticalCaseTracker';
 // import HospitalCoordinatesEditor from './components/HospitalCoordinatesEditor'; // Removed as it's now in HospitalDetailsTab
 import HospitalBedsTab from './components/HospitalBedsTab';
+import HospitalDisasterIncidentsTab from './components/HospitalDisasterIncidentsTab';
 import { UnifiedTicket } from './types/tickets';
 import { useHospitalData } from './hooks/useHospitalData';
 import { DashboardHeader } from './components/DashboardHeader';
@@ -89,7 +90,7 @@ const HospitalDashboardPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>{hospital.name} - Hospital Dashboard - RCC Healthcare</title>
+        <title>{hospital.name} - Hospital Dashboard | MASAR</title>
       </Helmet>
 
       <Box sx={{ p: isFullscreen ? 0 : 3 }}>
@@ -145,7 +146,7 @@ const HospitalDashboardPage: React.FC = () => {
                 },
               }}
             >
-              {['Critical Cases', 'Related Tickets', 'Hospital Details', 'Hospital Beds'].map((label, index) => (
+              {['Critical Cases', 'Related Tickets', 'Disaster Incidents', 'Hospital Details', 'Hospital Beds'].map((label, index) => (
                 <Tab
                   key={label}
                   label={label}
@@ -193,8 +194,16 @@ const HospitalDashboardPage: React.FC = () => {
             </Box>
           )}
 
-          {/* Hospital Details Tab */}
+          {/* Disaster Incidents Tab */}
           {tabValue === 2 && (
+            <HospitalDisasterIncidentsTab
+              hospitalId={hospitalId!}
+              hospitalName={hospital.name}
+            />
+          )}
+
+          {/* Hospital Details Tab */}
+          {tabValue === 3 && (
             <HospitalDetailsTab
               hospital={hospital}
               onHospitalUpdate={setHospital}
@@ -202,7 +211,7 @@ const HospitalDashboardPage: React.FC = () => {
           )}
 
           {/* Hospital Beds Tab */}
-          {tabValue === 3 && (
+          {tabValue === 4 && (
             <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: '#FAFBFC' }}>
               <HospitalBedsTab
                 hospitalId={hospitalId!}

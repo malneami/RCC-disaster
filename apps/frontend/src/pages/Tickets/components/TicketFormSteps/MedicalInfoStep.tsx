@@ -64,12 +64,25 @@ const MedicalInfoStep: React.FC<MedicalInfoStepProps> = ({
             <Select
               value={formData.pathway || 'GENERAL'}
               label="Pathway *"
-              onChange={(e) => handleInputChange('pathway', e.target.value)}
+              onChange={(e) => {
+                const pathway = e.target.value;
+                const updates: Partial<CreateTicketData> = { pathway };
+                if (pathway === 'NEUROSURGICAL') {
+                  updates.neurosurgicalData = {
+                    severity: formData.neurosurgicalData?.severity || 'ORANGE',
+                  };
+                } else {
+                  updates.neurosurgicalData = undefined;
+                }
+                onDataChange(updates);
+              }}
             >
               <MenuItem value="GENERAL">General</MenuItem>
               <MenuItem value="STEMI">STEMI</MenuItem>
               <MenuItem value="STROKE">Stroke</MenuItem>
               <MenuItem value="TRAUMA">Trauma</MenuItem>
+              <MenuItem value="MATERNAL">OB / Maternal</MenuItem>
+              <MenuItem value="NEUROSURGICAL">Neurosurgical</MenuItem>
             </Select>
           </FormControl>
         </Grid>
@@ -101,6 +114,177 @@ const MedicalInfoStep: React.FC<MedicalInfoStepProps> = ({
               required
             />
           </Grid>
+        )}
+
+        {/* OB / Maternal pathway fields */}
+        {formData.pathway === 'MATERNAL' && (
+          <>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                OB Maternal Details
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Gestational Age (weeks) *"
+                value={formData.obMaternalData?.gestationalAgeWeeks ?? ''}
+                onChange={(e) =>
+                  handleInputChange('obMaternalData', {
+                    ...formData.obMaternalData,
+                    gestationalAgeWeeks: parseInt(e.target.value, 10) || 0,
+                    activationLevel: formData.obMaternalData?.activationLevel || 'MATERNAL_RED',
+                  })
+                }
+                inputProps={{ min: 1, max: 45 }}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Gravida (G)"
+                value={formData.obMaternalData?.gravida ?? ''}
+                onChange={(e) =>
+                  handleInputChange('obMaternalData', {
+                    ...formData.obMaternalData,
+                    gravida: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                    gestationalAgeWeeks: formData.obMaternalData?.gestationalAgeWeeks || 0,
+                    activationLevel: formData.obMaternalData?.activationLevel || 'MATERNAL_RED',
+                  })
+                }
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Para (P)"
+                value={formData.obMaternalData?.para ?? ''}
+                onChange={(e) =>
+                  handleInputChange('obMaternalData', {
+                    ...formData.obMaternalData,
+                    para: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                    gestationalAgeWeeks: formData.obMaternalData?.gestationalAgeWeeks || 0,
+                    activationLevel: formData.obMaternalData?.activationLevel || 'MATERNAL_RED',
+                  })
+                }
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Abortions (A)"
+                value={formData.obMaternalData?.abortions ?? ''}
+                onChange={(e) =>
+                  handleInputChange('obMaternalData', {
+                    ...formData.obMaternalData,
+                    abortions: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                    gestationalAgeWeeks: formData.obMaternalData?.gestationalAgeWeeks || 0,
+                    activationLevel: formData.obMaternalData?.activationLevel || 'MATERNAL_RED',
+                  })
+                }
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth required>
+                <InputLabel>Activation Level *</InputLabel>
+                <Select
+                  value={formData.obMaternalData?.activationLevel || 'MATERNAL_RED'}
+                  label="Activation Level *"
+                  onChange={(e) =>
+                    handleInputChange('obMaternalData', {
+                      ...formData.obMaternalData,
+                      activationLevel: e.target.value as 'MATERNAL_RED' | 'MATERNAL_ORANGE',
+                      gestationalAgeWeeks: formData.obMaternalData?.gestationalAgeWeeks || 0,
+                    })
+                  }
+                >
+                  <MenuItem value="MATERNAL_RED">Maternal Red</MenuItem>
+                  <MenuItem value="MATERNAL_ORANGE">Maternal Orange</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Expected Delivery Mode</InputLabel>
+                <Select
+                  value={formData.obMaternalData?.expectedDeliveryMode || 'PENDING'}
+                  label="Expected Delivery Mode"
+                  onChange={(e) =>
+                    handleInputChange('obMaternalData', {
+                      ...formData.obMaternalData,
+                      expectedDeliveryMode: e.target.value as 'VAGINAL' | 'CESAREAN' | 'PENDING',
+                      gestationalAgeWeeks: formData.obMaternalData?.gestationalAgeWeeks || 0,
+                      activationLevel: formData.obMaternalData?.activationLevel || 'MATERNAL_RED',
+                    })
+                  }
+                >
+                  <MenuItem value="VAGINAL">Vaginal</MenuItem>
+                  <MenuItem value="CESAREAN">Cesarean</MenuItem>
+                  <MenuItem value="PENDING">Pending</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Ambulance Type</InputLabel>
+                <Select
+                  value={formData.obMaternalData?.ambulanceType || 'ALS'}
+                  label="Ambulance Type"
+                  onChange={(e) =>
+                    handleInputChange('obMaternalData', {
+                      ...formData.obMaternalData,
+                      ambulanceType: e.target.value as 'BLS' | 'ALS' | 'AIR',
+                      gestationalAgeWeeks: formData.obMaternalData?.gestationalAgeWeeks || 0,
+                      activationLevel: formData.obMaternalData?.activationLevel || 'MATERNAL_RED',
+                    })
+                  }
+                >
+                  <MenuItem value="BLS">BLS</MenuItem>
+                  <MenuItem value="ALS">ALS</MenuItem>
+                  <MenuItem value="AIR">Air</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </>
+        )}
+
+        {/* Neurosurgical pathway — clinical severity (independent of Priority) */}
+        {formData.pathway === 'NEUROSURGICAL' && (
+          <>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                Neurosurgical Severity
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Clinical neuro color (Red / Orange). Ticket Priority stays as operational urgency.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth required>
+                <InputLabel>Severity *</InputLabel>
+                <Select
+                  value={formData.neurosurgicalData?.severity || 'ORANGE'}
+                  label="Severity *"
+                  onChange={(e) =>
+                    handleInputChange('neurosurgicalData', {
+                      severity: e.target.value as 'RED' | 'ORANGE',
+                    })
+                  }
+                >
+                  <MenuItem value="RED">Neurosurgical Red</MenuItem>
+                  <MenuItem value="ORANGE">Neurosurgical Orange</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </>
         )}
 
         {/* Note */}

@@ -287,7 +287,7 @@ const RecordingsPage: React.FC = () => {
     return (
         <>
             <Helmet>
-                <title>Call Recordings - RCC Healthcare Platform</title>
+                <title>Call Recordings | MASAR</title>
             </Helmet>
 
             <PortalSkeleton

@@ -1,0 +1,71 @@
+// MCP Data Quality Audit models
+
+enum AuditDimension {
+  COMPLETENESS
+  ACCURACY
+  CONSISTENCY
+  TIMELINESS
+  COMPLIANCE
+  INTEGRITY
+}
+
+enum AuditEventType {
+  SCHEDULED_AUDIT
+  REAL_TIME_EVENT
+  MANUAL_TRIGGER
+  SYSTEM_CHECK
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+model AuditEvent {
+  id             String           @id @default(uuid())
+  eventType      AuditEventType     @map("event_type")
+  dimension      AuditDimension
+  entityType     String           @map("entity_type")
+  entityId       String           @map("entity_id")
+  severity       AuditSeverity
+  description    String
+  details        Json?
+  mcpSubmitted   Boolean          @default(false) @map("mcp_submitted")
+  mcpResponse    Json?            @map("mcp_response")
+  mcpSubmittedAt DateTime?        @map("mcp_submitted_at")
+  createdById    String?          @map("created_by_id")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  createdBy      User?            @relation("AuditEventCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("audit_events")
+  @@index([eventType])
+  @@index([dimension])
+  @@index([severity])
+  @@index([entityType])
+  @@index([createdAt])
+  @@index([createdById])
+}
+
+model AuditReport {
+  id              String    @id @default(uuid())
+  reportNumber    String    @unique @map("report_number")
+  reportType      String    @map("report_type")
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime  @map("end_date")
+  overallScore    Float     @map("overall_score")
+  dimensionScores Json      @map("dimension_scores")
+  summary         Json
+  mcpReportUrl    String?   @map("mcp_report_url")
+  generatedById   String?   @map("generated_by_id")
+  generatedAt     DateTime  @default(now()) @map("generated_at")
+
+  generatedBy     User?     @relation("AuditReportGenerator", fields: [generatedById], references: [id], onDelete: SetNull)
+
+  @@map("audit_reports")
+  @@index([reportType])
+  @@index([generatedAt])
+  @@index([generatedById])
+}

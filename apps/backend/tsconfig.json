@@ -1,4 +1,5 @@
 {
+  "exclude": ["node_modules", "dist", "src/modules/case-feedback","src/modules/mcp-audit","src/common/interceptors/audit-event.interceptor.ts"],
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,

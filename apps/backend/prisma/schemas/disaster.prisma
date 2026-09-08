@@ -1,0 +1,318 @@
+// Disaster Management System - Enums and Models
+// RTA/MCI (Road Traffic Accident / Mass Casualty Incident) and Code Yellow incidents
+
+enum DisasterScope {
+  INTERNAL
+  EXTERNAL
+}
+
+enum DisasterIncidentType {
+  // External (community) disaster types
+  RTA_MCI
+  CODE_YELLOW
+  EARTHQUAKE
+  FLOOD
+  FIRE
+  CHEMICAL_SPILL
+  OUTBREAK
+  // Internal (hospital) disaster types
+  INTERNAL_FIRE
+  SMOKE_ELECTRICAL_FAILURE
+  POWER_FAILURE
+  WATER_LEAKAGE_FLOODING
+  IT_SYSTEM_FAILURE
+}
+
+enum TriageColorCode {
+  GREEN
+  YELLOW
+  RED
+  BLACK
+}
+
+enum DisasterStatus {
+  ACTIVE
+  RESOLVED
+  CANCELLED
+}
+
+enum DisasterAnnouncementStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+// Disaster ambulance assignment status - workflow progression
+enum DisasterAssignmentStatus {
+  EN_ROUTE             // Heading to MCI scene
+  AT_SCENE             // Arrived at MCI (arrivedAt set)
+  PATIENT_LOADED       // Patient(s) loaded, ready to depart
+  EN_ROUTE_TO_HOSPITAL // En route to destination hospital
+  ARRIVED              // Delivered to destination hospital
+}
+
+enum DisasterNotificationType {
+  INCIDENT_CREATED
+  ANNOUNCEMENT_SENT
+  AMBULANCE_ASSIGNED
+  INCIDENT_RESOLVED
+}
+
+enum DisasterNotificationStatus {
+  UNREAD
+  READ
+}
+
+// Command Room - Operational war-room during major incidents
+enum DisasterCommandRole {
+  COMMANDER
+  OPERATIONS_LEAD
+  EMS_COORDINATOR
+  HOSPITAL_COORDINATION_LEAD
+  SITUATION_ANALYST
+  RECORDER
+}
+
+enum DisasterEscalationLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+}
+
+enum DisasterCommandDecisionAction {
+  ACTIVATED
+  ESCALATED
+  TEAM_ASSIGNED
+  CLOSED
+  CUSTOM
+}
+
+model DisasterIncident {
+  id                    String               @id @default(uuid())
+  disasterScope         DisasterScope        @default(EXTERNAL) @map("disaster_scope")
+  incidentType          DisasterIncidentType  @map("incident_type")
+  colorCode             TriageColorCode?     @map("color_code") // For RTA_MCI
+  status                DisasterStatus       @default(ACTIVE)
+  locationLat           Float                @map("location_lat")
+  locationLng           Float                @map("location_lng")
+  locationAddress       String?              @map("location_address")
+  locationDescription   String?              @map("location_description")
+  estimatedGreen        Int                  @default(0) @map("estimated_green")
+  estimatedYellow       Int                  @default(0) @map("estimated_yellow")
+  estimatedRed          Int                  @default(0) @map("estimated_red")
+  estimatedBlack        Int                  @default(0) @map("estimated_black")
+  estimatedETA          DateTime?            @map("estimated_eta")
+  notes                 String?
+  createdById           String               @map("created_by_id")
+  resolvedById          String?              @map("resolved_by_id")
+  resolvedAt            DateTime?            @map("resolved_at")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
+
+  createdBy             User                 @relation("DisasterIncidentCreator", fields: [createdById], references: [id])
+  resolvedBy            User?                @relation("DisasterIncidentResolver", fields: [resolvedById], references: [id])
+  ambulanceAssignments  DisasterAmbulanceAssignment[]
+  announcements         DisasterAnnouncement[]
+  auditLogs             DisasterAuditLog[]
+  disasterNotifications DisasterNotification[]
+  disasterMessages      DisasterMessage[]
+  commandRoom           DisasterCommandRoom?
+
+  @@map("disaster_incidents")
+  @@index([status])
+  @@index([incidentType])
+  @@index([createdAt])
+  @@index([createdById])
+}
+
+model DisasterAmbulanceAssignment {
+  id                      String                   @id @default(uuid())
+  disasterIncidentId      String                   @map("disaster_incident_id")
+  ambulanceId             String                   @map("ambulance_id")
+  assignedById            String                   @map("assigned_by_id")
+  triageCategory          TriageColorCode?         @map("triage_category") // RED, YELLOW, GREEN, BLACK for MCI
+  destinationHospitalId   String?                  @map("destination_hospital_id")
+  distanceKm              Float?                   @map("distance_km")
+  status                  DisasterAssignmentStatus @default(EN_ROUTE)
+  assignedAt              DateTime                 @default(now()) @map("assigned_at")
+  arrivedAt               DateTime?                @map("arrived_at")
+
+  disasterIncident        DisasterIncident @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  ambulance               Ambulance        @relation(fields: [ambulanceId], references: [id])
+  assignedBy              User             @relation("DisasterAmbulanceAssignor", fields: [assignedById], references: [id])
+  destinationHospital     Hospital?        @relation("DisasterDestinationHospital", fields: [destinationHospitalId], references: [id])
+
+  @@map("disaster_ambulance_assignments")
+  @@index([disasterIncidentId])
+  @@index([ambulanceId])
+}
+
+model DisasterAnnouncement {
+  id                    String                   @id @default(uuid())
+  disasterIncidentId    String                   @map("disaster_incident_id")
+  templateType          DisasterIncidentType     @map("template_type")
+  announcementText      String                   @map("announcement_text")
+  status                DisasterAnnouncementStatus @default(QUEUED)
+  createdById           String                   @map("created_by_id")
+  approvedById          String?                  @map("approved_by_id")
+  approvedAt            DateTime?                @map("approved_at")
+  broadcastedAt         DateTime?                @map("broadcasted_at")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime                 @updatedAt @map("updated_at")
+
+  disasterIncident      DisasterIncident         @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  createdBy             User                     @relation("DisasterAnnouncementCreator", fields: [createdById], references: [id])
+  approvedBy            User?                    @relation("DisasterAnnouncementApprover", fields: [approvedById], references: [id])
+  hospitalLogs          DisasterAnnouncementHospitalLog[]
+
+  @@map("disaster_announcements")
+  @@index([disasterIncidentId])
+  @@index([status])
+}
+
+model DisasterAnnouncementHospitalLog {
+  id                    String                   @id @default(uuid())
+  announcementId        String                   @map("announcement_id")
+  hospitalId            String                   @map("hospital_id")
+  status                DisasterAnnouncementStatus @default(QUEUED)
+  sentAt                DateTime?                @map("sent_at")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+
+  announcement          DisasterAnnouncement     @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  hospital              Hospital                 @relation(fields: [hospitalId], references: [id])
+
+  @@map("disaster_announcement_hospital_logs")
+  @@index([announcementId])
+  @@index([hospitalId])
+}
+
+model DisasterAuditLog {
+  id                    String    @id @default(uuid())
+  disasterIncidentId    String?   @map("disaster_incident_id")
+  userId                String    @map("user_id")
+  action                String
+  details               String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  disasterIncident      DisasterIncident? @relation(fields: [disasterIncidentId], references: [id], onDelete: SetNull)
+  user                  User      @relation(fields: [userId], references: [id])
+
+  @@map("disaster_audit_logs")
+  @@index([disasterIncidentId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model DisasterNotification {
+  id                    String                      @id @default(uuid())
+  disasterIncidentId    String                      @map("disaster_incident_id")
+  type                  DisasterNotificationType
+  priority              NotificationPriority
+  title                 String
+  message               String
+  status                DisasterNotificationStatus  @default(UNREAD)
+  createdById           String                      @map("created_by_id")
+  createdAt             DateTime                    @default(now()) @map("created_at")
+
+  disasterIncident      DisasterIncident            @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  createdBy             User                        @relation("DisasterNotificationCreator", fields: [createdById], references: [id])
+  recipients            DisasterNotificationRecipient[]
+
+  @@map("disaster_notifications")
+  @@index([disasterIncidentId])
+  @@index([createdById])
+  @@index([createdAt])
+  @@index([type])
+  @@index([status])
+}
+
+model DisasterNotificationRecipient {
+  id              String         @id @default(uuid())
+  notificationId  String         @map("notification_id")
+  userId          String         @map("user_id")
+  isRead          Boolean        @default(false) @map("is_read")
+  readAt          DateTime?      @map("read_at")
+  deliveryMethod  DeliveryMethod @default(IN_APP) @map("delivery_method")
+
+  notification    DisasterNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user            User                 @relation("DisasterNotificationRecipientUser", fields: [userId], references: [id])
+
+  @@map("disaster_notification_recipients")
+  @@unique([notificationId, userId])
+  @@index([notificationId])
+  @@index([userId])
+  @@index([isRead])
+}
+
+model DisasterMessage {
+  id                    String           @id @default(uuid())
+  disasterIncidentId    String           @map("disaster_incident_id")
+  content               String
+  createdById           String           @map("created_by_id")
+  createdAt             DateTime         @default(now()) @map("created_at")
+
+  disasterIncident      DisasterIncident @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  createdBy             User             @relation("DisasterMessageCreator", fields: [createdById], references: [id])
+
+  @@map("disaster_messages")
+  @@index([disasterIncidentId])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model DisasterCommandRoom {
+  id                    String                     @id @default(uuid())
+  disasterIncidentId    String                     @unique @map("disaster_incident_id")
+  escalationLevel       DisasterEscalationLevel    @default(LEVEL_1) @map("escalation_level")
+  activatedById         String                     @map("activated_by_id")
+  activatedAt           DateTime                   @default(now()) @map("activated_at")
+  closedById            String?                    @map("closed_by_id")
+  closedAt              DateTime?                  @map("closed_at")
+  createdAt             DateTime                   @default(now()) @map("created_at")
+  updatedAt             DateTime                   @updatedAt @map("updated_at")
+
+  disasterIncident      DisasterIncident           @relation(fields: [disasterIncidentId], references: [id], onDelete: Cascade)
+  activatedBy           User                       @relation("DisasterCommandRoomActivator", fields: [activatedById], references: [id])
+  closedBy              User?                      @relation("DisasterCommandRoomCloser", fields: [closedById], references: [id])
+  roleAssignments       DisasterCommandRoleAssignment[]
+  decisionLogs          DisasterCommandDecisionLog[]
+
+  @@map("disaster_command_rooms")
+  @@index([disasterIncidentId])
+  @@index([activatedById])
+}
+
+model DisasterCommandRoleAssignment {
+  id                    String                 @id @default(uuid())
+  commandRoomId         String                 @map("command_room_id")
+  userId                String                 @map("user_id")
+  role                  DisasterCommandRole
+  assignedById          String                 @map("assigned_by_id")
+  assignedAt            DateTime               @default(now()) @map("assigned_at")
+
+  commandRoom           DisasterCommandRoom    @relation(fields: [commandRoomId], references: [id], onDelete: Cascade)
+  user                  User                   @relation("DisasterCommandRoleUser", fields: [userId], references: [id])
+  assignedBy            User                   @relation("DisasterCommandRoleAssignor", fields: [assignedById], references: [id])
+
+  @@map("disaster_command_role_assignments")
+  @@unique([commandRoomId, role])
+  @@index([commandRoomId])
+  @@index([userId])
+}
+
+model DisasterCommandDecisionLog {
+  id                    String                     @id @default(uuid())
+  commandRoomId         String                     @map("command_room_id")
+  userId                String                     @map("user_id")
+  action                DisasterCommandDecisionAction
+  details               Json?                      // Custom details for CUSTOM action
+  createdAt             DateTime                   @default(now()) @map("created_at")
+
+  commandRoom           DisasterCommandRoom        @relation(fields: [commandRoomId], references: [id], onDelete: Cascade)
+  user                  User                       @relation("DisasterCommandDecisionUser", fields: [userId], references: [id])
+
+  @@map("disaster_command_decision_logs")
+  @@index([commandRoomId])
+  @@index([userId])
+  @@index([createdAt])
+}

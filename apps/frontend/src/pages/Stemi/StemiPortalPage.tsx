@@ -575,7 +575,7 @@ const StemiPortalPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>STEMI Portal - RCC Healthcare Platform</title>
+        <title>STEMI Portal | MASAR</title>
       </Helmet>
 
       <PortalSkeleton
