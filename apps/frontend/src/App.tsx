@@ -23,6 +23,8 @@ import StrokePortal from './pages/Portals/StrokePortal';
 import StrokeCommandCenterPage from './pages/Stroke/CommandCenterPage';
 import TraumaPortalPage from './pages/Trauma/TraumaPortalPage';
 import ObMaternalPortalPage from './pages/ObMaternal/ObMaternalPortalPage';
+import NicuPortalPage from './pages/Nicu/NicuPortalPage';
+import NicuCapacityPage from './pages/Nicu/NicuCapacityPage';
 import NeurosurgicalPortalPage from './pages/Neurosurgical/NeurosurgicalPortalPage';
 import EMSPortal from './pages/EMS/EMSPortal';
 import EMSDashboardPage from './pages/EMSDashboard';
@@ -190,6 +192,22 @@ function App() {
                       element={
                         <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'DATA_COLLECTOR']}>
                           <ObMaternalPortalPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/portals/nicu"
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'HOSPITAL_USER', 'ED_NURSE', 'DATA_COLLECTOR']}>
+                          <NicuPortalPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/portals/nicu/capacity"
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'RCC', 'HOSPITAL_USER', 'ED_NURSE', 'BED_COORDINATOR', 'DATA_COLLECTOR']}>
+                          <NicuCapacityPage />
                         </ProtectedRoute>
                       }
                     />

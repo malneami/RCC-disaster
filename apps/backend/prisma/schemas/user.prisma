@@ -68,6 +68,9 @@ model User {
   // OB Maternal Relations
   createdObMaternalTransfers ObMaternalTransfer[] @relation("ObMaternalTransferCreator")
 
+  // Neonatal (NICU) Relations
+  createdNeonatalTransfers NeonatalTransfer[] @relation("NeonatalTransferCreator")
+
   // Neurosurgical Relations
   createdNeurosurgicalCases NeurosurgicalCase[] @relation("NeurosurgicalCaseCreator")
   closedNeurosurgicalCases NeurosurgicalCase[] @relation("NeurosurgicalCaseCloser")

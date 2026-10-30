@@ -159,6 +159,20 @@ const Sidebar: React.FC = () => {
       color: 'secondary',
     },
     {
+      text: 'NICU Pathway Portal',
+      icon: <FontAwesomeIcon icon={faBaby} />,
+      path: '/portals/nicu',
+      roles: ['ADMIN', 'RCC', 'HOSPITAL_USER', 'ED_NURSE', 'DATA_COLLECTOR'],
+      color: 'secondary',
+    },
+    {
+      text: 'NICU Capacity Center',
+      icon: <FontAwesomeIcon icon={faBed} />,
+      path: '/portals/nicu/capacity',
+      roles: ['ADMIN', 'RCC', 'HOSPITAL_USER', 'ED_NURSE', 'BED_COORDINATOR', 'DATA_COLLECTOR'],
+      color: 'info',
+    },
+    {
       text: 'Neurosurgical Pathway Portal',
       icon: <FontAwesomeIcon icon={faBrain} />,
       path: '/portals/neurosurgical',

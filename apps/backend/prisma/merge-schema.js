@@ -28,6 +28,8 @@ const SCHEMA_ORDER = [
   'pregnancy-outcome.prisma',
   'ob-maternal-transfer.prisma',
   'pregnancy-kpi-daily-aggregate.prisma',
+  'neonatal-transfer.prisma',
+  'nicu-kpi-daily-aggregate.prisma',
   // EMS related schemas
   'ambulance.prisma',
   'driver-schedule.prisma',

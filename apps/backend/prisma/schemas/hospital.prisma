@@ -40,6 +40,8 @@ model Hospital {
   hasStrokeService  Boolean       @default(false) @map("has_stroke_service")
   hasTraumaService  Boolean       @default(false) @map("has_trauma_service")
   hasNeurosurgeryService Boolean  @default(false) @map("has_neurosurgery_service")
+  hasNicuService    Boolean       @default(false) @map("has_nicu_service")
+  nicuLevel         NicuLevel?    @map("nicu_level")
   
   // Hospital Info
   cluster           String        @default("Jazan")
@@ -124,6 +126,10 @@ model Hospital {
   // OB Maternal Relations
   obMaternalReferring   ObMaternalTransfer[] @relation("ObReferringHospital")
   obMaternalDestination ObMaternalTransfer[] @relation("ObDestinationHospital")
+
+  // Neonatal (NICU) Relations
+  neonatalReferring     NeonatalTransfer[] @relation("NeonatalReferringHospital")
+  neonatalDestination   NeonatalTransfer[] @relation("NeonatalDestinationHospital")
 
   // Neurosurgical Relations
   neurosurgicalOriginCases NeurosurgicalCase[] @relation("NeurosurgicalOriginHospital")

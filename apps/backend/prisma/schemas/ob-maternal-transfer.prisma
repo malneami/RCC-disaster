@@ -69,6 +69,9 @@ model ObMaternalTransfer {
   referringFacility     Hospital                       @relation("ObReferringHospital", fields: [referringFacilityId], references: [id])
   destinationHospital   Hospital?                      @relation("ObDestinationHospital", fields: [destinationHospitalId], references: [id])
 
+  // Neonatal link (in-utero → ex-utero continuation)
+  neonatalTransfers     NeonatalTransfer[]             @relation("ObMaternalToNeonatal")
+
   @@map("ob_maternal_transfers")
   @@index([ticketId])
   @@index([patientId])

@@ -94,6 +94,9 @@ model Patient {
   // OB Maternal Relations
   obMaternalTransfers ObMaternalTransfer[]
 
+  // Neonatal (NICU) Relations
+  neonatalTransfers NeonatalTransfer[]
+
   // Neurosurgical Relations
   neurosurgicalCases NeurosurgicalCase[]
   pregnancyCases     PregnancyCase[]

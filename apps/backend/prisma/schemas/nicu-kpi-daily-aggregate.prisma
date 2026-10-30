@@ -1,0 +1,31 @@
+// NICU KPI daily aggregates for the NICU Pathway Portal
+model NicuKpiDailyAggregate {
+  id                           String   @id @default(uuid())
+  date                         DateTime @db.Date @map("date")
+  region                       String   @map("region")
+
+  totalTransfers               Int      @default(0) @map("total_transfers")
+  redCount                     Int      @default(0) @map("red_count")
+  orangeCount                  Int      @default(0) @map("orange_count")
+  yellowCount                  Int      @default(0) @map("yellow_count")
+
+  avgActivationToNeonatologist Float?   @map("avg_activation_to_neonatologist")
+  avgActivationToDispatch      Float?   @map("avg_activation_to_dispatch")
+  avgDispatchToArrival         Float?   @map("avg_dispatch_to_arrival")
+  avgReferralToAcceptance      Float?   @map("avg_referral_to_acceptance")
+
+  cotMatchRate                 Float?   @map("cot_match_rate")
+  normothermiaOnArrival        Float?   @map("normothermia_on_arrival")
+  timeToSurfactantAvg          Float?   @map("time_to_surfactant_avg")
+  declinedForCapacityRate      Float?   @map("declined_for_capacity_rate")
+  inUteroVsExUteroRatio        Float?   @map("in_utero_vs_ex_utero_ratio")
+
+  createdAt                    DateTime @default(now()) @map("created_at")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
+
+  @@unique([date, region])
+  @@map("nicu_kpi_daily_aggregates")
+  @@index([date])
+  @@index([region])
+  @@index([date, region])
+}

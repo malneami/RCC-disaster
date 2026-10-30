@@ -189,6 +189,8 @@ enum CaseType {
   STEMI
   STROKE
   TRAUMA
+  OB
+  NICU
 }
 
 enum CriticalCaseSeverity {
@@ -496,6 +498,63 @@ enum TranscriptStatus {
   COMPLETED
   FAILED
 }
+// ============================================================
+// NICU (Neonatal) Pathway Portal enums
+// ============================================================
+enum NeonatalTransferStatus {
+  CREATED
+  ACTIVATED
+  NEONATOLOGIST_CONNECTED
+  DECISION_MADE
+  DISPATCHED
+  DEPARTED
+  ARRIVED
+  CLOSED
+}
+
+// RED = unstable / ventilated, ORANGE = high-acuity, YELLOW = stable monitoring
+enum NeonatalAcuityLevel {
+  RED
+  ORANGE
+  YELLOW
+}
+
+// NICU care level (confirm final criteria against MoH / cluster definitions)
+enum NicuLevel {
+  LEVEL_I
+  LEVEL_II
+  LEVEL_III
+}
+
+enum NicuCotType {
+  INCUBATOR
+  OPEN_WARMER
+  VENTILATED
+}
+
+enum NeonatalRespiratorySupport {
+  ROOM_AIR
+  LOW_FLOW
+  HIGH_FLOW
+  CPAP
+  NIPPV
+  INVASIVE_VENT
+  HFOV
+}
+
+enum NeonatalAcceptanceStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NeonatalTransportTeam {
+  NEONATAL_RETRIEVAL
+  ALS
+  BLS
+  AIR
+}
+
 
 // ems-enums.prisma
 // EMS-specific enums for Emergency Medical Services
@@ -684,6 +743,9 @@ model User {
   // OB Maternal Relations
   createdObMaternalTransfers ObMaternalTransfer[] @relation("ObMaternalTransferCreator")
 
+  // Neonatal (NICU) Relations
+  createdNeonatalTransfers NeonatalTransfer[] @relation("NeonatalTransferCreator")
+
   // Neurosurgical Relations
   createdNeurosurgicalCases NeurosurgicalCase[] @relation("NeurosurgicalCaseCreator")
   closedNeurosurgicalCases NeurosurgicalCase[] @relation("NeurosurgicalCaseCloser")
@@ -837,6 +899,8 @@ model Hospital {
   hasStrokeService  Boolean       @default(false) @map("has_stroke_service")
   hasTraumaService  Boolean       @default(false) @map("has_trauma_service")
   hasNeurosurgeryService Boolean  @default(false) @map("has_neurosurgery_service")
+  hasNicuService    Boolean       @default(false) @map("has_nicu_service")
+  nicuLevel         NicuLevel?    @map("nicu_level")
   
   // Hospital Info
   cluster           String        @default("Jazan")
@@ -921,6 +985,10 @@ model Hospital {
   // OB Maternal Relations
   obMaternalReferring   ObMaternalTransfer[] @relation("ObReferringHospital")
   obMaternalDestination ObMaternalTransfer[] @relation("ObDestinationHospital")
+
+  // Neonatal (NICU) Relations
+  neonatalReferring     NeonatalTransfer[] @relation("NeonatalReferringHospital")
+  neonatalDestination   NeonatalTransfer[] @relation("NeonatalDestinationHospital")
 
   // Neurosurgical Relations
   neurosurgicalOriginCases NeurosurgicalCase[] @relation("NeurosurgicalOriginHospital")
@@ -1032,6 +1100,9 @@ model Patient {
 
   // OB Maternal Relations
   obMaternalTransfers ObMaternalTransfer[]
+
+  // Neonatal (NICU) Relations
+  neonatalTransfers NeonatalTransfer[]
 
   // Neurosurgical Relations
   neurosurgicalCases NeurosurgicalCase[]
@@ -1257,6 +1328,9 @@ model Ticket {
 
   // OB Maternal Relations
   obMaternalTransfers ObMaternalTransfer[]
+
+  // Neonatal (NICU) Relations
+  neonatalTransfers   NeonatalTransfer[]
 
   // Neurosurgical Relations
   neurosurgicalCases  NeurosurgicalCase[]
@@ -2153,6 +2227,9 @@ model ObMaternalTransfer {
   referringFacility     Hospital                       @relation("ObReferringHospital", fields: [referringFacilityId], references: [id])
   destinationHospital   Hospital?                      @relation("ObDestinationHospital", fields: [destinationHospitalId], references: [id])
 
+  // Neonatal link (in-utero → ex-utero continuation)
+  neonatalTransfers     NeonatalTransfer[]             @relation("ObMaternalToNeonatal")
+
   @@map("ob_maternal_transfers")
   @@index([ticketId])
   @@index([patientId])
@@ -2195,6 +2272,137 @@ model PregnancyKpiDailyAggregate {
 
   @@unique([date, region])
   @@map("pregnancy_kpi_daily_aggregates")
+  @@index([date])
+  @@index([region])
+  @@index([date, region])
+}
+
+
+// neonatal-transfer.prisma
+// Neonatal transfer model for the NICU pathway portal
+model NeonatalTransfer {
+  id                       String                      @id @default(uuid())
+  ticketId                 String                      @map("ticket_id")
+  patientId                String                      @map("patient_id")
+  obMaternalTransferId     String?                     @map("ob_maternal_transfer_id")
+  createdById              String                      @map("created_by_id")
+  createdAt                DateTime                    @default(now()) @map("created_at")
+  updatedAt                DateTime                    @updatedAt @map("updated_at")
+  status                   NeonatalTransferStatus      @default(CREATED)
+
+  // Neonate identity
+  gestationalAgeWeeks      Int                         @map("gestational_age_weeks")
+  gestationalAgeDays       Int?                        @map("gestational_age_days")
+  birthWeightGrams         Int?                        @map("birth_weight_grams")
+  ageHours                 Int?                        @map("age_hours")
+  apgar1                   Int?                        @map("apgar_1")
+  apgar5                   Int?                        @map("apgar_5")
+  apgar10                  Int?                        @map("apgar_10")
+  antenatalSteroids        Boolean?                    @map("antenatal_steroids")
+
+  // Vitals
+  hr                       Int?                        @map("hr")
+  rr                       Int?                        @map("rr")
+  temp                     Float?                      @map("temp")
+  spo2                     Int?                        @map("spo2")
+  preDuctalSpo2            Int?                        @map("pre_ductal_spo2")
+  postDuctalSpo2           Int?                        @map("post_ductal_spo2")
+  bloodGlucose             Float?                      @map("blood_glucose")
+
+  // Respiratory / support
+  respiratorySupport       NeonatalRespiratorySupport? @map("respiratory_support")
+  fiO2                     Int?                        @map("fio2")
+  surfactantGiven          Boolean?                    @map("surfactant_given")
+  inotropes                Boolean?                    @map("inotropes")
+  therapeuticHypothermia   Boolean?                    @map("therapeutic_hypothermia")
+  seizure                  Boolean?                    @map("seizure")
+
+  // Problems and stabilization (JSON arrays of strings)
+  suspectedConditions      Json?                       @map("suspected_conditions")
+  stabilizationDone        Json?                       @map("stabilization_done")
+
+  // Acuity scoring
+  acuityLevel              NeonatalAcuityLevel         @map("acuity_level")
+  tripsScore               Int?                        @map("trips_score")
+  cribIIScore              Int?                        @map("crib_ii_score")
+
+  // Capacity requirement (drives matching)
+  requiredNicuLevel        NicuLevel                   @map("required_nicu_level")
+  requiredCotType          NicuCotType                 @map("required_cot_type")
+
+  // Referring facility
+  referringFacilityId      String                      @map("referring_facility_id")
+  referringContactName     String?                     @map("referring_contact_name")
+  referringContactPhone    String?                     @map("referring_contact_phone")
+
+  // Destination and acceptance
+  destinationHospitalId    String?                     @map("destination_hospital_id")
+  assignedBedId            String?                     @map("assigned_bed_id")
+  acceptanceStatus         NeonatalAcceptanceStatus    @default(PENDING) @map("acceptance_status")
+
+  // Transport
+  transportTeam            NeonatalTransportTeam       @map("transport_team")
+  transportIncubator       Boolean?                    @map("transport_incubator")
+
+  // Timeline
+  activatedAt              DateTime?                   @map("activated_at")
+  neonatologistConnectedAt DateTime?                   @map("neonatologist_connected_at")
+  decisionAt               DateTime?                   @map("decision_at")
+  dispatchedAt             DateTime?                   @map("dispatched_at")
+  departedAt               DateTime?                   @map("departed_at")
+  arrivedAt                DateTime?                   @map("arrived_at")
+  closedAt                 DateTime?                   @map("closed_at")
+
+  // Relations
+  ticket                   Ticket                      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  patient                  Patient                     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  obMaternalTransfer       ObMaternalTransfer?         @relation("ObMaternalToNeonatal", fields: [obMaternalTransferId], references: [id], onDelete: SetNull)
+  createdBy                User                        @relation("NeonatalTransferCreator", fields: [createdById], references: [id])
+  referringFacility        Hospital                    @relation("NeonatalReferringHospital", fields: [referringFacilityId], references: [id])
+  destinationHospital      Hospital?                   @relation("NeonatalDestinationHospital", fields: [destinationHospitalId], references: [id])
+  assignedBed              Bed?                        @relation("NeonatalAssignedBed", fields: [assignedBedId], references: [id], onDelete: SetNull)
+
+  @@map("neonatal_transfers")
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([referringFacilityId])
+  @@index([destinationHospitalId])
+  @@index([requiredNicuLevel])
+  @@index([obMaternalTransferId])
+  @@index([assignedBedId])
+}
+
+
+// nicu-kpi-daily-aggregate.prisma
+// NICU KPI daily aggregates for the NICU Pathway Portal
+model NicuKpiDailyAggregate {
+  id                           String   @id @default(uuid())
+  date                         DateTime @db.Date @map("date")
+  region                       String   @map("region")
+
+  totalTransfers               Int      @default(0) @map("total_transfers")
+  redCount                     Int      @default(0) @map("red_count")
+  orangeCount                  Int      @default(0) @map("orange_count")
+  yellowCount                  Int      @default(0) @map("yellow_count")
+
+  avgActivationToNeonatologist Float?   @map("avg_activation_to_neonatologist")
+  avgActivationToDispatch      Float?   @map("avg_activation_to_dispatch")
+  avgDispatchToArrival         Float?   @map("avg_dispatch_to_arrival")
+  avgReferralToAcceptance      Float?   @map("avg_referral_to_acceptance")
+
+  cotMatchRate                 Float?   @map("cot_match_rate")
+  normothermiaOnArrival        Float?   @map("normothermia_on_arrival")
+  timeToSurfactantAvg          Float?   @map("time_to_surfactant_avg")
+  declinedForCapacityRate      Float?   @map("declined_for_capacity_rate")
+  inUteroVsExUteroRatio        Float?   @map("in_utero_vs_ex_utero_ratio")
+
+  createdAt                    DateTime @default(now()) @map("created_at")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
+
+  @@unique([date, region])
+  @@map("nicu_kpi_daily_aggregates")
   @@index([date])
   @@index([region])
   @@index([date, region])
@@ -3715,6 +3923,9 @@ model Bed {
   currentBedRequestId String?           @unique @map("current_bed_request_id")
   caseId              String?           @map("case_id")
   caseType            CaseType?         @map("case_type")
+  // NICU cot capability (populated only for BedType.NICU beds)
+  nicuCotType         NicuCotType?      @map("nicu_cot_type")
+  nicuLevel           NicuLevel?        @map("nicu_level")
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
   deletedAt           DateTime?         @map("deleted_at")
@@ -3726,6 +3937,7 @@ model Bed {
   currentBedRequest   BedRequest?       @relation("CurrentBedRequest", fields: [currentBedRequestId], references: [id], onDelete: SetNull)
   bedStatusHistory    BedStatusHistory[]
   assignedBedRequests BedRequest[]      @relation("AssignedBed")
+  neonatalTransfers   NeonatalTransfer[] @relation("NeonatalAssignedBed")
   
   @@map("beds")
   @@index([unitId])

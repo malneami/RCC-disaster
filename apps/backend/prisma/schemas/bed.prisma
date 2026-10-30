@@ -11,6 +11,9 @@ model Bed {
   currentBedRequestId String?           @unique @map("current_bed_request_id")
   caseId              String?           @map("case_id")
   caseType            CaseType?         @map("case_type")
+  // NICU cot capability (populated only for BedType.NICU beds)
+  nicuCotType         NicuCotType?      @map("nicu_cot_type")
+  nicuLevel           NicuLevel?        @map("nicu_level")
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
   deletedAt           DateTime?         @map("deleted_at")
@@ -22,6 +25,7 @@ model Bed {
   currentBedRequest   BedRequest?       @relation("CurrentBedRequest", fields: [currentBedRequestId], references: [id], onDelete: SetNull)
   bedStatusHistory    BedStatusHistory[]
   assignedBedRequests BedRequest[]      @relation("AssignedBed")
+  neonatalTransfers   NeonatalTransfer[] @relation("NeonatalAssignedBed")
   
   @@map("beds")
   @@index([unitId])

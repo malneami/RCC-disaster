@@ -178,6 +178,8 @@ enum CaseType {
   STEMI
   STROKE
   TRAUMA
+  OB
+  NICU
 }
 
 enum CriticalCaseSeverity {
@@ -484,4 +486,60 @@ enum TranscriptStatus {
   RUNNING
   COMPLETED
   FAILED
+}
+// ============================================================
+// NICU (Neonatal) Pathway Portal enums
+// ============================================================
+enum NeonatalTransferStatus {
+  CREATED
+  ACTIVATED
+  NEONATOLOGIST_CONNECTED
+  DECISION_MADE
+  DISPATCHED
+  DEPARTED
+  ARRIVED
+  CLOSED
+}
+
+// RED = unstable / ventilated, ORANGE = high-acuity, YELLOW = stable monitoring
+enum NeonatalAcuityLevel {
+  RED
+  ORANGE
+  YELLOW
+}
+
+// NICU care level (confirm final criteria against MoH / cluster definitions)
+enum NicuLevel {
+  LEVEL_I
+  LEVEL_II
+  LEVEL_III
+}
+
+enum NicuCotType {
+  INCUBATOR
+  OPEN_WARMER
+  VENTILATED
+}
+
+enum NeonatalRespiratorySupport {
+  ROOM_AIR
+  LOW_FLOW
+  HIGH_FLOW
+  CPAP
+  NIPPV
+  INVASIVE_VENT
+  HFOV
+}
+
+enum NeonatalAcceptanceStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NeonatalTransportTeam {
+  NEONATAL_RETRIEVAL
+  ALS
+  BLS
+  AIR
 }

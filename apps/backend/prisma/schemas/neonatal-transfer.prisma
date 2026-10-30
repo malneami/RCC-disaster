@@ -1,0 +1,94 @@
+// Neonatal transfer model for the NICU pathway portal
+model NeonatalTransfer {
+  id                       String                      @id @default(uuid())
+  ticketId                 String                      @map("ticket_id")
+  patientId                String                      @map("patient_id")
+  obMaternalTransferId     String?                     @map("ob_maternal_transfer_id")
+  createdById              String                      @map("created_by_id")
+  createdAt                DateTime                    @default(now()) @map("created_at")
+  updatedAt                DateTime                    @updatedAt @map("updated_at")
+  status                   NeonatalTransferStatus      @default(CREATED)
+
+  // Neonate identity
+  gestationalAgeWeeks      Int                         @map("gestational_age_weeks")
+  gestationalAgeDays       Int?                        @map("gestational_age_days")
+  birthWeightGrams         Int?                        @map("birth_weight_grams")
+  ageHours                 Int?                        @map("age_hours")
+  apgar1                   Int?                        @map("apgar_1")
+  apgar5                   Int?                        @map("apgar_5")
+  apgar10                  Int?                        @map("apgar_10")
+  antenatalSteroids        Boolean?                    @map("antenatal_steroids")
+
+  // Vitals
+  hr                       Int?                        @map("hr")
+  rr                       Int?                        @map("rr")
+  temp                     Float?                      @map("temp")
+  spo2                     Int?                        @map("spo2")
+  preDuctalSpo2            Int?                        @map("pre_ductal_spo2")
+  postDuctalSpo2           Int?                        @map("post_ductal_spo2")
+  bloodGlucose             Float?                      @map("blood_glucose")
+
+  // Respiratory / support
+  respiratorySupport       NeonatalRespiratorySupport? @map("respiratory_support")
+  fiO2                     Int?                        @map("fio2")
+  surfactantGiven          Boolean?                    @map("surfactant_given")
+  inotropes                Boolean?                    @map("inotropes")
+  therapeuticHypothermia   Boolean?                    @map("therapeutic_hypothermia")
+  seizure                  Boolean?                    @map("seizure")
+
+  // Problems and stabilization (JSON arrays of strings)
+  suspectedConditions      Json?                       @map("suspected_conditions")
+  stabilizationDone        Json?                       @map("stabilization_done")
+
+  // Acuity scoring
+  acuityLevel              NeonatalAcuityLevel         @map("acuity_level")
+  tripsScore               Int?                        @map("trips_score")
+  cribIIScore              Int?                        @map("crib_ii_score")
+
+  // Capacity requirement (drives matching)
+  requiredNicuLevel        NicuLevel                   @map("required_nicu_level")
+  requiredCotType          NicuCotType                 @map("required_cot_type")
+
+  // Referring facility
+  referringFacilityId      String                      @map("referring_facility_id")
+  referringContactName     String?                     @map("referring_contact_name")
+  referringContactPhone    String?                     @map("referring_contact_phone")
+
+  // Destination and acceptance
+  destinationHospitalId    String?                     @map("destination_hospital_id")
+  assignedBedId            String?                     @map("assigned_bed_id")
+  acceptanceStatus         NeonatalAcceptanceStatus    @default(PENDING) @map("acceptance_status")
+
+  // Transport
+  transportTeam            NeonatalTransportTeam       @map("transport_team")
+  transportIncubator       Boolean?                    @map("transport_incubator")
+
+  // Timeline
+  activatedAt              DateTime?                   @map("activated_at")
+  neonatologistConnectedAt DateTime?                   @map("neonatologist_connected_at")
+  decisionAt               DateTime?                   @map("decision_at")
+  dispatchedAt             DateTime?                   @map("dispatched_at")
+  departedAt               DateTime?                   @map("departed_at")
+  arrivedAt                DateTime?                   @map("arrived_at")
+  closedAt                 DateTime?                   @map("closed_at")
+
+  // Relations
+  ticket                   Ticket                      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  patient                  Patient                     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  obMaternalTransfer       ObMaternalTransfer?         @relation("ObMaternalToNeonatal", fields: [obMaternalTransferId], references: [id], onDelete: SetNull)
+  createdBy                User                        @relation("NeonatalTransferCreator", fields: [createdById], references: [id])
+  referringFacility        Hospital                    @relation("NeonatalReferringHospital", fields: [referringFacilityId], references: [id])
+  destinationHospital      Hospital?                   @relation("NeonatalDestinationHospital", fields: [destinationHospitalId], references: [id])
+  assignedBed              Bed?                        @relation("NeonatalAssignedBed", fields: [assignedBedId], references: [id], onDelete: SetNull)
+
+  @@map("neonatal_transfers")
+  @@index([ticketId])
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([referringFacilityId])
+  @@index([destinationHospitalId])
+  @@index([requiredNicuLevel])
+  @@index([obMaternalTransferId])
+  @@index([assignedBedId])
+}
